@@ -80,7 +80,7 @@ services:
     region: frankfurt
     branch: main
     # Every commit on main whose CI checks pass (not the deprecated autoDeploy: true, which deploys
-    # alongside CI, red or not). With no CI configured on the repo, every commit on main deploys.
+    # alongside CI, red or not). The checks are .github/workflows/ci.yml, docker-smoke among them.
     autoDeployTrigger: checksPass
     healthCheckPath: /health
     maxShutdownDelaySeconds: 300
