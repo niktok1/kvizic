@@ -1,0 +1,117 @@
+# Render blueprint: two environments from one repo, both tracking main, as the client expects them
+# (KvizicEnvironment).
+#   - kvizic-server-dev deploys every commit on main once its CI checks pass (checksPass). It has no
+#     database of its own: without DATABASE_URL the server runs on in-memory H2, so dev's data resets on
+#     every deploy, restart and free-tier spin-down. Its questions come from the dev seed, uploaded as a
+#     Render secret file (below), since the question bank never goes in this public repo.
+#   - kvizic-server is production, on kvizic-postgres, reached through https://kvizic-api.ntole.com. It
+#     never deploys by itself: a person promotes a commit with Render's Manual Deploy, choosing one that
+#     is green in CI and already live on dev.
+#
+# Production is paid: kvizic-server on starter ($7, 0.5 CPU, 512 MB, never sleeps, which a realtime game
+# needs) and kvizic-postgres on basic-256mb ($6). kvizic-server-dev stays free, so it spins down after
+# ~15 min idle and the first request after pays a cold start (the client's LoadingSpinner allows for it).
+
+services:
+  - type: web
+    name: kvizic-server
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: frankfurt
+    branch: main
+    # Production deploys only by hand, with Manual Deploy. Quoted because YAML 1.1 parsers read a bare
+    # off as the boolean false.
+    autoDeployTrigger: "off"
+    healthCheckPath: /health
+    # Render stops an instance with SIGTERM and waits this long before killing it; the server drains its
+    # lobbies for DRAIN_SECONDS (default 280) within it, so games in play finish across a deploy.
+    maxShutdownDelaySeconds: 300
+    # The client's PROD base URL. Verified in the dashboard once Cloudflare's DNS points it here.
+    domains:
+      - kvizic-api.ntole.com
+    envVars:
+      # Internal connection string, not the external one — same region, no public egress.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kvizic-postgres
+          property: connectionString
+      # Generated once by Render and then held; rotating it invalidates every issued session.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: kvizic
+      - key: JWT_AUDIENCE
+        value: kvizic-client
+      # Browser clients are cross-origin against this service, so every web origin that should reach the
+      # API has to be named here, comma-separated, or CORS preflight rejects it.
+      - key: ALLOWED_WEB_ORIGINS
+        sync: false
+      # The moderator's credential for the admin routes (the question bank, reports, account deletion),
+      # sent in the X-Admin-Token header. Generated once by Render; read it from the dashboard. The server
+      # reads it at boot, so a new value applies once the service restarts, and the old one is dead then.
+      - key: ADMIN_TOKEN
+        generateValue: true
+      # The header that names the client's address, so the per-address rate limits key by the client and
+      # not by a proxy. Every request to a Render web service passes through Cloudflare, which sets
+      # CF-Connecting-IP to the address that reached it and overwrites any a client sent. X-Forwarded-For
+      # is not read: its leftmost entry is the client's to write, and the count of Render proxies behind
+      # Cloudflare is not fixed. Unset, the server keys by Render's proxy, one budget for every client.
+      # The RATE_LIMIT_* budgets are not set here, so RateLimits.DEFAULT applies. Nor are
+      # MIN_CLIENT_VERSION_ANDROID, _IOS, _WEB and _DESKTOP, so no build of the game is refused as too old.
+      - key: CLIENT_IP_HEADER
+        value: CF-Connecting-IP
+      # The game's OAuth client in Google Cloud (type Web application), which exchanges a Play Games
+      # sign-in's server auth code. Set by hand, never committed. Both unset means the sign-in is off: its
+      # route is not served. One without the other fails at boot.
+      - key: PLAY_GAMES_CLIENT_ID
+        sync: false
+      - key: PLAY_GAMES_CLIENT_SECRET
+        sync: false
+      # How many days a guest nobody can reach any more is kept. 90 is also the default; 0 turns it off.
+      - key: GUEST_RETENTION_DAYS
+        value: "90"
+
+  - type: web
+    name: kvizic-server-dev
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    branch: main
+    # Every commit on main whose CI checks pass (not the deprecated autoDeploy: true, which deploys
+    # alongside CI, red or not). The checks are .github/workflows/ci.yml, docker-smoke among them.
+    autoDeployTrigger: checksPass
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 300
+    envVars:
+      # No DATABASE_URL: the server runs on in-memory H2 and says so at boot.
+      # Its own secret, so a session from one environment is refused by the other.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: kvizic-dev
+      - key: JWT_AUDIENCE
+        value: kvizic-client
+      - key: ALLOWED_WEB_ORIGINS
+        sync: false
+      # Dev's own moderator token, never production's.
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: CLIENT_IP_HEADER
+        value: CF-Connecting-IP
+      - key: PLAY_GAMES_CLIENT_ID
+        sync: false
+      - key: PLAY_GAMES_CLIENT_SECRET
+        sync: false
+      # The dev seed, kvizic-content's dev-seed.questions.json, imported as approved at every boot. It is
+      # uploaded in the dashboard as a secret file of that name, which Render mounts under /etc/secrets/.
+      # Not declared here: a blueprint cannot upload the file, and a QUESTION_SEED_FILE naming a missing
+      # file fails the boot. Once the file is uploaded, add this variable in the dashboard:
+      #   QUESTION_SEED_FILE=/etc/secrets/dev-seed.questions.json
+
+databases:
+  - name: kvizic-postgres
+    plan: basic-256mb
+    # Must match the web service's region so the internal URL resolves.
+    region: frankfurt

@@ -1,0 +1,11 @@
+# The image needs only the Gradle wrapper, the root build files, :core and :server (Dockerfile).
+**/build/
+.gradle
+.kotlin
+.idea
+.git
+.claude
+app
+design-review
+local.properties
+**/*.questions.json
