@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,6 +44,7 @@ import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
+import io.ntole.kvizic.design.component.WaitingFor
 import io.ntole.kvizic.design.component.Wordmark
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -69,6 +71,15 @@ internal val Marko = Member("Марко", "hedgehog", seat = 2)
 internal val Bojan = Member("Бојан", "bear", seat = 3)
 internal val Roda = Member("Тиха Рода", "stork", seat = 4)
 internal val Room = listOf(Nina, Sova, Marko, Bojan, Roda)
+
+/** A full room of eight, for an easy question most of it answers alike. */
+internal val FullRoom =
+    Room +
+        listOf(
+            Member("Лана", "owl", seat = 5),
+            Member("Стефан", "bear", seat = 6),
+            Member("Ива", "fox", seat = 7),
+        )
 
 internal const val QUESTION = "Која река протиче кроз Нови Сад?"
 internal val RIVERS = listOf("Дунав", "Сава", "Тиса", "Морава")
@@ -451,6 +462,43 @@ internal fun ThreeAnswersMock() {
     )
 }
 
+// 12 to 14. A full room on an easy question: seven of eight locked in on one answer, in a grid of short
+// answers and a column of long ones, and the right answer revealed with who got it first.
+@Composable
+internal fun CrowdMock(
+    question: String = QUESTION,
+    options: List<String> = RIVERS,
+    revealed: Boolean = false,
+) {
+    val onFirst = FullRoom.filter { it != Roda }
+    QuestionScreen(
+        question = question,
+        options = options,
+        timer =
+            if (revealed) {
+                TimerPhase.Stopped(totalMillis = 15_000, leftMillis = 9_100)
+            } else {
+                TimerPhase.Running(totalMillis = 15_000, leftMillis = 9_800)
+            },
+        states =
+            if (revealed) {
+                listOf(AnswerTileState.CORRECT, AnswerTileState.DIMMED, AnswerTileState.DIMMED, AnswerTileState.DIMMED)
+            } else {
+                listOf(
+                    AnswerTileState.LOCKED_IN,
+                    AnswerTileState.DIMMED,
+                    AnswerTileState.DIMMED,
+                    AnswerTileState.DIMMED,
+                )
+            },
+        answered = onFirst + if (revealed) listOf(Roda) else emptyList(),
+        room = FullRoom,
+        picks = if (revealed) mapOf(0 to onFirst, 3 to listOf(Roda)) else mapOf(0 to onFirst),
+        ordered = revealed,
+        verdict = if (revealed) "Тачно · +97" else null,
+    )
+}
+
 // 9. The results: the podium, the rest, and each player's own way back.
 @Composable
 internal fun ResultsMock() {
@@ -504,6 +552,7 @@ private fun QuestionScreen(
     states: List<AnswerTileState>,
     answered: List<Member>,
     question: String = QUESTION,
+    room: List<Member> = Room,
     picks: Map<Int, List<Member>> = emptyMap(),
     round: Int = 3,
     topic: String = "Географија",
@@ -541,7 +590,7 @@ private fun QuestionScreen(
                 },
         )
         Spacer(Modifier.height(space.md))
-        AnsweredStrip(answered, verdict)
+        BottomStrip(room, answered, verdict)
     }
 }
 
@@ -583,23 +632,30 @@ private fun RoundBar(
     }
 }
 
-/** Who has answered so far, and how many of all, as the ones who have not yet see it. */
+/**
+ * Under the answers: who the question still waits for, the player among them until they answer, and once
+ * it is revealed the player's verdict, in a strip as tall either way.
+ */
 @Composable
-private fun AnsweredStrip(
+private fun BottomStrip(
+    room: List<Member>,
     answered: List<Member>,
     verdict: String?,
 ) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     Panel(Modifier.fillMaxWidth(), padding = space.md) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            KvizicText(verdict ?: "Одговорили: ${answered.size}/${Room.size}", style = type.bodyStrong)
-            Spacer(Modifier.weight(1f))
-            Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
-                Room.forEach { member ->
-                    Avatar(member.avatar, member.seat, size = AvatarSize.XS, dimmed = member !in answered)
-                }
+        if (verdict != null) {
+            Box(Modifier.fillMaxWidth().heightIn(min = space.avatar.xs), contentAlignment = Alignment.Center) {
+                KvizicText(verdict, style = type.bodyStrong)
             }
+        } else {
+            val waiting = room.filter { it !in answered }
+            WaitingFor(
+                waiting.map { it.chip },
+                Modifier.fillMaxWidth(),
+                contentDescription = "Чека се: " + waiting.joinToString { it.name },
+            )
         }
     }
 }

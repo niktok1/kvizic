@@ -158,11 +158,12 @@ internal val BuzzersSpace =
                 rowMinHeight = 74.dp,
                 tallMinHeight = 128.dp,
                 gap = 12.dp,
+                rowGap = 18.dp,
                 padding = 14.dp,
                 rowPaddingVertical = 9.dp,
                 letterMark = 40.dp,
                 stamp = 26.dp,
-                rowPickers = 62.dp,
+                pickersPeek = 14.dp,
             ),
         button =
             ButtonSizes(
@@ -184,6 +185,7 @@ internal val BuzzersSpace =
                 ring = 3.dp,
                 badgeFraction = 0.44f,
                 stackOverlap = 0.3f,
+                crowdOverlap = 0.7f,
             ),
         flap =
             FlapSizes(

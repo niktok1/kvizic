@@ -254,6 +254,37 @@ object KvizicIcons {
         }
     }
 
+    /** An hourglass, its sand half run through: those a question still waits for. */
+    val Hourglass: ImageVector by lazy {
+        icon("Hourglass") {
+            outline {
+                // The frame's top and bottom.
+                moveTo(6f, 3.5f)
+                horizontalLineTo(18f)
+                moveTo(6f, 20.5f)
+                horizontalLineTo(18f)
+                // The glass, narrowing to its waist and widening again, each side in two curves.
+                moveTo(7.5f, 3.5f)
+                curveTo(7.5f, 8.5f, 11f, 9.5f, 11f, 12f)
+                curveTo(11f, 14.5f, 7.5f, 15.5f, 7.5f, 20.5f)
+                moveTo(16.5f, 3.5f)
+                curveTo(16.5f, 8.5f, 13f, 9.5f, 13f, 12f)
+                curveTo(13f, 14.5f, 16.5f, 15.5f, 16.5f, 20.5f)
+            }
+            // The sand: what is left above the waist, and the heap below it.
+            path(fill = SolidColor(Color.Black)) {
+                moveTo(9.5f, 7.5f)
+                horizontalLineTo(14.5f)
+                lineTo(12f, 10.5f)
+                close()
+                moveTo(12f, 15.5f)
+                lineTo(15.5f, 19.5f)
+                horizontalLineTo(8.5f)
+                close()
+            }
+        }
+    }
+
     /** A laughing face: a reaction. */
     val Laugh: ImageVector by lazy {
         icon("Laugh") {

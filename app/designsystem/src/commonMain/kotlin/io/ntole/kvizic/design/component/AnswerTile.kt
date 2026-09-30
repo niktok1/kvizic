@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -56,7 +57,7 @@ import kotlin.math.ceil
  * of it moves in the draw alone.
  *
  * [onClick] makes it a button, while the question takes answers; null leaves it to be read. [pickers]
- * stands on the tile beside its letter: the avatars of those who picked it. [stateDescription] says the
+ * stands behind the tile, their heads over its top edge: the avatars of those who picked it. [stateDescription] says the
  * state to a screen reader, in the screen's own words. [textSize] is the largest its answer is set at,
  * the skin's answer size when unspecified: [AnswerGrid] gives all its tiles one, so they are set alike.
  */
@@ -92,10 +93,46 @@ fun AnswerTile(
             Modifier
         }
     val minHeight = if (arrangement == TileArrangement.ROW) space.tile.rowMinHeight else space.tile.gridMinHeight
+    val card: @Composable (Modifier) -> Unit = { cardModifier ->
+        Card(
+            index = index,
+            text = text,
+            state = state,
+            modifier = cardModifier.defaultMinSize(minHeight = minHeight),
+            arrangement = arrangement,
+            tap = tap,
+            source = source,
+            stateDescription = stateDescription,
+            textSize = textSize,
+            lit = { lit.value },
+            stamp = { stamp.value },
+        )
+    }
+    PickersBehind(pickers, modifier) { card(Modifier) }
+}
+
+/** An answer tile's card: its surface, its letter and its answer. */
+@Composable
+private fun Card(
+    index: Int,
+    text: String,
+    state: AnswerTileState,
+    modifier: Modifier,
+    arrangement: TileArrangement,
+    tap: Modifier,
+    source: MutableInteractionSource,
+    stateDescription: String?,
+    textSize: TextUnit,
+    lit: () -> Float,
+    stamp: () -> Float,
+) {
+    val skin = KvizicTheme.skin
+    val space = skin.space
+    val type = KvizicTheme.type
+    val part = skin.parts.tile
     Box(
         modifier =
             modifier
-                .defaultMinSize(minHeight = minHeight)
                 .semantics(mergeDescendants = true) {
                     selected = state == AnswerTileState.LOCKED_IN
                     if (stateDescription != null) this.stateDescription = stateDescription
@@ -118,10 +155,10 @@ fun AnswerTile(
                         Modifier
                             .size(space.tile.letterMark)
                             .drawWithContent {
-                                with(part) { drawLetterMark(state, index, lit.value) }
+                                with(part) { drawLetterMark(state, index, lit()) }
                                 drawContent()
                                 // The result's stamp, over the letter, and moving with the face.
-                                with(part) { drawStamp(state, stamp.value) }
+                                with(part) { drawStamp(state, stamp()) }
                             },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -162,10 +199,6 @@ fun AnswerTile(
                     ) {
                         mark()
                         answer(Modifier.weight(1f))
-                        // Those who picked it keep their own room, there or not: showing moves nothing.
-                        Box(Modifier.width(space.tile.rowPickers), contentAlignment = Alignment.CenterEnd) {
-                            pickers?.invoke()
-                        }
                     }
                 }
 
@@ -174,11 +207,7 @@ fun AnswerTile(
                         modifier = Modifier.fillMaxWidth().padding(space.tile.padding),
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            mark()
-                            Spacer(Modifier.weight(1f))
-                            pickers?.invoke()
-                        }
+                        mark()
                         Spacer(Modifier.height(space.sm))
                         answer(Modifier.fillMaxWidth())
                     }
@@ -189,10 +218,44 @@ fun AnswerTile(
 }
 
 /**
+ * [card], and behind it those who picked its answer, at its end, their heads risen over its top edge by
+ * the skin's `pickersPeek` into the row gap above: they take none of the card's own room, so its answer
+ * keeps its size whether or not anyone has picked it, and a crowd of a whole room has the card's width.
+ * The card, drawn over them, sinks without them.
+ */
+@Composable
+private fun PickersBehind(
+    pickers: (@Composable () -> Unit)?,
+    modifier: Modifier,
+    card: @Composable () -> Unit,
+) {
+    val skin = KvizicTheme.skin
+    val tile = skin.space.tile
+    val (depthRight, _) = skin.depth.reserve(skin.parts.tile.surface(AnswerTileState.IDLE, 0))
+    Layout(
+        content = {
+            Box { pickers?.invoke() }
+            card()
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val face = measurables[1].measure(constraints)
+        val end = (depthRight + tile.padding).roundToPx()
+        val picks = measurables[0].measure(Constraints(maxWidth = (face.width - end * 2).coerceAtLeast(0)))
+        layout(face.width, face.height) {
+            // Placed first, so drawn first: the card stands over their lower half.
+            picks.place(face.width - end - picks.width, -tile.pickersPeek.roundToPx())
+            face.place(0, 0)
+        }
+    }
+}
+
+/**
  * A question's answers, as many as it has, laid out by how many: two stacked tall across the width,
  * three in a column, four in a grid of two by two, and more in rows of two. Each tile takes an equal
  * share of the room the grid is given. [states] says where each answer stands; [onPick] makes each a
- * button; [pickers] stands on a tile what the screen puts there, by the answer's index.
+ * button; [pickers] stands behind a tile, over its top edge, what the screen puts there, by the answer's
+ * index.
  *
  * Four answers stand in a grid of two by two unless a column, each across the whole width, sets them
  * larger: one long answer takes them all to a column, where it has the width. And all are set at one
@@ -226,7 +289,8 @@ fun AnswerGrid(
                 textSize = layout.textSize,
             )
         }
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(space.tile.gap)) {
+        // Between rows of tiles, room for the heads of those who picked one ([PickersBehind]).
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(space.tile.rowGap)) {
             when {
                 options.size == TRUE_OR_FALSE -> {
                     options.indices.forEach { i ->
@@ -323,8 +387,7 @@ private data class AnswerBoxes(
                 val height = if (constraints.hasBoundedHeight) constraints.maxHeight.toDp() else null
                 val rows = (count + COLUMNS - 1) / COLUMNS
                 val gridTileWidth = (width - tile.gap * (COLUMNS - 1)) / COLUMNS - depthRight
-                val rowAnswerWidth =
-                    width - depthRight - tile.padding * 2 - tile.letterMark - skin.space.md * 2 - tile.rowPickers
+                val rowAnswerWidth = width - depthRight - tile.padding * 2 - tile.letterMark - skin.space.md
                 AnswerBoxes(
                     grid =
                         AnswerBox(
@@ -332,7 +395,7 @@ private data class AnswerBoxes(
                             height =
                                 height?.let {
                                     (
-                                        (it - tile.gap * (rows - 1)) / rows - depthBottom - tile.padding * 2 -
+                                        (it - tile.rowGap * (rows - 1)) / rows - depthBottom - tile.padding * 2 -
                                             tile.letterMark - skin.space.sm
                                     ).roundToPx()
                                 },
@@ -342,8 +405,10 @@ private data class AnswerBoxes(
                             width = rowAnswerWidth.roundToPx(),
                             height =
                                 height?.let {
-                                    ((it - tile.gap * (count - 1)) / count - depthBottom - tile.rowPaddingVertical * 2)
-                                        .roundToPx()
+                                    (
+                                        (it - tile.rowGap * (count - 1)) / count - depthBottom -
+                                            tile.rowPaddingVertical * 2
+                                    ).roundToPx()
                                 },
                         ),
                 )

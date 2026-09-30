@@ -9,7 +9,7 @@ motion, renderers and art, not only colours.
 | Package | What |
 |---|---|
 | `skin` | `Skin` and its tokens: `SkinColors`, `SkinFonts`, `SkinTypeScale`, `SkinShapes`, `SkinDepth` (`HardOffset`, `Soft`, `Sketched`), `SkinSpace`, `SkinMotion`, `SkinParts`, `Backdrop`, `AvatarPalette`; `KvizicSkin { }`, `KvizicTheme`, `Skins` |
-| `component` | What screens call: `AnswerTile`, `AnswerGrid`, `FlipNumber`, `CodeDisplay`, `QuestionTimer`, `Avatar`, `AvatarStack`, `StageButton`, `StageIconButton`, `Panel`, `Chip`, `Podium`, `ReactionBurst`, `Spinner`, `Wordmark`, `Stage`, `KvizicText`, `KvizicIcon` |
+| `component` | What screens call: `AnswerTile`, `AnswerGrid`, `QuestionText`, `WaitingFor`, `FlipNumber`, `CodeDisplay`, `QuestionTimer`, `Avatar`, `AvatarStack`, `StageButton`, `StageIconButton`, `Panel`, `Chip`, `Podium`, `ReactionBurst`, `Spinner`, `Wordmark`, `Stage`, `KvizicText`, `KvizicIcon` |
 | `font` | The bundled faces (`Faces`) and their licences (`FontLicences`) |
 | `avatar` | The avatars, drawn in code for any `AvatarPalette` (fox, owl, hedgehog, bear; a silhouette for the rest) |
 | `icon` | Every icon, drawn by hand on a 24 grid (`KvizicIcons`) |

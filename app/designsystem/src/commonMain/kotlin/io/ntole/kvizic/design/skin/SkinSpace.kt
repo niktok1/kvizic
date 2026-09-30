@@ -54,7 +54,10 @@ data class TileSizes(
     val rowMinHeight: Dp,
     /** A tile across the width of two, stacked tall: a true or false question. */
     val tallMinHeight: Dp,
+    /** Between tiles side by side. */
     val gap: Dp,
+    /** Between rows of tiles: room for the heads of those who picked one to rise into ([pickersPeek]). */
+    val rowGap: Dp,
     val padding: Dp,
     /** Above and below the answer of a tile across the width, where a long answer's lines need the room. */
     val rowPaddingVertical: Dp,
@@ -62,10 +65,10 @@ data class TileSizes(
     val letterMark: Dp,
     val stamp: Dp,
     /**
-     * The room a tile across the width keeps at its end for those who picked it, three avatars side by
-     * side, kept while nobody has, so their picks showing never move the answer.
+     * How far those who picked a tile's answer rise over its top edge, from behind it: they take none of
+     * the tile's own room. Less than [rowGap], so they never reach the tile above.
      */
-    val rowPickers: Dp,
+    val pickersPeek: Dp,
 )
 
 @Immutable
@@ -97,6 +100,11 @@ data class AvatarSizes(
     val badgeFraction: Float,
     /** How far each avatar of a stack covers the one before it, as a share of its size. */
     val stackOverlap: Float,
+    /**
+     * The most a stack short of room closes up to: a crowd on one answer, all eight of a room, still shows
+     * each face's edge and colour.
+     */
+    val crowdOverlap: Float,
 )
 
 @Immutable

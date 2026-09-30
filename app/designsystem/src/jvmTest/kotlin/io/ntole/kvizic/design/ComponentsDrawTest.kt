@@ -47,6 +47,7 @@ import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.TileArrangement
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
+import io.ntole.kvizic.design.component.WaitingFor
 import io.ntole.kvizic.design.component.Wordmark
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -190,6 +191,7 @@ class ComponentsDrawTest {
                 Avatar("bear", 6, dimmed = true)
                 Avatar("hedgehog", 7, order = 2)
                 AvatarStack(AvatarArt.DRAWN.mapIndexed { i, id -> AvatarChip(id, i) }, contentDescription = "stack")
+                WaitingFor(listOf(AvatarChip("fox", 0), AvatarChip("stork", 4)), contentDescription = "waiting-for")
             }
             Section("Podium · ReactionBurst · Spinner · icons")
             Row(horizontalArrangement = Arrangement.spacedBy(space.xl), verticalAlignment = Alignment.Bottom) {
@@ -258,6 +260,7 @@ class ComponentsDrawTest {
                 "Flag" to KvizicIcons.Flag,
                 "Leave" to KvizicIcons.Leave,
                 "Clock" to KvizicIcons.Clock,
+                "Hourglass" to KvizicIcons.Hourglass,
                 "Laugh" to KvizicIcons.Laugh,
                 "Wow" to KvizicIcons.Wow,
                 "Heart" to KvizicIcons.Heart,
@@ -268,6 +271,6 @@ class ComponentsDrawTest {
         val EXPECTED =
             AnswerTileState.entries.map { it.name.lowercase() } + PRESSED +
                 listOf("Тачно", "Меркур", "Морава", "Пет", "Брза игра", "1240", "4 8 2 9 1 5", "waiting", "running") +
-                listOf("stork", "stack", "Нина", "spinner", "Mic", "ThumbUp")
+                listOf("stork", "stack", "waiting-for", "Нина", "spinner", "Mic", "Hourglass", "ThumbUp")
     }
 }

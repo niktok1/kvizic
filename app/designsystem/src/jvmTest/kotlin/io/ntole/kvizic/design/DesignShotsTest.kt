@@ -59,6 +59,13 @@ class DesignShotsTest {
                 Shot("buzzers-10-long-reading", buzzers) { ReadingMock(LONG_QUESTION) },
                 Shot("buzzers-11-long-answering", buzzers) { AnsweringMock(LONG_QUESTION, LONG_ANSWERS) },
                 Shot("notebook-11-long-answering", notebook) { AnsweringMock(LONG_QUESTION, LONG_ANSWERS) },
+                // A full room, seven of eight on one answer.
+                Shot("buzzers-12-crowd-grid", buzzers) { CrowdMock() },
+                Shot("buzzers-13-crowd-column", buzzers) { CrowdMock(LONG_QUESTION, LONG_ANSWERS) },
+                Shot("buzzers-14-crowd-revealed", buzzers) { CrowdMock(revealed = true) },
+                Shot("buzzers-15-crowd-column-revealed", buzzers) {
+                    CrowdMock(LONG_QUESTION, LONG_ANSWERS, revealed = true)
+                },
                 // Mid-way through a reaction's burst over a seat.
                 Shot("buzzers-02-lobby", buzzers, atMillis = 420) { LobbyMock() },
                 // The lights three quarters up as the question is read.

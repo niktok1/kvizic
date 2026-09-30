@@ -23,7 +23,6 @@ import io.ntole.kvizic.design.avatar.AvatarArt
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.SkinSpace
-import kotlin.math.roundToInt
 
 /**
  * A member's avatar: the animal of [avatarId] (a silhouette for one this build has not drawn), framed in
@@ -106,8 +105,8 @@ data class AvatarChip(
 )
 
 /**
- * Several avatars, each over the one before by the skin's overlap: who picked an answer, who has
- * answered. [contentDescription] says it to a screen reader in a word, since the avatars do not.
+ * Several avatars, each over the one before by the skin's overlap, closer where their room is short: who
+ * picked an answer. [contentDescription] says it to a screen reader in a word, since the avatars do not.
  */
 @Composable
 fun AvatarStack(
@@ -126,13 +125,23 @@ fun AvatarStack(
         } else {
             Modifier
         }
+    val closest = space.sizeOf(size) * (1 - space.avatar.crowdOverlap)
     Layout(
         content = { avatars.forEach { Avatar(it.avatarId, it.seat, size = size, order = it.order) } },
         modifier = modifier.then(described),
     ) { measurables, constraints ->
         val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
-        val stepPx = step.toPx().roundToInt()
-        val width = if (placeables.isEmpty()) 0 else stepPx * (placeables.size - 1) + placeables.last().width
+        val last = placeables.lastOrNull()?.width ?: 0
+        // Short of room, the stack closes up, each avatar over more of the one before, down to the
+        // skin's closest: past that it runs over its room, as a stack of more than a room holds would.
+        val fitting =
+            if (placeables.size > 1 && constraints.hasBoundedWidth) {
+                (constraints.maxWidth - last) / (placeables.size - 1)
+            } else {
+                Int.MAX_VALUE
+            }
+        val stepPx = fitting.coerceIn(closest.roundToPx(), step.roundToPx())
+        val width = if (placeables.isEmpty()) 0 else stepPx * (placeables.size - 1) + last
         val height = placeables.maxOfOrNull { it.height } ?: 0
         layout(width, height) {
             placeables.forEachIndexed { i, placeable -> placeable.place(i * stepPx, 0) }
