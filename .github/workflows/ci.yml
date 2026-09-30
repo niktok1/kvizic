@@ -1,0 +1,261 @@
+# The gate in front of every deploy: kvizic-server-dev deploys a commit on main only once these checks
+# pass (render.yaml, autoDeployTrigger: checksPass), and production only ever takes a commit green here.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # ktlint fails the build, never warns: .editorconfig pins the style.
+      - name: Lint
+        run: ./gradlew ktlintCheck --no-daemon
+
+      # Every JVM-hosted test: the whole server suite, the realtime socket tests on real WebSockets and
+      # the drain on a real Netty server among them, the protocol's golden frames, the client layers, the
+      # skin engine's contrast, motion and font checks, and the Android host tests.
+      - name: Test
+        run: |
+          ./gradlew --no-daemon \
+            :core:jvmTest \
+            :server:test \
+            :core:domain:jvmTest \
+            :core:network:jvmTest \
+            :core:network:testAndroidHostTest \
+            :core:data:jvmTest \
+            :app:designsystem:jvmTest \
+            :app:shared:jvmTest \
+            :app:shared:testAndroidHostTest \
+            :app:androidApp:testDevDebugUnitTest
+
+      # Every in-scope client target still compiles, both web targets included, and R8 still shrinks the
+      # release build: without the upload key, which CI never has, it is signed with the debug key.
+      - name: Compile all client targets
+        run: |
+          ./gradlew --no-daemon \
+            :app:shared:compileKotlinJvm \
+            :app:shared:compileKotlinJs \
+            :app:shared:compileKotlinWasmJs \
+            :app:desktopApp:compileKotlin \
+            :app:webApp:compileKotlinJs \
+            :app:webApp:compileKotlinWasmJs \
+            :app:androidApp:assembleDebug \
+            :app:androidApp:assembleProdRelease
+
+      # What signs prod's bundle, the file Play takes, must refuse without the upload key, whether asked
+      # for by the bundle's task or by its signing task alone.
+      - name: Release signing
+        run: |
+          log="$RUNNER_TEMP/release-signing.log"
+          for task in bundleProdRelease signProdReleaseBundle; do
+            if ./gradlew --no-daemon --dry-run ":app:androidApp:$task" > "$log" 2>&1; then
+              cat "$log"; echo "$task ran without the Play upload key"; exit 1
+            fi
+            grep -q 'must be signed with the Play upload key' "$log" || { cat "$log"; exit 1; }
+          done
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/**'
+          retention-days: 7
+
+  # The server suite against the engine production runs on. H2 only approximates PostgreSQL, so the
+  # dialect's differences, types, constraint errors and locking, surface here and nowhere else, and so do
+  # the schema tests' checks of the migrations against it.
+  server-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        # Throwaway credentials for a container that lives only as long as this job.
+        env:
+          POSTGRES_USER: kvizic
+          POSTGRES_PASSWORD: kvizic
+          POSTGRES_DB: kvizic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kvizic -d kvizic_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Only :server is under test, so the app modules are not configured.
+      KVIZIC_SERVER_ONLY: '1'
+      KVIZIC_TEST_JDBC_URL: jdbc:postgresql://localhost:5432/kvizic_test
+      KVIZIC_TEST_DB_USER: kvizic
+      KVIZIC_TEST_DB_PASSWORD: kvizic
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test against PostgreSQL
+        run: ./gradlew :server:test --no-daemon
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-postgres
+          path: '**/build/reports/tests/**'
+          retention-days: 7
+
+  # Builds the image Render would build and proves it boots, answers /health, and refuses a socket's bad
+  # ticket with 4401, the realtime route alive behind it. Skipped until the Dockerfile is on main.
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      # hashFiles is not available to a job's own condition, so the check is a step's.
+      - name: Look for the Dockerfile
+        id: image
+        run: if [ -f Dockerfile ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "No Dockerfile yet"; fi
+
+      - name: Build image
+        if: steps.image.outputs.present == 'true'
+        run: docker build --tag kvizic-server:ci .
+
+      # No DATABASE_URL, so the server runs on in-memory H2. PORT is Render's default, 10000, so the PORT
+      # wiring is exercised too.
+      - name: Start container
+        if: steps.image.outputs.present == 'true'
+        run: docker run --detach --name kvizic-server --env PORT=10000 --publish 8080:10000 kvizic-server:ci
+
+      - name: Wait for /health
+        if: steps.image.outputs.present == 'true'
+        run: |
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent --max-time 5 http://localhost:8080/health; then
+              echo; echo "Healthy after ~$((attempt * 2))s"; exit 0
+            fi
+            if [ "$(docker inspect --format '{{.State.Running}}' kvizic-server)" != "true" ]; then
+              echo "Container exited before becoming healthy" >&2; exit 1
+            fi
+            sleep 2
+          done
+          echo "Server did not become healthy after 45 attempts" >&2
+          exit 1
+
+      # A hello with a ticket nobody issued: the server must close the socket with 4401.
+      - name: A socket with a bad ticket is refused
+        if: steps.image.outputs.present == 'true'
+        run: |
+          python3 - <<'PY'
+          import base64, os, socket, struct
+
+          sock = socket.create_connection(("localhost", 8080), timeout=10)
+          key = base64.b64encode(os.urandom(16)).decode()
+          sock.sendall(
+              f"GET /v1/play HTTP/1.1\r\nHost: localhost:8080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+              f"Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n".encode()
+          )
+          response = b""
+          while b"\r\n\r\n" not in response:
+              response += sock.recv(4096)
+          assert response.startswith(b"HTTP/1.1 101"), response
+          payload = b'{"t":"hello","ticket":"not-a-ticket","protocol":1}'
+          mask = os.urandom(4)
+          masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+          sock.sendall(bytes([0x81, 0x80 | len(payload)]) + mask + masked)
+          while True:
+              header = sock.recv(2)
+              opcode, length = header[0] & 0x0F, header[1] & 0x7F
+              body = sock.recv(length)
+              if opcode == 0x8:
+                  code = struct.unpack("!H", body[:2])[0]
+                  assert code == 4401, f"closed with {code}"
+                  print("closed with 4401, as it should")
+                  break
+          PY
+
+      - name: Container logs
+        if: failure() && steps.image.outputs.present == 'true'
+        run: docker logs kvizic-server
+
+  # The only place iOS is linked, tested and built as an app: the development machine has no Xcode.
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: |
+            konan-${{ runner.os }}-
+
+      # The common tests run on the JVM too; compiling them here catches what only Kotlin/Native refuses,
+      # such as a comma in a test's name.
+      - name: Link framework and run simulator tests
+        run: |
+          ./gradlew --no-daemon \
+            :app:shared:linkDebugFrameworkIosSimulatorArm64 \
+            :app:shared:iosSimulatorArm64Test \
+            :app:designsystem:compileKotlinIosSimulatorArm64 \
+            :core:domain:compileTestKotlinIosSimulatorArm64 \
+            :core:network:compileTestKotlinIosSimulatorArm64 \
+            :core:data:compileTestKotlinIosSimulatorArm64
+
+      - name: Build iOS app for the simulator
+        run: |
+          xcodebuild build \
+            -project app/iosApp/iosApp.xcodeproj \
+            -target iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-ios
+          path: '**/build/reports/tests/**'
+          retention-days: 7
