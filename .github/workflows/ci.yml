@@ -34,12 +34,14 @@ jobs:
 
       # Every JVM-hosted test: the whole server suite, the realtime socket tests on real WebSockets and
       # the drain on a real Netty server among them, the protocol's golden frames, the client layers, the
-      # skin engine's contrast, motion and font checks, and the Android host tests.
+      # real client sessions against the real server through a fault proxy (:e2e), the skin engine's
+      # contrast, motion, font and long-text checks, and the Android host tests.
       - name: Test
         run: |
           ./gradlew --no-daemon \
             :core:jvmTest \
             :server:test \
+            :e2e:test \
             :core:domain:jvmTest \
             :core:network:jvmTest \
             :core:network:testAndroidHostTest \
