@@ -66,15 +66,15 @@ class FontCoverageTest {
             Faces.ALL.flatMap { face ->
                 face.files.mapNotNull { file ->
                     // A figure with no overshoot and no descent, as tall as the lining figures stand, from
-                    // its outline as drawn: unhinted, since Linux's FreeType follows the faces' hinting
-                    // instructions, which move heights by a few pixels, and macOS's CoreText ignores them.
-                    val font =
-                        Font(typefaceOf(file), MEASURE_SIZE).apply {
-                            hinting = FontHinting.NONE
-                            isSubpixel = true
-                            isLinearMetrics = true
-                        }
-                    val bounds = font.measureText(FLAT_FIGURE)
+                    // its outline: a glyph's bounds are no measure, since macOS's CoreText pads them for
+                    // antialiasing (Sofia Sans's 0.66 em figures read 0.70 there) and Linux's FreeType does not.
+                    val typeface = typefaceOf(file)
+                    val font = Font(typeface, MEASURE_SIZE).apply { hinting = FontHinting.NONE }
+                    val glyph = typeface.getUTF32Glyph(FLAT_FIGURE.code)
+                    val bounds =
+                        checkNotNull(
+                            font.getPath(glyph),
+                        ) { "${file.fileName} draws no $FLAT_FIGURE" }.computeTightBounds()
                     val height = (bounds.bottom - bounds.top) / MEASURE_SIZE
                     if (abs(height - face.figureHeight) <= FIGURE_TOLERANCE) {
                         null
@@ -215,8 +215,8 @@ class FontCoverageTest {
                 .toList()
 
         const val MEASURE_SIZE = 100f
-        const val FLAT_FIGURE = "1"
-        const val FIGURE_TOLERANCE = 0.02f
+        const val FLAT_FIGURE = '1'
+        const val FIGURE_TOLERANCE = 0.01f
         const val PROBE = 200
 
         const val SHEET_WIDTH = 1600

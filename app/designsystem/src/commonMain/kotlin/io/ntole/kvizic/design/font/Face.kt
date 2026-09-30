@@ -65,7 +65,7 @@ object Faces {
                     FaceFile(Res.font.fira_sans_compressed_bold, FontWeight.Bold, "fira_sans_compressed_bold.ttf"),
                 ),
             hasSerbianForms = true,
-            figureHeight = FIRA_FIGURES,
+            figureHeight = FIRA_COMPRESSED_FIGURES,
         )
 
     /** Fira Sans, the text face beside it: the same design at its normal width, for reading. */
@@ -79,7 +79,7 @@ object Faces {
                     FaceFile(Res.font.fira_sans_semibold, FontWeight.SemiBold, "fira_sans_semibold.ttf"),
                 ),
             hasSerbianForms = true,
-            figureHeight = FIRA_FIGURES,
+            figureHeight = FIRA_SANS_FIGURES,
         )
 
     /** Oswald, a poster gothic, to compare: taller letters, so it is set smaller. No Serbian forms. */
@@ -139,10 +139,11 @@ internal fun Face.family(): FontFamily {
     return remember(fonts) { FontFamily(fonts) }
 }
 
-// Each face's figures, in em, as FontCoverageTest measures them from the files.
-private const val FIRA_FIGURES = 0.69f
+// Each face's figures, in em, as FontCoverageTest measures them from the files' outlines.
+private const val FIRA_COMPRESSED_FIGURES = 0.68f
+private const val FIRA_SANS_FIGURES = 0.67f
 private const val OSWALD_FIGURES = 0.81f
-private const val SOFIA_FIGURES = 0.7f
+private const val SOFIA_FIGURES = 0.66f
 
 // Oswald's capitals and figures stand about a sixth taller than Fira Compressed's at one size.
 private const val OSWALD_SCALE = 0.86f
