@@ -53,4 +53,7 @@ if (!serverOnly) {
 
     // The shared Compose UI, and each platform's entry point into it.
     include(":app:shared")
+    include(":app:androidApp")
+    include(":app:desktopApp")
+    include(":app:webApp")
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The window behind the app: the page background, so nothing shows in another colour before the first
+        frame, and no phone flashes white. Always dark, as the game is; enableEdgeToEdge() takes the system
+        bars over once the activity starts.
+    -->
+    <style name="Base.Theme.Kvizic" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/kvizic_page_background</item>
+        <item name="android:statusBarColor">@color/kvizic_page_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- What the manifest names; values-v31 adds the splash screen. -->
+    <style name="Theme.Kvizic" parent="Base.Theme.Kvizic" />
+</resources>

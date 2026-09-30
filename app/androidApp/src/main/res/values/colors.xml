@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The window's colour before Compose draws its first frame: a platform copy of the shell theme's page
+        background, always dark as the game's stage is, which WindowThemeTest holds equal to it. The launcher
+        icon's colours are its own, a placeholder until the design's icon replaces it.
+    -->
+    <color name="kvizic_page_background">#141218</color>
+    <color name="kvizic_launcher_background">#141218</color>
+    <color name="kvizic_launcher_mark">#FFD54F</color>
+</resources>
