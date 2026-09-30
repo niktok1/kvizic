@@ -1,0 +1,25 @@
+TEAM_ID=
+
+PRODUCT_NAME=Kvizic
+PRODUCT_BUNDLE_IDENTIFIER=io.ntole.kvizic$(TEAM_ID)
+
+// The app's version: kvizic.app.version in the repository's gradle.properties, which every other platform's
+// build reads, and the build number made from it, MAJOR * 10000 + MINOR * 100 + PATCH, the app's
+// CFBundleVersion, which every request names. Change them together: a Gradle build fails until they agree.
+MARKETING_VERSION=0.1.0
+CURRENT_PROJECT_VERSION=100
+
+// The server environment this build targets: local, dev or prod. Info.plist carries it as its KVIZIC_ENV
+// key, which the app reads at start; none is local.
+KVIZIC_ENV=local
+
+// The PostHog project this build sends analytics to: none here, which is analytics off. Set them in
+// Local.xcconfig beside this file, which git ignores, never in this one:
+//   KVIZIC_POSTHOG_KEY=phc_...
+//   KVIZIC_POSTHOG_HOST=eu.i.posthog.com
+// A host is written without its scheme, since two slashes begin a comment here; none is the EU cloud.
+// Info.plist carries both as keys of the same names, which the app reads at start.
+KVIZIC_POSTHOG_KEY=
+KVIZIC_POSTHOG_HOST=
+
+#include? "Local.xcconfig"

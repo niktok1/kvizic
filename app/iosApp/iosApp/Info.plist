@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>KVIZIC_ENV</key>
+	<string>$(KVIZIC_ENV)</string>
+	<key>KVIZIC_POSTHOG_KEY</key>
+	<string>$(KVIZIC_POSTHOG_KEY)</string>
+	<key>KVIZIC_POSTHOG_HOST</key>
+	<string>$(KVIZIC_POSTHOG_HOST)</string>
+</dict>
+</plist>

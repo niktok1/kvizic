@@ -47,4 +47,13 @@ val serverOnly =
 if (!serverOnly) {
     // The client modules, each included once its directory exists: dependencies point inward, and
     // :core:domain depends on nothing.
+    include(":core:domain")
+    include(":core:network")
+    include(":core:data")
+
+    // The shared Compose UI, and each platform's entry point into it.
+    include(":app:shared")
+    include(":app:androidApp")
+    include(":app:desktopApp")
+    include(":app:webApp")
 }
