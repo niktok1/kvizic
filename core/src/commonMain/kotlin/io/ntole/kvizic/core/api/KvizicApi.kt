@@ -175,9 +175,13 @@ public object KvizicApi {
         public const val MIN_OPTIONS: Int = 2
         public const val MAX_OPTIONS: Int = 4
 
-        /** Longest question, answer and explanation, in UTF-16 units once trimmed. */
-        public const val MAX_QUESTION_TEXT_LENGTH: Int = 200
-        public const val MAX_OPTION_LENGTH: Int = 80
+        /**
+         * Longest question, answer and explanation, in UTF-16 units once trimmed. A question is read against
+         * the clock, so it is short: the longest reads in some seven seconds, and four of the longest answers
+         * still stand whole on the smallest phone, where each is at most a few lines.
+         */
+        public const val MAX_QUESTION_TEXT_LENGTH: Int = 120
+        public const val MAX_OPTION_LENGTH: Int = 60
         public const val MAX_EXPLANATION_LENGTH: Int = 300
 
         /** Longest source URL a draft may cite, and topic name. */

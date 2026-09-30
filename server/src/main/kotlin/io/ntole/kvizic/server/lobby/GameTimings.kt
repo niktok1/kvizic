@@ -15,10 +15,13 @@ data class GameTimings(
     val countdown: Duration = 3.seconds,
     /** The same, when a member still looks at the last game's results, so they can tap in. */
     val countdownWithStragglers: Duration = 5.seconds,
-    /** How long a question shows alone before its answers: a base, plus a little per character, up to a cap. */
+    /**
+     * How long a question shows alone before its answers: a base, plus a reader's time per character, up to
+     * a cap. The longest question the rules allow, 120 characters, reads in 6.9 seconds, one of 40 in 3.3.
+     */
     val readBase: Duration = 1_500.milliseconds,
-    val readPerCharacter: Duration = 25.milliseconds,
-    val readMax: Duration = 3.seconds,
+    val readPerCharacter: Duration = 45.milliseconds,
+    val readMax: Duration = 7.seconds,
     /** How long the right answer and the points show. */
     val reveal: Duration = 5.seconds,
     /** The same, for a question with an explanation to read. */

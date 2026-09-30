@@ -1,7 +1,10 @@
 package io.ntole.kvizic.server.question
 
+import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.core.question.QuestionKind
+import io.ntole.kvizic.server.db.QuestionOptions
+import io.ntole.kvizic.server.db.Questions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -63,14 +66,23 @@ class QuestionRulesTest {
         assertTrue(refusal { check(options = listOf("а", "б", "в", "г", "д"), correct = 0) }.contains("2 to 4"))
     }
 
+    /** Read against the clock: the longest question reads in some seven seconds (`GameTimings.readTime`). */
+    @Test
+    fun `a question is at most 120 characters and an answer 60`() {
+        assertEquals(120, check(text = "а".repeat(120)).text.length)
+        assertEquals(60, check(options = listOf("а", "б".repeat(60)), correct = 0).options.last().length)
+        assertTrue(KvizicApi.Limits.MAX_QUESTION_TEXT_LENGTH <= Questions.TEXT_COLUMN, "the question fits its column")
+        assertTrue(KvizicApi.Limits.MAX_OPTION_LENGTH <= QuestionOptions.TEXT_COLUMN, "an answer fits its column")
+    }
+
     @Test
     fun `the rules refuse what a player could not answer`() {
         assertTrue(refusal { check(correct = 4) }.contains("right answer"))
         assertTrue(refusal { check(options = listOf("Сиднеј", "сиднеј", "Перт", "Канбера")) }.contains("same"))
         assertTrue(refusal { check(text = "   ") }.contains("blank"))
-        assertTrue(refusal { check(text = "а".repeat(201)) }.contains("over 200"))
+        assertTrue(refusal { check(text = "а".repeat(121)) }.contains("over 120"))
         assertTrue(refusal { check(text = "Први ред\nдруги ред") }.contains("one line"))
-        assertTrue(refusal { check(options = listOf("а", "б".repeat(81))) }.contains("over 80"))
+        assertTrue(refusal { check(options = listOf("а", "б".repeat(61))) }.contains("over 60"))
         assertTrue(refusal { check(topicIds = emptyList()) }.contains("1 to 3"))
         assertTrue(refusal { check(topicIds = listOf("COOKING")) }.contains("COOKING"))
         assertTrue(refusal { check(difficulty = Difficulty.UNKNOWN) }.contains("difficulty"))

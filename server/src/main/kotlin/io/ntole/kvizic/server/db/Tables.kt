@@ -113,7 +113,7 @@ object Questions : Table("questions") {
     val id = varchar("id", 36)
     val status = enumerationByName<QuestionStatus>("status", 16)
     val kind = enumerationByName<QuestionKind>("kind", 16)
-    val text = varchar("text", KvizicApi.Limits.MAX_QUESTION_TEXT_LENGTH)
+    val text = varchar("text", TEXT_COLUMN)
 
     /** Which of [QuestionOptions] is right, by its slot. */
     val correctSlot = integer("correct_slot")
@@ -138,15 +138,21 @@ object Questions : Table("questions") {
         index(isUnique = true, importKey)
         index(isUnique = false, status, id)
     }
+
+    /** Wider than [KvizicApi.Limits.MAX_QUESTION_TEXT_LENGTH], so the limit can rise this far with no migration. */
+    const val TEXT_COLUMN = 200
 }
 
 /** A question's 2 to 4 answers, by slot, from 0: never a fixed number of columns. */
 object QuestionOptions : Table("question_options") {
     val questionId = varchar("question_id", 36).references(Questions.id, onDelete = ReferenceOption.CASCADE)
     val slot = integer("slot")
-    val text = varchar("text", KvizicApi.Limits.MAX_OPTION_LENGTH)
+    val text = varchar("text", TEXT_COLUMN)
 
     override val primaryKey = PrimaryKey(questionId, slot)
+
+    /** Wider than [KvizicApi.Limits.MAX_OPTION_LENGTH], so the limit can rise this far with no migration. */
+    const val TEXT_COLUMN = 80
 }
 
 object QuestionTopics : Table("question_topics") {
