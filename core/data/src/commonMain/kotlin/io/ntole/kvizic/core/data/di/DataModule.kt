@@ -2,6 +2,8 @@ package io.ntole.kvizic.core.data.di
 
 import io.ktor.client.HttpClient
 import io.ntole.kvizic.core.data.account.DefaultAccountRepository
+import io.ntole.kvizic.core.data.lobby.DefaultLobbySession
+import io.ntole.kvizic.core.data.lobby.DefaultPublicLobbyRepository
 import io.ntole.kvizic.core.data.player.DefaultPlayerRepository
 import io.ntole.kvizic.core.data.playgames.DefaultPlayGamesRepository
 import io.ntole.kvizic.core.data.session.DefaultSessionRepository
@@ -10,6 +12,8 @@ import io.ntole.kvizic.core.data.topic.DefaultTopicRepository
 import io.ntole.kvizic.core.domain.account.AccountRepository
 import io.ntole.kvizic.core.domain.account.DeleteAccount
 import io.ntole.kvizic.core.domain.analytics.Analytics
+import io.ntole.kvizic.core.domain.lobby.LobbySession
+import io.ntole.kvizic.core.domain.lobby.PublicLobbyRepository
 import io.ntole.kvizic.core.domain.player.GetProfile
 import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.SetAvatar
@@ -29,9 +33,15 @@ import io.ntole.kvizic.core.network.UpgradeSignal
 import io.ntole.kvizic.core.network.analytics.PostHogAnalytics
 import io.ntole.kvizic.core.network.analytics.PostHogConfig
 import io.ntole.kvizic.core.network.api.AuthApi
+import io.ntole.kvizic.core.network.api.LobbyApi
 import io.ntole.kvizic.core.network.api.PlayerApi
 import io.ntole.kvizic.core.network.api.TopicApi
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
+import io.ntole.kvizic.core.network.realtime.KtorPlayTransport
+import io.ntole.kvizic.core.network.realtime.PlayTransport
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -100,14 +110,27 @@ public fun platformDataModule(
 
 /**
  * The game's own repositories over the platform's client and session, which [platformDataModule] binds:
- * the player's profile and the topics.
+ * the player's profile, the topics, and the lobbies with their realtime socket, which goes to
+ * [environment]'s API host and names [build] in its hello.
+ *
+ * The lobby session lives as long as the app, in [appScope]: a lobby outlasts every screen.
  */
-public fun gameDataModule(): Module =
+public fun gameDataModule(
+    environment: KvizicEnvironment,
+    build: ClientBuild?,
+    appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+): Module =
     module {
         single { TopicApi(get()) }
+        single { LobbyApi(get()) }
+        single<PlayTransport> { KtorPlayTransport(environment.apiBaseUrl, build) }
 
         single<PlayerRepository> { DefaultPlayerRepository(api = get(), session = get()) }
         single<TopicRepository> { DefaultTopicRepository(api = get()) }
+        single<PublicLobbyRepository> { DefaultPublicLobbyRepository(api = get(), session = get()) }
+        single<LobbySession> {
+            DefaultLobbySession(api = get(), transport = get(), session = get(), scope = appScope, upgrade = get())
+        }
 
         factory { GetProfile(players = get(), session = get()) }
         factory { SetAvatar(players = get(), session = get()) }

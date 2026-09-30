@@ -1,18 +1,22 @@
 package io.ntole.kvizic.core.data
 
 import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.auth.PlayGamesSignInRequest
 import io.ntole.kvizic.core.auth.RefreshRequest
 import io.ntole.kvizic.core.auth.SessionDto
 import io.ntole.kvizic.core.error.ErrorCode
+import io.ntole.kvizic.core.lobby.LobbyListDto
+import io.ntole.kvizic.core.lobby.TicketDto
 import io.ntole.kvizic.core.network.KvizicJson
 import io.ntole.kvizic.core.player.Avatars
 import io.ntole.kvizic.core.player.NameSource
@@ -21,6 +25,7 @@ import io.ntole.kvizic.core.player.ProfileDto
 import io.ntole.kvizic.core.player.SetAvatarRequest
 import io.ntole.kvizic.core.topic.TopicDto
 import io.ntole.kvizic.core.topic.TopicListDto
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -92,7 +97,28 @@ internal class FakeServer {
     /** The `Authorization` header of every read of the topics, in arrival order. */
     val topicsSentAs = mutableListOf<String?>()
 
+    /** The lobby every create, Quick play and solo run seats in, by its code. */
+    var lobbyCode: String = "482915"
+
+    /** How many tickets went out, and to whom, by the `Authorization` header. */
+    val ticketsSentTo = mutableListOf<String?>()
+
+    /** When set, every lobby join is refused with this status and code. */
+    var refuseJoinsWith: Pair<HttpStatusCode, ErrorCode>? = null
+
+    /** What a read of the public lobbies answers. */
+    var publicLobbies: LobbyListDto = LobbyListDto()
+
     val engine = MockEngine { request -> lock.withLock { handle(request) } }
+
+    /** The same server on [dispatcher]: a test's own, so its calls run on the test's virtual clock. */
+    fun engineOn(dispatcher: CoroutineDispatcher): MockEngine =
+        MockEngine(
+            MockEngineConfig().apply {
+                this.dispatcher = dispatcher
+                addHandler { request -> lock.withLock { handle(request) } }
+            },
+        )
 
     private suspend fun MockRequestHandleScope.handle(request: HttpRequestData): HttpResponseData =
         when (request.url.encodedPath) {
@@ -161,10 +187,50 @@ internal class FakeServer {
                 }
             }
 
+            KvizicApi.Paths.LOBBIES -> {
+                if (request.method == HttpMethod.Get) {
+                    if (request.headers[HttpHeaders.Authorization].player() in players) {
+                        respondJson(KvizicJson.encodeToString(publicLobbies))
+                    } else {
+                        respondErrorDto(HttpStatusCode.Unauthorized, ErrorCode.UNAUTHORIZED)
+                    }
+                } else {
+                    ticket(request)
+                }
+            }
+
+            KvizicApi.Paths.QUICK_PLAY, KvizicApi.Paths.SOLO_RUNS -> {
+                ticket(request)
+            }
+
+            KvizicApi.Paths.LOBBY_JOINS -> {
+                val refusal = refuseJoinsWith
+                if (refusal != null) respondErrorDto(refusal.first, refusal.second) else ticket(request)
+            }
+
             else -> {
                 error("FakeServer has no route for ${request.url}")
             }
         }
+
+    /** A ticket for [lobbyCode], `ticket-<n>`, to a player it knows. */
+    private fun MockRequestHandleScope.ticket(request: HttpRequestData): HttpResponseData {
+        val authorization = request.headers[HttpHeaders.Authorization]
+        if (authorization.player() !in
+            players
+        ) {
+            return respondErrorDto(HttpStatusCode.Unauthorized, ErrorCode.UNAUTHORIZED)
+        }
+        ticketsSentTo += authorization
+        val ticket =
+            TicketDto(
+                lobbyId = "lobby-$lobbyCode",
+                code = lobbyCode,
+                ticket = "ticket-${ticketsSentTo.size}",
+                ticketExpiresInMs = 30_000,
+            )
+        return respondJson(KvizicJson.encodeToString(ticket))
+    }
 
     private suspend fun MockRequestHandleScope.refresh(request: HttpRequestData): HttpResponseData {
         refreshesSent++

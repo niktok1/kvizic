@@ -90,6 +90,6 @@ internal fun appModules(
             single { version }
         },
         platformDataModule(environment, analytics, ClientBuild.of(version.number), playGames = device.playGames),
-        gameDataModule(),
+        gameDataModule(environment, ClientBuild.of(version.number)),
         uiModule,
     )

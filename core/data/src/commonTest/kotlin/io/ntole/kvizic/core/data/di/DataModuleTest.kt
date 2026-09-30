@@ -184,7 +184,7 @@ class DataModuleTest {
             modules(
                 module { single<TokenStorage> { storage } },
                 platformDataModule(environment, analytics = null, build = build),
-                gameDataModule(),
+                gameDataModule(environment, build),
             )
         }.koin
 
