@@ -99,10 +99,11 @@ internal val NotebookType =
         logo = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 64.sp, 64.sp),
         hero = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 40.sp, 42.sp),
         headline = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 32.sp, 34.sp),
-        questionReading = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 38.sp, 40.sp),
-        question = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 29.sp, 31.sp),
+        questionReading = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 38.sp, 1.05.em),
+        question = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 29.sp, 1.07.em),
+        questionMin = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 17.sp, 1.12.em),
         answer = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 32.sp, 1.06.em),
-        answerMin = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 16.sp, 1.1.em),
+        answerMin = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 14.sp, 1.1.em),
         letter = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 24.sp, 24.sp),
         button = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 24.sp, 26.sp, 0.01.em),
         buttonSmall = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 20.sp, 22.sp),
@@ -121,7 +122,7 @@ internal val NotebookType =
 internal val NotebookSpace =
     BuzzersSpace.copy(
         stroke = 2.2.dp,
-        tile = BuzzersSpace.tile.copy(padding = 15.dp),
+        tile = BuzzersSpace.tile.copy(padding = 15.dp, rowPaddingVertical = 5.dp),
         timer = BuzzersSpace.timer.copy(bulbs = 12),
     )
 

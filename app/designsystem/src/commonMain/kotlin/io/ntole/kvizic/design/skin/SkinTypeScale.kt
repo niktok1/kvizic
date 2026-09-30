@@ -39,9 +39,13 @@ data class SkinTypeScale(
     /** The hero button's word: Брза игра. */
     val hero: TypeSpec,
     val headline: TypeSpec,
-    /** A question while it is read alone, and once the answers are up under it. */
+    /**
+     * A question while it is read alone, and once the answers are up under it, each as large as it fits,
+     * and the least either shrinks to: a long question is set smaller, never cut, down to [questionMin].
+     */
     val questionReading: TypeSpec,
     val question: TypeSpec,
+    val questionMin: TypeSpec,
     /** An answer on its tile, as large as it fits, and the least it shrinks to. */
     val answer: TypeSpec,
     val answerMin: TypeSpec,
@@ -84,6 +88,7 @@ data class SkinType(
     val headline: SkinTextStyle,
     val questionReading: SkinTextStyle,
     val question: SkinTextStyle,
+    val questionMin: SkinTextStyle,
     val answer: SkinTextStyle,
     val answerMin: SkinTextStyle,
     val letter: SkinTextStyle,
@@ -141,6 +146,7 @@ data class SkinType(
                 headline = resolve(scale.headline),
                 questionReading = resolve(scale.questionReading),
                 question = resolve(scale.question),
+                questionMin = resolve(scale.questionMin),
                 answer = resolve(scale.answer),
                 answerMin = resolve(scale.answerMin),
                 letter = resolve(scale.letter),

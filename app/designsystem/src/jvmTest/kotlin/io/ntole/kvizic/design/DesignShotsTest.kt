@@ -56,6 +56,9 @@ class DesignShotsTest {
         val SHOTS =
             listOf(
                 Shot("buzzers-01-home", buzzers) { HomeMock() },
+                Shot("buzzers-10-long-reading", buzzers) { ReadingMock(LONG_QUESTION) },
+                Shot("buzzers-11-long-answering", buzzers) { AnsweringMock(LONG_QUESTION, LONG_ANSWERS) },
+                Shot("notebook-11-long-answering", notebook) { AnsweringMock(LONG_QUESTION, LONG_ANSWERS) },
                 // Mid-way through a reaction's burst over a seat.
                 Shot("buzzers-02-lobby", buzzers, atMillis = 420) { LobbyMock() },
                 // The lights three quarters up as the question is read.

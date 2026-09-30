@@ -36,6 +36,7 @@ import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.component.Podium
 import io.ntole.kvizic.design.component.PodiumPlace
+import io.ntole.kvizic.design.component.QuestionText
 import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ReactionBurst
 import io.ntole.kvizic.design.component.StageButton
@@ -71,6 +72,17 @@ internal val Room = listOf(Nina, Sova, Marko, Bojan, Roda)
 
 internal const val QUESTION = "Која река протиче кроз Нови Сад?"
 internal val RIVERS = listOf("Дунав", "Сава", "Тиса", "Морава")
+
+/** A long question and long answers, as the rules allow them: set smaller, never cut. */
+internal const val LONG_QUESTION =
+    "Која река, дуга више од 2.800 километара, протиче кроз четири престонице: Беч, Братиславу, Будимпешту и Београд?"
+internal val LONG_ANSWERS =
+    listOf(
+        "Дунав, друга по дужини река у Европи",
+        "Рајна, која извире у Алпима и улива се у море код Ротердама",
+        "Дњепар, који извире у Русији и тече кроз Кијев до Црног мора",
+        "Волга, најдужа река у Европи, улива се у Каспијско језеро",
+    )
 
 // 1. Home: the quick game first, the rest under it, solo last and small.
 @Composable
@@ -273,7 +285,7 @@ private fun Seat(
 
 // 3. The question read alone: no answers yet, the lights coming up round the clock.
 @Composable
-internal fun ReadingMock() {
+internal fun ReadingMock(question: String = QUESTION) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
@@ -287,7 +299,7 @@ internal fun ReadingMock() {
         )
         Spacer(Modifier.height(space.xl))
         Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.xl) {
-            KvizicText(QUESTION, Modifier.fillMaxWidth(), style = type.questionReading, textAlign = TextAlign.Center)
+            QuestionText(question, Modifier.fillMaxWidth(), reading = true)
         }
         Spacer(Modifier.height(space.xl))
         // Where the answers will stand, so nothing moves when they come.
@@ -311,21 +323,29 @@ internal fun ReadingMock() {
 
 // 4. Answering: four buzzers under the question, the clock running, who has answered.
 @Composable
-internal fun AnsweringMock() {
+internal fun AnsweringMock(
+    question: String = QUESTION,
+    options: List<String> = RIVERS,
+) {
     QuestionScreen(
-        options = RIVERS,
+        options = options,
         timer = TimerPhase.Running(totalMillis = 15_000, leftMillis = 11_300),
-        states = RIVERS.map { AnswerTileState.IDLE },
+        states = options.map { AnswerTileState.IDLE },
         answered = listOf(Sova, Marko, Bojan),
+        question = question,
     )
 }
 
 // 5. Locked in: the player's buzzer down and lit, the others dark, and everyone's picks on them.
 @Composable
-internal fun LockedInMock() {
-    val picks = mapOf(0 to listOf(Nina, Marko), 1 to listOf(Sova), 2 to listOf(Bojan))
+internal fun LockedInMock(
+    question: String = QUESTION,
+    options: List<String> = RIVERS,
+    picks: Map<Int, List<Member>> = mapOf(0 to listOf(Nina, Marko), 1 to listOf(Sova), 2 to listOf(Bojan)),
+) {
     QuestionScreen(
-        options = RIVERS,
+        question = question,
+        options = options,
         timer = TimerPhase.Running(totalMillis = 15_000, leftMillis = 7_300),
         states =
             listOf(
@@ -341,7 +361,10 @@ internal fun LockedInMock() {
 
 // 6. The reveal: the right buzzer lit, who got it first, and the points won and lost.
 @Composable
-internal fun RevealMock() {
+internal fun RevealMock(
+    question: String = QUESTION,
+    options: List<String> = RIVERS,
+) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
@@ -349,11 +372,11 @@ internal fun RevealMock() {
         RoundBar(round = 3, topic = "Географија", score = 1328)
         Spacer(Modifier.height(space.md))
         Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
-            KvizicText(QUESTION, Modifier.fillMaxWidth(), style = type.question, textAlign = TextAlign.Center)
+            QuestionText(question, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(space.md))
         AnswerGrid(
-            options = RIVERS,
+            options = options,
             modifier = Modifier.weight(1f),
             states =
                 listOf(
@@ -491,17 +514,10 @@ private fun QuestionScreen(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     Screen {
-        RoundBar(round = round, topic = topic, score = score)
+        RoundBar(round = round, topic = topic, score = score, timer = timer)
         Spacer(Modifier.height(space.md))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(space.md)) {
-            QuestionTimer(
-                timer,
-                size = TimerSize.SMALL,
-                contentDescription = "${timer.totalMillis / 1_000} секунди за одговор",
-            )
-            Panel(Modifier.weight(1f), kind = PanelKind.SCREEN, padding = space.lg) {
-                KvizicText(question, Modifier.fillMaxWidth(), style = type.question)
-            }
+        Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
+            QuestionText(question, Modifier.fillMaxWidth())
         }
         Spacer(Modifier.height(space.lg))
         AnswerGrid(
@@ -535,6 +551,7 @@ private fun RoundBar(
     round: Int,
     topic: String,
     score: Int,
+    timer: TimerPhase? = null,
 ) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -549,7 +566,16 @@ private fun RoundBar(
             Spacer(Modifier.height(space.xs))
             Chip(topic)
         }
-        Column(horizontalAlignment = Alignment.End) {
+        // While the answers are up, the clock stands in the middle of the bar, where it leaves the
+        // question the whole width under it.
+        if (timer != null) {
+            QuestionTimer(
+                timer,
+                size = TimerSize.SMALL,
+                contentDescription = "${timer.totalMillis / 1_000} секунди за одговор",
+            )
+        }
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
             KvizicText("Поени", style = type.label, color = colors.onPageMuted)
             Spacer(Modifier.height(space.xs))
             FlipNumber(score, size = FlapSize.MEDIUM)

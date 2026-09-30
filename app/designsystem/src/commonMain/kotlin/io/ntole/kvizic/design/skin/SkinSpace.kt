@@ -56,9 +56,16 @@ data class TileSizes(
     val tallMinHeight: Dp,
     val gap: Dp,
     val padding: Dp,
+    /** Above and below the answer of a tile across the width, where a long answer's lines need the room. */
+    val rowPaddingVertical: Dp,
     /** The mark a tile's letter stands in, and how far past the tile's corner a result's stamp reaches. */
     val letterMark: Dp,
     val stamp: Dp,
+    /**
+     * The room a tile across the width keeps at its end for those who picked it, three avatars side by
+     * side, kept while nobody has, so their picks showing never move the answer.
+     */
+    val rowPickers: Dp,
 )
 
 @Immutable
