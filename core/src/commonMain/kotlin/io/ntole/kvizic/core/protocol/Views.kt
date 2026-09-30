@@ -42,10 +42,12 @@ public sealed interface PhaseView {
         public val lastResults: ResultsView? = null,
     ) : PhaseView
 
+    /** A game about to start, with the last game's results for whoever still looks at them. */
     @Serializable
     @SerialName("countdown")
     public data class Countdown(
         public val remainingMs: Long,
+        public val lastResults: ResultsView? = null,
     ) : PhaseView
 
     @Serializable

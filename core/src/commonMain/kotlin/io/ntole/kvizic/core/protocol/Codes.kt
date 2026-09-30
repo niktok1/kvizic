@@ -64,6 +64,12 @@ public enum class LeaveReason {
 public enum class AbortReason {
     /** The bank had no question for the settings. */
     NO_QUESTIONS,
+
+    /** Nobody was left in the lobby to play when the countdown ended. */
+    NO_PLAYERS,
+
+    /** The server is restarting. */
+    SERVER_RESTARTING,
     UNKNOWN,
 }
 
