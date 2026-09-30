@@ -47,4 +47,7 @@ val serverOnly =
 if (!serverOnly) {
     // The client modules, each included once its directory exists: dependencies point inward, and
     // :core:domain depends on nothing.
+    include(":core:domain")
+    include(":core:network")
+    include(":core:data")
 }
