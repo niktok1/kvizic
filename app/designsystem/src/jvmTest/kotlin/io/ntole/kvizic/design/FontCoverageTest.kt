@@ -5,6 +5,7 @@ import io.ntole.kvizic.design.font.FaceFile
 import io.ntole.kvizic.design.font.Faces
 import org.jetbrains.skia.Data
 import org.jetbrains.skia.Font
+import org.jetbrains.skia.FontHinting
 import org.jetbrains.skia.FontMgr
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.Surface
@@ -64,8 +65,16 @@ class FontCoverageTest {
         val off =
             Faces.ALL.flatMap { face ->
                 face.files.mapNotNull { file ->
-                    // A figure with no overshoot and no descent, as tall as the lining figures stand.
-                    val bounds = Font(typefaceOf(file), MEASURE_SIZE).measureText(FLAT_FIGURE)
+                    // A figure with no overshoot and no descent, as tall as the lining figures stand, from
+                    // its outline as drawn: unhinted, since Linux's FreeType follows the faces' hinting
+                    // instructions, which move heights by a few pixels, and macOS's CoreText ignores them.
+                    val font =
+                        Font(typefaceOf(file), MEASURE_SIZE).apply {
+                            hinting = FontHinting.NONE
+                            isSubpixel = true
+                            isLinearMetrics = true
+                        }
+                    val bounds = font.measureText(FLAT_FIGURE)
                     val height = (bounds.bottom - bounds.top) / MEASURE_SIZE
                     if (abs(height - face.figureHeight) <= FIGURE_TOLERANCE) {
                         null
