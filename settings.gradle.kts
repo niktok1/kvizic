@@ -51,6 +51,9 @@ if (!serverOnly) {
     include(":core:network")
     include(":core:data")
 
+    // The skin engine and its components, which every screen draws with.
+    include(":app:designsystem")
+
     // The shared Compose UI, and each platform's entry point into it.
     include(":app:shared")
     include(":app:androidApp")

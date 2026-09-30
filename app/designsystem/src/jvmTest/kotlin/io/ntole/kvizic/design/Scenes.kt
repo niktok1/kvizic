@@ -1,0 +1,107 @@
+package io.ntole.kvizic.design
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getAllSemanticsNodes
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.unit.Density
+import io.ntole.kvizic.design.component.Stage
+import io.ntole.kvizic.design.skin.KvizicSkin
+import io.ntole.kvizic.design.skin.Skin
+import org.jetbrains.skia.Image
+import java.io.File
+
+// Drawing the design system off screen, as a phone would, where there is no Compose UI test library.
+
+/** A scene of [width] by [height] pixels at [density], wearing [skin], [content] on its stage. */
+internal fun stageScene(
+    skin: Skin,
+    width: Int,
+    height: Int,
+    density: Float = 1f,
+    content: @Composable () -> Unit,
+): ImageComposeScene =
+    ImageComposeScene(width = width, height = height, density = Density(density)) {
+        KvizicSkin(skin) { Stage(Modifier.fillMaxSize()) { content() } }
+    }
+
+/**
+ * Draws the scene at [nanoTime] until what that frame changed shows. Drawn once, a frame can miss what
+ * the desktop's snapshot manager does meanwhile on a thread of its own; the same frame drawn again
+ * changes nothing else.
+ */
+internal fun ImageComposeScene.renderAt(nanoTime: Long) {
+    repeat(3) {
+        Snapshot.sendApplyNotifications()
+        render(nanoTime).close()
+    }
+}
+
+/** The scene drawn a frame at a time, at 60 a second, up to [nanoTime], and that frame as an image. */
+internal fun ImageComposeScene.renderUpTo(nanoTime: Long): Image {
+    var t = 0L
+    while (t < nanoTime) {
+        renderAt(t)
+        t += FRAME
+    }
+    renderAt(nanoTime)
+    return render(nanoTime)
+}
+
+/** Every node the scene holds, each on its own, from the top down. */
+@OptIn(ExperimentalComposeUiApi::class)
+internal fun ImageComposeScene.everyNode(): List<SemanticsNode> =
+    semanticsOwners
+        .flatMap { owner -> owner.getAllSemanticsNodes(mergingEnabled = false) }
+        .sortedWith(compareBy({ it.positionInRoot.y }, { it.positionInRoot.x }))
+
+/** Every node the scene holds, a button's text and name merged into it, from the top down. */
+@OptIn(ExperimentalComposeUiApi::class)
+internal fun ImageComposeScene.nodes(): List<SemanticsNode> =
+    semanticsOwners
+        .flatMap { owner -> owner.getAllSemanticsNodes(mergingEnabled = true) }
+        .sortedWith(compareBy({ it.positionInRoot.y }, { it.positionInRoot.x }))
+
+internal val SemanticsNode.texts: List<String>
+    get() = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text }
+
+internal val SemanticsNode.descriptions: List<String>
+    get() = config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+
+/** Every pixel of [image], as ARGB, row by row. */
+internal fun pixelsOf(image: Image): IntArray {
+    val map = image.toComposeImageBitmap().toPixelMap()
+    return IntArray(map.width * map.height) { i ->
+        val c = map[i % map.width, i / map.width]
+        (c.alpha * 255).toInt() shl 24 or ((c.red * 255).toInt() shl 16) or ((c.green * 255).toInt() shl 8) or
+            (c.blue * 255).toInt()
+    }
+}
+
+/** Where the PNGs for a person to look at go: the directory `KVIZIC_DESIGN_DIR` names, or none. */
+internal val designDirectory: File? =
+    System
+        .getenv("KVIZIC_DESIGN_DIR")
+        ?.takeIf { it.isNotBlank() }
+        ?.let(::File)
+        ?.also { it.mkdirs() }
+
+/** Writes [image] as [name].png into [designDirectory], when there is one. */
+internal fun writeDesign(
+    name: String,
+    image: Image,
+) {
+    val directory = designDirectory ?: return
+    File(directory, "$name.png").writeBytes(checkNotNull(image.encodeToData()) { "$name encodes to nothing" }.bytes)
+}
+
+internal const val FRAME: Long = 1_000_000_000L / 60
+internal const val MILLI: Long = 1_000_000L
