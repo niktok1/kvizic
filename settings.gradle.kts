@@ -50,4 +50,7 @@ if (!serverOnly) {
     include(":core:domain")
     include(":core:network")
     include(":core:data")
+
+    // The shared Compose UI, and each platform's entry point into it.
+    include(":app:shared")
 }
