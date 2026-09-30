@@ -47,4 +47,7 @@ val serverOnly =
 if (!serverOnly) {
     // The client modules, each included once its directory exists: dependencies point inward, and
     // :core:domain depends on nothing.
+
+    // The skin engine and its components, which every screen draws with.
+    include(":app:designsystem")
 }
