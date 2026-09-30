@@ -1,0 +1,51 @@
+### Secrets: never commit
+local.properties
+.env
+.env.*
+*.env
+*.keystore
+*.jks
+secrets.properties
+
+### The question bank: questions live only in the server's database, never in this public repo, whose
+### history would hand every answer to a cheater. Drafts live in the private kvizic-content repo.
+*.questions.json
+questions/
+kvizic-content/
+
+### Gradle / build
+*.iml
+.kotlin
+.gradle
+**/build/
+!src/**/build/
+captures
+.externalNativeBuild
+.cxx
+
+### IDE
+.idea
+
+### Xcode / iOS
+xcuserdata
+app/iosApp/Configuration/Local.xcconfig
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+### Web
+node_modules/
+
+### OS
+.DS_Store
+
+### Claude Code: per-machine settings and agent worktrees.
+.claude/settings.local.json
+.claude/worktrees/
+
+### Google: app configs and service account keys never go in the repository.
+google-services.json
+*firebase-adminsdk*.json

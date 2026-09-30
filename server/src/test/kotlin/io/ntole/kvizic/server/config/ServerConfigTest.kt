@@ -1,0 +1,457 @@
+package io.ntole.kvizic.server.config
+
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+
+class ServerConfigTest {
+    @Test
+    fun `render style postgres url is translated to jdbc with credentials split out`() {
+        // Render and Heroku hand out postgres:// URLs, which the JDBC driver refuses outright.
+        val parsed =
+            ServerConfig.parseDatabaseUrl(
+                "postgres://wyr_user:s3cret@dpg-abc123-a.frankfurt-postgres.render.com:5432/wyr_db",
+            )
+
+        assertEquals(
+            "jdbc:postgresql://dpg-abc123-a.frankfurt-postgres.render.com:5432/wyr_db",
+            parsed.jdbcUrl,
+        )
+        assertEquals("wyr_user", parsed.user)
+        assertEquals("s3cret", parsed.password)
+    }
+
+    @Test
+    fun `an explicit jdbc url is passed through untouched`() {
+        val parsed = ServerConfig.parseDatabaseUrl("jdbc:postgresql://localhost:5432/wyr")
+
+        assertEquals("jdbc:postgresql://localhost:5432/wyr", parsed.jdbcUrl)
+        assertNull(parsed.user)
+        assertNull(parsed.password)
+    }
+
+    @Test
+    fun `an empty environment yields a runnable but clearly insecure local config`() {
+        val config = ServerConfig.fromEnvironment { null }
+
+        assertEquals(8080, config.port)
+        assertTrue(config.isEphemeralDatabase)
+        assertTrue(config.usesDevJwtSecret)
+        assertTrue(config.allowedWebOrigins.isEmpty())
+        assertNull(config.adminToken, "moderation is off, rather than on with a token anyone could read")
+    }
+
+    @Test
+    fun `the guest retention comes from GUEST_RETENTION_DAYS, unset or blank is 90, and 0 is off`() {
+        mapOf("30" to 30, "1" to 1, " 365 " to 365).forEach { (raw, days) ->
+            assertEquals(
+                days,
+                ServerConfig.fromEnvironment(mapOf("GUEST_RETENTION_DAYS" to raw)::get).guestRetentionDays,
+                raw,
+            )
+        }
+        listOf(null, "", "  ").forEach { unset ->
+            assertEquals(
+                90,
+                ServerConfig.fromEnvironment(mapOf("GUEST_RETENTION_DAYS" to unset)::get).guestRetentionDays,
+                "$unset",
+            )
+        }
+        assertNull(ServerConfig.fromEnvironment(mapOf("GUEST_RETENTION_DAYS" to "0")::get).guestRetentionDays)
+    }
+
+    @Test
+    fun `a guest retention that is no whole number of days fails at boot naming the variable`() {
+        listOf("-1", "ninety", "1.5", "90 days", "90d").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>(raw) {
+                    ServerConfig.fromEnvironment(mapOf("GUEST_RETENTION_DAYS" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "GUEST_RETENTION_DAYS", message = raw)
+        }
+    }
+
+    @Test
+    fun `the admin token comes from ADMIN_TOKEN and a blank one is none`() {
+        val token = "0123456789abcdef".repeat(4)
+
+        assertEquals(token, ServerConfig.fromEnvironment(mapOf("ADMIN_TOKEN" to token)::get).adminToken)
+        listOf("", "   ").forEach { blank ->
+            assertNull(ServerConfig.fromEnvironment(mapOf("ADMIN_TOKEN" to blank)::get).adminToken, "\"$blank\"")
+        }
+    }
+
+    @Test
+    fun `an admin token shorter than the minimum boots but is flagged`() {
+        fun configWith(length: Int) = ServerConfig.fromEnvironment(mapOf("ADMIN_TOKEN" to "x".repeat(length))::get)
+
+        assertTrue(configWith(ServerConfig.MIN_ADMIN_TOKEN_LENGTH - 1).usesShortAdminToken)
+        assertFalse(configWith(ServerConfig.MIN_ADMIN_TOKEN_LENGTH).usesShortAdminToken)
+        assertFalse(ServerConfig.fromEnvironment { null }.usesShortAdminToken, "no token is not a short one")
+    }
+
+    @Test
+    fun `whitespace around an admin token, such as its generator's newline, is trimmed`() {
+        val token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+        listOf("$token\n", " $token ", "\t$token\r\n").forEach { pasted ->
+            assertEquals(token, ServerConfig.fromEnvironment(mapOf("ADMIN_TOKEN" to pasted)::get).adminToken)
+        }
+    }
+
+    @Test
+    fun `an admin token no request header could carry fails at config load without showing it`() {
+        // Configured, it would never match: moderation on in the config and off in effect.
+        val unpresentable =
+            listOf(
+                "inner space-0123456789abcdef0123456789",
+                "tab\t0123456789abcdef0123456789abcdef",
+                "newline\n0123456789abcdef0123456789abcdef",
+                "not-ascii-\u00e9-0123456789abcdef0123456789",
+            )
+
+        unpresentable.forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("ADMIN_TOKEN" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "ADMIN_TOKEN")
+            assertFalse(raw.trim() in failure.message.orEmpty(), "the message must not give the secret away")
+        }
+    }
+
+    @Test
+    fun `Play Games sign-in needs both its client id and secret and neither is ever in a message`() {
+        val both =
+            ServerConfig.fromEnvironment(
+                mapOf(
+                    "PLAY_GAMES_CLIENT_ID" to " the-id ",
+                    "PLAY_GAMES_CLIENT_SECRET" to " the-secret ",
+                )::get,
+            )
+
+        assertEquals("the-id", both.playGames?.clientId)
+        assertEquals("the-secret", both.playGames?.clientSecret)
+        assertFalse("the-secret" in both.toString(), "printing the configuration shows no secret")
+        assertEquals(null, ServerConfig.fromEnvironment { null }.playGames)
+        assertEquals(
+            null,
+            ServerConfig
+                .fromEnvironment(
+                    mapOf(
+                        "PLAY_GAMES_CLIENT_ID" to " ",
+                        "PLAY_GAMES_CLIENT_SECRET" to "",
+                    )::get,
+                ).playGames,
+        )
+
+        for ((set, missing) in listOf(
+            "PLAY_GAMES_CLIENT_ID" to "PLAY_GAMES_CLIENT_SECRET",
+            "PLAY_GAMES_CLIENT_SECRET" to "PLAY_GAMES_CLIENT_ID",
+        )) {
+            val failure =
+                assertFailsWith<IllegalArgumentException> {
+                    ServerConfig.fromEnvironment(mapOf(set to "half-of-it")::get)
+                }
+
+            assertContains(failure.message.orEmpty(), "$missing is not")
+            assertFalse("half-of-it" in failure.message.orEmpty(), "the message gives neither value away")
+        }
+    }
+
+    @Test
+    fun `the rate limits default to their budgets`() {
+        val limits = ServerConfig.fromEnvironment { null }.rateLimits
+
+        assertEquals(RequestBudget(60, 1.hours), limits.guests)
+        assertEquals(RequestBudget(30, 1.minutes), limits.refreshes)
+        assertEquals(RequestBudget(20, 1.minutes), limits.playGames)
+        assertEquals(RequestBudget(30, 1.minutes), limits.logouts)
+        assertEquals(RequestBudget(10, 1.hours), limits.deletions)
+        assertEquals(RequestBudget(120, 1.minutes), limits.me)
+        assertEquals(RequestBudget(20, 1.hours), limits.avatars)
+        assertEquals(RequestBudget(60, 1.minutes), limits.topics)
+        assertEquals(RequestBudget(30, 1.minutes), limits.lobbyList)
+        assertEquals(RequestBudget(30, 1.hours), limits.lobbyCreates)
+        assertEquals(RequestBudget(30, 1.minutes), limits.lobbyJoins)
+        assertEquals(RequestBudget(10, 1.minutes), limits.lobbyCodeFailures)
+        assertEquals(RequestBudget(20, 1.minutes), limits.quickPlay)
+        assertEquals(RequestBudget(30, 1.hours), limits.soloRuns)
+        assertEquals(RequestBudget(30, 1.hours), limits.reports)
+        assertEquals(RequestBudget(30, 1.minutes), limits.socketUpgrades)
+        assertEquals(RequestBudget(60, 1.minutes), limits.admin)
+        assertEquals(RequestBudget(10, 1.minutes), limits.adminTokenFailures)
+    }
+
+    @Test
+    fun `each rate limit variable sets its own budget's count, per the period its name ends in`() {
+        val variables =
+            listOf(
+                Triple("RATE_LIMIT_GUESTS_PER_HOUR", RateLimits::guests, 1.hours),
+                Triple("RATE_LIMIT_REFRESHES_PER_MINUTE", RateLimits::refreshes, 1.minutes),
+                Triple("RATE_LIMIT_PLAY_GAMES_PER_MINUTE", RateLimits::playGames, 1.minutes),
+                Triple("RATE_LIMIT_LOGOUTS_PER_MINUTE", RateLimits::logouts, 1.minutes),
+                Triple("RATE_LIMIT_DELETIONS_PER_HOUR", RateLimits::deletions, 1.hours),
+                Triple("RATE_LIMIT_ME_PER_MINUTE", RateLimits::me, 1.minutes),
+                Triple("RATE_LIMIT_AVATARS_PER_HOUR", RateLimits::avatars, 1.hours),
+                Triple("RATE_LIMIT_TOPICS_PER_MINUTE", RateLimits::topics, 1.minutes),
+                Triple("RATE_LIMIT_LOBBY_LIST_PER_MINUTE", RateLimits::lobbyList, 1.minutes),
+                Triple("RATE_LIMIT_LOBBY_CREATES_PER_HOUR", RateLimits::lobbyCreates, 1.hours),
+                Triple("RATE_LIMIT_LOBBY_JOINS_PER_MINUTE", RateLimits::lobbyJoins, 1.minutes),
+                Triple("RATE_LIMIT_LOBBY_CODE_FAILURES_PER_MINUTE", RateLimits::lobbyCodeFailures, 1.minutes),
+                Triple("RATE_LIMIT_QUICK_PLAY_PER_MINUTE", RateLimits::quickPlay, 1.minutes),
+                Triple("RATE_LIMIT_SOLO_RUNS_PER_HOUR", RateLimits::soloRuns, 1.hours),
+                Triple("RATE_LIMIT_REPORTS_PER_HOUR", RateLimits::reports, 1.hours),
+                Triple("RATE_LIMIT_SOCKET_UPGRADES_PER_MINUTE", RateLimits::socketUpgrades, 1.minutes),
+                Triple("RATE_LIMIT_ADMIN_PER_MINUTE", RateLimits::admin, 1.minutes),
+                Triple("RATE_LIMIT_ADMIN_TOKEN_FAILURES_PER_MINUTE", RateLimits::adminTokenFailures, 1.minutes),
+            )
+
+        variables.forEachIndexed { index, (variable, budgetOf, period) ->
+            val count = 1_000 + index
+            val limits = ServerConfig.fromEnvironment(mapOf(variable to " $count ")::get).rateLimits
+            assertEquals(RequestBudget(count, period), budgetOf(limits), variable)
+            variables.filter { it.first != variable }.forEach { (other, otherOf, _) ->
+                assertEquals(otherOf(RateLimits.DEFAULT), otherOf(limits), "$variable left $other alone")
+            }
+        }
+    }
+
+    @Test
+    fun `a seed file is taken only beside the in-memory database`() {
+        assertEquals(null, ServerConfig.fromEnvironment { null }.questionSeedFile)
+        assertEquals(
+            "/etc/secrets/questions.json",
+            ServerConfig
+                .fromEnvironment(mapOf("QUESTION_SEED_FILE" to " /etc/secrets/questions.json ")::get)
+                .questionSeedFile,
+        )
+        val refusal =
+            assertFailsWith<IllegalArgumentException> {
+                ServerConfig.fromEnvironment(
+                    mapOf("QUESTION_SEED_FILE" to "q.json", "DATABASE_URL" to "postgres://u:p@h:5432/d")::get,
+                )
+            }
+        assertContains(refusal.message.orEmpty(), "QUESTION_SEED_FILE")
+    }
+
+    @Test
+    fun `the drain comes from DRAIN_SECONDS, 0 to 300, and anything else fails at boot`() {
+        assertEquals(ServerConfig.DEFAULT_DRAIN_SECONDS, ServerConfig.fromEnvironment { null }.drainSeconds)
+        assertEquals(0, ServerConfig.fromEnvironment(mapOf("DRAIN_SECONDS" to "0")::get).drainSeconds)
+        assertEquals(300, ServerConfig.fromEnvironment(mapOf("DRAIN_SECONDS" to " 300 ")::get).drainSeconds)
+        listOf("-1", "301", "soon").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException> {
+                    ServerConfig.fromEnvironment(mapOf("DRAIN_SECONDS" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "DRAIN_SECONDS", message = raw)
+        }
+    }
+
+    @Test
+    fun `a rate limit that is not a whole number of at least 1 fails at config load and names its variable`() {
+        listOf("0", "-3", "abc", "1.5", "10/min", "2147483648").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("RATE_LIMIT_ME_PER_MINUTE" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "RATE_LIMIT_ME_PER_MINUTE")
+        }
+        listOf("", "   ").forEach { blank ->
+            val limits = ServerConfig.fromEnvironment(mapOf("RATE_LIMIT_ME_PER_MINUTE" to blank)::get).rateLimits
+            assertEquals(RateLimits.DEFAULT, limits, "blank is unset: \"$blank\"")
+        }
+    }
+
+    @Test
+    fun `each platform's minimum build comes from its variable and none is set by default`() {
+        assertEquals(emptyMap(), ServerConfig.fromEnvironment { null }.minClientVersions)
+
+        val env =
+            mapOf(
+                "MIN_CLIENT_VERSION_ANDROID" to "12",
+                "MIN_CLIENT_VERSION_IOS" to " 3 ",
+                "MIN_CLIENT_VERSION_WEB" to "",
+                "MIN_CLIENT_VERSION_DESKTOP" to "1",
+            )
+        assertEquals(
+            mapOf("android" to 12, "ios" to 3, "desktop" to 1),
+            ServerConfig.fromEnvironment(env::get).minClientVersions,
+            "blank is unset",
+        )
+    }
+
+    @Test
+    fun `a minimum build that is not a whole number of at least 1 fails at config load and names its variable`() {
+        listOf("0", "-1", "abc", "1.5", "2147483648").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("MIN_CLIENT_VERSION_IOS" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "MIN_CLIENT_VERSION_IOS")
+        }
+    }
+
+    /**
+     * No time bound unless one is set, so a refresh whose answer was lost can be sent
+     * again however much later the player is back; 600, as the grace was at first, is one variable away.
+     */
+    @Test
+    fun `the refresh grace has no time bound unless REFRESH_GRACE_SECONDS sets one, 0 turning it off`() {
+        assertNull(ServerConfig.fromEnvironment { null }.refreshGraceSeconds)
+        mapOf("600" to 600L, " 30 " to 30L, "0" to 0L, "" to null, "  " to null).forEach { (raw, seconds) ->
+            assertEquals(
+                seconds,
+                ServerConfig.fromEnvironment(mapOf("REFRESH_GRACE_SECONDS" to raw)::get).refreshGraceSeconds,
+                "\"$raw\"",
+            )
+        }
+    }
+
+    @Test
+    fun `a REFRESH_GRACE_SECONDS that is not a whole number of seconds up to a year fails at config load`() {
+        listOf("-1", "abc", "1.5", "10m", "O", "31536001").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("REFRESH_GRACE_SECONDS" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "REFRESH_GRACE_SECONDS")
+        }
+        assertEquals(31_536_000L, ServerConfig.parseRefreshGraceSeconds("31536000"), "a year is the most")
+    }
+
+    @Test
+    fun `no header names the client's address unless CLIENT_IP_HEADER does`() {
+        assertNull(ServerConfig.fromEnvironment { null }.clientIpHeader)
+        mapOf(
+            "CF-Connecting-IP" to "CF-Connecting-IP",
+            " True-Client-IP " to "True-Client-IP",
+            "" to null,
+            "  " to null,
+        ).forEach { (raw, header) ->
+            assertEquals(
+                header,
+                ServerConfig.fromEnvironment(mapOf("CLIENT_IP_HEADER" to raw)::get).clientIpHeader,
+                raw,
+            )
+        }
+    }
+
+    @Test
+    fun `a CLIENT_IP_HEADER that is no header name, or one proxies append to, fails at config load and names it`() {
+        listOf("CF Connecting IP", "CF-Connecting-IP:", "CF-Connecting-IP, X-Real-IP", "Réal-IP").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("CLIENT_IP_HEADER" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "CLIENT_IP_HEADER")
+        }
+        // Each proxy appends to these, so their first entry is whatever the client wrote.
+        listOf("X-Forwarded-For", "x-forwarded-for", "Forwarded").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("CLIENT_IP_HEADER" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "appends to")
+        }
+    }
+
+    @Test
+    fun `Render is recognised by the RENDER variable it sets to true`() {
+        assertTrue(ServerConfig.fromEnvironment(mapOf("RENDER" to "true")::get).onRender)
+        assertFalse(ServerConfig.fromEnvironment { null }.onRender)
+        assertFalse(ServerConfig.fromEnvironment(mapOf("RENDER" to "false")::get).onRender)
+    }
+
+    @Test
+    fun `environment values win over defaults`() {
+        val env =
+            mapOf(
+                "PORT" to "9999",
+                "JWT_SECRET" to "real-secret",
+                "DATABASE_URL" to "postgres://u:p@db.example.com/wyr",
+                "ALLOWED_WEB_ORIGINS" to "wyr.example.com, localhost:8080",
+            )
+
+        val config = ServerConfig.fromEnvironment(env::get)
+
+        assertEquals(9999, config.port)
+        assertFalse(config.usesDevJwtSecret)
+        assertFalse(config.isEphemeralDatabase)
+        assertEquals(
+            listOf(WebOrigin("wyr.example.com", scheme = null), WebOrigin("localhost:8080", scheme = null)),
+            config.allowedWebOrigins,
+        )
+    }
+
+    @Test
+    fun `a web origin written with its scheme is split into host and scheme`() {
+        // The form an operator copies out of a browser; Ktor's allowHost refuses it unsplit.
+        val config =
+            ServerConfig.fromEnvironment(
+                mapOf("ALLOWED_WEB_ORIGINS" to "https://app.example.com, http://localhost:8080")::get,
+            )
+
+        assertEquals(
+            listOf(WebOrigin("app.example.com", scheme = "https"), WebOrigin("localhost:8080", scheme = "http")),
+            config.allowedWebOrigins,
+        )
+    }
+
+    @Test
+    fun `a leading wildcard label and a bare star are the wildcards accepted`() {
+        val config =
+            ServerConfig.fromEnvironment(
+                mapOf("ALLOWED_WEB_ORIGINS" to "*.example.com, https://*.example.com:8443, *")::get,
+            )
+
+        assertEquals(
+            listOf(
+                WebOrigin("*.example.com", scheme = null),
+                WebOrigin("*.example.com:8443", scheme = "https"),
+                WebOrigin("*", scheme = null),
+            ),
+            config.allowedWebOrigins,
+        )
+    }
+
+    @Test
+    fun `a web origin that is not a bare origin fails at config load and names the entry`() {
+        val malformed =
+            listOf(
+                "https://app.example.com/play",
+                "https://app.example.com/",
+                "https://",
+                ":8080",
+                "ftp://app.example.com",
+                "app.example.com:http",
+                "app.example.com:99999",
+                "user@app.example.com",
+                // Ktor drops the scheme for a bare *, so these would open CORS to every origin.
+                "https://*",
+                "http://*",
+                // Wildcards Ktor's CORS plugin refuses, which would otherwise crash the boot
+                // later without naming the entry.
+                "*:8080",
+                "app.*.example.com",
+                "*.*.example.com",
+                "https://*.",
+            )
+
+        malformed.forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException>("\"$raw\" should be rejected") {
+                    ServerConfig.fromEnvironment(mapOf("ALLOWED_WEB_ORIGINS" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "\"$raw\"")
+        }
+    }
+}
