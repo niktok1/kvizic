@@ -59,4 +59,7 @@ if (!serverOnly) {
     include(":app:androidApp")
     include(":app:desktopApp")
     include(":app:webApp")
+
+    // Real clients against the real server, through a proxy that can slow or cut them.
+    include(":e2e")
 }

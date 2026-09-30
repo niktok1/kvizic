@@ -335,7 +335,7 @@ class LobbyGameTest {
         }
 
     @Test
-    fun `a player who dropped out does not hold the question up`() =
+    fun `a player who dropped out holds the question up only through the drop grace`() =
         runTest {
             val lobby = LobbyScenario(this)
             val ana = lobby.player("ana").join()
@@ -347,7 +347,9 @@ class LobbyGameTest {
 
             ana.answerRight()
             boris.answerRight()
+            assertTrue(ana.all<ServerMessage.Revealed>().isEmpty(), "she may be back in a moment")
 
+            lobby.wait(lobby.timings.dropGrace + lobby.timings.tick)
             assertEquals(0, ana.last<ServerMessage.Revealed>().reveal.index)
             assertEquals(
                 0,
@@ -357,6 +359,27 @@ class LobbyGameTest {
                     .first { it.player == "ceca" }
                     .points,
             )
+        }
+
+    @Test
+    fun `a player back within the drop grace answers and the question waited for them`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            lobby.startGame(ana)
+            lobby.openAnswers(0)
+            ana.answerRight()
+            boris.drop()
+            lobby.wait(lobby.timings.dropGrace / 2)
+            assertTrue(ana.all<ServerMessage.Revealed>().isEmpty())
+
+            boris.attach()
+            assertNull(boris.answerTo(boris.answerRight()))
+
+            val reveal = ana.last<ServerMessage.Revealed>().reveal
+            assertTrue(reveal.results.first { it.player == "boris" }.points > 0, "his answer counted")
+            lobby.assertInvariants()
         }
 
     @Test

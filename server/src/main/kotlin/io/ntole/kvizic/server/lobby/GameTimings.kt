@@ -41,6 +41,12 @@ data class GameTimings(
     val afkHost: Duration = 3.minutes,
     /** A public lobby's host gone this long hands hosting over; a private host keeps it through their grace. */
     val absentPublicHost: Duration = 30.seconds,
+    /**
+     * How long a player whose socket just closed is still waited for before a question reveals early: a
+     * phone that loses its network for a moment comes back with the answer it tapped. The question's own
+     * clock still bounds it.
+     */
+    val dropGrace: Duration = 3.seconds,
     /** How often a lobby checks its deadlines. */
     val tick: Duration = 1.seconds,
     /** How long a socket has to send its hello. */
@@ -74,6 +80,7 @@ data class GameTimings(
                 answerGrace = 100.milliseconds,
                 questionLoadTimeout = 2.seconds,
                 lobbyGrace = 2.seconds,
+                dropGrace = 2.seconds,
                 ticketTtl = 5.seconds,
                 tick = 50.milliseconds,
                 // Generous, so a loaded machine never trips them: their own tests set them short.

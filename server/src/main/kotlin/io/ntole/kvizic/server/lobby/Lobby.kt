@@ -476,6 +476,8 @@ class Lobby(
             .forEach { remove(it, LeaveReason.TIMED_OUT) }
         if (closed) return
         handOverAbsentHost(at)
+        // A drop's grace may have run out with everyone else answered.
+        revealIfEveryoneAnswered()
         when {
             draining && phase !is Phase.Playing && closeWaitingAt?.let { at >= it } == true -> {
                 close(CloseReason.SERVER_RESTARTING, CloseCodes.SERVER_RESTARTING)
@@ -736,12 +738,23 @@ class Lobby(
         revealIfEveryoneAnswered()
     }
 
-    /** Reveals at once when every connected player of the game has locked in: nobody waits on the clock. */
+    /**
+     * Reveals at once when every player the question still waits for has locked in: every connected
+     * player of the game, and one whose socket closed within [GameTimings.dropGrace], who may be back
+     * with their answer in a moment. Nobody else waits on the clock. [tick] asks again as graces run out.
+     */
     private fun revealIfEveryoneAnswered() {
         val game = (phase as? Phase.Playing)?.game ?: return
         if (game.step != Step.ANSWERING) return
-        val connected = game.players.filter { it !in game.left && members[it]?.connection != null }
-        if (connected.isNotEmpty() && connected.all { it in game.answers }) reveal(game)
+        val at = now()
+        val waitedFor =
+            game.players.filter { player ->
+                val member = members[player]
+                player !in game.left &&
+                    member != null &&
+                    (member.connection != null || member.goneSince?.let { at - it < timings.dropGrace } == true)
+            }
+        if (waitedFor.isNotEmpty() && waitedFor.all { it in game.answers }) reveal(game)
     }
 
     private fun reveal(game: Game) {
