@@ -45,18 +45,6 @@ val serverOnly =
         providers.gradleProperty("kvizic.serverOnly").isPresent
 
 if (!serverOnly) {
-    // Client layers. Dependencies point inward: :core:domain depends on nothing.
-    include(":core:domain")
-    include(":core:network")
-    include(":core:data")
-
-    // The skin engine, then the game's screens, then each platform's entry point.
-    include(":app:designsystem")
-    include(":app:shared")
-    include(":app:androidApp")
-    include(":app:desktopApp")
-    include(":app:webApp")
-
-    // The moderation app, desktop and browser, on the client layers alone.
-    include(":app:adminApp")
+    // The client modules, each included once its directory exists: dependencies point inward, and
+    // :core:domain depends on nothing.
 }

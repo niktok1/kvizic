@@ -13,6 +13,9 @@ secrets.properties
 questions/
 kvizic-content/
 
+### Design review renders, regenerated on demand
+design-review/
+
 ### Gradle / build
 *.iml
 .kotlin
