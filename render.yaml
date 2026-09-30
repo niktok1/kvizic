@@ -83,9 +83,13 @@ services:
     # alongside CI, red or not). The checks are .github/workflows/ci.yml, docker-smoke among them.
     autoDeployTrigger: checksPass
     healthCheckPath: /health
-    maxShutdownDelaySeconds: 300
+    # No maxShutdownDelaySeconds: Render refuses one on a free service, which keeps the default, 30 s.
     envVars:
       # No DATABASE_URL: the server runs on in-memory H2 and says so at boot.
+      # Drains its lobbies within Render's 30 s default, not the 280 s production drains in, which would
+      # be killed partway. Dev's games are tests, so a deploy may cut one short.
+      - key: DRAIN_SECONDS
+        value: "25"
       # Its own secret, so a session from one environment is refused by the other.
       - key: JWT_SECRET
         generateValue: true
