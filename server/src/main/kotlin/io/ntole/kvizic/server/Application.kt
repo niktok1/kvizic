@@ -3,6 +3,7 @@ package io.ntole.kvizic.server
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.cio.CIO
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.log
 import io.ktor.server.engine.embeddedServer
@@ -12,7 +13,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.admin.AdminToken
-import io.ntole.kvizic.server.admin.LiveCounts
 import io.ntole.kvizic.server.admin.accountDeletionRoutes
 import io.ntole.kvizic.server.admin.adminRoutes
 import io.ntole.kvizic.server.admin.overviewRoutes
@@ -24,10 +24,20 @@ import io.ntole.kvizic.server.config.ServerConfig
 import io.ntole.kvizic.server.db.DatabaseFactory
 import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.google.googleHttpClient
+import io.ntole.kvizic.server.lobby.CodeGuessGuard
+import io.ntole.kvizic.server.lobby.LobbyRegistry
+import io.ntole.kvizic.server.lobby.QuestionSource
+import io.ntole.kvizic.server.lobby.ResultSink
+import io.ntole.kvizic.server.lobby.lobbyRoutes
+import io.ntole.kvizic.server.match.ResultWriter
 import io.ntole.kvizic.server.player.GuestCleanupJob
 import io.ntole.kvizic.server.player.playerRoutes
 import io.ntole.kvizic.server.plugins.installPlugins
 import io.ntole.kvizic.server.plugins.installRateLimits
+import io.ntole.kvizic.server.question.DbQuestionSource
+import io.ntole.kvizic.server.realtime.PlaySockets
+import io.ntole.kvizic.server.realtime.playRoutes
+import io.ntole.kvizic.server.topic.TopicCatalog
 import io.ntole.kvizic.server.topic.topicAdminRoutes
 import io.ntole.kvizic.server.topic.topicRoutes
 import kotlinx.coroutines.CoroutineName
@@ -35,8 +45,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 fun main() {
     val config = ServerConfig.fromEnvironment()
@@ -57,6 +69,7 @@ fun main() {
 fun Application.kvizicModule(
     config: ServerConfig,
     googleEngine: () -> HttpClientEngine = { CIO.create() },
+    parts: GameParts = GameParts(),
 ) {
     warnAboutInsecureDefaults(config)
 
@@ -77,6 +90,39 @@ fun Application.kvizicModule(
         engine?.close()
     }
     val playGames = config.playGames?.let { client -> GooglePlayGames(client, checkNotNull(google)) }
+
+    // The lobbies: CPU work only, never the database, on the default dispatcher.
+    val lobbies = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("kvizic-lobbies"))
+    val game = config.game
+    val topics = TopicCatalog(db).also { runBlocking { it.refresh() } }
+    val registry =
+        LobbyRegistry(
+            scope = lobbies,
+            timeSource = TimeSource.Monotonic,
+            timings = game.timings,
+            limits = game.limits,
+            scoring = game.scoring,
+            questions = parts.questions ?: DbQuestionSource(db),
+            results = parts.results ?: ResultWriter(db, background, log),
+            topics = { topics.ids },
+        )
+    registry.start()
+    val sockets = PlaySockets(registry, game.timings, game.limits, config.minClientVersions, watchdog = lobbies)
+    // Render stops an instance with SIGTERM and waits up to its shutdown delay: until then the old
+    // instance keeps its sockets, so the lobbies on it end their games before it goes. Ktor raises this
+    // before it closes a connection, and waits for it.
+    monitor.subscribe(ApplicationStopPreparing) {
+        if (config.drainSeconds == 0) return@subscribe
+        val deadline = TimeSource.Monotonic.markNow() + config.drainSeconds.seconds
+        log.info("draining ${registry.lobbyCount} lobbies for up to ${config.drainSeconds} s")
+        runBlocking {
+            registry.drain(deadline)
+            sockets.awaitClosed(SOCKETS_FLUSH)
+        }
+        log.info("drained; ${registry.lobbyCount} lobbies and ${sockets.open} sockets left")
+    }
+    monitor.subscribe(ApplicationStopped) { lobbies.cancel() }
+    val sessionEnded = { playerId: String, sessionId: String? -> registry.sessionEnded(playerId, sessionId) }
     config.guestRetentionDays?.let { days ->
         GuestCleanupJob(db, days.days, config.refreshTokenTtlSeconds.seconds, background).start()
     }
@@ -87,14 +133,23 @@ fun Application.kvizicModule(
             call.respond(mapOf("status" to "ok"))
         }
 
-        authRoutes(db, tokens, config, sessionEnded = { _, _ -> })
+        authRoutes(db, tokens, config, sessionEnded = { playerId, sessionId -> sessionEnded(playerId, sessionId) })
         playGamesRoutes(db, tokens, config, playGames)
-        playerRoutes(db, playerDeleted = {})
+        playerRoutes(db, playerDeleted = { playerId -> sessionEnded(playerId, null) })
         topicRoutes(db)
+        lobbyRoutes(
+            db = db,
+            registry = registry,
+            guard = CodeGuessGuard(config.rateLimits.lobbyCodeFailures),
+            topics = { topics.ids },
+            ticketTtlMs = game.timings.ticketTtl.inWholeMilliseconds,
+            clientIpHeader = config.clientIpHeader,
+        )
+        playRoutes(sockets, config.clientIpHeader)
         adminRoutes(adminToken) { token ->
-            accountDeletionRoutes(db, token, playerDeleted = {})
-            topicAdminRoutes(db, token)
-            overviewRoutes(db, token, live = { LiveCounts() })
+            accountDeletionRoutes(db, token, playerDeleted = { playerId -> sessionEnded(playerId, null) })
+            topicAdminRoutes(db, token, topics)
+            overviewRoutes(db, token, live = registry::live)
         }
     }
 }
@@ -133,3 +188,12 @@ private fun Application.warnAboutInsecureDefaults(config: ServerConfig) {
         )
     }
 }
+
+/** How long a stop waits, after the drain, for the sockets' last frames to reach the players. */
+private val SOCKETS_FLUSH = 5.seconds
+
+/** What a test puts in place of the game's own parts; null keeps the server's own. */
+class GameParts(
+    val questions: QuestionSource? = null,
+    val results: ResultSink? = null,
+)

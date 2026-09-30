@@ -38,10 +38,14 @@ sealed interface LobbyCommand {
         val rtt: Duration = Duration.ZERO,
     ) : LobbyCommand
 
-    /** Takes [playerId] out of the lobby at once, for a reason outside it: another lobby, a logout. */
+    /**
+     * Takes [playerId] out of the lobby at once, for a reason outside it: another lobby, a logout. With
+     * [sessionId], only while their seat is that session's: a logout on one device leaves the other be.
+     */
     data class Remove(
         val playerId: String,
         val reason: LeaveReason,
+        val sessionId: String? = null,
     ) : LobbyCommand
 
     /** How many are online and searching, for waiting lobbies to show. */

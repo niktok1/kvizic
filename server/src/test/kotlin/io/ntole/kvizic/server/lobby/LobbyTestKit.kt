@@ -58,6 +58,15 @@ internal class LobbyScenario(
         private set
     var soloBestBefore: Int? = null
     var failLoading: Exception? = null
+
+    /** Set, every record the lobby submits fails with it. */
+    var failRecording: Exception? = null
+
+    /** Set, the wall clock fails with it: what [finishGame] reads, so a game's end and the close after both fail. */
+    var failWallClock: Exception? = null
+
+    /** Set, reading the topics fails with it, as a settings change does. */
+    var failTopics: Exception? = null
     val asked = mutableListOf<PickRequest>()
     private var ids = 0
     private var connections = 0L
@@ -81,10 +90,19 @@ internal class LobbyScenario(
                             failLoading?.let { throw it }
                             PickResult(questions.take(request.count), soloBestBefore = soloBestBefore)
                         },
-                    results = { record -> records += record },
-                    knownTopics = { TEST_TOPICS },
+                    results = { record ->
+                        failRecording?.let { throw it }
+                        records += record
+                    },
+                    knownTopics = {
+                        failTopics?.let { throw it }
+                        TEST_TOPICS
+                    },
                     random = Random(seed),
-                    wallClock = { 1_000_000L + test.testScheduler.currentTime },
+                    wallClock = {
+                        failWallClock?.let { throw it }
+                        1_000_000L + test.testScheduler.currentTime
+                    },
                     newId = { "id-${ids++}" },
                     events =
                         object : LobbyEvents {

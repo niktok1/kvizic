@@ -26,13 +26,14 @@ internal fun runTestServer(
     name: String,
     configure: (ServerConfig) -> ServerConfig = { it },
     googleEngine: (() -> HttpClientEngine)? = null,
+    parts: GameParts = GameParts(),
     block: suspend ApplicationTestBuilder.(client: HttpClient, database: TestDatabaseSettings) -> Unit,
 ) = testApplication {
     val database = testDatabaseFor(name)
     val config = configure(testServerConfig(database, adminToken = FLOW_ADMIN_TOKEN))
 
     application {
-        if (googleEngine == null) kvizicModule(config) else kvizicModule(config, googleEngine)
+        if (googleEngine == null) kvizicModule(config, parts = parts) else kvizicModule(config, googleEngine, parts)
     }
 
     val client =

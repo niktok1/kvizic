@@ -32,6 +32,7 @@ internal fun testServerConfig(
         clientIpHeader = null,
         onRender = false,
         guestRetentionDays = null,
-        drainSeconds = 5,
+        // No drain at a test's end: a test of the drain sets its own.
+        drainSeconds = 0,
         game = GameConfig(timings = GameTimings.FAST),
     )

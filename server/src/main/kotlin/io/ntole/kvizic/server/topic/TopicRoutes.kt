@@ -30,12 +30,14 @@ fun Route.topicRoutes(db: Db) {
 fun Route.topicAdminRoutes(
     db: Db,
     adminToken: AdminToken,
+    catalog: TopicCatalog,
 ) {
     post(KvizicApi.Paths.ADMIN_TOPICS) {
         call.requireAdmin(adminToken)
         val request = call.receiveOrReject<CreateTopicRequest>("topic")
         val topic = checkedTopic(request.id, request.nameSr, request.nameEn)
         val created = db.query { TopicStore.create(topic) }
+        catalog.refresh()
         call.logAdmin("added topic", created.id)
         call.respond(HttpStatusCode.Created, created)
     }

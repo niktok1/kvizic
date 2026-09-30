@@ -162,7 +162,7 @@ class Lobby(
                         throw cancelled
                     } catch (failed: Exception) {
                         log.error("lobby $code failed on ${command::class.simpleName}", failed)
-                        close(CloseReason.LOBBY_CLOSED, CloseCodes.INTERNAL)
+                        closeAfterFailure()
                     }
                     publishedSummary.value = summary()
                     if (closed) break
@@ -171,6 +171,8 @@ class Lobby(
                 ticker.cancel()
                 timer?.cancel()
                 inbox.close()
+                // However the loop ended, no socket is left to a lobby that no longer listens.
+                if (!closed) abandon()
                 // Whatever was still queued: a reservation waiting for its answer is told the lobby closed.
                 while (true) {
                     val left = inbox.tryReceive().getOrNull() ?: break
@@ -183,16 +185,47 @@ class Lobby(
 
     private fun handle(command: LobbyCommand) {
         when (command) {
-            is LobbyCommand.Reserve -> reserve(command.seat, command.reply)
-            is LobbyCommand.Attach -> attach(command.connection)
-            is LobbyCommand.Detach -> detach(command.connection)
-            is LobbyCommand.FromClient -> fromClient(command)
-            is LobbyCommand.Remove -> members[command.playerId]?.let { remove(it, command.reason) }
-            is LobbyCommand.Presence -> presence(ServerMessage.Presence(command.online, command.searching))
-            is LobbyCommand.Drain -> drain(command.deadline)
-            LobbyCommand.Tick -> tick()
-            is LobbyCommand.PhaseTimeout -> if (command.epoch == epoch) phaseTimedOut()
-            is LobbyCommand.QuestionsLoaded -> questionsLoaded(command.epoch, command.result)
+            is LobbyCommand.Reserve -> {
+                reserve(command.seat, command.reply)
+            }
+
+            is LobbyCommand.Attach -> {
+                attach(command.connection)
+            }
+
+            is LobbyCommand.Detach -> {
+                detach(command.connection)
+            }
+
+            is LobbyCommand.FromClient -> {
+                fromClient(command)
+            }
+
+            is LobbyCommand.Remove -> {
+                members[command.playerId]
+                    ?.takeIf { command.sessionId == null || it.sessionId == command.sessionId }
+                    ?.let { remove(it, command.reason) }
+            }
+
+            is LobbyCommand.Presence -> {
+                presence(ServerMessage.Presence(command.online, command.searching))
+            }
+
+            is LobbyCommand.Drain -> {
+                drain(command.deadline)
+            }
+
+            LobbyCommand.Tick -> {
+                tick()
+            }
+
+            is LobbyCommand.PhaseTimeout -> {
+                if (command.epoch == epoch) phaseTimedOut()
+            }
+
+            is LobbyCommand.QuestionsLoaded -> {
+                questionsLoaded(command.epoch, command.result)
+            }
         }
     }
 
@@ -216,6 +249,7 @@ class Lobby(
                 }
 
                 existing != null -> {
+                    existing.sessionId = seat.sessionId
                     updateIdentity(existing, seat.name, seat.avatar)
                     if (existing.connection ==
                         null
@@ -233,6 +267,7 @@ class Lobby(
                     val member =
                         Member(
                             playerId = seat.playerId,
+                            sessionId = seat.sessionId,
                             name = seat.name,
                             avatar = seat.avatar,
                             order = nextOrder++,
@@ -263,6 +298,7 @@ class Lobby(
             previous.close(CloseCodes.REPLACED)
         }
         member.connection = connection
+        member.sessionId = connection.sessionId
         member.holdUntil = null
         member.goneSince = null
         member.activeAt = now()
@@ -296,8 +332,12 @@ class Lobby(
     private fun fromClient(command: LobbyCommand.FromClient) {
         val member = members[command.connection.playerId] ?: return
         if (member.connection?.id != command.connection.id) return
-        member.activeAt = now()
-        when (val message = command.message) {
+        val message = command.message
+        // What a client sends by itself, a pong, a resync, is no sign of anyone at the screen.
+        if (message !is ClientMessage.Pong && message != ClientMessage.Resync && message != ClientMessage.Unknown) {
+            member.activeAt = now()
+        }
+        when (message) {
             is ClientMessage.Answer -> answer(member, message, command.receivedAt, command.rtt)
             is ClientMessage.React -> react(member, message.reaction)
             is ClientMessage.UpdateSettings -> updateSettings(member, message.id, message.settings)
@@ -531,9 +571,7 @@ class Lobby(
 
     private fun phaseTimedOut() {
         when (val current = phase) {
-            is Phase.Waiting -> {
-                Unit
-            }
+            is Phase.Waiting -> {}
 
             is Phase.Countdown -> {
                 val loaded = current.loaded
@@ -823,7 +861,7 @@ class Lobby(
             }
         val results = ResultsView(game.id, game.questions.size, standings, endedEarly, personalBest)
 
-        env.results.submit(
+        val record =
             GameRecord(
                 gameId = game.id,
                 kind = kind,
@@ -846,8 +884,15 @@ class Lobby(
                     },
                 questions = game.records.toList(),
                 spectators = members.values.filter { it.announced && it.playerId !in game.players }.map { it.playerId },
-            ),
-        )
+            )
+        // The players' results come first: a record that cannot be kept is logged, and the game ends all the same.
+        try {
+            env.results.submit(record)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failed: Exception) {
+            log.error("lobby $code could not record game ${game.id}", failed)
+        }
         log.info("lobby $code ended game ${game.id}${if (endedEarly) " early" else ""}")
 
         phase = Phase.Waiting(results)
@@ -929,7 +974,7 @@ class Lobby(
 
     private fun close(
         reason: CloseReason,
-        code: Short,
+        closeCode: Short,
     ) {
         if (closing) return
         closing = true
@@ -938,13 +983,42 @@ class Lobby(
         members.values.forEach { member ->
             member.connection?.let { connection ->
                 connection.send(ServerMessage.Closing(reason))
-                connection.close(code)
+                connection.close(closeCode)
             }
             member.connection = null
         }
         closed = true
         log.info("lobby $code closed: $reason")
         env.events.closed(this)
+    }
+
+    /** After a failure: a clean close if the lobby can still make one, else [abandon]. */
+    private fun closeAfterFailure() {
+        try {
+            closing = false
+            close(CloseReason.LOBBY_CLOSED, CloseCodes.INTERNAL)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failedAgain: Exception) {
+            log.error("lobby $code failed closing", failedAgain)
+            abandon()
+        }
+    }
+
+    /**
+     * Closes every socket as a failure, with nothing more sent, and leaves the registry: what is left
+     * when even [close] failed, or the loop ended some other way. The members come back to no lobby and
+     * go home; a game under way is not recorded.
+     */
+    private fun abandon() {
+        if (closed) return
+        closed = true
+        members.values.forEach { member ->
+            runCatching { member.connection?.close(CloseCodes.INTERNAL) }
+            member.connection = null
+        }
+        log.warn("lobby $code abandoned")
+        runCatching { env.events.closed(this) }
     }
 
     // --- Sending ---
@@ -1175,6 +1249,8 @@ class Lobby(
 
     private class Member(
         val playerId: String,
+        /** The session their seat was last held or their socket opened for: a logout of another leaves them. */
+        var sessionId: String,
         var name: String,
         var avatar: String,
         val order: Long,

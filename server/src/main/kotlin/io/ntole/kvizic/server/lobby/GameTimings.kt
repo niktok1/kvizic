@@ -76,9 +76,10 @@ data class GameTimings(
                 lobbyGrace = 2.seconds,
                 ticketTtl = 5.seconds,
                 tick = 50.milliseconds,
-                helloTimeout = 2.seconds,
+                // Generous, so a loaded machine never trips them: their own tests set them short.
+                helloTimeout = 5.seconds,
                 pingEvery = 200.milliseconds,
-                silentAfter = 3.seconds,
+                silentAfter = 10.seconds,
                 drainWaitingLobby = 100.milliseconds,
                 reactionEvery = 50.milliseconds,
             )

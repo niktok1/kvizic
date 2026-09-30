@@ -23,7 +23,12 @@ object LobbyCode {
     /** [raw] as a code, spaces and dashes dropped, or null when it cannot be one. */
     fun parse(raw: String): String? {
         val digits = raw.filterNot { it == ' ' || it == '-' || it == ' ' }
-        return digits.takeIf { it.length == KvizicApi.Limits.LOBBY_CODE_LENGTH && it.all(Char::isDigit) }
+        return digits.takeIf {
+            it.length == KvizicApi.Limits.LOBBY_CODE_LENGTH &&
+                it.all { digit ->
+                    digit in '0'..'9'
+                }
+        }
     }
 
     private const val MAX_TRIES = 64

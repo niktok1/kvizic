@@ -248,6 +248,68 @@ class LobbyLifecycleTest {
             )
         }
 
+    @Test
+    fun `a game whose record cannot be kept still ends for its players`() =
+        runTest {
+            val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))
+            lobby.failRecording = IllegalStateException("the sink is down")
+            val ana = lobby.player("ana").join()
+            ana.start()
+            lobby.wait(lobby.timings.countdown)
+            playAlone(lobby, ana, count = 3)
+
+            assertEquals(1, ana.all<ServerMessage.GameOver>().size)
+            assertFalse(lobby.closed, "the lobby plays on")
+            assertNull(ana.answerTo(ana.back()))
+        }
+
+    @Test
+    fun `a lobby that fails closes its sockets, and leaves the registry`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            lobby.failTopics = IllegalStateException("no topics")
+
+            ana.settings(LobbySettingsDto(questionCount = 5))
+
+            assertTrue(lobby.closed)
+            assertEquals(ServerMessage.Closing(CloseReason.LOBBY_CLOSED), boris.history.last())
+            assertEquals(CloseCodes.INTERNAL, ana.closedCode())
+            assertEquals(CloseCodes.INTERNAL, boris.closedCode())
+            assertEquals(ReserveResult.Closed, lobby.lobby.reserve(Seat("ceca", "s", "Ceca", "fox")))
+        }
+
+    @Test
+    fun `a lobby that fails, and fails again closing, still lets go of every socket`() =
+        runTest {
+            val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            ana.start()
+            lobby.wait(lobby.timings.countdown)
+            // The game's end reads the wall clock, and so does the close after the failure.
+            lobby.failWallClock = IllegalStateException("no clock")
+            repeat(3) {
+                lobby.wait(ana.last<ServerMessage.QuestionShown>().readMs.milliseconds)
+                ana.answerRight()
+                boris.answerRight()
+                if (!lobby.closed) {
+                    lobby.wait(
+                        ana
+                            .last<ServerMessage.Revealed>()
+                            .reveal.nextInMs.milliseconds,
+                    )
+                }
+            }
+
+            assertTrue(lobby.closed, "the registry is told")
+            assertEquals(CloseCodes.INTERNAL, ana.closedCode())
+            assertEquals(CloseCodes.INTERNAL, boris.closedCode())
+            assertEquals(ReserveResult.Closed, lobby.lobby.reserve(Seat("ceca", "s", "Ceca", "fox")))
+            lobby.assertInvariants()
+        }
+
     private fun TestPlayer.settings(settings: LobbySettingsDto): Int =
         nextId().also {
             say(ClientMessage.UpdateSettings(it, settings))
