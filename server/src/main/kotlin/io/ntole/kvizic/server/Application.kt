@@ -35,8 +35,12 @@ import io.ntole.kvizic.server.player.playerRoutes
 import io.ntole.kvizic.server.plugins.installPlugins
 import io.ntole.kvizic.server.plugins.installRateLimits
 import io.ntole.kvizic.server.question.DbQuestionSource
+import io.ntole.kvizic.server.question.QuestionSeed
+import io.ntole.kvizic.server.question.questionAdminRoutes
 import io.ntole.kvizic.server.realtime.PlaySockets
 import io.ntole.kvizic.server.realtime.playRoutes
+import io.ntole.kvizic.server.report.reportAdminRoutes
+import io.ntole.kvizic.server.report.reportRoutes
 import io.ntole.kvizic.server.topic.TopicCatalog
 import io.ntole.kvizic.server.topic.topicAdminRoutes
 import io.ntole.kvizic.server.topic.topicRoutes
@@ -95,6 +99,8 @@ fun Application.kvizicModule(
     val lobbies = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("kvizic-lobbies"))
     val game = config.game
     val topics = TopicCatalog(db).also { runBlocking { it.refresh() } }
+    // Development only: `ServerConfig` refuses a seed file beside a real database.
+    config.questionSeedFile?.let { path -> runBlocking { QuestionSeed.load(db, path, topics.ids, log) } }
     val registry =
         LobbyRegistry(
             scope = lobbies,
@@ -146,9 +152,12 @@ fun Application.kvizicModule(
             clientIpHeader = config.clientIpHeader,
         )
         playRoutes(sockets, config.clientIpHeader)
+        reportRoutes(db)
         adminRoutes(adminToken) { token ->
             accountDeletionRoutes(db, token, playerDeleted = { playerId -> sessionEnded(playerId, null) })
             topicAdminRoutes(db, token, topics)
+            questionAdminRoutes(db, token, topics)
+            reportAdminRoutes(db, token)
             overviewRoutes(db, token, live = registry::live)
         }
     }
