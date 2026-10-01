@@ -27,12 +27,17 @@ public enum class QuestionDifficulty {
     OTHER,
 }
 
-/** How a question has played: how often asked, answered and answered right, and how fast when right. */
+/**
+ * How a question has played: how often asked, answered and answered right, and how fast when right; how
+ * many it waited for gave no answer, and the level all that makes it play at, its author's at first.
+ */
 public data class QuestionPlay(
     public val shown: Int = 0,
     public val answered: Int = 0,
     public val correct: Int = 0,
     public val averageCorrectMillis: Long? = null,
+    public val unanswered: Int = 0,
+    public val playsAs: QuestionDifficulty = QuestionDifficulty.OTHER,
 ) {
     /** The share of answers that were right, 0 to 100, or `null` before any answer. */
     public val correctPercent: Int?

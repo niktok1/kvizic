@@ -42,6 +42,8 @@ internal fun AdminQuestionDto.toDomain(): ModeratedQuestion =
                 answered = stats.answered,
                 correct = stats.correct,
                 averageCorrectMillis = stats.averageCorrectMs,
+                unanswered = stats.unanswered,
+                playsAs = stats.playsAs.toDomain(),
             ),
         openReports = openReports,
     )

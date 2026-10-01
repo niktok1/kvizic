@@ -134,7 +134,7 @@ private fun toneOf(status: BankStatus): ChipTone =
         BankStatus.RETIRED, BankStatus.OTHER -> ChipTone.NEUTRAL
     }
 
-/** Who wrote it, its batch and revision, and how it has played. */
+/** Who wrote it, its batch and revision, and how it has played: the level it plays at when not its own. */
 internal fun metaOf(question: ModeratedQuestion): String {
     val play = question.play
     val parts =
@@ -144,6 +144,10 @@ internal fun metaOf(question: ModeratedQuestion): String {
             add("revision ${question.revision}")
             add("asked ${play.shown}")
             play.correctPercent?.let { add("$it% right of ${play.answered}") }
+            if (play.unanswered > 0) add("${play.unanswered} silent")
+            if (play.playsAs != question.difficulty && play.playsAs != QuestionDifficulty.OTHER) {
+                add("plays ${play.playsAs.word().lowercase()}")
+            }
             play.averageCorrectMillis?.let {
                 add(
                     "right in ${it / MILLIS_PER_TENTH / TENTHS}.${it / MILLIS_PER_TENTH % TENTHS} s",

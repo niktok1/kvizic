@@ -71,13 +71,19 @@ public data class AdminQuestionDto(
     public val openReports: Int = 0,
 )
 
-/** How a question has played: how often asked, answered and answered right, and how fast when right. */
+/**
+ * How a question has played: how often asked, answered and answered right, and how fast when right;
+ * how many it waited for gave no answer, and the level all that makes it play at, its author's until
+ * enough players have been asked it.
+ */
 @Serializable
 public data class QuestionStatsDto(
     public val shown: Int = 0,
     public val answered: Int = 0,
     public val correct: Int = 0,
     public val averageCorrectMs: Long? = null,
+    public val unanswered: Int = 0,
+    public val playsAs: Difficulty = Difficulty.UNKNOWN,
 )
 
 @Serializable

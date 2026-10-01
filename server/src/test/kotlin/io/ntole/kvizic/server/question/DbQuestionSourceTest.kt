@@ -118,6 +118,20 @@ class DbQuestionSourceTest {
     }
 
     @Test
+    fun `a question is asked at the level it plays at, its author's until it has played`() {
+        bank {
+            question("written easy", listOf("SPORT"), difficulty = Difficulty.EASY)
+            played("written easy", answered = 90, correct = 20, unanswered = 10)
+            question("written hard", listOf("SPORT"), difficulty = Difficulty.HARD)
+            played("written hard", answered = 100, correct = 95)
+            question("new", listOf("SPORT"), difficulty = Difficulty.MEDIUM)
+        }
+        val picked = pick(3).questions
+        assertEquals(listOf("written hard", "new", "written easy"), picked.map { it.questionId })
+        assertEquals(listOf(Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD), picked.map { it.difficulty })
+    }
+
+    @Test
     fun `a solo run carries its player's best so far`() {
         bank { question("q1", listOf("SPORT")) }
         assertEquals(640, pick(1, players = setOf("ana"), solo = "ana").soloBestBefore)

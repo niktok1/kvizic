@@ -143,6 +143,7 @@ class ResultWriter(
                 row[timesAnswered] = timesAnswered + answers.size
                 row[timesCorrect] = timesCorrect + right.size
                 row[totalCorrectMs] = totalCorrectMs + right.sumOf { it.timeMs }
+                row[timesUnanswered] = timesUnanswered + asked.sumOf { it.silent }
                 row[lastShownAt] = now
             }
         }

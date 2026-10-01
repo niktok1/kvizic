@@ -30,11 +30,15 @@ data class PlayerRecord(
     val won: Boolean,
 )
 
-/** One asked question, and each player's answer to it, by player id: none for a player who gave none. */
+/**
+ * One asked question, and each player's answer to it, by player id: none for a player who gave none.
+ * [silent] is how many players the question waited for gave none: there and not knowing, not away.
+ */
 data class QuestionRecord(
     val questionId: String,
     val topicId: String,
     val answers: Map<String, AnswerRecord>,
+    val silent: Int = 0,
 )
 
 data class AnswerRecord(

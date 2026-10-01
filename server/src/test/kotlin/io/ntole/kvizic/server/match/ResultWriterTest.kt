@@ -80,6 +80,7 @@ class ResultWriterTest {
                     "q1",
                     "GEOGRAPHY",
                     mapOf("ana" to AnswerRecord(true, 2_000), "boris" to AnswerRecord(false, 900)),
+                    silent = 1,
                 ),
                 QuestionRecord("q2", "SPORT", mapOf("ana" to AnswerRecord(true, 3_000))),
             ),
@@ -129,6 +130,7 @@ class ResultWriterTest {
                 listOf(q1[QuestionStats.timesShown], q1[QuestionStats.timesAnswered], q1[QuestionStats.timesCorrect]),
             )
             assertEquals(2_000L, q1[QuestionStats.totalCorrectMs])
+            assertEquals(1, q1[QuestionStats.timesUnanswered])
 
             assertEquals(6, SeenQuestions.selectAll().count(), "three who saw two questions")
             val topics =

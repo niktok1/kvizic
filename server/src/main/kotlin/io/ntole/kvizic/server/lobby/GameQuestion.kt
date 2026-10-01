@@ -5,7 +5,8 @@ import io.ntole.kvizic.core.question.QuestionKind
 
 /**
  * A question as a game asks it, loaded before the game starts so nothing reads the database while it
- * runs. [options] are in the order they are stored in; the game shuffles them.
+ * runs. [options] are in the order they are stored in; the game shuffles them. [difficulty] is the level
+ * it plays at (`MeasuredDifficulty`).
  */
 data class GameQuestion(
     val questionId: String,

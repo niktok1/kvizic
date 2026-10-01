@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.question.QuestionStatus
 import io.ntole.kvizic.server.db.Players
 import io.ntole.kvizic.server.db.Profiles
 import io.ntole.kvizic.server.db.QuestionOptions
+import io.ntole.kvizic.server.db.QuestionStats
 import io.ntole.kvizic.server.db.QuestionTopics
 import io.ntole.kvizic.server.db.Questions
 import io.ntole.kvizic.server.db.SeenQuestions
@@ -77,6 +78,22 @@ internal object BankFixtures {
             row[playerId] = id
             row[avatarId] = "fox"
             row[soloBestScore] = soloBest
+        }
+    }
+
+    /** How question [questionId] has played: [answered] answers, [correct] of them right, [unanswered] silences. */
+    fun played(
+        questionId: String,
+        answered: Int,
+        correct: Int,
+        unanswered: Int = 0,
+    ) {
+        QuestionStats.insert { row ->
+            row[QuestionStats.questionId] = questionId
+            row[timesShown] = answered + unanswered
+            row[timesAnswered] = answered
+            row[timesCorrect] = correct
+            row[timesUnanswered] = unanswered
         }
     }
 

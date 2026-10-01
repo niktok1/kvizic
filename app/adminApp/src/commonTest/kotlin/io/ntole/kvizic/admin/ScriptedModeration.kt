@@ -185,6 +185,14 @@ internal fun question(
         updatedAt = 1,
         reviewedAt = null,
         rejectionReason = null,
-        play = QuestionPlay(shown = 12, answered = 10, correct = 7, averageCorrectMillis = 4_230),
+        play =
+            QuestionPlay(
+                shown = 12,
+                answered = 10,
+                correct = 7,
+                averageCorrectMillis = 4_230,
+                unanswered = 2,
+                playsAs = QuestionDifficulty.MEDIUM,
+            ),
         openReports = 0,
     )

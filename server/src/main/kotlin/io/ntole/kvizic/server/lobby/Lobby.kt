@@ -746,15 +746,19 @@ class Lobby(
     private fun revealIfEveryoneAnswered() {
         val game = (phase as? Phase.Playing)?.game ?: return
         if (game.step != Step.ANSWERING) return
-        val at = now()
-        val waitedFor =
-            game.players.filter { player ->
-                val member = members[player]
-                player !in game.left &&
-                    member != null &&
-                    (member.connection != null || member.goneSince?.let { at - it < timings.dropGrace } == true)
-            }
+        val waitedFor = waitedFor(game)
         if (waitedFor.isNotEmpty() && waitedFor.all { it in game.answers }) reveal(game)
+    }
+
+    /** The players of [game] its question waits for now, as [revealIfEveryoneAnswered] has them. */
+    private fun waitedFor(game: Game): List<String> {
+        val at = now()
+        return game.players.filter { player ->
+            val member = members[player]
+            player !in game.left &&
+                member != null &&
+                (member.connection != null || member.goneSince?.let { at - it < timings.dropGrace } == true)
+        }
     }
 
     private fun reveal(game: Game) {
@@ -817,6 +821,7 @@ class Lobby(
                             timeMs = given.time.inWholeMilliseconds,
                         )
                     },
+                silent = waitedFor(game).count { it !in game.answers },
             )
 
         val showFor = if (question.source.explanation != null) timings.revealWithExplanation else timings.reveal

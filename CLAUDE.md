@@ -108,6 +108,10 @@ Play Games Services v2. **No Material**: the design system draws everything.
   The settings show the topics picked in a few words („Спорт, Музика +3“), which open the picker: a search by
   any part of a name in either script with no accents needed, the groups opened and closed by their names,
   each with a chip for the whole group, counts, and thin topics greyed.
+- **Difficulty** (2026-10-01): three levels. The author's is a prior worth 40 players; a question plays at
+  the level its players measure (`MeasuredDifficulty`): the share right of those it waited for, a silence
+  counted as not knowing, above what a guess among its answers gets. Read when a game is picked and by the
+  moderation app ("plays hard"), never stored; a game runs from easy to hard by it.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
   Dev loads the seed from a Render secret file (`QUESTION_SEED_FILE`), H2 only.
 - **Publishing drafts**: `KVIZIC_ADMIN_TOKEN=… ./publish.py dev drafts/*.json` in the content repo checks them,

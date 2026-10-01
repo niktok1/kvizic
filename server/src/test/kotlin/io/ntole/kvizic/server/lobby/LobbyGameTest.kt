@@ -73,6 +73,7 @@ class LobbyGameTest {
             val record = lobby.records.single()
             assertEquals(listOf(true, false, false), record.players.map { it.won })
             assertEquals(3, record.questions.size)
+            assertEquals(listOf(1, 1, 1), record.questions.map { it.silent }, "Ceca, there and silent")
             assertEquals(
                 mapOf("ana" to true, "boris" to false),
                 record.questions
@@ -332,6 +333,38 @@ class LobbyGameTest {
             assertEquals(listOf("ana"), phase.answered)
             assertEquals(1, phase.picks.single().option, "she answered, so she sees the picks")
             lobby.assertInvariants()
+        }
+
+    @Test
+    fun `a player away gave no answer but is not silent, and one there who gives none is`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            val ceca = lobby.player("ceca").join()
+            lobby.startGame(ana)
+            ceca.drop()
+
+            repeat(3) { index ->
+                lobby.openAnswers(index)
+                ana.answerRight()
+                if (index == 0) {
+                    boris.answerRight()
+                    lobby.wait(lobby.timings.dropGrace + lobby.timings.tick)
+                } else {
+                    lobby.wait(15.seconds + lobby.timings.answerGrace)
+                }
+                val reveal = ana.last<ServerMessage.Revealed>().reveal
+                assertEquals(index, reveal.index)
+                lobby.wait(reveal.nextInMs.milliseconds)
+            }
+
+            val silent =
+                lobby.records
+                    .single()
+                    .questions
+                    .map { it.silent }
+            assertEquals(listOf(0, 1, 1), silent, "Boris from the second")
         }
 
     @Test

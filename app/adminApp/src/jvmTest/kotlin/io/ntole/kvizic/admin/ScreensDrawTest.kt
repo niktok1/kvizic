@@ -84,6 +84,7 @@ class ScreensDrawTest {
             "Review (2)",
         ).forEach { assertTrue(it in texts, "no \"$it\" in $texts") }
         assertTrue(texts.any { "70% right of 10" in it && "right in 4.2 s" in it }, texts.toString())
+        assertTrue(texts.any { "2 silent" in it && "plays medium" in it }, "an easy question that plays medium")
         tapIn("review", state, "Approve  [A]")
         tapIn("review", state, "Bank")
         assertEquals(listOf("approve", "tab BANK"), asked)

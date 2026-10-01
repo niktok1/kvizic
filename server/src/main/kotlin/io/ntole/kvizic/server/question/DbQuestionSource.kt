@@ -5,6 +5,7 @@ import io.ntole.kvizic.core.question.QuestionStatus
 import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.db.Profiles
 import io.ntole.kvizic.server.db.QuestionOptions
+import io.ntole.kvizic.server.db.QuestionStats
 import io.ntole.kvizic.server.db.QuestionTopics
 import io.ntole.kvizic.server.db.Questions
 import io.ntole.kvizic.server.db.SeenQuestions
@@ -17,7 +18,7 @@ import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
-import org.jetbrains.exposed.v1.core.count
+import org.jetbrains.exposed.v1.core.countDistinct
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.exists
 import org.jetbrains.exposed.v1.core.inList
@@ -28,8 +29,9 @@ import kotlin.random.Random
 /**
  * Picks a game's questions from the bank: approved ones in the topics asked for, those the lobby's
  * players have seen least first (by how many of them saw each, then by when last), ties at random, then
- * asked from easy to hard. When the topics hold too few, the rest come from every other topic
- * ([PickResult.toppedUp]); when the whole bank does, the game is shorter ([PickResult.shortened]).
+ * asked from easy to hard, each at the level it plays at ([MeasuredDifficulty]). When the topics hold too
+ * few, the rest come from every other topic ([PickResult.toppedUp]); when the whole bank does, the game is
+ * shorter ([PickResult.shortened]).
  *
  * Reads only, in one transaction, before the game starts, never while it runs.
  */
@@ -39,7 +41,7 @@ class DbQuestionSource(
 ) : QuestionSource {
     private data class Candidate(
         val id: String,
-        val difficulty: Difficulty,
+        val level: Difficulty,
         val seenBy: Long,
         val lastSeen: Long?,
     )
@@ -58,8 +60,8 @@ class DbQuestionSource(
                 } else {
                     inTopics
                 }
-            val ramp = picked.sortedBy { rampOrder(it.difficulty) }
-            val questions = load(ramp.map { it.id })
+            val ramp = picked.sortedBy { rampOrder(it.level) }
+            val questions = load(ramp.associate { it.id to it.level })
             PickResult(
                 questions = questions,
                 toppedUp = toppedUp,
@@ -72,16 +74,21 @@ class DbQuestionSource(
         topics: List<String>,
         players: Set<String>,
     ): List<Candidate> {
-        val seenBy = SeenQuestions.playerId.count()
+        // Each seen row meets each answer's row, so both are counted distinct.
+        val seenBy = SeenQuestions.playerId.countDistinct()
         val lastSeen = SeenQuestions.lastSeenAt.max()
+        val options = QuestionOptions.slot.countDistinct()
         val joined =
-            Questions.join(
-                SeenQuestions,
-                JoinType.LEFT,
-                onColumn = Questions.id,
-                otherColumn = SeenQuestions.questionId,
-                additionalConstraint = { SeenQuestions.playerId inList players.ifEmpty { setOf("") } },
-            )
+            Questions
+                .join(
+                    SeenQuestions,
+                    JoinType.LEFT,
+                    onColumn = Questions.id,
+                    otherColumn = SeenQuestions.questionId,
+                    additionalConstraint = { SeenQuestions.playerId inList players.ifEmpty { setOf("") } },
+                ).join(QuestionStats, JoinType.LEFT, Questions.id, QuestionStats.questionId)
+                .join(QuestionOptions, JoinType.LEFT, Questions.id, QuestionOptions.questionId)
+        val played = listOf(QuestionStats.timesAnswered, QuestionStats.timesCorrect, QuestionStats.timesUnanswered)
         val inTopics: Op<Boolean> =
             if (topics.isEmpty()) {
                 Op.TRUE
@@ -95,10 +102,25 @@ class DbQuestionSource(
                 )
             }
         return joined
-            .select(Questions.id, Questions.difficulty, seenBy, lastSeen)
+            .select(listOf(Questions.id, Questions.difficulty, seenBy, lastSeen, options) + played)
             .where { (Questions.status eq QuestionStatus.APPROVED) and inTopics }
-            .groupBy(Questions.id, Questions.difficulty)
-            .map { row -> Candidate(row[Questions.id], row[Questions.difficulty], row[seenBy], row[lastSeen]) }
+            .groupBy(*(listOf(Questions.id, Questions.difficulty) + played).toTypedArray())
+            .map { row ->
+                // A question no game has asked yet has no stats row.
+                Candidate(
+                    id = row[Questions.id],
+                    level =
+                        MeasuredDifficulty.of(
+                            authored = row[Questions.difficulty],
+                            options = row[options].toInt(),
+                            answered = row.getOrNull(QuestionStats.timesAnswered) ?: 0,
+                            correct = row.getOrNull(QuestionStats.timesCorrect) ?: 0,
+                            unanswered = row.getOrNull(QuestionStats.timesUnanswered) ?: 0,
+                        ),
+                    seenBy = row[seenBy],
+                    lastSeen = row[lastSeen],
+                )
+            }
     }
 
     /** The [count] seen least, shuffled first so that ties fall at random. */
@@ -111,9 +133,13 @@ class DbQuestionSource(
             .sortedWith(compareBy<Candidate> { it.seenBy }.thenBy { it.lastSeen ?: Long.MIN_VALUE })
             .take(count)
 
-    /** The questions [ids], in that order, whole: a question stored wrong is left out rather than asked. */
-    private fun load(ids: List<String>): List<GameQuestion> {
-        if (ids.isEmpty()) return emptyList()
+    /**
+     * The questions of [levels], in its order and each at its level, whole: a question stored wrong is
+     * left out rather than asked.
+     */
+    private fun load(levels: Map<String, Difficulty>): List<GameQuestion> {
+        if (levels.isEmpty()) return emptyList()
+        val ids = levels.keys.toList()
         val rows =
             Questions
                 .select(
@@ -146,7 +172,7 @@ class DbQuestionSource(
                     correct = correct,
                     topicId = topic,
                     kind = row[Questions.kind],
-                    difficulty = row[Questions.difficulty],
+                    difficulty = levels.getValue(id),
                     explanation = row[Questions.explanation],
                 )
             }.getOrNull()

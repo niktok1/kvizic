@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.question
 
 import io.ntole.kvizic.core.question.AdminQuestionDto
 import io.ntole.kvizic.core.question.AdminQuestionPageDto
+import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.core.question.EditQuestionRequest
 import io.ntole.kvizic.core.question.ImportRefusalDto
 import io.ntole.kvizic.core.question.ImportResultDto
@@ -228,6 +229,7 @@ object QuestionStore {
                 row[timesAnswered] = 0
                 row[timesCorrect] = 0
                 row[totalCorrectMs] = 0
+                row[timesUnanswered] = 0
             }
         }
         return checkNotNull(find(request.id)) { "question ${request.id} vanished mid-transaction" }
@@ -380,7 +382,6 @@ object QuestionStore {
         return rows.map { row ->
             val id = row[Questions.id]
             val slots = options[id].orEmpty()
-            val played = stats[id]
             AdminQuestionDto(
                 id = id,
                 status = row[Questions.status],
@@ -401,19 +402,29 @@ object QuestionStore {
                 updatedAt = row[Questions.updatedAt],
                 reviewedAt = row[Questions.reviewedAt],
                 rejectionReason = row[Questions.rejectionReason],
-                stats =
-                    played?.let {
-                        val correct = it[QuestionStats.timesCorrect]
-                        QuestionStatsDto(
-                            shown = it[QuestionStats.timesShown],
-                            answered = it[QuestionStats.timesAnswered],
-                            correct = correct,
-                            averageCorrectMs = if (correct > 0) it[QuestionStats.totalCorrectMs] / correct else null,
-                        )
-                    } ?: QuestionStatsDto(),
+                stats = statsOf(stats[id], row[Questions.difficulty], slots.size),
                 openReports = reports[id] ?: 0,
             )
         }
+    }
+
+    /** How a question has played, from its stats [played], none for one never asked, and so how hard. */
+    private fun statsOf(
+        played: ResultRow?,
+        authored: Difficulty,
+        options: Int,
+    ): QuestionStatsDto {
+        val answered = played?.get(QuestionStats.timesAnswered) ?: 0
+        val correct = played?.get(QuestionStats.timesCorrect) ?: 0
+        val unanswered = played?.get(QuestionStats.timesUnanswered) ?: 0
+        return QuestionStatsDto(
+            shown = played?.get(QuestionStats.timesShown) ?: 0,
+            answered = answered,
+            correct = correct,
+            averageCorrectMs = if (correct > 0) played?.get(QuestionStats.totalCorrectMs)?.div(correct) else null,
+            unanswered = unanswered,
+            playsAs = MeasuredDifficulty.of(authored, options, answered, correct, unanswered),
+        )
     }
 
     /** How long a refused key is shown back: an import key's length, whatever was sent. */

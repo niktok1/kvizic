@@ -201,6 +201,9 @@ object QuestionStats : Table("question_stats") {
     val totalCorrectMs = long("total_correct_ms").default(0)
     val lastShownAt = long("last_shown_at").nullable()
 
+    /** The players it waited for who gave no answer (V4): a silence is not knowing. */
+    val timesUnanswered = integer("times_unanswered").default(0)
+
     override val primaryKey = PrimaryKey(questionId)
 }
 
