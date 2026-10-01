@@ -146,6 +146,19 @@ class NavigatorTest {
     }
 
     @Test
+    fun `the screen shown follows the room before the stack does`() {
+        val navigator = Navigator()
+        navigator.open(Screen.NewRoom)
+        assertEquals(Screen.Room, navigator.shownFor(inRoom = true), "a seat taken")
+        assertEquals(Screen.NewRoom, navigator.shownFor(inRoom = false))
+
+        navigator.followRoom(inRoom = true)
+        navigator.open(Screen.RoomSettings)
+        assertEquals(Screen.RoomSettings, navigator.shownFor(inRoom = true))
+        assertEquals(Home, navigator.shownFor(inRoom = false), "the room letting the player go")
+    }
+
+    @Test
     fun `following the room changes nothing where the screen already agrees`() {
         val navigator = Navigator()
         navigator.open(Screen.Room)

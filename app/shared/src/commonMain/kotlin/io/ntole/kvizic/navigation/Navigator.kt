@@ -70,12 +70,23 @@ class Navigator internal constructor(
      * from; once they are not, Home, from the room or its settings. Any other change leaves the stack be.
      */
     fun followRoom(inRoom: Boolean) {
+        val shown = shownFor(inRoom)
+        if (shown == current) return
+        open(Screen.Home)
+        if (shown == Screen.Room) open(Screen.Room)
+    }
+
+    /**
+     * The screen to show while the player is [inRoom] or not: [current], or the one [followRoom] is to make
+     * it, so a screen shows the room the very frame the player is in one, and never what it would say a frame
+     * before the stack follows.
+     */
+    fun shownFor(inRoom: Boolean): Screen {
         val showingRoom = current == Screen.Room || current == Screen.RoomSettings
-        if (inRoom && !showingRoom) {
-            open(Screen.Home)
-            open(Screen.Room)
-        } else if (!inRoom && showingRoom) {
-            open(Screen.Home)
+        return when {
+            inRoom && !showingRoom -> Screen.Room
+            !inRoom && showingRoom -> Screen.Home
+            else -> current
         }
     }
 

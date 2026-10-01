@@ -149,7 +149,8 @@ private fun Screens(usage: UsageTracker) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        when (navigator.current) {
+        // The room the frame the player is in it, not once the stack follows a frame or two later.
+        when (navigator.shownFor(inRoom)) {
             Screen.Home -> {
                 Home(room, open = navigator::open)
             }
