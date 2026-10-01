@@ -4,18 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,13 +24,19 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.design.component.ButtonKind
+import io.ntole.kvizic.design.component.ButtonSize
+import io.ntole.kvizic.design.component.Chip
+import io.ntole.kvizic.design.component.ChipTone
+import io.ntole.kvizic.design.component.Divider
+import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
-import io.ntole.kvizic.theme.Shell
 
 /**
  * The About screen: the game's name, its [version] and build number, the age it is for, links that open in
@@ -55,8 +56,9 @@ fun AboutScreen(
     onStatisticsChange: (Boolean) -> Unit = {},
     deletion: @Composable () -> Unit = {},
 ) {
-    val dimens = Shell.dimens
-    val colors = MaterialTheme.colorScheme
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
     val shared = LocalStrings.current
     val strings = shared.aboutScreen
     val language = LocalLanguage.current
@@ -66,24 +68,19 @@ fun AboutScreen(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(dimens.spaceSm),
-            modifier = Modifier.widthIn(max = dimens.contentMaxWidth).fillMaxWidth().padding(dimens.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(space.sm),
+            modifier = Modifier.widthIn(max = space.contentWidth).fillMaxWidth().padding(space.screen),
         ) {
-            Text(
-                text = shared.gameName,
-                color = colors.primary,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
-            )
+            KvizicText(text = shared.gameName, color = colors.onPageAccent, style = type.headline)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(dimens.spaceSm),
+                horizontalArrangement = Arrangement.spacedBy(space.sm),
             ) {
-                Text(text = strings.version.fill(versionText(version)), color = colors.onSurfaceVariant)
-                AgeRating()
+                KvizicText(text = strings.version.fill(versionText(version)), color = colors.onPageMuted)
+                Chip(AGE_RATING, tone = ChipTone.ACCENT)
             }
 
-            HorizontalDivider()
+            Divider()
             listOf(
                 Triple(strings.privacy, SitePage.PRIVACY, "about.privacy"),
                 Triple(strings.terms, SitePage.TERMS, "about.terms"),
@@ -92,19 +89,14 @@ fun AboutScreen(
             ).forEach { (label, page, element) -> Link(label, Site.url(page, language), element) }
             accountId?.let { id -> AccountId(id) }
 
-            HorizontalDivider()
+            Divider()
             StatisticsSwitch(on = statisticsOn, onChange = onStatisticsChange)
 
-            HorizontalDivider()
-            Text(
-                text = strings.licences,
-                color = colors.onSurface,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            Divider()
+            KvizicText(text = strings.licences, style = type.bodyStrong)
             OPEN_SOURCE_LIBRARIES.forEach { library -> Library(library) }
 
-            HorizontalDivider()
+            Divider()
             deletion()
         }
     }
@@ -112,22 +104,6 @@ fun AboutScreen(
 
 /** The version as the screen shows it: MAJOR.MINOR.PATCH and the build number in brackets, when known. */
 internal fun versionText(version: AppVersion): String = version.number?.let { "${version.name} ($it)" } ?: version.name
-
-/** The age the game is for, on a pill, as the store listing and the terms say it. */
-@Composable
-private fun AgeRating() {
-    val dimens = Shell.dimens
-    val colors = MaterialTheme.colorScheme
-
-    Surface(color = colors.secondaryContainer, shape = MaterialTheme.shapes.small) {
-        Text(
-            text = AGE_RATING,
-            color = colors.onSecondaryContainer,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = dimens.spaceSm, vertical = dimens.spaceXs),
-        )
-    }
-}
 
 /**
  * A line that opens [url] in the browser, reported as [element]'s tap, or does nothing when nothing on the
@@ -147,9 +123,9 @@ private fun Link(
             Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Button, onClick = tapped(element) { uriHandler.openIfAble(url) })
-                .minimumInteractiveComponentSize(),
+                .defaultMinSize(minHeight = KvizicTheme.space.touchTarget),
     ) {
-        Text(text = label, color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
+        KvizicText(text = label, color = KvizicTheme.colors.onPageAccent, textDecoration = TextDecoration.Underline)
     }
 }
 
@@ -160,8 +136,9 @@ private fun Link(
  */
 @Composable
 private fun AccountId(accountId: String) {
-    val dimens = Shell.dimens
-    val colors = MaterialTheme.colorScheme
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
     val strings = LocalStrings.current.aboutScreen
 
     // The one call Compose has for text in common code on every platform: its replacement's ClipEntry has
@@ -171,24 +148,25 @@ private fun AccountId(accountId: String) {
     var copied by remember(accountId) { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(horizontalArrangement = Arrangement.spacedBy(dimens.spaceSm)) {
-            Text(text = strings.accountId, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(space.sm)) {
+            KvizicText(text = strings.accountId, color = colors.onPageMuted, style = type.caption)
             if (copied) {
-                Text(text = strings.copied, color = colors.primary, style = MaterialTheme.typography.bodySmall)
+                KvizicText(text = strings.copied, color = colors.onPageAccent, style = type.caption)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = accountId, color = colors.onSurface, style = Shell.codeStyle, modifier = Modifier.weight(1f))
-            TextButton(
+            KvizicText(text = accountId, style = type.caption, modifier = Modifier.weight(1f))
+            StageButton(
+                strings.copy,
                 onClick =
                     tapped("about.copy_account_id") {
                         clipboard.setText(AnnotatedString(accountId))
                         copied = true
                     },
                 modifier = Modifier.semantics { contentDescription = strings.copyAccountId },
-            ) {
-                Text(strings.copy)
-            }
+                kind = ButtonKind.QUIET,
+                size = ButtonSize.SMALL,
+            )
         }
     }
 }
@@ -199,7 +177,8 @@ private fun AccountId(accountId: String) {
  */
 @Composable
 private fun Library(library: Licensed) {
-    val colors = MaterialTheme.colorScheme
+    val colors = KvizicTheme.colors
+    val type = KvizicTheme.type
     val uriHandler = LocalUriHandler.current
 
     Column(
@@ -209,12 +188,10 @@ private fun Library(library: Licensed) {
                 .clickable(
                     role = Role.Button,
                     onClick = tapped("about.licence") { uriHandler.openIfAble(library.licenceUrl) },
-                ).minimumInteractiveComponentSize(),
+                ).defaultMinSize(minHeight = KvizicTheme.space.touchTarget),
     ) {
-        Text(text = library.name, color = colors.onSurface)
-        Text(text = library.licence, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-        library.notice?.let { notice ->
-            Text(text = notice, color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-        }
+        KvizicText(text = library.name)
+        KvizicText(text = library.licence, color = colors.onPageMuted, style = type.caption)
+        library.notice?.let { notice -> KvizicText(text = notice, color = colors.onPageMuted, style = type.caption) }
     }
 }

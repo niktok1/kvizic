@@ -2,7 +2,7 @@ package io.ntole.kvizic
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import io.ntole.kvizic.theme.ShellColorScheme
+import io.ntole.kvizic.design.skin.Skins
 import org.w3c.dom.Element
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
@@ -17,7 +17,7 @@ import kotlin.test.assertEquals
 class WindowThemeTest {
     @Test
     fun theWindowColourIsThePageBackground() {
-        assertEquals(hexOf(ShellColorScheme.background), colour(PAGE_BACKGROUND))
+        assertEquals(hexOf(Skins.Default.colors.page), colour(PAGE_BACKGROUND))
     }
 
     @Test

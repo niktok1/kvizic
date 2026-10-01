@@ -1,6 +1,5 @@
 package io.ntole.kvizic.about
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
@@ -17,15 +16,15 @@ import io.ntole.kvizic.RecordingClipboard
 import io.ntole.kvizic.RecordingUris
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.descriptions
+import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.everyText
-import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.language.stringsOf
 import io.ntole.kvizic.nodes
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
-import io.ntole.kvizic.theme.ShellTheme
+import io.ntole.kvizic.theme.GameTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -152,7 +151,7 @@ class AboutScreenDrawTest {
     @Test
     fun `the deletion comes last after every licence`() {
         Language.entries.forEach { language ->
-            val scene = scene(language, deletion = { Text(DELETION) })
+            val scene = scene(language, deletion = { KvizicText(DELETION) })
             try {
                 val shown = scene.everyText()
                 assertEquals(DELETION, shown.last(), "$language: $shown")
@@ -255,16 +254,14 @@ class AboutScreenDrawTest {
     ): ImageComposeScene =
         ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f)) {
             CompositionLocalProvider(LocalUriHandler provides uris, LocalClipboardManager provides clipboard) {
-                ShellTheme {
-                    KvizicStrings(language) {
-                        AboutScreen(
-                            AppVersion("0.1.0", 100),
-                            accountId = accountId,
-                            statisticsOn = statisticsOn,
-                            onStatisticsChange = onStatisticsChange,
-                            deletion = deletion,
-                        )
-                    }
+                GameTheme(language) {
+                    AboutScreen(
+                        AppVersion("0.1.0", 100),
+                        accountId = accountId,
+                        statisticsOn = statisticsOn,
+                        onStatisticsChange = onStatisticsChange,
+                        deletion = deletion,
+                    )
                 }
             }
         }.also { it.render() }

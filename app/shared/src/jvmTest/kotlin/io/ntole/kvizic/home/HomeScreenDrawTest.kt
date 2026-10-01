@@ -7,13 +7,12 @@ import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
-import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.language.stringsOf
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
-import io.ntole.kvizic.theme.ShellTheme
+import io.ntole.kvizic.theme.GameTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -77,7 +76,7 @@ class HomeScreenDrawTest {
         onRetry: () -> Unit = {},
     ): ImageComposeScene =
         ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f)) {
-            ShellTheme { KvizicStrings(language) { HomeScreen(state, onAbout = onAbout, onRetry = onRetry) } }
+            GameTheme(language) { HomeScreen(state, onAbout = onAbout, onRetry = onRetry) }
         }.also { it.render() }
 
     private companion object {

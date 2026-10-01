@@ -2,13 +2,12 @@ package io.ntole.kvizic.update
 
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
-import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.stringsOf
 import io.ntole.kvizic.sizeNeeded
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
-import io.ntole.kvizic.theme.ShellTheme
+import io.ntole.kvizic.theme.GameTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -54,7 +53,7 @@ class UpdateScreenDrawTest {
         Language.entries.forEach { language ->
             val (_, height) =
                 sizeNeeded(SHORT_PHONE_WIDTH, SHORT_PHONE_HEIGHT) {
-                    ShellTheme { KvizicStrings(language) { UpdateScreen(UpdateButton(UpdateWay.STORE) {}) } }
+                    GameTheme(language) { UpdateScreen(UpdateButton(UpdateWay.STORE) {}) }
                 }
             assertTrue(height <= SHORT_PHONE_HEIGHT, "$language needs $height of $SHORT_PHONE_HEIGHT")
         }
@@ -65,7 +64,7 @@ class UpdateScreenDrawTest {
         language: Language,
     ): ImageComposeScene =
         ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f)) {
-            ShellTheme { KvizicStrings(language) { UpdateScreen(button) } }
+            GameTheme(language) { UpdateScreen(button) }
         }.also { it.render() }
 
     private companion object {

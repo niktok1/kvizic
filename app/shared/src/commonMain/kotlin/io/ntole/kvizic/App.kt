@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -29,9 +27,9 @@ import io.ntole.kvizic.analytics.UsageTracker
 import io.ntole.kvizic.analytics.rememberConfigurationChanging
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.update.AppUpdate
+import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeViewModel
-import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LanguageViewModel
 import io.ntole.kvizic.navigation.BackTopBar
@@ -41,7 +39,7 @@ import io.ntole.kvizic.navigation.SystemBack
 import io.ntole.kvizic.services.AppServices
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
-import io.ntole.kvizic.theme.ShellTheme
+import io.ntole.kvizic.theme.GameTheme
 import io.ntole.kvizic.update.UpdateScreen
 import io.ntole.kvizic.update.rememberUpdateButton
 import org.koin.compose.koinInject
@@ -68,15 +66,13 @@ fun App() {
 
     // Every tap on every screen is counted there, and what is shared goes through the platform's own sheet.
     CompositionLocalProvider(LocalAnalytics provides koinInject(), LocalShareSheet provides rememberShareSheet()) {
-        ShellTheme {
-            KvizicStrings(language) {
-                Page {
-                    if (updateRequired) {
-                        LaunchedEffect(Unit) { usage.show(Screen.Update.key) }
-                        UpdateScreen(button = rememberUpdateButton())
-                    } else {
-                        Screens(usage)
-                    }
+        GameTheme(language) {
+            Page {
+                if (updateRequired) {
+                    LaunchedEffect(Unit) { usage.show(Screen.Update.key) }
+                    UpdateScreen(button = rememberUpdateButton())
+                } else {
+                    Screens(usage)
                 }
             }
         }
@@ -90,8 +86,7 @@ fun App() {
  */
 @Composable
 private fun Page(content: @Composable () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Surface(color = colors.background, contentColor = colors.onBackground, modifier = Modifier.fillMaxSize()) {
+    Stage(Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) { content() }
     }
 }

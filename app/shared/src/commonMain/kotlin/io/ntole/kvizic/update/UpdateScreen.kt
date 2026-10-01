@@ -5,17 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalStrings
-import io.ntole.kvizic.theme.Shell
 
 /**
  * The one screen the game shows once the server serves this build nothing more: that a new version is
@@ -27,19 +25,18 @@ fun UpdateScreen(
     button: UpdateButton?,
     modifier: Modifier = Modifier,
 ) {
-    val dimens = Shell.dimens
+    val space = KvizicTheme.space
     val strings = LocalStrings.current.updateScreen
 
-    Box(contentAlignment = Alignment.Center, modifier = modifier.fillMaxSize().padding(dimens.screenPadding)) {
+    Box(contentAlignment = Alignment.Center, modifier = modifier.fillMaxSize().padding(space.screen)) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(dimens.spaceXl),
+            verticalArrangement = Arrangement.spacedBy(space.xl),
         ) {
-            Text(
+            KvizicText(
                 text = strings.newVersion,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold,
+                color = KvizicTheme.colors.onPageAccent,
+                style = KvizicTheme.type.headline,
                 textAlign = TextAlign.Center,
             )
             if (button != null) {
@@ -48,9 +45,7 @@ fun UpdateScreen(
                         UpdateWay.STORE -> strings.update to "update.store"
                         UpdateWay.RELOAD -> strings.reload to "update.reload"
                     }
-                Button(onClick = tapped(element, onClick = button.go)) {
-                    Text(text = label, fontWeight = FontWeight.Bold)
-                }
+                StageButton(label, onClick = tapped(element, onClick = button.go))
             }
         }
     }

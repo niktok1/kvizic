@@ -2,9 +2,6 @@ package io.ntole.kvizic.loading
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,10 +11,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.Spinner
+import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalStrings
-import io.ntole.kvizic.theme.Shell
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,18 +32,15 @@ fun LoadingSpinner(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Shell.dimens.spaceSm),
+        verticalArrangement = Arrangement.spacedBy(KvizicTheme.space.sm),
         modifier = modifier,
     ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary,
-            modifier = if (name == null) Modifier else Modifier.semantics { contentDescription = name },
-        )
+        Spinner(contentDescription = name)
         if (slow) {
-            Text(
+            KvizicText(
                 text = LocalStrings.current.stillLoading,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
+                color = KvizicTheme.colors.onPageMuted,
+                style = KvizicTheme.type.caption,
             )
         }
     }

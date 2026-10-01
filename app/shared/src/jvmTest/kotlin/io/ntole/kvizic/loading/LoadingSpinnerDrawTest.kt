@@ -5,12 +5,11 @@ import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.CountedBy
 import io.ntole.kvizic.Recompositions
 import io.ntole.kvizic.everyText
-import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.stringsOf
 import io.ntole.kvizic.renderAt
 import io.ntole.kvizic.renderSettled
-import io.ntole.kvizic.theme.ShellTheme
+import io.ntole.kvizic.theme.GameTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -51,7 +50,7 @@ class LoadingSpinnerDrawTest {
         val scene =
             ImageComposeScene(width = WIDTH, height = HEIGHT, density = Density(1f)) {
                 CountedBy(recompositions) {
-                    ShellTheme { KvizicStrings(Language.DEFAULT) { LoadingSpinner(name = "spinner") } }
+                    GameTheme(Language.DEFAULT) { LoadingSpinner(name = "spinner") }
                 }
             }
         try {
@@ -75,7 +74,7 @@ class LoadingSpinnerDrawTest {
 
     private fun scene(language: Language): ImageComposeScene =
         ImageComposeScene(width = WIDTH, height = HEIGHT, density = Density(1f)) {
-            ShellTheme { KvizicStrings(language) { LoadingSpinner() } }
+            GameTheme(language) { LoadingSpinner() }
         }
 
     /** Draws a frame every [FRAME] from [from] to [to], as a phone does. */

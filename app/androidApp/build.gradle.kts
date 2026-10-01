@@ -95,9 +95,9 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 
     testImplementation(libs.kotlin.testJunit)
-    // The storage's file name and the shell theme's colours, which the resources' platform copies are held to.
+    // The storage's file name and the default skin's page, which the resources' platform copies are held to.
     testImplementation(project(":core:network"))
-    testImplementation(libs.compose.material3)
+    testImplementation(project(":app:designsystem"))
 }
 
 // The resource tests read the manifest and the resources from disk, so they are inputs of every unit test

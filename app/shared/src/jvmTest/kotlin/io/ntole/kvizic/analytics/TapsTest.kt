@@ -26,13 +26,12 @@ import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.home.HomeFailure
 import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeState
-import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.nodes
 import io.ntole.kvizic.settle
 import io.ntole.kvizic.texts
-import io.ntole.kvizic.theme.ShellTheme
+import io.ntole.kvizic.theme.GameTheme
 import io.ntole.kvizic.update.UpdateButton
 import io.ntole.kvizic.update.UpdateScreen
 import io.ntole.kvizic.update.UpdateWay
@@ -112,7 +111,7 @@ class TapsTest {
         val scene =
             ImageComposeScene(width = WIDTH, height = HEIGHT, density = Density(1f)) {
                 CompositionLocalProvider(LocalAnalytics provides analytics, LocalUriHandler provides uris) {
-                    ShellTheme { KvizicStrings(Language.DEFAULT) { content() } }
+                    GameTheme(Language.DEFAULT) { content() }
                 }
             }
         val reported = mutableSetOf<String>()

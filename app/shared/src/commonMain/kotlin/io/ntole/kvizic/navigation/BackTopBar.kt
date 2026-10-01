@@ -1,34 +1,64 @@
 package io.ntole.kvizic.navigation
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.StageIconButton
+import io.ntole.kvizic.design.icon.KvizicIcons
+import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalStrings
-import io.ntole.kvizic.theme.Shell
 
 /**
- * The shell's top bar: one button back to the screen before, [onBack]. Plain words rather than an arrow
- * icon, since the shell draws no icons of its own; the design system's bar replaces it.
+ * A screen's top bar: a button back to the screen before, [onBack], the screen's [title] in the middle,
+ * and what else the screen offers at the end, [actions], one round button for the title to stand in the
+ * bar's middle.
  */
 @Composable
 fun BackTopBar(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    title: String? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    val dimens = Shell.dimens
+    val space = KvizicTheme.space
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.fillMaxWidth().height(dimens.topBarHeight).padding(horizontal = dimens.spaceXs),
+        horizontalArrangement = Arrangement.spacedBy(space.sm),
+        modifier = modifier.fillMaxWidth().heightIn(min = space.touchTarget).padding(horizontal = space.screen),
     ) {
-        TextButton(onClick = tapped("top_bar.back", onClick = onBack)) {
-            Text(LocalStrings.current.back)
+        StageIconButton(
+            KvizicIcons.Back,
+            contentDescription = LocalStrings.current.back,
+            onClick = tapped("top_bar.back", onClick = onBack),
+            small = true,
+        )
+        if (title != null) {
+            KvizicText(
+                title,
+                Modifier.weight(1f),
+                style = KvizicTheme.type.label,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
+        if (actions != null) {
+            actions()
+        } else {
+            // As wide as the back button, so a title stands in the bar's middle.
+            Spacer(Modifier.size(space.button.roundSmall, space.xxs))
         }
     }
 }

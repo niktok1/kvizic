@@ -1,25 +1,19 @@
 package io.ntole.kvizic.about
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.design.component.ButtonKind
+import io.ntole.kvizic.design.component.ButtonSize
+import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.component.StageDialog
+import io.ntole.kvizic.design.component.Toggle
 import io.ntole.kvizic.language.LocalStrings
 
 /**
@@ -38,32 +32,26 @@ fun StatisticsSwitch(
     var explaining by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .toggleable(value = on, role = Role.Switch, onValueChange = { toggle() })
-                    .minimumInteractiveComponentSize(),
-        ) {
-            Text(text = strings.statistics, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-            Spacer(Modifier.weight(1f))
-            // No click of its own: the row's toggleable is the one.
-            Switch(checked = on, onCheckedChange = null)
-        }
-        TextButton(onClick = tapped("about.statistics_info") { explaining = true }) {
-            Text(strings.aboutStatistics)
-        }
+        Toggle(
+            checked = on,
+            onCheckedChange = { toggle() },
+            label = strings.statistics,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        StageButton(
+            strings.aboutStatistics,
+            onClick = tapped("about.statistics_info") { explaining = true },
+            kind = ButtonKind.QUIET,
+            size = ButtonSize.SMALL,
+        )
     }
     if (explaining) {
-        AlertDialog(
-            onDismissRequest = { explaining = false },
-            text = { Text(strings.statisticsInfo) },
-            confirmButton = {
-                TextButton(onClick = tapped("about.statistics_info_ok") { explaining = false }) {
-                    Text(strings.ok)
-                }
-            },
-        )
+        StageDialog(onDismiss = { explaining = false }, title = strings.statistics, text = strings.statisticsInfo) {
+            StageButton(
+                strings.ok,
+                onClick = tapped("about.statistics_info_ok") { explaining = false },
+                size = ButtonSize.SMALL,
+            )
+        }
     }
 }
