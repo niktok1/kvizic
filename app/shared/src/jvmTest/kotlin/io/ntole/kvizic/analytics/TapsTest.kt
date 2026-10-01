@@ -31,6 +31,7 @@ import io.ntole.kvizic.home.HomeActions
 import io.ntole.kvizic.home.HomeFailure
 import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeState
+import io.ntole.kvizic.home.ProfileScreen
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.nodes
@@ -85,13 +86,17 @@ class TapsTest {
                 "home.public_rooms",
                 "home.solo",
             )
-        assertEquals(buttons, elementsTapped { HomeScreen(HomeState(profile = PROFILE), HomeActions()) })
+        // The player's own line opens their profile, once there is a player to show.
+        assertEquals(
+            buttons + "home.profile",
+            elementsTapped { HomeScreen(HomeState(profile = PROFILE), HomeActions()) },
+        )
         assertEquals(
             buttons + "home.try_again",
             elementsTapped { HomeScreen(HomeState(failure = HomeFailure(CoreError.NETWORK)), HomeActions()) },
         )
         assertEquals(
-            buttons + "home.exit_ok" + "home.failure_ok",
+            buttons + "home.profile" + "home.exit_ok" + "home.failure_ok",
             elementsTapped {
                 HomeScreen(
                     HomeState(profile = PROFILE),
@@ -222,6 +227,16 @@ class TapsTest {
                 "settings.done",
             ),
             elementsTapped { SettingsScreen(LobbySettings(), TOPICS, onChange = {}, doneLabel = "OK", onDone = {}) },
+        )
+    }
+
+    @Test
+    fun `every tap on the profile is reported`() {
+        assertEquals(
+            setOf("profile.avatar"),
+            elementsTapped {
+                ProfileScreen(HomeState(profile = PROFILE), TOPICS, onPick = {})
+            },
         )
     }
 

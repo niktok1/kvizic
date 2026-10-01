@@ -7,6 +7,7 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.player.GetProfile
+import io.ntole.kvizic.core.domain.player.SetAvatar
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
  */
 class HomeViewModel(
     private val getProfile: GetProfile,
+    private val setAvatar: SetAvatar,
     private val session: CurrentSession,
     private val analytics: Analytics,
 ) : ViewModel() {
@@ -52,6 +54,29 @@ class HomeViewModel(
 
     /** The failure's Try again. */
     fun retry() = refresh()
+
+    /** Changes the player's avatar to [avatarId], one change at a time; the profile the server answers shows. */
+    fun changeAvatar(avatarId: String) {
+        if (mutableState.value.changingAvatar != null || mutableState.value.profile?.avatarId == avatarId) return
+        mutableState.update { it.copy(changingAvatar = avatarId, avatarFailure = null) }
+        viewModelScope.launch {
+            try {
+                val profile = setAvatar(avatarId)
+                mutableState.update { it.copy(profile = profile, changingAvatar = null) }
+            } catch (failure: KvizicException) {
+                analytics.track(
+                    AnalyticsEvent.ERROR_SHOWN,
+                    mapOf(AnalyticsProperty.CODE to failure.error.name, AnalyticsProperty.ACTION to AVATAR_ACTION),
+                )
+                mutableState.update {
+                    it.copy(
+                        changingAvatar = null,
+                        avatarFailure = HomeFailure(failure.error, failure.retryAfter),
+                    )
+                }
+            }
+        }
+    }
 
     /**
      * Reads the profile, unless a read is in flight already; then reads again while the device plays as
@@ -92,6 +117,7 @@ class HomeViewModel(
     private companion object {
         /** What failed, as analytics name it. */
         const val ACTION = "profile"
+        const val AVATAR_ACTION = "avatar"
 
         /** The most reads one refresh makes: the player changing under each is not worth chasing further. */
         const val MAX_READS = 3

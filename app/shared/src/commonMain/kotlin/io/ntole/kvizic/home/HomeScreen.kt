@@ -1,5 +1,6 @@
 package io.ntole.kvizic.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
@@ -60,6 +62,7 @@ class HomeActions(
     val publicRooms: () -> Unit = {},
     val solo: () -> Unit = {},
     val about: () -> Unit = {},
+    val profile: () -> Unit = {},
     val retry: () -> Unit = {},
     val dismissExit: () -> Unit = {},
     val dismissFailure: () -> Unit = {},
@@ -101,16 +104,24 @@ fun HomeScreen(
             ) {
                 val profile = state.profile
                 if (profile != null) {
-                    Avatar(profile.avatarId, seat = 0, size = AvatarSize.SM)
-                    Column(Modifier.weight(1f)) {
-                        KvizicText(shown(profile.displayName), style = type.name, maxLines = 1)
-                        KvizicText(
-                            words.games.of(profile.stats.gamesPlayed, language) + " · " +
-                                words.wins.of(profile.stats.gamesWon, language),
-                            style = type.caption,
-                            color = colors.onPageMuted,
-                            maxLines = 1,
-                        )
+                    Row(
+                        Modifier
+                            .weight(1f)
+                            .clickable(role = Role.Button, onClick = tapped("home.profile", onClick = actions.profile)),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(space.md),
+                    ) {
+                        Avatar(profile.avatarId, seat = 0, size = AvatarSize.SM)
+                        Column(Modifier.weight(1f)) {
+                            KvizicText(shown(profile.displayName), style = type.name, maxLines = 1)
+                            KvizicText(
+                                words.games.of(profile.stats.gamesPlayed, language) + " · " +
+                                    words.wins.of(profile.stats.gamesWon, language),
+                                style = type.caption,
+                                color = colors.onPageMuted,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 } else {
                     val failure = state.failure

@@ -15,6 +15,9 @@ sealed class Screen(
     /** The game's version, its legal pages, the player's account id and statistics, and deleting the account. */
     data object About : Screen("about")
 
+    /** The player's profile: their stats, and their avatar picked. */
+    data object Profile : Screen("profile")
+
     /** A room's code typed, to join it. */
     data object Join : Screen("join")
 
@@ -40,6 +43,9 @@ sealed class Screen(
         // Listed on each call, not kept in a property: the companion's properties are set up with the class,
         // before the objects are when one of them is used first, so a kept list could hold nulls.
         fun ofKey(key: String): Screen? =
-            listOf(Home, About, Join, PublicRooms, NewRoom, Room, RoomSettings, Update).firstOrNull { it.key == key }
+            listOf(Home, About, Profile, Join, PublicRooms, NewRoom, Room, RoomSettings, Update).firstOrNull {
+                it.key ==
+                    key
+            }
     }
 }

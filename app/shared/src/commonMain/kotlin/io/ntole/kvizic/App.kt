@@ -48,6 +48,7 @@ import io.ntole.kvizic.home.HomeCounts
 import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeViewModel
 import io.ntole.kvizic.home.Notice
+import io.ntole.kvizic.home.ProfileScreen
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LanguageViewModel
 import io.ntole.kvizic.language.LocalStrings
@@ -154,6 +155,11 @@ private fun Screens(usage: UsageTracker) {
                 Below { About(onDeleted = { navigator.back() }) }
             }
 
+            Screen.Profile -> {
+                BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.game.profile)
+                Below { Profile() }
+            }
+
             Screen.Join -> {
                 BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.game.joinByCode)
                 Below { Join(room) }
@@ -220,6 +226,7 @@ private fun Home(
                 publicRooms = { open(Screen.PublicRooms) },
                 solo = room::solo,
                 about = { open(Screen.About) },
+                profile = { open(Screen.Profile) },
                 retry = viewModel::retry,
                 dismissExit = room::leave,
                 dismissFailure = room::dismissEntryFailure,
@@ -253,6 +260,16 @@ private fun PollWhileShown(poll: suspend () -> Unit) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val latest by rememberUpdatedState(poll)
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { latest() } }
+}
+
+/** The player's profile, read as Home reads it, and their avatar picked. */
+@Composable
+private fun Profile() {
+    val viewModel = koinViewModel<HomeViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val topics by rememberTopics()
+    LaunchedEffect(viewModel) { viewModel.shown() }
+    ProfileScreen(state, topics, onPick = viewModel::changeAvatar)
 }
 
 /** A room's code typed, and joined once all six digits are in. */

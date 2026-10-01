@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.domain.player.SetAvatar
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.session.SessionRepository
 import kotlinx.coroutines.CompletableDeferred
@@ -115,7 +116,50 @@ class HomeViewModelTest {
             )
         }
 
-    private fun viewModel(): HomeViewModel = HomeViewModel(GetProfile(players, session), session, analytics)
+    @Test
+    fun `an avatar picked is the profile's once the server has it`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+
+            home.changeAvatar("frog")
+            assertEquals("frog", home.state.value.changingAvatar)
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                "frog",
+                home.state.value.profile
+                    ?.avatarId,
+            )
+            assertNull(home.state.value.changingAvatar)
+        }
+
+    @Test
+    fun `an avatar the server refuses says why and keeps the one before`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+            players.avatarFailWith = KvizicException(CoreError.NETWORK)
+
+            home.changeAvatar("frog")
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                "hedgehog",
+                home.state.value.profile
+                    ?.avatarId,
+            )
+            assertEquals(
+                CoreError.NETWORK,
+                home.state.value.avatarFailure
+                    ?.error,
+            )
+        }
+
+    private fun viewModel(): HomeViewModel =
+        HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, analytics)
 
     /** The device's session: none until [ensure] mints guests one after the other. */
     private class FakeSession :
@@ -146,14 +190,21 @@ class HomeViewModelTest {
             return profileOf(session.player.value ?: error("no session"))
         }
 
-        override suspend fun setAvatar(avatarId: String): Profile = error("Home picks no avatar")
+        var avatar = "hedgehog"
+        var avatarFailWith: KvizicException? = null
+
+        override suspend fun setAvatar(avatarId: String): Profile {
+            avatarFailWith?.let { throw it }
+            avatar = avatarId
+            return profileOf(session.player.value ?: error("no session"))
+        }
 
         private fun profileOf(player: String): Profile =
             Profile(
                 playerId = player,
                 displayName = "Брзи Јеж",
                 nameSource = NameSource.GENERATED,
-                avatarId = "hedgehog",
+                avatarId = avatar,
                 playGamesLinked = false,
                 stats = PlayerStats(),
             )

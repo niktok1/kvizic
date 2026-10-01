@@ -163,6 +163,14 @@ data class GameStrings(
     /** The player's best solo score, `{0}`. */
     val best: String,
     val endedEarly: String,
+    /** The profile: its title, the share of answers right, `{0}` percent, the best solo score, `{0}`, the best topic, `{0}`. */
+    val profile: String,
+    val correctShare: String,
+    val soloBest: String,
+    val bestTopic: String,
+    val pickAvatar: String,
+    /** Each avatar's animal, in the order the design system draws them (`AvatarArt.DRAWN`), for a screen reader. */
+    val avatarNames: List<String>,
 ) {
     internal fun map(transform: (String) -> String): GameStrings =
         GameStrings(
@@ -266,6 +274,12 @@ data class GameStrings(
             newBest = transform(newBest),
             best = transform(best),
             endedEarly = transform(endedEarly),
+            profile = transform(profile),
+            correctShare = transform(correctShare),
+            soloBest = transform(soloBest),
+            bestTopic = transform(bestTopic),
+            pickAvatar = transform(pickAvatar),
+            avatarNames = avatarNames.map(transform),
         )
 }
 
@@ -375,6 +389,30 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         newBest = "Нови рекорд!",
         best = "Рекорд: {0}",
         endedEarly = "Игра је прекинута пре краја.",
+        profile = "Профил",
+        correctShare = "{0}% тачних одговора",
+        soloBest = "Соло рекорд: {0}",
+        bestTopic = "Најбоља тема: {0}",
+        pickAvatar = "Изабери аватар",
+        avatarNames =
+            listOf(
+                "Лисица",
+                "Медвед",
+                "Сова",
+                "Јеж",
+                "Вук",
+                "Рис",
+                "Јелен",
+                "Рода",
+                "Веверица",
+                "Зец",
+                "Јазавац",
+                "Видра",
+                "Корњача",
+                "Жаба",
+                "Пчела",
+                "Мачка",
+            ),
     )
 
 internal val EnglishGameStrings: GameStrings =
@@ -479,4 +517,28 @@ internal val EnglishGameStrings: GameStrings =
         newBest = "A new best!",
         best = "Best: {0}",
         endedEarly = "The game ended early.",
+        profile = "Profile",
+        correctShare = "{0}% right answers",
+        soloBest = "Solo best: {0}",
+        bestTopic = "Best topic: {0}",
+        pickAvatar = "Pick an avatar",
+        avatarNames =
+            listOf(
+                "Fox",
+                "Bear",
+                "Owl",
+                "Hedgehog",
+                "Wolf",
+                "Lynx",
+                "Deer",
+                "Stork",
+                "Squirrel",
+                "Hare",
+                "Badger",
+                "Otter",
+                "Tortoise",
+                "Frog",
+                "Bee",
+                "Cat",
+            ),
     )

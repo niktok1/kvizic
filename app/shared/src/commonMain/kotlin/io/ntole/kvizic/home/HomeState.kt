@@ -12,6 +12,10 @@ data class HomeState(
     val profile: Profile? = null,
     val loading: Boolean = false,
     val failure: HomeFailure? = null,
+    /** The avatar being changed to, while the server is asked. */
+    val changingAvatar: String? = null,
+    /** Why the last change of avatar failed. */
+    val avatarFailure: HomeFailure? = null,
 )
 
 /** Why the profile could not be read, [error], with the wait a rate limit named, [retryAfter]. */
