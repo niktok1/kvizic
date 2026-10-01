@@ -158,6 +158,13 @@ Play Games Services v2. **No Material**: the design system draws everything.
   `shown()`/`topicName()`.
 - Analytics: PostHog over HTTP, never a name, a code or a question's text; every tap through `tapped`
   (`TapsTest` taps every screen). Game events: `room_entered`, `room_exited`, `game_finished`.
+- **Play Games** (signed in on a phone against dev, 2026-10-01): a launch signs in by itself, with no button
+  yet (`LinkPlayGames`); a sign-in that links the guest playing keeps their id and gives them their Play
+  Games name, which Home hears through `LinkPlayGames.signedIn`. The ids are the developer's, in
+  `local.properties` (`kvizic.playgames.appId`, `kvizic.playgames.serverClientId`; none is Play Games off);
+  the server's `PLAY_GAMES_CLIENT_ID` and `PLAY_GAMES_CLIENT_SECRET` are on Render. The Play Console takes
+  Android credentials for `io.ntole.kvizic` (Play's signing key and the debug key) and `io.ntole.kvizic.dev`
+  (the debug key). Until its configuration is published, only its Testers sign in.
 
 ## 10. Design system decisions
 
@@ -223,5 +230,7 @@ makes the draw tests write PNGs to look at.
 
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
-- Play Games on a device, sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
+- Sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
+- Play Games before launch: its variables on `kvizic-server`; its consent screen published (in Testing now,
+  it wants a privacy policy page first), then its configuration, with its final art.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.

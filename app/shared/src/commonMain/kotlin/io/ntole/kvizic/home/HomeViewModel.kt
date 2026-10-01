@@ -8,6 +8,7 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.player.GetProfile
 import io.ntole.kvizic.core.domain.player.SetAvatar
+import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -24,14 +25,17 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * The placeholder Home screen's player: their profile, read each time Home is shown ([shown]) and again
- * whenever the device becomes another player with nothing asked of the screen, a launch's Play Games
- * sign-in or a dead session replaced by a fresh guest ([CurrentSession.sessions]), so the name shown is
- * always the one who plays. A failed read is reported to [analytics] as shown.
+ * whenever who plays changes with nothing asked of the screen, so the name shown is always theirs: the
+ * device becoming another player, a launch's Play Games sign-in as someone else or a dead session replaced
+ * by a fresh guest ([CurrentSession.sessions]), and any Play Games sign-in ([LinkPlayGames.signedIn]),
+ * which renames a player it links without changing who they are. A failed read is reported to [analytics]
+ * as shown.
  */
 class HomeViewModel(
     private val getProfile: GetProfile,
     private val setAvatar: SetAvatar,
     private val session: CurrentSession,
+    linkPlayGames: LinkPlayGames,
     private val analytics: Analytics,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(HomeState())
@@ -42,6 +46,9 @@ class HomeViewModel(
 
     /** Whom the last read went out as, a failed one's too: a session a read of its own minted is no news. */
     private var lastReadAs: String? = null
+
+    /** Whether a Play Games sign-in came after the read in flight went out, which then read the name before it. */
+    private var readAgain = false
 
     /** The wait for the player to settle on an avatar, which each new pick starts again. */
     private var settling: Job? = null
@@ -56,6 +63,14 @@ class HomeViewModel(
                 if (player == lastReadAs || reading?.isActive == true) return@collect
                 // Another player's name must not stay on screen while theirs is read.
                 if (mutableState.value.profile?.playerId != player) mutableState.update { it.copy(profile = null) }
+                refresh()
+            }
+        }
+        viewModelScope.launch {
+            // A sign-in that links the player playing keeps their id, so the sessions above name the same
+            // player and read nothing, but it gives them their Play Games name.
+            linkPlayGames.signedIn.collect {
+                readAgain = true
                 refresh()
             }
         }
@@ -128,7 +143,8 @@ class HomeViewModel(
 
     /**
      * Reads the profile, unless a read is in flight already; then reads again while the device plays as
-     * another player than the profile read, which changed while the read was in flight, a few times at most.
+     * another player than the profile read, which changed while the read was in flight, or a Play Games
+     * sign-in came while it was, a few times at most.
      */
     private fun refresh() {
         if (reading?.isActive == true) return
@@ -136,9 +152,10 @@ class HomeViewModel(
             viewModelScope.launch {
                 var reads = 0
                 do {
+                    readAgain = false
                     read()
                     reads++
-                } while (reads < MAX_READS && isStale())
+                } while (reads < MAX_READS && (readAgain || isStale()))
             }
     }
 

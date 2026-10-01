@@ -1,6 +1,7 @@
 package io.ntole.kvizic.home
 
 import io.ntole.kvizic.analytics.RecordingAnalytics
+import io.ntole.kvizic.core.domain.analytics.Analytics
 import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.CoreError
@@ -11,6 +12,9 @@ import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.player.SetAvatar
+import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
+import io.ntole.kvizic.core.domain.playgames.PlayGames
+import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.session.SessionRepository
 import kotlinx.coroutines.CompletableDeferred
@@ -29,15 +33,17 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-/** The placeholder Home's player: read when shown, and again when the device becomes another player. */
+/** The placeholder Home's player: read when shown, and again when another player plays or Play Games names them. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
     private val main: TestDispatcher = StandardTestDispatcher()
     private val session = FakeSession()
     private val players = FakePlayers(session)
     private val analytics = RecordingAnalytics()
+    private val linking = LinkPlayGames(SignedInPlayGames, LinksPlayerPlaying(session), session, Analytics.None)
 
     /** Less than the wait an avatar picked stands before it is sent. */
     private val halfASettle = 1.5.seconds
@@ -88,6 +94,50 @@ class HomeViewModelTest {
                 "linked",
                 home.state.value.profile
                     ?.playerId,
+            )
+        }
+
+    /** A launch's Play Games sign-in that links the guest playing: the same player, with Play Games' name. */
+    @Test
+    fun `a Play Games sign-in that links the player shown reads the name it gave them`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+
+            players.name = "TrolePro"
+            assertTrue(linking.automatically())
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                "TrolePro",
+                home.state.value.profile
+                    ?.displayName,
+            )
+            assertEquals(2, players.reads)
+        }
+
+    /** The read out when the sign-in lands asked before it, so came back with the name before it. */
+    @Test
+    fun `a Play Games sign-in during a read reads the name again once it is back`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+            val reading = CompletableDeferred<Unit>()
+            players.hold = reading
+            home.shown()
+            testScheduler.runCurrent()
+
+            players.name = "TrolePro"
+            assertTrue(linking.automatically())
+            reading.complete(Unit)
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                "TrolePro",
+                home.state.value.profile
+                    ?.displayName,
             )
         }
 
@@ -246,7 +296,7 @@ class HomeViewModelTest {
         }
 
     private fun viewModel(): HomeViewModel =
-        HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, analytics)
+        HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, linking, analytics)
 
     /** The device's session: none until [ensure] mints guests one after the other. */
     private class FakeSession :
@@ -262,19 +312,44 @@ class HomeViewModelTest {
         override val sessions: Flow<String> = player.filterNotNull()
     }
 
-    /** The server's profile of whoever the session names, held while [hold] is incomplete. */
+    /** Play Games with a player signed in, who always has a code. */
+    private object SignedInPlayGames : PlayGames {
+        override val available: Boolean = true
+
+        override suspend fun isAuthenticated(): Boolean = true
+
+        override suspend fun signIn(): Boolean = true
+
+        override suspend fun serverAuthCode(): String = "code"
+    }
+
+    /**
+     * The server linking the player playing to Play Games: who plays stays, so [FakeSession] tells nobody,
+     * and only the name the server reads changes ([FakePlayers.name]).
+     */
+    private class LinksPlayerPlaying(
+        private val session: FakeSession,
+    ) : PlayGamesRepository {
+        override fun isSettled(): Boolean = false
+
+        override suspend fun signIn(serverAuthCode: String): String? = session.player.value
+    }
+
+    /** The server's profile of whoever the session names, by its [name] when asked, held while [hold] is incomplete. */
     private class FakePlayers(
         private val session: FakeSession,
     ) : PlayerRepository {
         var reads = 0
         var failWith: KvizicException? = null
         var hold: CompletableDeferred<Unit>? = null
+        var name = "Брзи Јеж"
 
         override suspend fun profile(): Profile {
             reads++
+            val asked = name
             hold?.await()
             failWith?.let { throw it }
-            return profileOf(session.player.value ?: error("no session"))
+            return profileOf(session.player.value ?: error("no session"), asked)
         }
 
         var avatar = "hedgehog"
@@ -287,13 +362,16 @@ class HomeViewModelTest {
             avatarHold?.await()
             avatarFailWith?.let { throw it }
             avatar = avatarId
-            return profileOf(session.player.value ?: error("no session"))
+            return profileOf(session.player.value ?: error("no session"), name)
         }
 
-        private fun profileOf(player: String): Profile =
+        private fun profileOf(
+            player: String,
+            name: String,
+        ): Profile =
             Profile(
                 playerId = player,
-                displayName = "Брзи Јеж",
+                displayName = name,
                 nameSource = NameSource.GENERATED,
                 avatarId = avatar,
                 playGamesLinked = false,

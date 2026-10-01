@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -134,6 +135,21 @@ class LinkPlayGamesTest {
 
             assertEquals(listOf("isAuthenticated", "serverAuthCode", "signIn code-1", "identify linked-player"), calls)
             assertEquals(true, analytics.events.single().second[AnalyticsProperty.SWITCHED])
+        }
+
+    /** What a screen showing the player's name hears: a sign-in that links the player playing keeps their id. */
+    @Test
+    fun `each sign-in that stores a session is heard by its player and one that stores none is not`() =
+        runTest {
+            val heard = mutableListOf<String>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { linking.signedIn.collect { heard += it } }
+            session.player.value = "guest1"
+
+            assertTrue(linking.automatically())
+            link.changedMeanwhile = "other"
+            assertFalse(linking.manually())
+
+            assertEquals(listOf("guest1"), heard)
         }
 
     @Test

@@ -6,6 +6,10 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.session.CurrentSession
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -17,7 +21,8 @@ import kotlinx.coroutines.sync.withLock
  * [run] is the launch's: for the session stored then and every one after it, while who plays here is
  * unsettled ([PlayGamesRepository.isSettled]), a player Play Games signed in by itself is signed in to
  * the server with no tap; [automatically] is one such try. [manually] is a button's. Either way the
- * server's answer is stored in place of the device's session, and [analytics] hear who plays now.
+ * server's answer is stored in place of the device's session, [analytics] hear who plays now, and so
+ * does [signedIn].
  *
  * One at a time: bound once for the app, so the launch's try and a tap cannot both sign in.
  */
@@ -29,8 +34,19 @@ public class LinkPlayGames(
 ) {
     private val mutex = Mutex()
 
+    private val signIns =
+        MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     /** Whether this build has Play Games, for a screen to offer it. */
     public val available: Boolean get() = playGames.available
+
+    /**
+     * The player id of each sign-in that stored a session, the launch's or a button's, once, to whoever
+     * listens then. It is how a screen showing the player's name hears of the name Play Games gave: a
+     * sign-in that links the player playing keeps their id, so [CurrentSession.sessions] names the same
+     * player as before.
+     */
+    public val signedIn: Flow<String> = signIns.asSharedFlow()
 
     /**
      * At launch: waits for a session, then, while who plays here is unsettled and Play Games says the
@@ -89,6 +105,7 @@ public class LinkPlayGames(
             playGames.serverAuthCode()
                 ?: throw KvizicException(CoreError.PLAY_GAMES_UNAVAILABLE, "Play Games gave no server auth code")
         val player = link.signIn(code) ?: return false
+        signIns.tryEmit(player)
         analytics.identify(player)
         analytics.track(
             AnalyticsEvent.PLAY_GAMES_SIGNED_IN,
