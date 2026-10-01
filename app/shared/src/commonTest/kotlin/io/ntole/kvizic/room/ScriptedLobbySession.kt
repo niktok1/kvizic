@@ -32,6 +32,11 @@ class ScriptedLobbySession : LobbySession {
         seat.complete(into)
     }
 
+    /** Lets the seat being taken in with its room still to open, as a ticket comes before its socket says what is in it. */
+    fun answerSeatOpening() {
+        seat.complete(null)
+    }
+
     fun refuseSeat(error: DomainError) {
         seat.completeExceptionally(KvizicException(error))
     }

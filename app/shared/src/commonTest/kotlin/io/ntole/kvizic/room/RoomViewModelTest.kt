@@ -31,6 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /** The room over a scripted session: taking a seat, what the room says meanwhile, and what is reported. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -68,6 +69,31 @@ class RoomViewModelTest {
                 listOf(mapOf(AnalyticsProperty.WAY to "quick_play")),
                 analytics.named(AnalyticsEvent.ROOM_ENTERED).map { it.properties },
             )
+        }
+
+    @Test
+    fun `a seat taken stays under way while its room opens and gives its screen back if the room never does`() =
+        runTest(main) {
+            val room = room()
+
+            room.quickPlay()
+            testScheduler.advanceUntilIdle()
+            session.answerSeatOpening()
+            testScheduler.advanceTimeBy(1.seconds)
+            assertEquals(Entry.Taking(EntryWay.QUICK_PLAY), room.entry.value, "the socket still to say what is in it")
+
+            session.state.value = inLobby(GamePhase.Waiting(null))
+            testScheduler.advanceUntilIdle()
+            assertEquals(Entry.None, room.entry.value)
+
+            room.leave()
+            room.solo()
+            testScheduler.advanceUntilIdle()
+            session.answerSeatOpening()
+            testScheduler.advanceTimeBy(9.seconds)
+            assertEquals(Entry.Taking(EntryWay.SOLO), room.entry.value)
+            testScheduler.advanceTimeBy(2.seconds)
+            assertEquals(Entry.None, room.entry.value, "a socket that never came")
         }
 
     @Test

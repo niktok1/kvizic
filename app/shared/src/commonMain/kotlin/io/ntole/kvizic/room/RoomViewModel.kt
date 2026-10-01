@@ -22,8 +22,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
@@ -225,8 +227,12 @@ class RoomViewModel(
             viewModelScope.launch {
                 try {
                     block()
-                    mutableEntry.value = Entry.None
                     analytics.track(AnalyticsEvent.ROOM_ENTERED, mapOf(AnalyticsProperty.WAY to way.key))
+                    // The seat is taken, but the room opens once its socket says what is in it: until then the
+                    // seat is still being taken, so the screen it was asked from does not light up again in
+                    // between. A socket that does not come gives that screen back after a while.
+                    withTimeoutOrNull(OPENING_WAIT) { session.state.first { it !is LobbySessionState.Joining } }
+                    mutableEntry.value = Entry.None
                 } catch (failure: KvizicException) {
                     analytics.track(
                         AnalyticsEvent.ERROR_SHOWN,
@@ -309,5 +315,8 @@ class RoomViewModel(
     private companion object {
         /** How long a note shows. */
         val NOTE_SHOWN = 4.seconds
+
+        /** The longest a seat taken waits for its room to open before its screen takes taps again. */
+        val OPENING_WAIT = 10.seconds
     }
 }
