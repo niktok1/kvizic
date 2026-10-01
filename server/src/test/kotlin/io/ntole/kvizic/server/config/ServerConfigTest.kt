@@ -257,6 +257,30 @@ class ServerConfigTest {
     }
 
     @Test
+    fun `the sockets one address may hold come from MAX_SOCKETS_PER_ADDRESS and anything but a count fails at boot`() {
+        assertEquals(
+            200,
+            ServerConfig
+                .fromEnvironment { null }
+                .game.limits.maxSocketsPerAddress,
+        )
+        assertEquals(
+            500,
+            ServerConfig
+                .fromEnvironment(
+                    mapOf("MAX_SOCKETS_PER_ADDRESS" to " 500 ")::get,
+                ).game.limits.maxSocketsPerAddress,
+        )
+        listOf("0", "-1", "many").forEach { raw ->
+            val failure =
+                assertFailsWith<IllegalArgumentException> {
+                    ServerConfig.fromEnvironment(mapOf("MAX_SOCKETS_PER_ADDRESS" to raw)::get)
+                }
+            assertContains(failure.message.orEmpty(), "MAX_SOCKETS_PER_ADDRESS", message = raw)
+        }
+    }
+
+    @Test
     fun `a rate limit that is not a whole number of at least 1 fails at config load and names its variable`() {
         listOf("0", "-3", "abc", "1.5", "10/min", "2147483648").forEach { raw ->
             val failure =

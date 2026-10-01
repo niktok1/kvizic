@@ -71,6 +71,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
   socket `wss://…/v1/play` takes `hello(ticket, protocol, platform, build)` as its first frame within 5 s;
   nothing secret is in the URL.
 - One coroutine actor per lobby owns its state; outgoing queues are bounded (a slow socket is closed 4429).
+- One client address holds at most `MAX_SOCKETS_PER_ADDRESS` sockets (200): a mobile carrier's CGNAT puts
+  many phones behind one address, and guest minting's per-address budget already bounds an abuser.
   Every state message carries `v`; a connect gets a snapshot; a gap resyncs. Times on the wire are relative.
 - Close codes are a contract: 4400 protocol, 4401 ticket, 4403 kicked, 4404 gone, 4408 silent, 4409
   replaced, 4410 session ended, 4426 update, 4429 slow, 4503 restarting.

@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.config
 
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.auth.PlayGamesClient
+import io.ntole.kvizic.server.lobby.LobbyLimits
 
 /**
  * Everything the server reads from the environment.
@@ -165,6 +166,13 @@ data class ServerConfig(
                 guestRetentionDays = parseGuestRetentionDays(env("GUEST_RETENTION_DAYS")),
                 questionSeedFile = parseQuestionSeedFile(env("QUESTION_SEED_FILE"), databaseUrl),
                 drainSeconds = parseDrainSeconds(env("DRAIN_SECONDS")),
+                game =
+                    GameConfig(
+                        limits =
+                            LobbyLimits.DEFAULT.copy(
+                                maxSocketsPerAddress = parseMaxSocketsPerAddress(env("MAX_SOCKETS_PER_ADDRESS")),
+                            ),
+                    ),
             )
         }
 
@@ -199,6 +207,21 @@ data class ServerConfig(
                     "database, so unset one of them."
             }
             return path
+        }
+
+        /**
+         * How many sockets one client address may hold at once, from `MAX_SOCKETS_PER_ADDRESS`: a whole number
+         * of at least 1, unset or blank the default. Anything else fails at boot, naming the variable.
+         */
+        internal fun parseMaxSocketsPerAddress(raw: String?): Int {
+            val trimmed = raw?.trim().orEmpty()
+            if (trimmed.isEmpty()) return LobbyLimits.DEFAULT.maxSocketsPerAddress
+            val count = trimmed.toIntOrNull()
+            require(count != null && count >= 1) {
+                "MAX_SOCKETS_PER_ADDRESS is \"$raw\"; expected a whole number of at least 1, or unset for " +
+                    "${LobbyLimits.DEFAULT.maxSocketsPerAddress}."
+            }
+            return count
         }
 
         /** A whole number of seconds from 0 to [MAX_DRAIN_SECONDS], trimmed; unset or blank is the default. */

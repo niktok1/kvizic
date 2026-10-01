@@ -99,7 +99,12 @@ data class GameTimings(
 /** How much the server holds at once, and how much one socket may send. */
 data class LobbyLimits(
     val maxLobbies: Int = 500,
-    val maxSocketsPerAddress: Int = 20,
+    /**
+     * Sockets one client address may hold at once, `MAX_SOCKETS_PER_ADDRESS`. Generous: a mobile carrier puts
+     * many phones behind one address (CGNAT), and every socket needs a seat its session took over REST, whose
+     * guests are minted at a budget per address, so this bounds little an abuser could not do anyway.
+     */
+    val maxSocketsPerAddress: Int = 200,
     /** The longest frame a client may send. The largest correct one, a settings change, is far smaller. */
     val maxClientFrameBytes: Int = 4_096,
     /** A socket's frame budget: this many a second on average, with bursts up to [frameBurst]. */
