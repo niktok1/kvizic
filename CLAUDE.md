@@ -172,6 +172,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
   the server's `PLAY_GAMES_CLIENT_ID` and `PLAY_GAMES_CLIENT_SECRET` are on Render. The Play Console takes
   Android credentials for `io.ntole.kvizic` (Play's signing key and the debug key) and `io.ntole.kvizic.dev`
   (the debug key). Until its configuration is published, only its Testers sign in.
+- **Phones play upright** (the owner, 2026-10-02): Android's activity is portrait and the iPhone takes
+  portrait alone; the game is laid out for a phone's height. iPads, desktop and the web take any shape, and
+  Android 16 lets a large screen turn the app anyway, where the content keeps its width (`contentWidth`).
 
 ## 10. Design system decisions
 

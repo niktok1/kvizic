@@ -16,9 +16,12 @@
         android:theme="@style/Theme.Kvizic"
         android:usesCleartextTraffic="${usesCleartextTraffic}"
         tools:targetApi="31">
+        <!-- Phones play upright: the game is laid out for a phone's height. Android 16 lets a large screen
+             turn it anyway, where its content keeps its width. -->
         <activity
             android:exported="true"
-            android:name=".MainActivity">
+            android:name=".MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
