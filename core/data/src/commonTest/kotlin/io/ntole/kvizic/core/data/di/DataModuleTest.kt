@@ -7,11 +7,13 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.plugin
 import io.ktor.client.request.get
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.domain.account.AccountRepository
 import io.ntole.kvizic.core.domain.account.DeleteAccount
 import io.ntole.kvizic.core.domain.analytics.Analytics
+import io.ntole.kvizic.core.domain.moderation.ModerationRepository
 import io.ntole.kvizic.core.domain.player.GetProfile
 import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.SetAvatar
@@ -27,6 +29,7 @@ import io.ntole.kvizic.core.network.ClientBuild
 import io.ntole.kvizic.core.network.InMemoryTokenStorage
 import io.ntole.kvizic.core.network.TokenStorage
 import io.ntole.kvizic.core.network.api.AuthApi
+import io.ntole.kvizic.core.network.api.ModerationApi
 import io.ntole.kvizic.core.network.api.TopicApi
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import kotlinx.coroutines.test.runTest
@@ -157,6 +160,39 @@ class DataModuleTest {
         assertNotNull(koin.get<LinkPlayGames>())
         koin.close()
     }
+
+    /**
+     * The moderator's client goes to its environment's server with no session of a player's: no bearer, no
+     * build, and nothing a guest could be minted with. The game's modules bind nothing of it.
+     */
+    @Test
+    fun `the moderation module talks to its server as nobody and the game cannot moderate`() =
+        runTest {
+            KvizicEnvironment.entries.forEach { environment ->
+                val koin = koinApplication { modules(moderationDataModule(environment)) }.koin
+                val client = koin.get<HttpClient>()
+                client.plugin(HttpSend).intercept { request ->
+                    throw NotSent(
+                        request.url.buildString(),
+                        platform = request.headers[KvizicApi.Headers.CLIENT_PLATFORM],
+                        version = request.headers[HttpHeaders.Authorization],
+                    )
+                }
+                val sent = assertFailsWith<NotSent> { koin.get<ModerationApi>().overview("t") }
+
+                assertEquals(environment.apiBaseUrl + KvizicApi.Paths.ADMIN_OVERVIEW, sent.url)
+                assertNull(sent.platform)
+                assertNull(sent.version, "a bearer went with it")
+                assertNotNull(koin.get<ModerationRepository>())
+                assertNotNull(koin.get<GetTopics>())
+                assertNull(koin.getOrNull<SessionRepository>())
+                client.close()
+                koin.close()
+            }
+            val game = koin(KvizicEnvironment.LOCAL)
+            assertNull(game.getOrNull<ModerationRepository>())
+            game.close()
+        }
 
     /** No key, as in every test and CI build: the switch is there, and nothing is kept or sent. */
     @Test

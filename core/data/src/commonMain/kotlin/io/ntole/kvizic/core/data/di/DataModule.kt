@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ntole.kvizic.core.data.account.DefaultAccountRepository
 import io.ntole.kvizic.core.data.lobby.DefaultLobbySession
 import io.ntole.kvizic.core.data.lobby.DefaultPublicLobbyRepository
+import io.ntole.kvizic.core.data.moderation.DefaultModerationRepository
 import io.ntole.kvizic.core.data.player.DefaultPlayerRepository
 import io.ntole.kvizic.core.data.playgames.DefaultPlayGamesRepository
 import io.ntole.kvizic.core.data.report.DefaultReportRepository
@@ -15,6 +16,7 @@ import io.ntole.kvizic.core.domain.account.DeleteAccount
 import io.ntole.kvizic.core.domain.analytics.Analytics
 import io.ntole.kvizic.core.domain.lobby.LobbySession
 import io.ntole.kvizic.core.domain.lobby.PublicLobbyRepository
+import io.ntole.kvizic.core.domain.moderation.ModerationRepository
 import io.ntole.kvizic.core.domain.player.GetProfile
 import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.SetAvatar
@@ -29,6 +31,7 @@ import io.ntole.kvizic.core.domain.topic.GetTopics
 import io.ntole.kvizic.core.domain.topic.TopicRepository
 import io.ntole.kvizic.core.domain.update.AppUpdate
 import io.ntole.kvizic.core.network.ClientBuild
+import io.ntole.kvizic.core.network.InMemoryTokenStorage
 import io.ntole.kvizic.core.network.KvizicHttpClient
 import io.ntole.kvizic.core.network.SessionStore
 import io.ntole.kvizic.core.network.TokenStorage
@@ -37,6 +40,7 @@ import io.ntole.kvizic.core.network.analytics.PostHogAnalytics
 import io.ntole.kvizic.core.network.analytics.PostHogConfig
 import io.ntole.kvizic.core.network.api.AuthApi
 import io.ntole.kvizic.core.network.api.LobbyApi
+import io.ntole.kvizic.core.network.api.ModerationApi
 import io.ntole.kvizic.core.network.api.PlayerApi
 import io.ntole.kvizic.core.network.api.ReportApi
 import io.ntole.kvizic.core.network.api.TopicApi
@@ -142,4 +146,26 @@ public fun gameDataModule(
         factory { SetAvatar(players = get(), session = get()) }
         factory { GetTopics(topics = get()) }
         factory { ReportQuestion(reports = get(), session = get()) }
+    }
+
+/**
+ * Everything a client that only moderates needs, and nothing of a player's: an HTTP client of its own over
+ * a session store nothing writes, so no bearer goes out and no guest can be minted; the moderator's calls
+ * ([ModerationRepository]), and the topics, which name a question's.
+ *
+ * The game's modules bind none of it, so the game cannot moderate.
+ */
+public fun moderationDataModule(environment: KvizicEnvironment): Module =
+    module {
+        single<HttpClient> {
+            KvizicHttpClient.create(
+                baseUrl = environment.apiBaseUrl,
+                sessionStore = SessionStore(InMemoryTokenStorage(), environment),
+            )
+        }
+        single { ModerationApi(get()) }
+        single { TopicApi(get()) }
+        single<ModerationRepository> { DefaultModerationRepository(api = get()) }
+        single<TopicRepository> { DefaultTopicRepository(api = get()) }
+        factory { GetTopics(topics = get()) }
     }
