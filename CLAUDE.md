@@ -163,6 +163,11 @@ makes the draw tests write PNGs to look at.
   and `ALLOWED_WEB_ORIGINS=localhost:8081,127.0.0.1:8081`, serve `:app:webApp:wasmJsBrowserDistribution`'s
   output on 8081, and open both origins (each its own player). The Browser pane stops painting while hidden,
   so read state from the server's log, not from a screenshot alone.
+- **The load test**, `./gradlew :e2e:loadTest` (not in CI): 480 real clients in 60 rooms of eight play a game
+  at once against the in-process server, with production pings. 2026-10-01 on the development Mac: every
+  game done, a room's players saw the answers open within 13 ms of each other at p99 and the reveal within
+  1 ms, heap 120 MB and 1.9 cores for server and clients together. The share the server alone would take of
+  Render's 0.5 CPU is unmeasured: it needs the server in a process of its own.
 - **Realtime engines differ**: the socket client sets no frame limit, which Ktor's browser and OkHttp engines
   refuse; `:e2e` plays a player over OkHttp beside one over CIO to hold that.
 

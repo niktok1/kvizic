@@ -17,3 +17,24 @@ dependencies {
     testImplementation(libs.kotlinx.coroutinesTest)
     testImplementation(libs.kotlin.testJunit)
 }
+
+// The load test is no check of a commit: it takes minutes and measures this machine. `test` leaves it out,
+// and `./gradlew :e2e:loadTest` runs it alone (`-Pkvizic.load.players=96` for fewer players).
+tasks.test {
+    filter { excludeTestsMatching("*LoadTest") }
+}
+
+val loadTest by tasks.registering(Test::class) {
+    description = "Plays a game in every room of 480 real clients at once and reports the fan-out."
+    group = "verification"
+    testClassesDirs =
+        sourceSets.test
+            .get()
+            .output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    filter { includeTestsMatching("*LoadTest") }
+    providers.gradleProperty("kvizic.load.players").orNull?.let { systemProperty("kvizic.load.players", it) }
+    maxHeapSize = "2g"
+    testLogging { showStandardStreams = true }
+    outputs.upToDateWhen { false }
+}
