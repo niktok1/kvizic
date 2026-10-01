@@ -79,8 +79,7 @@ internal val STANDINGS =
         Standing("roda", 655, 5, 1),
     )
 
-internal val QUESTION =
-    AskedQuestion(2, 10, "Која река протиче кроз Нови Сад?", "GEOGRAPHY", 4, QuestionKind.CHOICE, 15.seconds)
+internal val QUESTION = AskedQuestion(2, 10, "Која река протиче кроз Нови Сад?", "GEOGRAPHY", 4, QuestionKind.CHOICE)
 
 internal val OPTIONS = listOf("Дунав", "Сава", "Тиса", "Морава")
 

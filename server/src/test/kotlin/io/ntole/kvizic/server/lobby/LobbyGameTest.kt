@@ -480,38 +480,6 @@ class LobbyGameTest {
         }
 
     @Test
-    fun `the host changes the settings during a game, which plays on by its own, and the next game takes them`() =
-        runTest {
-            val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))
-            val ana = lobby.player("ana").join()
-            val boris = lobby.player("boris").join()
-            lobby.startGame(ana)
-            val wanted = LobbySettingsDto(questionCount = 5, secondsPerQuestion = 30)
-
-            assertEquals(RejectCode.NOT_HOST, boris.answerTo(boris.settings(wanted)))
-            assertNull(ana.answerTo(ana.settings(wanted)), "taken during the game")
-            assertEquals(wanted, boris.last<ServerMessage.SettingsChanged>().settings)
-            playOut(lobby, ana, from = 0, count = 3)
-
-            assertEquals(List(3) { 15_000L }, boris.all<ServerMessage.QuestionShown>().map { it.question.answerMs })
-            assertEquals(List(3) { 15_000L }, boris.all<ServerMessage.AnswersOpened>().map { it.durationMs })
-            assertEquals(3, boris.last<ServerMessage.GameOver>().results.questionCount, "the game kept its own")
-            assertEquals(
-                15,
-                lobby.records
-                    .single()
-                    .settings.secondsPerQuestion,
-            )
-
-            ana.back()
-            boris.back()
-            lobby.startGame(ana)
-            assertEquals(5, boris.last<ServerMessage.GameStarted>().questionCount)
-            assertEquals(30_000L, boris.last<ServerMessage.QuestionShown>().question.answerMs)
-            lobby.assertInvariants()
-        }
-
-    @Test
     fun `players go back to the lobby by hand, a start waits a little for them, and whoever is not back leaves`() =
         runTest {
             val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))

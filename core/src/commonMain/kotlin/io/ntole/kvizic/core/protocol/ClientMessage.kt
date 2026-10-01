@@ -51,7 +51,7 @@ public sealed interface ClientMessage {
         public val reaction: String,
     ) : ClientMessage
 
-    /** The host changing the lobby's settings: while it waits, or the next game's during one; never in a countdown. */
+    /** The host changing the lobby's settings, while it waits. */
     @Serializable
     @SerialName("settings")
     public data class UpdateSettings(

@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
-import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.Stage
@@ -159,42 +158,6 @@ class RoomScreenDrawTest {
                 assertTrue(words.gameStarting in scene.everyText(), "${skin.id}: ${scene.everyText()}")
                 assertFalse(words.start in scene.everyText(), skin.id)
             }
-        }
-    }
-
-    @Test
-    fun `the host opens the settings during a game and from the results, and nobody else does`() {
-        eachSkin { skin ->
-            val words = stringsOf(Language.DEFAULT).game
-            var opened = 0
-            val hosting = lobby(host = YOU)
-            val onResults = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
-            val steps =
-                listOf(
-                    "reading-host" to inLobby(reading(), lobby = hosting),
-                    "answering-host" to inLobby(answering(), lobby = hosting),
-                    "reveal-host" to inLobby(revealing(), lobby = hosting),
-                    "results-host" to
-                        inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = onResults, host = YOU)),
-                )
-            steps.forEach { (name, state) ->
-                draw(skin, name, state, RoomActions(openSettings = { opened++ })) { scene ->
-                    scene.tap(words.settings)
-                }
-            }
-            assertEquals(steps.size, opened, skin.id)
-            draw(skin, "answering", inLobby(answering())) { scene ->
-                assertFalse(words.settings in scene.descriptions(), "${skin.id}: a member opens the settings")
-            }
-        }
-    }
-
-    @Test
-    fun `a question's clock counts the game's own time, not the room's settings changed since`() {
-        val words = stringsOf(Language.DEFAULT).game
-        val changed = lobby(settings = LobbySettings(secondsPerQuestion = 30))
-        draw(Skins.Default, "reading-changed", inLobby(reading(), lobby = changed)) { scene ->
-            assertTrue(words.secondsToAnswer.fill(15) in scene.descriptions(), "${scene.descriptions()}")
         }
     }
 

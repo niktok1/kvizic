@@ -39,7 +39,6 @@ import io.ntole.kvizic.core.protocol.StandingView
 import io.ntole.kvizic.core.question.Difficulty
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import io.ntole.kvizic.core.lobby.LobbyKind as WireLobbyKind
 import io.ntole.kvizic.core.protocol.NoticeKind as WireNoticeKind
 import io.ntole.kvizic.core.question.QuestionKind as WireQuestionKind
@@ -130,11 +129,7 @@ internal fun LobbyView.toDomain(): Lobby {
     )
 }
 
-/**
- * A question as asked, its time to answer the one it says, or, from a server that says none, the room's
- * [settings]', which such a server never changed during a game.
- */
-internal fun QuestionView.toDomain(settings: LobbySettings): AskedQuestion =
+internal fun QuestionView.toDomain(): AskedQuestion =
     AskedQuestion(
         index = index,
         count = count,
@@ -147,7 +142,6 @@ internal fun QuestionView.toDomain(settings: LobbySettings): AskedQuestion =
                 WireQuestionKind.TRUE_FALSE -> QuestionKind.TRUE_FALSE
                 WireQuestionKind.UNKNOWN -> QuestionKind.UNKNOWN
             },
-        answerTime = if (answerMs > 0) answerMs.milliseconds else settings.secondsPerQuestion.seconds,
     )
 
 internal fun StandingView.toDomain(): Standing = Standing(player, score, rank, correct)
@@ -187,14 +181,8 @@ internal fun deadline(
 ): Deadline =
     Deadline(endsAt = at + remainingMs.coerceAtLeast(0).milliseconds, total = totalMs.coerceAtLeast(0).milliseconds)
 
-/**
- * A phase as a snapshot has it, anchored at [at], in a room of [settings]; null for one this build does not
- * know.
- */
-internal fun PhaseView.toDomain(
-    at: ComparableTimeMark,
-    settings: LobbySettings,
-): GamePhase? =
+/** A phase as a snapshot has it, anchored at [at]; null for one this build does not know. */
+internal fun PhaseView.toDomain(at: ComparableTimeMark): GamePhase? =
     when (this) {
         is PhaseView.Waiting -> {
             GamePhase.Waiting(lastResults?.toDomain())
@@ -208,7 +196,7 @@ internal fun PhaseView.toDomain(
             GamePhase.Reading(
                 gameId,
                 players,
-                question.toDomain(settings),
+                question.toDomain(),
                 deadline(at, remainingMs),
                 standings.map { it.toDomain() },
             )
@@ -218,7 +206,7 @@ internal fun PhaseView.toDomain(
             GamePhase.Answering(
                 gameId = gameId,
                 players = players,
-                question = question.toDomain(settings),
+                question = question.toDomain(),
                 options = options,
                 deadline = deadline(at, remainingMs, durationMs),
                 answered = answered.toSet(),

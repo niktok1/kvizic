@@ -36,7 +36,6 @@ import io.ntole.kvizic.analytics.LocalAnalytics
 import io.ntole.kvizic.analytics.UsageTracker
 import io.ntole.kvizic.analytics.rememberConfigurationChanging
 import io.ntole.kvizic.core.domain.error.KvizicException
-import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
@@ -392,10 +391,7 @@ private fun Room(
     )
 }
 
-/**
- * The host's change of the room's settings, from those it has, saved as the screen goes back: during a game,
- * the next game's, which it says; never in a countdown, whose questions are picked.
- */
+/** The host's change of the room's settings, from those it has, saved as the screen goes back. */
 @Composable
 private fun RoomSettings(
     room: RoomViewModel,
@@ -415,16 +411,8 @@ private fun RoomSettings(
             onDone()
         },
         minPlayers = state.lobby.members.size,
-        enabled = state.phase !is GamePhase.Countdown,
-        note =
-            LocalStrings.current.game.forNextGame
-                .takeIf { state.phase.inGame },
     )
 }
-
-/** Whether a game is under way: a question read, answered or revealed. */
-private val GamePhase.inGame: Boolean
-    get() = this is GamePhase.Reading || this is GamePhase.Answering || this is GamePhase.Revealing
 
 /** The groups the topics are listed under, as [rememberTopics]'s read last brought them. */
 @Composable

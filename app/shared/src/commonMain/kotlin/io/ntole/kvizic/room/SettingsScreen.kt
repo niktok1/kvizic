@@ -14,7 +14,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
@@ -40,8 +39,7 @@ import io.ntole.kvizic.navigation.SystemBack
  * A room's settings, to make a room with or for its host to change: how many questions and how long each,
  * which topics, Све being none picked, how hard, how many seats, at the least [minPlayers] (the members a
  * room already has), who may find it, and whether a wrong answer costs points. [settings] is what is picked,
- * which [onChange] changes; [onDone] makes the room or saves the change, its button [doneLabel], with [note]
- * over it: that a change made during a game is the next game's.
+ * which [onChange] changes; [onDone] makes the room or saves the change, its button [doneLabel].
  *
  * The topics are one line, what is picked in a few words, which opens the [TopicPicker] in the settings'
  * place, searched and grouped by [groups], for the hundreds of topics to come; back closes it.
@@ -57,7 +55,6 @@ fun SettingsScreen(
     minPlayers: Int = LobbyRules.MIN_PLAYERS,
     enabled: Boolean = true,
     groups: List<TopicGroup> = emptyList(),
-    note: String? = null,
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     SystemBack(enabled = picking) { picking = false }
@@ -190,16 +187,6 @@ fun SettingsScreen(
             )
         }
         Spacer(Modifier.height(space.md))
-        if (note != null) {
-            KvizicText(
-                note,
-                Modifier.fillMaxWidth(),
-                style = type.caption,
-                color = colors.onPageMuted,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(space.sm))
-        }
         StageButton(
             doneLabel,
             onClick = tapped("settings.done", onClick = onDone),

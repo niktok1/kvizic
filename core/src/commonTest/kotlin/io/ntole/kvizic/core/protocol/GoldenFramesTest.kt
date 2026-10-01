@@ -36,8 +36,6 @@ class GoldenFramesTest {
             """{"t":"rejected","id":7,"code":"TOO_SOON"}""",
             """{"t":"closing","reason":"VOTED_OUT"}""",
             """{"t":"closing","reason":"NOT_BACK"}""",
-            // Since 2026-10-01: a question says its game's time to answer, which the room's settings may outgrow.
-            """{"t":"question","v":14,"question":{"index":1,"count":10,"text":"?","topic":"SPORT","optionCount":2,"kind":"TRUE_FALSE","answerMs":20000},"readMs":2000}""",
         )
 
     private val v1ClientFrames =
@@ -83,16 +81,6 @@ class GoldenFramesTest {
             ClientMessage.VoteKick(id = 8, player = null),
             ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames.last()),
         )
-    }
-
-    @Test
-    fun aQuestionSaysItsTimeToAnswerAndOneThatDoesNotIsZero() {
-        val times =
-            v1ServerFrames
-                .map { ProtocolJson.decodeFromString(ServerMessage.serializer(), it) }
-                .filterIsInstance<ServerMessage.QuestionShown>()
-                .map { it.question.answerMs }
-        assertEquals(listOf(0L, 20_000L), times)
     }
 
     @Test

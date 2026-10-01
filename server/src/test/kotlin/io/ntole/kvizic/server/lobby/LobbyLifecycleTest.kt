@@ -313,6 +313,11 @@ class LobbyLifecycleTest {
             lobby.assertInvariants()
         }
 
+    private fun TestPlayer.settings(settings: LobbySettingsDto): Int =
+        nextId().also {
+            say(ClientMessage.UpdateSettings(it, settings))
+        }
+
     /** Plays [count] questions with [player] alone answering each right at once. */
     private fun playAlone(
         lobby: LobbyScenario,

@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -138,14 +137,11 @@ fun RoomScreen(
             label = "stage",
         ) { shown ->
             val shownMe = shown.lobby.member(shown.you)
-            // The host changes the room's settings during a game too, for the next one; a solo run has none.
-            val openSettings =
-                actions.openSettings.takeIf { shown.lobby.host == shown.you && shown.lobby.kind != LobbyKind.SOLO }
             when (val phase = shown.phase) {
                 is GamePhase.Waiting -> {
                     val results = phase.lastResults
                     if (shownMe?.onResults == true && results != null) {
-                        Results(results, shown.lobby, shown.you, newGameStarting = false, actions, openSettings)
+                        Results(results, shown.lobby, shown.you, newGameStarting = false, actions)
                     } else {
                         Waiting(shown, countdown = null, bursts, actions, onLeave = { leaving = true }, topics = topics)
                     }
@@ -154,7 +150,7 @@ fun RoomScreen(
                 is GamePhase.Countdown -> {
                     val results = phase.lastResults
                     if (shownMe?.onResults == true && results != null) {
-                        Results(results, shown.lobby, shown.you, newGameStarting = true, actions, openSettings)
+                        Results(results, shown.lobby, shown.you, newGameStarting = true, actions)
                     } else {
                         Waiting(
                             shown,
@@ -168,36 +164,15 @@ fun RoomScreen(
                 }
 
                 is GamePhase.Reading -> {
-                    QuestionScreen(
-                        shown,
-                        phase,
-                        topics,
-                        actions,
-                        onLeave = { leaving = true },
-                        onSettings = openSettings,
-                    )
+                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
                 }
 
                 is GamePhase.Answering -> {
-                    QuestionScreen(
-                        shown,
-                        phase,
-                        topics,
-                        actions,
-                        onLeave = { leaving = true },
-                        onSettings = openSettings,
-                    )
+                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
                 }
 
                 is GamePhase.Revealing -> {
-                    RevealScreen(
-                        shown,
-                        phase,
-                        topics,
-                        onReport = { reporting = it },
-                        onLeave = { leaving = true },
-                        onSettings = openSettings,
-                    )
+                    RevealScreen(shown, phase, topics, onReport = { reporting = it }, onLeave = { leaving = true })
                 }
             }
         }
@@ -686,8 +661,7 @@ private val TICK = 200.milliseconds
 
 /**
  * A game's end: who won and the podium, the rest of the standings, how the player did, and their own way
- * back to the lobby or out; or, once the host started the next game, the way into it. [onSettings], the
- * host's, opens the room's settings for the next game.
+ * back to the lobby or out; or, once the host started the next game, the way into it.
  */
 @Composable
 private fun Results(
@@ -696,7 +670,6 @@ private fun Results(
     you: String,
     newGameStarting: Boolean,
     actions: RoomActions,
-    onSettings: (() -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -706,25 +679,14 @@ private fun Results(
     val ranked = results.standings.sortedBy { it.rank }
     val seatOf = { playerId: String, fallback: Int -> lobby.member(playerId)?.seat ?: fallback }
     Page {
-        Box(Modifier.fillMaxWidth().heightIn(min = space.md * 2), contentAlignment = Alignment.Center) {
-            KvizicText(
-                words.gameOver.fill(words.questionCount.of(results.questionCount, language)),
-                Modifier.fillMaxWidth(),
-                style = type.label,
-                color = colors.onPageMuted,
-                textAlign = TextAlign.Center,
-            )
-            if (onSettings != null) {
-                StageIconButton(
-                    KvizicIcons.Sliders,
-                    contentDescription = LocalStrings.current.game.settings,
-                    onClick = tapped("results.settings", onClick = onSettings),
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    kind = ButtonKind.QUIET,
-                    small = true,
-                )
-            }
-        }
+        Spacer(Modifier.height(space.md))
+        KvizicText(
+            words.gameOver.fill(words.questionCount.of(results.questionCount, language)),
+            Modifier.fillMaxWidth(),
+            style = type.label,
+            color = colors.onPageMuted,
+            textAlign = TextAlign.Center,
+        )
         ranked.firstOrNull()?.let { winner ->
             Spacer(Modifier.height(space.xs))
             KvizicText(

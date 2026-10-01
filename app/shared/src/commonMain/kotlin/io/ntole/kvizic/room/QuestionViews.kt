@@ -75,7 +75,6 @@ internal fun QuestionScreen(
     topics: List<Topic>,
     actions: RoomActions,
     onLeave: () -> Unit = {},
-    onSettings: (() -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -83,14 +82,13 @@ internal fun QuestionScreen(
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
     val lobby = state.lobby
+    val totalMillis = lobby.settings.secondsPerQuestion * MILLIS_PER_SECOND
     when (phase) {
         is GamePhase.Reading -> {
-            // The game's own time, never the room's settings, which the host may change for the next game.
-            val answerTime = phase.question.answerTime
             val timer =
-                remember(phase.deadline, answerTime) {
+                remember(phase.deadline) {
                     TimerPhase.Reading(
-                        totalMillis = answerTime.inWholeMilliseconds.toInt(),
+                        totalMillis = totalMillis,
                         readMillis =
                             phase.deadline.total.inWholeMilliseconds
                                 .toInt(),
@@ -110,13 +108,12 @@ internal fun QuestionScreen(
                     phase.standings,
                     state.you,
                     onLeave = onLeave,
-                    onSettings = onSettings,
                 )
                 Spacer(Modifier.height(space.xl))
                 QuestionTimer(
                     timer,
                     Modifier.align(Alignment.CenterHorizontally),
-                    contentDescription = words.secondsToAnswer.fill(answerTime.inWholeSeconds),
+                    contentDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
                 )
                 Spacer(Modifier.height(space.xl))
                 Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.xl) {
@@ -172,9 +169,8 @@ internal fun QuestionScreen(
                     phase.standings,
                     state.you,
                     timer = timer,
-                    timerDescription = words.secondsToAnswer.fill(phase.question.answerTime.inWholeSeconds),
+                    timerDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
                     onLeave = onLeave,
-                    onSettings = onSettings,
                 )
                 Spacer(Modifier.height(space.md))
                 Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
@@ -250,7 +246,6 @@ internal fun RevealScreen(
     topics: List<Topic>,
     onReport: (questionId: String) -> Unit = {},
     onLeave: () -> Unit = {},
-    onSettings: (() -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -279,10 +274,8 @@ internal fun RevealScreen(
             topics,
             reveal.standings,
             state.you,
-            // Stopped with nothing left, it lights nothing whatever the whole time was.
-            timer = TimerPhase.Stopped(totalMillis = 0, leftMillis = 0),
+            timer = TimerPhase.Stopped(lobby.settings.secondsPerQuestion * MILLIS_PER_SECOND, 0),
             onLeave = onLeave,
-            onSettings = onSettings,
         )
         Spacer(Modifier.height(space.md))
         RevealBody(
@@ -477,7 +470,6 @@ private fun RoundBar(
     timer: TimerPhase? = null,
     timerDescription: String? = null,
     onLeave: () -> Unit = {},
-    onSettings: (() -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -485,26 +477,13 @@ private fun RoundBar(
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically) {
-        // The host's way to the room's settings, for the next game, under the way out: the bar has no room
-        // across for it.
-        Column {
-            StageIconButton(
-                KvizicIcons.Leave,
-                contentDescription = words.leave,
-                onClick = tapped("question.leave", onClick = onLeave),
-                kind = ButtonKind.QUIET,
-                small = true,
-            )
-            if (onSettings != null) {
-                StageIconButton(
-                    KvizicIcons.Sliders,
-                    contentDescription = words.settings,
-                    onClick = tapped("question.settings", onClick = onSettings),
-                    kind = ButtonKind.QUIET,
-                    small = true,
-                )
-            }
-        }
+        StageIconButton(
+            KvizicIcons.Leave,
+            contentDescription = words.leave,
+            onClick = tapped("question.leave", onClick = onLeave),
+            kind = ButtonKind.QUIET,
+            small = true,
+        )
         Spacer(Modifier.width(space.xs))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -532,6 +511,8 @@ private fun Strip(content: @Composable () -> Unit) {
     val space = KvizicTheme.space
     Panel(Modifier.fillMaxWidth().heightIn(min = space.avatar.xs), padding = space.md) { content() }
 }
+
+private const val MILLIS_PER_SECOND = 1_000
 
 /** The most lines the question is recalled in on the reveal, beside its explanation. */
 private const val RECAP_LINES = 2

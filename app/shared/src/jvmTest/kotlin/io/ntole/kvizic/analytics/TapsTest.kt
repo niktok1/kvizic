@@ -192,19 +192,6 @@ class TapsTest {
             elementsTapped { RoomScreen(solo, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
         )
         assertEquals(
-            // The host opens the room's settings mid-game too, for the next game.
-            setOf("question.leave", "question.settings", "question.answer", "room.leave_cancel", "room.leave_confirm"),
-            elementsTapped {
-                RoomScreen(
-                    inLobby(answering(), lobby = lobby(host = YOU)),
-                    TOPICS,
-                    note = null,
-                    bursts = emptyMap(),
-                    actions = RoomActions(),
-                )
-            },
-        )
-        assertEquals(
             // Leaving mid-game asks first, as anywhere in the room.
             setOf("question.leave", "question.answer", "room.leave_cancel", "room.leave_confirm"),
             elementsTapped {
@@ -242,18 +229,6 @@ class TapsTest {
             elementsTapped {
                 RoomScreen(
                     inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members)),
-                    TOPICS,
-                    note = null,
-                    bursts = emptyMap(),
-                    actions = RoomActions(),
-                )
-            },
-        )
-        assertEquals(
-            setOf("results.settings", "results.back_to_room", "results.leave"),
-            elementsTapped {
-                RoomScreen(
-                    inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members, host = YOU)),
                     TOPICS,
                     note = null,
                     bursts = emptyMap(),

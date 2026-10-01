@@ -214,8 +214,6 @@ internal class TestPlayer(
 
     fun back(): Int = nextId().also { say(ClientMessage.BackToLobby(it)) }
 
-    fun settings(settings: LobbySettingsDto): Int = nextId().also { say(ClientMessage.UpdateSettings(it, settings)) }
-
     fun kick(player: TestPlayer): Int = nextId().also { say(ClientMessage.Kick(it, player.id)) }
 
     /** Votes [player] out of the room, or takes the vote back for none. */

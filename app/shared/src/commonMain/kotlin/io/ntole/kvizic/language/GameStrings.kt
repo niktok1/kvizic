@@ -108,8 +108,6 @@ data class GameStrings(
     val hard: String,
     val create: String,
     val save: String,
-    /** Under a room's settings changed during a game: the game plays on as it began. */
-    val forNextGame: String,
     // The room.
     val privateRoom: String,
     val publicRoom: String,
@@ -258,7 +256,6 @@ data class GameStrings(
             hard = transform(hard),
             create = transform(create),
             save = transform(save),
-            forNextGame = transform(forNextGame),
             privateRoom = transform(privateRoom),
             publicRoom = transform(publicRoom),
             soloRun = transform(soloRun),
@@ -394,7 +391,6 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         hard = "Тешко",
         create = "Направи",
         save = "Сачувај",
-        forNextGame = "Важи од следеће игре",
         privateRoom = "Приватна соба",
         publicRoom = "Јавна соба",
         soloRun = "Соло",
@@ -545,7 +541,6 @@ internal val EnglishGameStrings: GameStrings =
         hard = "Hard",
         create = "Create",
         save = "Save",
-        forNextGame = "For the next game",
         privateRoom = "Private room",
         publicRoom = "Public room",
         soloRun = "Solo",
