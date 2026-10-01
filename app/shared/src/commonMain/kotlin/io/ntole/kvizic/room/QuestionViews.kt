@@ -141,6 +141,7 @@ internal fun QuestionScreen(
             val playing = state.you in phase.players
             val myPick = phase.myPick
             val picks: Map<String, Int> = if (myPick != null) phase.picks + (state.you to myPick) else phase.picks
+            val answer = tappedAt("question.answer", withLockInHaptic(actions.answer))
             Page {
                 RoundBar(
                     phase.question.index,
@@ -169,7 +170,7 @@ internal fun QuestionScreen(
                                 else -> AnswerTileState.DIMMED
                             }
                         },
-                    onPick = if (playing && myPick == null) tappedAt("question.answer", actions.answer) else null,
+                    onPick = if (playing && myPick == null) answer else null,
                     stateDescriptions = phase.options.indices.map { i -> if (i == myPick) words.yourAnswer else null },
                     pickers =
                         if (picks.isEmpty()) {
@@ -234,6 +235,7 @@ internal fun RevealScreen(
     val lobby = state.lobby
     val mine = reveal.results.firstOrNull { it.playerId == state.you }
     val seconds by secondsLeft(phase.next)
+    RevealHaptic(reveal.questionId, right = mine?.option?.let { it == reveal.correct })
     Page {
         RoundBar(
             reveal.index,
