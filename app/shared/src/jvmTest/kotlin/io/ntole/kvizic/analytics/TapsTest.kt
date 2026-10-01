@@ -19,7 +19,10 @@ import io.ntole.kvizic.about.Deletion
 import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.CoreError
+import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
+import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.domain.lobby.PublicLobbies
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
@@ -33,6 +36,18 @@ import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.nodes
 import io.ntole.kvizic.room.Entry
 import io.ntole.kvizic.room.EntryWay
+import io.ntole.kvizic.room.JoinScreen
+import io.ntole.kvizic.room.MEMBERS
+import io.ntole.kvizic.room.PublicRoomsScreen
+import io.ntole.kvizic.room.RESULTS
+import io.ntole.kvizic.room.RoomActions
+import io.ntole.kvizic.room.RoomScreen
+import io.ntole.kvizic.room.SettingsScreen
+import io.ntole.kvizic.room.TOPICS
+import io.ntole.kvizic.room.YOU
+import io.ntole.kvizic.room.answering
+import io.ntole.kvizic.room.inLobby
+import io.ntole.kvizic.room.lobby
 import io.ntole.kvizic.settle
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
@@ -118,6 +133,88 @@ class TapsTest {
             },
         )
         assertTrue(uris.opened.isNotEmpty())
+    }
+
+    @Test
+    fun `every tap in the room is reported`() {
+        val member = inLobby(GamePhase.Waiting(null))
+        assertEquals(
+            setOf("top_bar.back", "room.share", "room.reaction", "room.leave_cancel", "room.leave_confirm"),
+            elementsTapped { RoomScreen(member, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
+        )
+        val host = inLobby(GamePhase.Waiting(null), lobby = lobby(host = YOU))
+        assertEquals(
+            setOf(
+                "top_bar.back",
+                "room.share",
+                "room.reaction",
+                "room.settings",
+                "room.start",
+                "room.seat",
+                "room.member_cancel",
+                "room.make_host",
+                "room.kick",
+                "room.leave_cancel",
+                "room.leave_confirm",
+            ),
+            elementsTapped { RoomScreen(host, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
+        )
+        assertEquals(
+            setOf("question.answer"),
+            elementsTapped {
+                RoomScreen(
+                    inLobby(answering()),
+                    TOPICS,
+                    note = null,
+                    bursts = emptyMap(),
+                    actions = RoomActions(),
+                )
+            },
+        )
+        val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
+        assertEquals(
+            setOf("results.back_to_room", "results.leave"),
+            elementsTapped {
+                RoomScreen(
+                    inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members)),
+                    TOPICS,
+                    note = null,
+                    bursts = emptyMap(),
+                    actions = RoomActions(),
+                )
+            },
+        )
+    }
+
+    @Test
+    fun `every tap on joining, the public rooms and the settings is reported`() {
+        assertEquals(
+            setOf("join.digit"),
+            elementsTapped { JoinScreen("", onCode = {}, onJoin = {}, entry = Entry.None, onDismissFailure = {}) },
+        )
+        assertEquals(
+            setOf("join.delete", "join.join"),
+            elementsTapped { JoinScreen("482915", onCode = {}, onJoin = {}, entry = Entry.None, onDismissFailure = {}) },
+        )
+        assertEquals(
+            setOf("public_rooms.quick_play", "public_rooms.create_room"),
+            elementsTapped {
+                PublicRoomsScreen(PublicLobbies(emptyList(), 3, 1), null, Entry.None, {}, {}, {}, {})
+            },
+        )
+        assertEquals(
+            setOf(
+                "settings.questions",
+                "settings.time",
+                "settings.all_topics",
+                "settings.topic",
+                "settings.players",
+                "settings.visibility",
+                "settings.penalty",
+                "settings.done",
+            ),
+            elementsTapped { SettingsScreen(LobbySettings(), TOPICS, onChange = {}, doneLabel = "OK", onDone = {}) },
+        )
     }
 
     @Test

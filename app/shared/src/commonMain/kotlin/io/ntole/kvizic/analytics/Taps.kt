@@ -39,3 +39,25 @@ fun tapped(
         }
     }
 }
+
+/**
+ * [onPick], reporting first a tap on [element] with the index picked under `option`: for a row of things
+ * that hands back which was tapped, a question's answers, where [tapped] would need one per index.
+ */
+@Composable
+fun tappedAt(
+    element: String,
+    onPick: (Int) -> Unit,
+): (Int) -> Unit {
+    val analytics = LocalAnalytics.current
+    val action by rememberUpdatedState(onPick)
+    return remember(analytics, element) {
+        { index ->
+            analytics.track(AnalyticsEvent.TAP, mapOf(AnalyticsProperty.ELEMENT to element, OPTION to index))
+            action(index)
+        }
+    }
+}
+
+/** The property naming which of a row of things was tapped. */
+private const val OPTION = "option"

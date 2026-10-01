@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.Lobby
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
@@ -161,7 +162,7 @@ internal fun QuestionScreen(
                                 else -> AnswerTileState.DIMMED
                             }
                         },
-                    onPick = if (playing && myPick == null) actions.answer else null,
+                    onPick = if (playing && myPick == null) tappedAt("question.answer", actions.answer) else null,
                     stateDescriptions = phase.options.indices.map { i -> if (i == myPick) words.yourAnswer else null },
                     pickers =
                         if (picks.isEmpty()) {
