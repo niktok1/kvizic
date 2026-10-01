@@ -128,6 +128,14 @@ internal fun topicNameOf(
     language: Language,
 ): String = topics.firstOrNull { it.id == id }?.let { topicName(it, language) } ?: id
 
+/** The name of [level], as the settings' chips have it. */
+internal fun GameStrings.levelName(level: LobbyDifficulty): String =
+    when (level) {
+        LobbyDifficulty.EASY -> easy
+        LobbyDifficulty.MEDIUM -> medium
+        LobbyDifficulty.HARD -> hard
+    }
+
 /** A room's settings, each in a few words, as its chips show them: its difficulty only when not medium. */
 @Composable
 @ReadOnlyComposable
@@ -141,11 +149,7 @@ internal fun settingsChips(
         words.questionCount.of(settings.questionCount, language),
         words.seconds.fill(settings.secondsPerQuestion),
         topicsSummary(settings.topics, topics, language, words.allTopics),
-        when (settings.difficulty) {
-            LobbyDifficulty.EASY -> words.easy
-            LobbyDifficulty.MEDIUM -> null
-            LobbyDifficulty.HARD -> words.hard
-        },
+        settings.difficulty.takeIf { it != LobbyDifficulty.MEDIUM }?.let(words::levelName),
         if (settings.wrongAnswerPenalty) words.penaltyOn else words.penaltyOff,
     )
 }

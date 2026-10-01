@@ -66,7 +66,7 @@ class DbQuestionSource(
                 questions = questions,
                 toppedUp = picked.any { it.id !in inTopicIds },
                 shortened = questions.size < request.count,
-                soloBestBefore = request.soloPlayer?.let(::soloBest),
+                soloBestBefore = request.soloPlayer?.let { soloBest(it, request.difficulty) },
             )
         }
 
@@ -178,12 +178,18 @@ class DbQuestionSource(
         }
     }
 
-    private fun soloBest(playerId: String): Int? =
-        Profiles
-            .select(Profiles.soloBestScore)
+    /** The best solo run of [playerId] at [level] so far, or null before one. */
+    private fun soloBest(
+        playerId: String,
+        level: Difficulty,
+    ): Int? {
+        val best = Profiles.soloBest(level).first
+        return Profiles
+            .select(best)
             .where { Profiles.playerId eq playerId }
             .firstOrNull()
-            ?.get(Profiles.soloBestScore)
+            ?.get(best)
+    }
 
     private fun rampOrder(difficulty: Difficulty): Int =
         when (difficulty) {

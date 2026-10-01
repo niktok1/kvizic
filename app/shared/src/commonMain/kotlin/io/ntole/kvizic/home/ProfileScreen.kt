@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tappedAt
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.avatar.AvatarArt
 import io.ntole.kvizic.design.component.Avatar
@@ -37,6 +38,7 @@ import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.loading.LoadingSpinner
+import io.ntole.kvizic.room.levelName
 import io.ntole.kvizic.room.shown
 import io.ntole.kvizic.room.topicNameOf
 
@@ -88,8 +90,16 @@ fun ProfileScreen(
                     color = colors.onPageMuted,
                 )
             }
-            stats.soloBestScore?.let { best ->
-                KvizicText(words.soloBest.fill(best), style = type.body, color = colors.onPageMuted)
+            if (stats.soloBests.isNotEmpty()) {
+                val bests =
+                    LobbyDifficulty.entries.mapNotNull { level ->
+                        stats.soloBests[level]?.let { "${words.levelName(level)} $it" }
+                    }
+                KvizicText(
+                    words.soloBest.fill(bests.joinToString(" · ")),
+                    style = type.body,
+                    color = colors.onPageMuted,
+                )
             }
             stats.bestTopicId?.let { id ->
                 KvizicText(

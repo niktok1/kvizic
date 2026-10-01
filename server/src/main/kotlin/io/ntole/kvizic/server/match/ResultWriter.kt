@@ -119,13 +119,13 @@ class ResultWriter(
                 if (record.kind == LobbyKind.SOLO) row[soloRuns] = soloRuns + 1
             }
             if (record.kind == LobbyKind.SOLO && player.finished) {
-                // A compare-and-set: only a better run replaces the best.
+                // A compare-and-set: only a better run at the same level replaces its best.
+                val (best, bestAt) = Profiles.soloBest(record.settings.difficulty)
                 Profiles.update({
-                    (Profiles.playerId eq player.playerId) and
-                        (Profiles.soloBestScore.isNull() or (Profiles.soloBestScore less player.score))
+                    (Profiles.playerId eq player.playerId) and (best.isNull() or (best less player.score))
                 }) { row ->
-                    row[soloBestScore] = player.score
-                    row[soloBestAt] = now
+                    row[best] = player.score
+                    row[bestAt] = now
                 }
             }
         }

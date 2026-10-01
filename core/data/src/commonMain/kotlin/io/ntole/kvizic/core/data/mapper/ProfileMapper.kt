@@ -1,5 +1,6 @@
 package io.ntole.kvizic.core.data.mapper
 
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
@@ -33,5 +34,10 @@ internal fun PlayerStatsDto.toDomain(): PlayerStats =
         answersCorrect = answersCorrect,
         bestTopicId = bestTopicId,
         soloRuns = soloRuns,
-        soloBestScore = soloBestScore,
+        soloBests =
+            listOfNotNull(
+                soloBestEasyScore?.let { LobbyDifficulty.EASY to it },
+                soloBestScore?.let { LobbyDifficulty.MEDIUM to it },
+                soloBestHardScore?.let { LobbyDifficulty.HARD to it },
+            ).toMap(),
     )

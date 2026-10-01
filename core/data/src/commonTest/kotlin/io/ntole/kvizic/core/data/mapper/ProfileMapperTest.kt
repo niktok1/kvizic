@@ -1,5 +1,6 @@
 package io.ntole.kvizic.core.data.mapper
 
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
@@ -28,6 +29,7 @@ class ProfileMapperTest {
                         bestTopicId = "MUSIC",
                         soloRuns = 2,
                         soloBestScore = 740,
+                        soloBestHardScore = 410,
                     ),
             )
 
@@ -46,7 +48,7 @@ class ProfileMapperTest {
                         answersCorrect = 64,
                         bestTopicId = "MUSIC",
                         soloRuns = 2,
-                        soloBestScore = 740,
+                        soloBests = mapOf(LobbyDifficulty.MEDIUM to 740, LobbyDifficulty.HARD to 410),
                     ),
             ),
             dto.toDomain(),

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
@@ -36,7 +37,7 @@ class ProfileScreenDrawTest {
                     words.games.of(12, language),
                     words.wins.of(3, language),
                     words.correctShare.fill(66),
-                    words.soloBest.fill(940),
+                    words.soloBest.fill("${words.medium} 940 · ${words.hard} 410"),
                     words.bestTopic.fill(if (language == Language.ENGLISH) "Geography" else stringsTopic(language)),
                     words.pickAvatar,
                 ).forEach { assertTrue(it in shown, "$language: \"$it\" is not in $shown") }
@@ -95,7 +96,7 @@ class ProfileScreenDrawTest {
                         answersCorrect = 80,
                         bestTopicId = "GEOGRAPHY",
                         soloRuns = 4,
-                        soloBestScore = 940,
+                        soloBests = mapOf(LobbyDifficulty.HARD to 410, LobbyDifficulty.MEDIUM to 940),
                     ),
             )
     }

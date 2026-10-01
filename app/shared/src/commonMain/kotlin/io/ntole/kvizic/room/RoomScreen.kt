@@ -40,6 +40,7 @@ import io.ntole.kvizic.core.domain.lobby.Deadline
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.GameResults
 import io.ntole.kvizic.core.domain.lobby.Lobby
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbyMember
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
@@ -82,6 +83,7 @@ class RoomActions(
     val answer: (Int) -> Unit = {},
     val start: () -> Unit = {},
     val openSettings: () -> Unit = {},
+    val chooseDifficulty: (LobbyDifficulty) -> Unit = {},
     val kick: (String) -> Unit = {},
     val transferHost: (String) -> Unit = {},
     val backToLobby: () -> Unit = {},
@@ -335,18 +337,36 @@ private fun Waiting(
             Spacer(Modifier.height(space.md))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
-            settingsChips(lobby.settings, topics).forEach { chip ->
-                Chip(
-                    chip,
-                    onClick =
-                        if (hosting &&
-                            countdown == null
-                        ) {
-                            tapped("room.settings", onClick = actions.openSettings)
-                        } else {
-                            null
-                        },
-                )
+            if (lobby.kind == LobbyKind.SOLO) {
+                // A solo run's one setting is its level, picked here; each level keeps its own best.
+                LobbyDifficulty.entries.forEach { level ->
+                    Chip(
+                        words.levelName(level),
+                        selected = lobby.settings.difficulty == level,
+                        onClick =
+                            if (countdown == null) {
+                                tapped("room.difficulty", mapOf("difficulty" to level.name.lowercase())) {
+                                    actions.chooseDifficulty(level)
+                                }
+                            } else {
+                                null
+                            },
+                    )
+                }
+            } else {
+                settingsChips(lobby.settings, topics).forEach { chip ->
+                    Chip(
+                        chip,
+                        onClick =
+                            if (hosting &&
+                                countdown == null
+                            ) {
+                                tapped("room.settings", onClick = actions.openSettings)
+                            } else {
+                                null
+                            },
+                    )
+                }
             }
         }
         Spacer(Modifier.weight(1f))

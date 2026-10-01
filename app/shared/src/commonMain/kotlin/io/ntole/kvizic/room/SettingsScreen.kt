@@ -128,15 +128,9 @@ fun SettingsScreen(
             Column {
                 heading(words.difficulty)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
-                    val levels =
-                        listOf(
-                            LobbyDifficulty.EASY to words.easy,
-                            LobbyDifficulty.MEDIUM to words.medium,
-                            LobbyDifficulty.HARD to words.hard,
-                        )
-                    levels.forEach { (difficulty, label) ->
+                    LobbyDifficulty.entries.forEach { difficulty ->
                         Chip(
-                            label,
+                            words.levelName(difficulty),
                             selected = settings.difficulty == difficulty,
                             onClick =
                                 tapped("settings.difficulty", mapOf("difficulty" to difficulty.name.lowercase())) {

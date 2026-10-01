@@ -39,5 +39,8 @@ public data class PlayerStatsDto(
     /** The topic with the best correct rate among those with enough answers, or null before there is one. */
     public val bestTopicId: String? = null,
     public val soloRuns: Int = 0,
+    /** The best solo run at medium: every run was medium once, and a build before levels shows it alone. */
     public val soloBestScore: Int? = null,
+    public val soloBestEasyScore: Int? = null,
+    public val soloBestHardScore: Int? = null,
 )

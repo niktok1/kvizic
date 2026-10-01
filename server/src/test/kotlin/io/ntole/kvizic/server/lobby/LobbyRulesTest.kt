@@ -3,6 +3,7 @@ package io.ntole.kvizic.server.lobby
 import io.ntole.kvizic.core.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.lobby.Visibility
+import io.ntole.kvizic.core.question.Difficulty
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -48,6 +49,10 @@ class LobbyRulesTest {
         ).forEach { refused -> assertNotNull(settingsProblem(refused, LobbyKind.PRIVATE, topics), "$refused") }
         assertNotNull(settingsProblem(fine.copy(maxPlayers = 3), LobbyKind.PRIVATE, topics, members = 4))
         assertNull(settingsProblem(LobbySettingsDto.SOLO, LobbyKind.SOLO, topics))
+        assertNull(settingsProblem(LobbySettingsDto.SOLO.copy(difficulty = Difficulty.HARD), LobbyKind.SOLO, topics))
+        assertNotNull(
+            settingsProblem(LobbySettingsDto.SOLO.copy(difficulty = Difficulty.UNKNOWN), LobbyKind.SOLO, topics),
+        )
         assertNotNull(settingsProblem(fine, LobbyKind.SOLO, topics), "a solo run keeps its format")
     }
 }

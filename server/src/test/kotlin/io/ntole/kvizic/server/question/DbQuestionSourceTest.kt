@@ -149,6 +149,10 @@ class DbQuestionSourceTest {
     fun `a solo run carries its player's best so far`() {
         bank { question("q1", listOf("SPORT")) }
         assertEquals(640, pick(1, players = setOf("ana"), solo = "ana").soloBestBefore)
+        assertNull(
+            pick(1, players = setOf("ana"), solo = "ana", difficulty = Difficulty.HARD).soloBestBefore,
+            "at hard",
+        )
         assertNull(pick(1, players = setOf("boris"), solo = "boris").soloBestBefore)
         assertNull(pick(1).soloBestBefore, "not a solo run")
     }

@@ -1,5 +1,7 @@
 package io.ntole.kvizic.core.domain.player
 
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
+
 /**
  * The player on this device as the server knows them: the name and avatar other players see, and their
  * stats. The client never works any of it out itself.
@@ -41,5 +43,6 @@ public data class PlayerStats(
     /** The topic with the best correct rate among those with enough answers, or null before there is one. */
     public val bestTopicId: String? = null,
     public val soloRuns: Int = 0,
-    public val soloBestScore: Int? = null,
+    /** The best solo run at each level, none at a level not run yet: an easy run never beats a hard one. */
+    public val soloBests: Map<LobbyDifficulty, Int> = emptyMap(),
 )

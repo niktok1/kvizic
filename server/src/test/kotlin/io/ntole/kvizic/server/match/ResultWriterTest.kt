@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.match
 
 import io.ntole.kvizic.core.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.db.MatchPlayers
 import io.ntole.kvizic.server.db.MatchQuestions
@@ -66,10 +67,11 @@ class ResultWriterTest {
                 PlayerRecord("boris", score = -12, correct = 0, answered = 1, rank = 2, finished = true, won = false),
             ),
         spectators: List<String> = listOf("ceca"),
+        difficulty: Difficulty = Difficulty.MEDIUM,
     ) = GameRecord(
         gameId = id,
         kind = kind,
-        settings = LobbySettingsDto(questionCount = 5, topics = listOf("SPORT", "GEOGRAPHY")),
+        settings = LobbySettingsDto(questionCount = 5, topics = listOf("SPORT", "GEOGRAPHY"), difficulty = difficulty),
         startedAt = 1_000,
         endedAt = 4_000,
         endedEarly = false,
@@ -186,6 +188,33 @@ class ResultWriterTest {
                         SeenQuestions.playerId eq "ceca"
                     }.map { it[SeenQuestions.timesSeen] }
                     .first(),
+            )
+        }
+    }
+
+    @Test
+    fun `each level keeps its own solo best`() {
+        fun solo(
+            score: Int,
+            level: Difficulty,
+        ) = game(
+            kind = LobbyKind.SOLO,
+            players =
+                listOf(
+                    PlayerRecord("ana", score, correct = 2, answered = 2, rank = 1, finished = true, won = false),
+                ),
+            spectators = emptyList(),
+            difficulty = level,
+        )
+        write(solo(600, Difficulty.MEDIUM))
+        write(solo(900, Difficulty.EASY))
+        write(solo(300, Difficulty.HARD))
+        write(solo(200, Difficulty.HARD))
+        read {
+            val ana = Profiles.selectAll().where { Profiles.playerId eq "ana" }.single()
+            assertEquals(
+                listOf(900, 600, 300),
+                listOf(ana[Profiles.soloBestEasyScore], ana[Profiles.soloBestScore], ana[Profiles.soloBestHardScore]),
             )
         }
     }

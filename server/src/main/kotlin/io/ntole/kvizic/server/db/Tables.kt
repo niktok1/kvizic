@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.report.ReportReason
 import io.ntole.kvizic.core.report.ReportResolution
 import io.ntole.kvizic.server.auth.IdentityProvider
 import io.ntole.kvizic.server.report.ReportStatus
+import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.Table
 
@@ -89,10 +90,24 @@ object Profiles : Table("profiles") {
     val answersGiven = integer("answers_given").default(0)
     val answersCorrect = integer("answers_correct").default(0)
     val soloRuns = integer("solo_runs").default(0)
+
+    /** The best solo run at medium, and when: every run was medium before V5, so V1's columns hold it. */
     val soloBestScore = integer("solo_best_score").nullable()
     val soloBestAt = long("solo_best_at").nullable()
+    val soloBestEasyScore = integer("solo_best_easy_score").nullable()
+    val soloBestEasyAt = long("solo_best_easy_at").nullable()
+    val soloBestHardScore = integer("solo_best_hard_score").nullable()
+    val soloBestHardAt = long("solo_best_hard_at").nullable()
 
     override val primaryKey = PrimaryKey(playerId)
+
+    /** The columns of the best solo run at [level] and of when it was: medium's for a level with no name. */
+    fun soloBest(level: Difficulty): Pair<Column<Int?>, Column<Long?>> =
+        when (level) {
+            Difficulty.EASY -> soloBestEasyScore to soloBestEasyAt
+            Difficulty.HARD -> soloBestHardScore to soloBestHardAt
+            Difficulty.MEDIUM, Difficulty.UNKNOWN -> soloBestScore to soloBestAt
+        }
 }
 
 /**

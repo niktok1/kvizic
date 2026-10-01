@@ -99,7 +99,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - **Difficulty is a mix, never a filter** (`DifficultyMix`): easy, medium and hard in 60/30/10, 20/60/20 or
   10/30/60 percent, as whole counts, a share that does not come out whole falling at random. Who has seen
   what comes first: a game asks an unseen question off its level before a seen one on it, and a level the
-  bank is short of takes the nearest. Solo runs are medium; the room's chips name it in a word, unless medium.
+  bank is short of takes the nearest. The room's chips name it in a word, unless medium. A solo run keeps its
+  format but its level, picked in its room, and each level keeps its own best (V5; medium in V1's columns).
 
 ## 8. Questions
 

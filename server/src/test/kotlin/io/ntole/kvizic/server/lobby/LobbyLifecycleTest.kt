@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.NoticeKind
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ServerMessage
+import io.ntole.kvizic.core.question.Difficulty
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -181,7 +182,7 @@ class LobbyLifecycleTest {
         }
 
     @Test
-    fun `a solo run keeps its format and reports a new personal best`() =
+    fun `a solo run keeps its format but its level, and reports a new personal best`() =
         runTest {
             val solo = LobbyScenario(this, LobbySettingsDto.SOLO, kind = LobbyKind.SOLO)
             solo.soloBestBefore = 500
@@ -191,10 +192,12 @@ class LobbyLifecycleTest {
                 RejectCode.INVALID_SETTINGS,
                 ana.answerTo(ana.settings(LobbySettingsDto(questionCount = 5, maxPlayers = 1))),
             )
+            assertNull(ana.answerTo(ana.settings(LobbySettingsDto.SOLO.copy(difficulty = Difficulty.HARD))))
 
             ana.start()
             solo.wait(solo.timings.countdown)
             assertEquals("ana", solo.asked.single().soloPlayer)
+            assertEquals(Difficulty.HARD, solo.asked.single().difficulty, "its best is the hard one")
             playAlone(solo, ana, count = LobbySettingsDto.SOLO.questionCount)
 
             val best = checkNotNull(ana.last<ServerMessage.GameOver>().results.personalBest)

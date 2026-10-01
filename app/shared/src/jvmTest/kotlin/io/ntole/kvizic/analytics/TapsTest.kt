@@ -21,6 +21,7 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
+import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.PublicLobbies
 import io.ntole.kvizic.core.domain.player.NameSource
@@ -165,6 +166,12 @@ class TapsTest {
                 "room.leave_confirm",
             ),
             elementsTapped { RoomScreen(host, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
+        )
+        val alone = MEMBERS.filter { it.playerId == YOU }
+        val solo = inLobby(GamePhase.Waiting(null), lobby = lobby(alone, host = YOU, kind = LobbyKind.SOLO))
+        assertEquals(
+            setOf("top_bar.back", "room.difficulty", "room.start", "room.leave_cancel", "room.leave_confirm"),
+            elementsTapped { RoomScreen(solo, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
         )
         assertEquals(
             // Leaving mid-game asks first, as anywhere in the room.
