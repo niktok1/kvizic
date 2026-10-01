@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Lint and every JVM test but the draw tests, which ui-tests runs beside it.
+  # Lint and every JVM test but the draw tests, which design-tests and screen-tests run beside it.
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -58,9 +58,10 @@ jobs:
           path: '**/build/reports/tests/**'
           retention-days: 7
 
-  # The skin engine's contrast, motion, font and long-text checks and every screen drawn off screen in every
-  # skin, a frame at a time in software: the longest of the JVM tests, so a job of its own, a test JVM a core.
-  ui-tests:
+  # The draw tests, the longest of the JVM tests, drawn a frame at a time in software and bound by the
+  # processor: a job of their own for each module, so each has a runner's cores. This one is the skin
+  # engine's contrast, motion, font and long-text checks and its components and mock screens.
+  design-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -75,19 +76,46 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Draw tests
-        run: ./gradlew --no-daemon :app:designsystem:jvmTest :app:shared:jvmTest
+      - name: Design system draw tests
+        run: ./gradlew --no-daemon :app:designsystem:jvmTest
 
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-ui
+          name: test-reports-design
           path: '**/build/reports/tests/**'
           retention-days: 7
 
-  # Every in-scope client target still compiles, both web targets included, and R8 still shrinks the release
-  # build: without the upload key, which CI never has, it is signed with the debug key.
+  # Every screen of the game drawn off screen in every skin, the room at each step of a game.
+  screen-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Screen draw tests
+        run: ./gradlew --no-daemon :app:shared:jvmTest
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-screens
+          path: '**/build/reports/tests/**'
+          retention-days: 7
+
+  # Every in-scope client target but Android's still compiles: the desktop and both web targets, of the game
+  # and of the moderation app.
   clients:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -103,7 +131,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Compile all client targets
+      - name: Compile the desktop and web targets
         run: |
           ./gradlew --no-daemon \
             :app:shared:compileKotlinJvm \
@@ -113,9 +141,28 @@ jobs:
             :app:webApp:compileKotlinJs \
             :app:webApp:compileKotlinWasmJs \
             :app:adminApp:compileKotlinJs \
-            :app:adminApp:compileKotlinWasmJs \
-            :app:androidApp:assembleDebug \
-            :app:androidApp:assembleProdRelease
+            :app:adminApp:compileKotlinWasmJs
+
+  # The Android app builds, and R8 still shrinks the release build: without the upload key, which CI never
+  # has, it is signed with the debug key. One debug flavor stands for the three: they share every source and
+  # differ in their ids, names and endpoints alone.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the Android app
+        run: ./gradlew --no-daemon :app:androidApp:assembleDevDebug :app:androidApp:assembleProdRelease
 
       # What signs prod's bundle, the file Play takes, must refuse without the upload key, whether asked
       # for by the bundle's task or by its signing task alone.

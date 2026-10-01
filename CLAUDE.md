@@ -227,9 +227,11 @@ Play Games Services v2. **No Material**: the design system draws everything.
 ## 12. Verifying
 
 CI (`.github/workflows/ci.yml`) is the definition of green, its jobs side by side: `verify` (lint, every JVM
-test but the draw tests, `:e2e:test` among them), `ui-tests` (`:app:designsystem` and `:app:shared`'s JVM
-tests, the slowest: every still draws 6 s of frames in software, so their classes share out among up to four
-test JVMs, and a class that grows long is split), `clients` (every client target, release signing),
+test but the draw tests, `:e2e:test` among them), `design-tests` and `screen-tests` (`:app:designsystem` and
+`:app:shared`'s JVM tests, the slowest, bound by the processor: a still is drawn at 60 frames a second for its
+first half second and at 10 after, which every animation, run on frame time, settles the same from; the
+classes share out among up to four test JVMs, so a class that grows long is split), `clients` (the desktop
+and web targets), `android` (a debug flavor, the release build through R8, release signing),
 `server-postgres`, `docker-smoke`, `ios`. Locally:
 `./gradlew ktlintCheck` and the module tests; iOS needs full Xcode, so compile with
 `:app:shared:compileKotlinIosSimulatorArm64` and let CI link; Kotlin/Native refuses a comma in a common
