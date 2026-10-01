@@ -60,7 +60,9 @@ data class TileSizes(
     val tallMinHeight: Dp,
     /** Between tiles side by side. */
     val gap: Dp,
-    /** Between rows of tiles: room for the heads of those who picked one to rise into ([pickersPeek]). */
+    /**
+     * Between rows of tiles, and over the first: room for those who picked one to rise into ([pickersPeek]).
+     */
     val rowGap: Dp,
     val padding: Dp,
     /** Above and below the answer of a tile across the width, where a long answer's lines need the room. */
@@ -69,8 +71,9 @@ data class TileSizes(
     val letterMark: Dp,
     val stamp: Dp,
     /**
-     * How far those who picked a tile's answer rise over its top edge, from behind it: they take none of
-     * the tile's own room. Less than [rowGap], so they never reach the tile above.
+     * How far those who picked a tile's answer, standing on its top edge, rise over it: about half of them,
+     * the rest on the tile, in front of it, over none of its answer's letters. Less than [rowGap], so they never
+     * reach the tile above.
      */
     val pickersPeek: Dp,
 )

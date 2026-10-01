@@ -118,11 +118,14 @@ internal val NotebookType =
         badge = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 13.sp, 15.sp, features = "tnum"),
     )
 
-/** The same room as the stage's, the tiles a touch roomier for the hand-drawn edge. */
+/**
+ * The same room as the stage's, the tiles a touch roomier for the hand-drawn edge; those who picked one rise a
+ * little higher over its edge, since its answer comes nearer it.
+ */
 internal val NotebookSpace =
     BuzzersSpace.copy(
         stroke = 2.2.dp,
-        tile = BuzzersSpace.tile.copy(padding = 15.dp, rowPaddingVertical = 5.dp),
+        tile = BuzzersSpace.tile.copy(padding = 15.dp, rowPaddingVertical = 5.dp, pickersPeek = 13.dp),
         timer = BuzzersSpace.timer.copy(bulbs = 12),
     )
 

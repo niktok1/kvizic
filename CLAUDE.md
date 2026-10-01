@@ -198,13 +198,15 @@ Play Games Services v2. **No Material**: the design system draws everything.
   question is recalled small, in two lines beside an explanation; the report flag stands in its corner. The
   answers keep the least room that sets them whole and 45% of the rest; at the content style's limits the
   player's line stays on the board (`RevealFitTest`), at the wire's it may give way.
-- **Picks stand on the card, or peek from behind it** (the owner, 2026-10-02): those who picked an answer
-  stand on its tile's face, beside the letter in the grid or past the answer's longest line in a column,
-  where a crowd of the question's players fits so on every tile, the answers laid out as without them;
-  otherwise behind every tile, their heads over its top edge. The question decides, never the picks so far,
-  so no one moves as more pick (`CrowdTest`). A crowd closes up to fit (`crowdOverlap`); rows keep a gap for
-  the heads. While a question is read, its answers' places (`AnswerPlaces`) are tiles for two or three, which
-  always stand in a column, and one place for four, whose texts pick a grid or a column.
+- **Picks stand on the card, or on its edge** (the owner, 2026-10-02): those who picked an answer stand on
+  its tile's face, beside the letter in the grid, in two rows where the answers leave the room, or past the
+  answer's longest line in a column, where a crowd of the question's players fits so on every tile, the
+  answers laid out as without them; otherwise on every tile's top edge, about half over it, in
+  front of it (`pickersPeek`), in the row gap and the room a screen leaves over the grid (`rowGap`). The
+  question decides, never the picks so far, so no one moves as more pick (`CrowdTest`). A row closes up to
+  fit (`crowdOverlap`), a second taking the rest past halfway. While a question is read, its answers' places
+  (`AnswerPlaces`) are tiles for two or three, which always stand in a column, and one place for four, whose
+  texts pick a grid or a column.
 - **A game's steps give way to each other**, never a cut (`RoomStagesTest`): the question read rises into
   its answers, which come up one after another; the answers' tiles glide into the reveal's places and light
   up from how they stood (`TilePlaces`, `TileGlideTest`), the question and its strip fading out before the

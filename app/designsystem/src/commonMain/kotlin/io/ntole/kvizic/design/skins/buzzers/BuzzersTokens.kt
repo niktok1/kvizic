@@ -165,7 +165,7 @@ internal val BuzzersSpace =
                 rowPaddingVertical = 9.dp,
                 letterMark = 40.dp,
                 stamp = 26.dp,
-                pickersPeek = 14.dp,
+                pickersPeek = 11.dp,
             ),
         button =
             ButtonSizes(

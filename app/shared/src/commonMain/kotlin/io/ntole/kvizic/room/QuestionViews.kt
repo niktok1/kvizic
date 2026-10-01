@@ -176,7 +176,8 @@ internal fun QuestionScreen(
                 QuestionCard(phase.question.topic, topics, padding = space.lg) {
                     QuestionText(shown(phase.question.text), Modifier.fillMaxWidth())
                 }
-                Spacer(Modifier.height(space.lg))
+                // Room for those who picked an answer of the first row to stand on its edge.
+                Spacer(Modifier.height(space.tile.rowGap))
                 AnswerGrid(
                     options = phase.options.map { shown(it) },
                     modifier = Modifier.weight(1f),
@@ -293,6 +294,7 @@ internal fun RevealScreen(
         Spacer(Modifier.height(space.md))
         RevealBody(
             fits = rememberAnswersFit(reveal.options.map { shown(it) }),
+            headroom = space.tile.rowGap,
             gap = space.md,
             boardLeast = space.avatar.xs * BOARD_LEAST_LINES + space.md * 2 + space.sm + space.xs,
             modifier = Modifier.weight(1f),
@@ -571,11 +573,13 @@ private const val GRID_SHARE = 0.45f
  * come first: they keep the least room that sets them whole ([fits]) and at least [GRID_SHARE] of what is
  * left, and the board takes the rest up to its own height, scrolling past it. Where not even [boardLeast]
  * is left, on a phone too small for both, the board gives way and the player's points stay in the bar.
- * [gap] stands between the three.
+ * [headroom] stands over the answers, for those who picked one of the first row to stand on its edge, and
+ * [gap] under them.
  */
 @Composable
 private fun RevealBody(
     fits: (Constraints) -> Boolean,
+    headroom: Dp,
     gap: Dp,
     boardLeast: Dp,
     modifier: Modifier = Modifier,
@@ -586,9 +590,10 @@ private fun RevealBody(
     SubcomposeLayout(modifier) { constraints ->
         val width = constraints.maxWidth
         val space = gap.roundToPx()
+        val over = headroom.roundToPx()
         val top = subcompose(RevealSlot.PANEL, panel).map { it.measure(Constraints(maxWidth = width)) }
         val topHeight = top.maxOfOrNull { it.height } ?: 0
-        val room = (constraints.maxHeight - topHeight - space).coerceAtLeast(0)
+        val room = (constraints.maxHeight - topHeight - over).coerceAtLeast(0)
         // A margin past the least, which the fit is measured at to the pixel, for the tiles' own rounding.
         val gridLeast = leastFitting(room) { height -> fits(Constraints.fixed(width, height)) } + space
         val gridKept = maxOf(gridLeast, (room * GRID_SHARE).roundToInt()).coerceAtMost(room)
@@ -610,8 +615,8 @@ private fun RevealBody(
             }
         layout(width, constraints.maxHeight) {
             top.forEach { it.place(0, 0) }
-            answers.forEach { it.place(0, topHeight + space) }
-            below.forEach { it.place(0, topHeight + space + gridHeight + space) }
+            answers.forEach { it.place(0, topHeight + over) }
+            below.forEach { it.place(0, topHeight + over + gridHeight + space) }
         }
     }
 }

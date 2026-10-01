@@ -19,10 +19,10 @@ import kotlin.test.assertTrue
 
 /**
  * A whole room on one answer, on the smallest phone the game is drawn for, in every skin, in a grid of
- * short answers and in a column of long ones: their heads stand behind its tile, over its top edge, inside
- * its width, and never reach the tile above. Where a crowd of the room fits on every tile's face, beside
- * the answer, it stands there instead, clear of the letter and the answer, and the answer is laid out as if
- * it were not there.
+ * short answers and in a column of long ones: they stand on its tile's top edge, risen over it by the skin's
+ * peek, inside its width, and never reach the tile above. Where a crowd of the room fits on every tile's face,
+ * beside the answer, it stands there instead, clear of the letter and the answer, in two rows under a grid
+ * tile's letter rather than closed up in one, and the answer is laid out as if it were not there.
  */
 class CrowdTest {
     @Test
@@ -37,9 +37,14 @@ class CrowdTest {
     }
 
     @Test
-    fun `a crowd that does not fit on one tile stands behind every tile`() {
+    fun `a room of eight stands in two rows beside a grid tile's letter`() {
+        Skins.ALL.forEach { skin -> onTheFace(skin, listOf("Дунав", "Сава", "Тиса", "Морава"), ROOM, 2, rows = 2) }
+    }
+
+    @Test
+    fun `a crowd that does not fit on one tile stands on every tile's edge`() {
         Skins.ALL.forEach { skin ->
-            // The last answer's line takes the width, so the short ones' crowd stands behind them too.
+            // The last answer's line takes the width, so the short ones' crowd stands on their edge too.
             check(skin, listOf("Да", "Не", LONG[0]), picked = 1, above = 0, crowd = ROOM.size)
             check(skin, LONG, picked = 1, above = 0, crowd = ROOM.size)
         }
@@ -77,6 +82,7 @@ class CrowdTest {
             assertTrue(crowd.top < tile.top && crowd.bottom > tile.top, "$where: the crowd stands over its top edge")
             assertTrue(crowd.top >= tile.top - peek - SLACK, "$where: the crowd rises no more than the skin's peek")
             assertTrue(crowd.top >= tileAbove.bottom, "$where: the crowd reaches the tile above")
+            assertEquals(tile.top - peek, crowd.top, SLACK, "$where: the crowd rises over its edge by the skin's peek")
         } finally {
             scene.close()
         }
@@ -87,6 +93,7 @@ class CrowdTest {
         options: List<String>,
         who: List<AvatarChip>,
         picked: Int,
+        rows: Int = 1,
     ) {
         val behind = crowdScene(skin, options, who, picked, crowd = 0)
         val inside = crowdScene(skin, options, who, picked, crowd = who.size)
@@ -101,6 +108,9 @@ class CrowdTest {
                     crowd.bottom <= tile.bottom,
                 "$where: the crowd stands on its tile's face: $crowd in $tile",
             )
+            val avatar = skin.space.avatar.xs.value
+            val tall = avatar * rows + skin.space.xxs.value * (rows - 1)
+            assertEquals(tall, crowd.height, SLACK, "$where: the crowd stands in $rows rows")
             val answer = textOf(inside, options[picked])
             val letter = inside.everyNode().single { it.texts == listOf(LETTERS[picked]) }.boundsInRoot
             assertTrue(crowd.left >= letter.right, "$where: the crowd stands clear of the letter")

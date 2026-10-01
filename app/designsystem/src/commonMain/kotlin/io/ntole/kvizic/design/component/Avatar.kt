@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Density
@@ -106,8 +108,18 @@ data class AvatarChip(
 )
 
 /**
+ * The most rows an [AvatarStack] may take where one is short of room: a tile with room under its letter gives
+ * those who picked it two, so a crowd stands in two rows rather than closed up in one.
+ */
+internal val LocalAvatarRows = staticCompositionLocalOf { 1 }
+
+/**
  * Several avatars, each over the one before by the skin's overlap, closer where their room is short: who
  * picked an answer. [contentDescription] says it to a screen reader in a word, since the avatars do not.
+ *
+ * Where its place lets it take two rows ([LocalAvatarRows]) and one would close up past halfway to the skin's
+ * crowd, the first row fills to that and the rest stand in a second under it, so no one moves as more come; a
+ * crowd of more than two such rows hold shares them alike. Its rows close up alike and stand at its end.
  */
 @Composable
 fun AvatarStack(
@@ -127,25 +139,52 @@ fun AvatarStack(
             Modifier
         }
     val closest = space.sizeOf(size) * (1 - space.avatar.crowdOverlap)
+    val rowsAllowed = LocalAvatarRows.current
     Layout(
         content = { avatars.forEach { Avatar(it.avatarId, it.seat, size = size, order = it.order) } },
         modifier = modifier.then(described),
     ) { measurables, constraints ->
         val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
-        val last = placeables.lastOrNull()?.width ?: 0
-        // Short of room, the stack closes up, each avatar over more of the one before, down to the
-        // skin's closest: past that it runs over its room, as a stack of more than a room holds would.
-        val fitting =
-            if (placeables.size > 1 && constraints.hasBoundedWidth) {
-                (constraints.maxWidth - last) / (placeables.size - 1)
+        val face = placeables.lastOrNull()?.width ?: 0
+        val stepMost = step.roundToPx()
+        // How many stand in a row closed up no further than halfway to the skin's crowd.
+        val comfortable = ((step + closest) / 2).roundToPx()
+        val holds =
+            if (constraints.hasBoundedWidth && comfortable > 0) {
+                ((constraints.maxWidth - face) / comfortable + 1).coerceAtLeast(1)
             } else {
                 Int.MAX_VALUE
             }
-        val stepPx = fitting.coerceIn(closest.roundToPx(), step.roundToPx())
-        val width = if (placeables.isEmpty()) 0 else stepPx * (placeables.size - 1) + last
-        val height = placeables.maxOfOrNull { it.height } ?: 0
+        val rows =
+            when {
+                rowsAllowed < 2 || placeables.size <= holds -> listOf(placeables)
+                placeables.size <= holds * 2 -> listOf(placeables.take(holds), placeables.drop(holds))
+                else -> placeables.chunked((placeables.size + 1) / 2)
+            }
+
+        // Short of room, a row closes up, each avatar over more of the one before, down to the skin's
+        // closest: past that it runs over its room, as a stack of more than a room holds would.
+        fun stepOf(row: List<Placeable>): Int {
+            val fitting =
+                if (row.size > 1 && constraints.hasBoundedWidth) {
+                    (constraints.maxWidth - face) / (row.size - 1)
+                } else {
+                    Int.MAX_VALUE
+                }
+            return fitting.coerceIn(closest.roundToPx(), stepMost)
+        }
+        val stepPx = rows.minOf(::stepOf)
+        val widths = rows.map { row -> if (row.isEmpty()) 0 else stepPx * (row.size - 1) + face }
+        val width = widths.maxOrNull() ?: 0
+        val rowHeight = placeables.maxOfOrNull { it.height } ?: 0
+        val between = space.xxs.roundToPx()
+        val height = if (placeables.isEmpty()) 0 else rows.size * rowHeight + (rows.size - 1) * between
         layout(width, height) {
-            placeables.forEachIndexed { i, placeable -> placeable.place(i * stepPx, 0) }
+            rows.forEachIndexed { r, row ->
+                row.forEachIndexed { i, placeable ->
+                    placeable.place(width - widths[r] + i * stepPx, r * (rowHeight + between))
+                }
+            }
         }
     }
 }

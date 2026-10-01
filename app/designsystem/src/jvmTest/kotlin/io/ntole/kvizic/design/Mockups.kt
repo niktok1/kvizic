@@ -536,7 +536,7 @@ private fun QuestionScreen(
         Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
             QuestionText(question, Modifier.fillMaxWidth())
         }
-        Spacer(Modifier.height(space.lg))
+        Spacer(Modifier.height(space.tile.rowGap))
         AnswerGrid(
             options = options,
             modifier = Modifier.weight(1f),
