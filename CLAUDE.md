@@ -152,6 +152,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - Reactions are the server's six: bravo, applause, fire, wow, laugh, oops.
 - Avatars: the server's sixteen Balkan animals, each drawn by hand (`AvatarArt`); an id this build does not
   know shows a silhouette.
+- **The icon** (2026-10-01): the sign's lights in a ring, sixteen lit marquee bulbs round Nunito Black's К in
+  amber, on the stage; Android's adaptive layers (the themed one the ring and the К in one colour), iOS's
+  1024 tile and the web's `icon.svg` drawn from one geometry. The desktop packages have none yet.
 
 ## 11. Hosting
 

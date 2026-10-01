@@ -2,10 +2,12 @@
 <resources>
     <!--
         The window's colour before Compose draws its first frame: a platform copy of the default skin's page,
-        the Buzzers stage, always dark, which WindowThemeTest holds equal to it. The launcher
-        icon's colours are its own, a placeholder until the design's icon replaces it.
+        the Buzzers stage, always dark, which WindowThemeTest holds equal to it. The launcher icon's colours
+        are its own, the Buzzers sign's: the stage, the amber of its letters, a lit bulb and the ink round it.
     -->
     <color name="kvizic_page_background">#15121B</color>
     <color name="kvizic_launcher_background">#15121B</color>
-    <color name="kvizic_launcher_mark">#FFD54F</color>
+    <color name="kvizic_launcher_letter">#F2A93B</color>
+    <color name="kvizic_launcher_bulb">#FFE3A1</color>
+    <color name="kvizic_launcher_ink">#0B0A0E</color>
 </resources>
