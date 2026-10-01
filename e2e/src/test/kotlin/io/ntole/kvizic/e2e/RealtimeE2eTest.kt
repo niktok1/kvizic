@@ -1,5 +1,8 @@
 package io.ntole.kvizic.e2e
 
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
@@ -36,7 +39,8 @@ class RealtimeE2eTest {
     private fun player(
         name: String,
         server: E2eServer,
-    ) = E2ePlayer(name, server).closedAfter()
+        socketEngine: () -> HttpClientEngine = { CIO.create() },
+    ) = E2ePlayer(name, server, socketEngine).closedAfter()
 
     private suspend fun lobbyOf(
         host: E2ePlayer,
@@ -60,6 +64,26 @@ class RealtimeE2eTest {
         }
         return code
     }
+
+    /**
+     * Android's engine, OkHttp, beside the desktop's: a client that set a frame limit opened no socket over
+     * it, nor in a browser, while the desktop's CIO took it.
+     */
+    @Test
+    fun `a player over Android's engine plays a question with one over the desktop's`(): Unit =
+        runBlocking {
+            val server = server()
+            val ana = player("ana", server, socketEngine = { OkHttp.create() })
+            val boris = player("boris", server)
+            lobbyOf(ana, boris)
+
+            ana.lobby.start()
+            val phases = listOf(ana, boris).map { it.awaitAnswering(0) }
+            ana.lobby.answer(rightOf(phases[0]))
+            boris.lobby.answer(wrongOf(phases[1]))
+            val reveal = ana.awaitReveal(0).reveal
+            assertTrue(reveal.results.associate { it.playerId to it.points }.getValue(ana.id) > 0)
+        }
 
     @Test
     fun `three players play a whole game and see the same reveals and results`(): Unit =

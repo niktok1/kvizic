@@ -1,5 +1,6 @@
 package io.ntole.kvizic.e2e
 
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
@@ -126,6 +127,7 @@ internal class E2eServer(
 internal class E2ePlayer(
     val name: String,
     server: E2eServer,
+    socketEngine: () -> HttpClientEngine = { CIO.create() },
 ) : AutoCloseable {
     val proxy = FaultProxy(server.port)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -141,7 +143,7 @@ internal class E2ePlayer(
                 KtorPlayTransport(
                     proxy.baseUrl,
                     ClientBuild("desktop", 100),
-                    KtorPlayTransport.realtimeClient(CIO.create()),
+                    KtorPlayTransport.realtimeClient(socketEngine()),
                 ),
             session = sessions,
             scope = scope,
