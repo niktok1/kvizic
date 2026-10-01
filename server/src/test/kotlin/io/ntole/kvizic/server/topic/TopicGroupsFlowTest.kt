@@ -28,9 +28,17 @@ class TopicGroupsFlowTest {
                     "SCIENCE" to "KNOWLEDGE",
                     "LANGUAGE" to "KNOWLEDGE",
                     "FOOD" to "ENTERTAINMENT",
+                    // Seven more subjects (V7).
+                    "NATURE" to "KNOWLEDGE",
+                    "ART" to "KNOWLEDGE",
+                    "MYTHOLOGY" to "KNOWLEDGE",
+                    "BODY" to "KNOWLEDGE",
+                    "VEHICLES" to "KNOWLEDGE",
+                    "GAMES" to "ENTERTAINMENT",
+                    "COMICS" to "ENTERTAINMENT",
                 ),
                 list.topics.map { it.id to it.groupId },
             )
-            assertEquals("Храна и пиће", list.topics.last().nameSr)
+            assertEquals("Стрипови и цртани", list.topics.last().nameSr)
         }
 }
