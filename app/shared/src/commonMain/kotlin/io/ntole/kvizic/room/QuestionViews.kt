@@ -41,6 +41,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.Standing
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.component.AnswerGrid
+import io.ntole.kvizic.design.component.AnswerPlaces
 import io.ntole.kvizic.design.component.AnswerTileState
 import io.ntole.kvizic.design.component.AvatarChip
 import io.ntole.kvizic.design.component.AvatarStack
@@ -128,13 +129,7 @@ internal fun QuestionScreen(
                 }
                 Spacer(Modifier.height(space.xl))
                 // Where the answers will stand, so nothing moves when they come.
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.tile.rowGap)) {
-                    (0 until phase.question.optionCount).chunked(2).forEach { row ->
-                        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(space.tile.gap)) {
-                            row.forEach { _ -> Panel(Modifier.weight(1f).fillMaxSize(), kind = PanelKind.EMPTY) {} }
-                        }
-                    }
-                }
+                AnswerPlaces(phase.question.optionCount, Modifier.weight(1f))
                 Spacer(Modifier.height(space.md))
                 KvizicText(
                     words.answersComing,
@@ -201,6 +196,7 @@ internal fun QuestionScreen(
                         } else {
                             { option -> Pickers(lobby, picks.filterValues { it == option }.keys.toList()) }
                         },
+                    crowd = phase.players.size,
                     appearing = appearing.value,
                     places = places,
                     placesKey = phase.gameId to phase.question.index,
@@ -407,6 +403,7 @@ internal fun RevealScreen(
                             )
                         }
                     },
+                    crowd = phase.players.size,
                 )
             },
             board = {

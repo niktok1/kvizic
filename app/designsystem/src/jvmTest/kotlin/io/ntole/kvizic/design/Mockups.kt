@@ -371,6 +371,7 @@ internal fun RevealMock(
                     else -> Unit
                 }
             },
+            crowd = 4,
         )
         Spacer(Modifier.height(space.md))
         Scoreboard(
@@ -555,6 +556,7 @@ private fun QuestionScreen(
                         }
                     }
                 },
+            crowd = room.size,
         )
         Spacer(Modifier.height(space.md))
         BottomStrip(room, answered, verdict)

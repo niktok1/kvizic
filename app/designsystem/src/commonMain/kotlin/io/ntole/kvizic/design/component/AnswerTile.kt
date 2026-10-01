@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -57,10 +58,12 @@ import kotlin.math.ceil
  * finger and, once [AnswerTileState.LOCKED_IN], stays down; it lights up as the answer is revealed. All
  * of it moves in the draw alone.
  *
- * [onClick] makes it a button, while the question takes answers; null leaves it to be read. [pickers]
- * stands behind the tile, their heads over its top edge: the avatars of those who picked it. [stateDescription] says the
- * state to a screen reader, in the screen's own words. [textSize] is the largest its answer is set at,
- * the skin's answer size when unspecified: [AnswerGrid] gives all its tiles one, so they are set alike.
+ * [onClick] makes it a button, while the question takes answers; null leaves it to be read. [pickers] are the
+ * avatars of those who picked it: given [pickersInside], they stand on the tile's face at its end, in that
+ * much room beside the answer, and move with it; otherwise behind it, their heads over its top edge.
+ * [stateDescription] says the state to a screen reader, in the screen's own words. [textSize] is the largest
+ * its answer is set at, the skin's answer size when unspecified: [AnswerGrid] gives all its tiles one, so they
+ * are set alike.
  *
  * [appearing] has the tile come up as it is first composed, after [appearDelay] milliseconds: from a little
  * small and clear to its place, in its layer alone, as the answers open. Read once, when the tile is first
@@ -77,6 +80,7 @@ fun AnswerTile(
     interactionSource: MutableInteractionSource? = null,
     stateDescription: String? = null,
     pickers: (@Composable () -> Unit)? = null,
+    pickersInside: Dp? = null,
     textSize: TextUnit = TextUnit.Unspecified,
     appearing: Boolean = false,
     appearDelay: Int = 0,
@@ -120,12 +124,14 @@ fun AnswerTile(
             source = source,
             stateDescription = stateDescription,
             textSize = textSize,
+            pickers = pickers.takeIf { pickersInside != null },
+            pickersRoom = pickersInside,
             lit = { lit.value },
             stamp = { stamp.value },
         )
     }
     PickersBehind(
-        pickers,
+        pickers.takeIf { pickersInside == null },
         modifier.graphicsLayer {
             val p = shown.value
             alpha = p
@@ -139,7 +145,10 @@ fun AnswerTile(
 /** How small a tile starts as it comes up. */
 private const val APPEAR_SCALE = 0.86f
 
-/** An answer tile's card: its surface, its letter and its answer. */
+/**
+ * An answer tile's card: its surface, its letter and its answer, and [pickers] on its face where it has
+ * [pickersRoom] for them: beside its letter on a tile of the grid, after its answer on one across the width.
+ */
 @Composable
 private fun Card(
     index: Int,
@@ -151,6 +160,8 @@ private fun Card(
     source: MutableInteractionSource,
     stateDescription: String?,
     textSize: TextUnit,
+    pickers: (@Composable () -> Unit)?,
+    pickersRoom: Dp?,
     lit: () -> Float,
     stamp: () -> Float,
 ) {
@@ -233,6 +244,16 @@ private fun Card(
                         mark()
                         answer(Modifier.weight(1f))
                     }
+                    // Over the answer's end, in the room its longest line leaves: the answer is laid out
+                    // as if they were not there.
+                    if (pickers != null && pickersRoom != null) {
+                        Box(
+                            Modifier.matchParentSize().padding(horizontal = space.tile.padding),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            Box(Modifier.widthIn(max = pickersRoom)) { pickers() }
+                        }
+                    }
                 }
 
                 TileArrangement.STACK -> {
@@ -240,7 +261,18 @@ private fun Card(
                         modifier = Modifier.fillMaxWidth().padding(space.tile.padding),
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        mark()
+                        if (pickers != null && pickersRoom != null) {
+                            // In the letter's row, which the answer under it never takes.
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                mark()
+                                Box(
+                                    Modifier.weight(1f).padding(start = space.sm),
+                                    contentAlignment = Alignment.CenterEnd,
+                                ) { pickers() }
+                            }
+                        } else {
+                            mark()
+                        }
                         Spacer(Modifier.height(space.sm))
                         answer(Modifier.fillMaxWidth())
                     }
@@ -287,8 +319,12 @@ private fun PickersBehind(
  * A question's answers, as many as it has, laid out by how many: two stacked tall across the width,
  * three in a column, four in a grid of two by two, and more in rows of two. Each tile takes an equal
  * share of the room the grid is given. [states] says where each answer stands; [onPick] makes each a
- * button; [pickers] stands behind a tile, over its top edge, what the screen puts there, by the answer's
- * index.
+ * button; [pickers] is what the screen puts with a tile, by the answer's index: those who picked it.
+ *
+ * Those who picked an answer stand on its tile's face where a [crowd] of them, the most who may pick one
+ * answer, fits on every tile beside its answer, clear of it ([answerLayout]); where it does not fit on one
+ * tile, they stand behind every tile, over its top edge. It is the question's, never the picks': no one moves
+ * as more pick, and every tile shows them alike. A [crowd] of none keeps them behind.
  *
  * Four answers stand in a grid of two by two unless a column, each across the whole width, sets them
  * larger: one long answer takes them all to a column, where it has the width. And all are set at one
@@ -306,6 +342,7 @@ fun AnswerGrid(
     onPick: ((index: Int) -> Unit)? = null,
     stateDescriptions: List<String?> = options.map { null },
     pickers: (@Composable (index: Int) -> Unit)? = null,
+    crowd: Int = 0,
     appearing: Boolean = false,
     places: TilePlaces? = null,
     placesKey: Any? = null,
@@ -322,7 +359,7 @@ fun AnswerGrid(
             null
         }
     BoxWithConstraints(modifier) {
-        val layout = answerLayout(options, constraints)
+        val layout = answerLayout(options, constraints, crowd)
         val tile: @Composable (Int, TileArrangement, Modifier) -> Unit = { i, arrangement, tileModifier ->
             AnswerTile(
                 index = i,
@@ -333,6 +370,7 @@ fun AnswerGrid(
                 onClick = onPick?.let { pick -> { pick(i) } },
                 stateDescription = stateDescriptions[i],
                 pickers = pickers?.let { slot -> { slot(i) } },
+                pickersInside = layout.pickersRoom?.get(i),
                 textSize = layout.textSize,
                 appearing = appearing,
                 appearDelay = i * skin.motion.tileStagger,
@@ -375,6 +413,24 @@ fun AnswerGrid(
 }
 
 /**
+ * Where a question's [count] answers will stand, while it is read and they are yet to come, so they come
+ * where it showed: a tile's place for each of two or three, which always stand in a column ([AnswerGrid]), and
+ * one place for four or more, which stand in a grid or in a column as their texts, not known yet, decide.
+ */
+@Composable
+fun AnswerPlaces(
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
+    val space = KvizicTheme.space
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(space.tile.rowGap)) {
+        repeat(if (count <= IN_A_COLUMN) count else 1) {
+            Panel(Modifier.fillMaxWidth().weight(1f), kind = PanelKind.EMPTY) {}
+        }
+    }
+}
+
+/**
  * How [options] stand inside [constraints]: four or more in a grid of two by two rather than in a column
  * across the width while there the answer that needs the most room is set at least as large as in the
  * column, each whole in at most [ANSWER_LINES] lines, and every answer at that one size, so a question's
@@ -382,11 +438,17 @@ fun AnswerGrid(
  *
  * Measured in the room each tile leaves its answer, the height too when it is bounded, in the skin's own
  * type and in the auto size's own steps.
+ *
+ * Those who picked an answer have the room on a tile's face that its answer never takes: beside the letter
+ * on a tile of the grid, past the answer's longest line, at the size it is set at, on one across the width.
+ * They stand there when a [crowd] of them, closed up as far as the skin lets a stack close, fits it on every
+ * tile.
  */
 @Composable
 private fun answerLayout(
     options: List<String>,
     constraints: Constraints,
+    crowd: Int,
 ): AnswerLayout {
     val skin = KvizicTheme.skin
     val type = KvizicTheme.type
@@ -397,7 +459,7 @@ private fun answerLayout(
             AnswerBoxes.of(skin, constraints, options.size, density)
         }
     val measures = remember(type, measurer) { AnswerMeasures(measurer, type) }
-    return remember(options, boxes, measures) {
+    return remember(options, boxes, measures, crowd, skin, density) {
         val inColumn = options.minOf { measures.largestFit(it, boxes.column) }
         val inGrid =
             if (options.size >
@@ -408,7 +470,17 @@ private fun answerLayout(
                 -1f
             }
         val grid = inGrid >= inColumn
-        AnswerLayout(grid, maxOf(if (grid) inGrid else inColumn, type.answerMin.style.fontSize.value).sp)
+        val size = maxOf(if (grid) inGrid else inColumn, type.answerMin.style.fontSize.value)
+        val rooms =
+            if (grid) {
+                options.map { boxes.besideLetter }
+            } else {
+                options.map { boxes.column.width - measures.widest(it, size, boxes.column) - boxes.afterAnswer }
+            }
+        val least = with(density) { crowdWidth(skin.space, crowd) }
+        val pickersRoom =
+            if (crowd > 0 && rooms.all { it >= least }) with(density) { rooms.map { it.toDp() } } else null
+        AnswerLayout(grid, size.sp, pickersRoom)
     }
 }
 
@@ -436,16 +508,25 @@ fun rememberAnswersFit(options: List<String>): (Constraints) -> Boolean {
     }
 }
 
-/** Whether a question's answers stand in a grid, and the one size they are all set at. */
+/**
+ * Whether a question's answers stand in a grid, the one size they are all set at, and the room those who
+ * picked one have on each tile's face, by index; null where they stand behind the tiles.
+ */
 private data class AnswerLayout(
     val inGrid: Boolean,
     val textSize: TextUnit,
+    val pickersRoom: List<Dp>?,
 )
 
-/** The room, in pixels, an answer has on a tile of the grid and on one of the column; no height is unbounded. */
+/**
+ * The room, in pixels, an answer has on a tile of the grid and on one of the column, no height is unbounded;
+ * and on a tile's face, the room beside a grid tile's letter, and the gap a column tile keeps after its answer.
+ */
 private data class AnswerBoxes(
     val grid: AnswerBox,
     val column: AnswerBox,
+    val besideLetter: Int,
+    val afterAnswer: Int,
 ) {
     companion object {
         fun of(
@@ -485,6 +566,8 @@ private data class AnswerBoxes(
                                     ).roundToPx()
                                 },
                         ),
+                    besideLetter = (gridTileWidth - tile.padding * 2 - tile.letterMark - skin.space.sm).roundToPx(),
+                    afterAnswer = skin.space.md.roundToPx(),
                 )
             }
     }
@@ -496,8 +579,8 @@ private data class AnswerBox(
 )
 
 /**
- * The answers' measures in the skin's [type]: each answer laid out once at a size and a width, its lines and
- * height kept, since a box's height only says whether those fit.
+ * The answers' measures in the skin's [type]: each answer laid out once at a size and a width, its lines, its
+ * height and its longest line kept, since a box's height only says whether those fit.
  */
 private class AnswerMeasures(
     private val measurer: TextMeasurer,
@@ -511,19 +594,37 @@ private class AnswerMeasures(
         size: Float,
         box: AnswerBox,
     ): Boolean {
-        val width = box.width.coerceAtLeast(1)
-        val (lines, height) =
-            laid.getOrPut(Laying(text, size, width)) {
-                val spec = type.answer
-                val result =
-                    measurer.measure(
-                        text = spec.apply(text),
-                        style = spec.style.copy(fontSize = size.sp),
-                        constraints = Constraints(maxWidth = width),
-                    )
-                Laid(result.lineCount, result.size.height)
-            }
+        val (lines, height) = laidIn(text, size, box)
         return lines <= ANSWER_LINES && (box.height == null || height <= box.height)
+    }
+
+    /** How far, in pixels, [text]'s longest line reaches across [box] at [size], in sp. */
+    fun widest(
+        text: String,
+        size: Float,
+        box: AnswerBox,
+    ): Int = laidIn(text, size, box).widest
+
+    private fun laidIn(
+        text: String,
+        size: Float,
+        box: AnswerBox,
+    ): Laid {
+        val width = box.width.coerceAtLeast(1)
+        return laid.getOrPut(Laying(text, size, width)) {
+            val spec = type.answer
+            val result =
+                measurer.measure(
+                    text = spec.apply(text),
+                    style = spec.style.copy(fontSize = size.sp),
+                    constraints = Constraints(maxWidth = width),
+                )
+            Laid(
+                result.lineCount,
+                result.size.height,
+                (0 until result.lineCount).maxOf { ceil(result.getLineRight(it)).toInt() },
+            )
+        }
     }
 
     /** Whether [text] is set whole in [box] at the skin's least answer size. */
@@ -565,6 +666,7 @@ private class AnswerMeasures(
     private data class Laid(
         val lines: Int,
         val height: Int,
+        val widest: Int,
     )
 }
 

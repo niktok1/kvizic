@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import io.ntole.kvizic.design.avatar.AvatarArt
@@ -148,6 +149,22 @@ fun AvatarStack(
         }
     }
 }
+
+/**
+ * The least width, in pixels, an [AvatarStack] of [count] avatars of [size] closes up to short of room: a crowd,
+ * each face over the one before by the skin's closest.
+ */
+internal fun Density.crowdWidth(
+    space: SkinSpace,
+    count: Int,
+    size: AvatarSize = AvatarSize.XS,
+): Int =
+    if (count <= 0) {
+        0
+    } else {
+        (space.sizeOf(size) * (1 - space.avatar.crowdOverlap)).roundToPx() * (count - 1) +
+            space.sizeOf(size).roundToPx()
+    }
 
 /** The size of an avatar of [size]. */
 internal fun SkinSpace.sizeOf(size: AvatarSize): Dp =
