@@ -2,6 +2,7 @@ package io.ntole.kvizic.room
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -73,6 +74,7 @@ import io.ntole.kvizic.design.component.SeatOccupant
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageDialog
 import io.ntole.kvizic.design.component.StageIconButton
+import io.ntole.kvizic.design.component.rememberTilePlaces
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.SkinMotion
@@ -125,6 +127,8 @@ fun RoomScreen(
     // The system's back asks before it leaves the room, wherever in it the player is.
     SystemBack(enabled = true) { leaving = true }
     val motion = KvizicTheme.skin.motion
+    // Where a question's tiles stand, so its answers' tiles glide into their reveal rather than fade into it.
+    val places = rememberTilePlaces()
     Column(modifier.fillMaxSize()) {
         RoomBanner(reconnecting = state.reconnecting, note = note)
         // Each step of the game gives way to the next, never a cut: the stage changes by its key, and within
@@ -164,15 +168,23 @@ fun RoomScreen(
                 }
 
                 is GamePhase.Reading -> {
-                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
+                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true }, places = places)
                 }
 
                 is GamePhase.Answering -> {
-                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
+                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true }, places = places)
                 }
 
                 is GamePhase.Revealing -> {
-                    RevealScreen(shown, phase, topics, onReport = { reporting = it }, onLeave = { leaving = true })
+                    RevealScreen(
+                        shown,
+                        phase,
+                        topics,
+                        onReport = { reporting = it },
+                        onLeave = { leaving = true },
+                        places = places,
+                        stage = this,
+                    )
                 }
             }
         }
@@ -858,8 +870,10 @@ private fun stageChange(
                     )
             }
 
+            // The tiles glide from the answers into the reveal on their own (TilePlaces), so only the rest
+            // gives way: the question and its strip fade out, and the reveal's own parts in after them.
             sameQuestion && from.kind == StageKind.ANSWER && to.kind == StageKind.REVEAL -> {
-                fadeIn(tween(time / 2)) togetherWith fadeOut(tween(time / 2))
+                EnterTransition.None togetherWith fadeOut(tween(time / 2))
             }
 
             to.kind == StageKind.READ -> {

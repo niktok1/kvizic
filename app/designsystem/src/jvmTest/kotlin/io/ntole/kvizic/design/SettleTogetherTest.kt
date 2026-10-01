@@ -27,28 +27,9 @@ import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.skin.KvizicSkin
 import io.ntole.kvizic.design.skin.Skin
 import io.ntole.kvizic.design.skin.Skins
-import kotlinx.coroutines.CoroutineDispatcher
-import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertTrue
-
-/** Runs what is dispatched to it only once [drain]ed: the effects a frame launches, as a phone runs them, after it is drawn. */
-private class AfterTheFrame : CoroutineDispatcher() {
-    private val queue = ConcurrentLinkedQueue<Runnable>()
-
-    override fun dispatch(
-        context: CoroutineContext,
-        block: Runnable,
-    ) {
-        queue += block
-    }
-
-    fun drain() {
-        while (true) (queue.poll() ?: return).run()
-    }
-}
 
 /**
  * What stands on a tile or a button turns with its face as the face settles into a new look, never ahead

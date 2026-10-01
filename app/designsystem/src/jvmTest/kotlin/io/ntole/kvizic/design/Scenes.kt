@@ -16,8 +16,11 @@ import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.skin.KvizicSkin
 import io.ntole.kvizic.design.skin.Skin
+import kotlinx.coroutines.CoroutineDispatcher
 import org.jetbrains.skia.Image
 import java.io.File
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.coroutines.CoroutineContext
 
 // Drawing the design system off screen, as a phone would, where there is no Compose UI test library.
 
@@ -105,3 +108,22 @@ internal fun writeDesign(
 
 internal const val FRAME: Long = 1_000_000_000L / 60
 internal const val MILLI: Long = 1_000_000L
+
+/**
+ * Runs what is dispatched to it only once [drain]ed: a scene's effects, which it then runs as a phone does,
+ * after the frame that launched them is drawn, where the scenes' own runs each at once, before it.
+ */
+internal class AfterTheFrame : CoroutineDispatcher() {
+    private val queue = ConcurrentLinkedQueue<Runnable>()
+
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        queue += block
+    }
+
+    fun drain() {
+        while (true) (queue.poll() ?: return).run()
+    }
+}

@@ -295,6 +295,8 @@ private fun PickersBehind(
  * size, the largest the answer that needs the most room is whole at ([answerLayout]).
  *
  * [appearing] has the tiles come up one after another as they are first composed, as the answers open.
+ * [places], kept above the screens a question's grids stand on, has a grid of the same [placesKey] that
+ * comes after another take its tiles over, gliding from where they stood ([TilePlaces]).
  */
 @Composable
 fun AnswerGrid(
@@ -305,12 +307,20 @@ fun AnswerGrid(
     stateDescriptions: List<String?> = options.map { null },
     pickers: (@Composable (index: Int) -> Unit)? = null,
     appearing: Boolean = false,
+    places: TilePlaces? = null,
+    placesKey: Any? = null,
 ) {
     require(options.size >= MIN_ANSWERS) { "a question has at least $MIN_ANSWERS answers, not ${options.size}" }
     require(states.size == options.size) { "a state for each of the ${options.size} answers" }
     require(stateDescriptions.size == options.size) { "a description for each of the ${options.size} answers" }
     val skin = KvizicTheme.skin
     val space = skin.space
+    val grid =
+        if (places != null && placesKey != null) {
+            remember(places, placesKey) { GridOfTiles(places, placesKey) }
+        } else {
+            null
+        }
     BoxWithConstraints(modifier) {
         val layout = answerLayout(options, constraints)
         val tile: @Composable (Int, TileArrangement, Modifier) -> Unit = { i, arrangement, tileModifier ->
@@ -318,7 +328,7 @@ fun AnswerGrid(
                 index = i,
                 text = options[i],
                 state = states[i],
-                modifier = tileModifier,
+                modifier = if (grid != null) tileModifier.glidingTile(grid, i, skin.motion.stage) else tileModifier,
                 arrangement = arrangement,
                 onClick = onPick?.let { pick -> { pick(i) } },
                 stateDescription = stateDescriptions[i],

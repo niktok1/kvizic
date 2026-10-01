@@ -1,5 +1,9 @@
 package io.ntole.kvizic.room
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +56,7 @@ import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ScoreRow
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.StandingsBoard
+import io.ntole.kvizic.design.component.TilePlaces
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
 import io.ntole.kvizic.design.component.WaitingFor
@@ -69,7 +74,7 @@ import kotlin.math.roundToInt
  * A question of the game under way, read alone ([GamePhase.Reading]) and then answered
  * ([GamePhase.Answering]): the round, the clock and the player's points over it, its topic on its card's edge,
  * its answers under it, and who it still waits for. A member who joined during the game watches it: their
- * answers take no tap.
+ * answers take no tap. Its tiles stand in [places], from where they glide into the question's reveal.
  */
 @Composable
 internal fun QuestionScreen(
@@ -78,6 +83,7 @@ internal fun QuestionScreen(
     topics: List<Topic>,
     actions: RoomActions,
     onLeave: () -> Unit = {},
+    places: TilePlaces? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -196,6 +202,8 @@ internal fun QuestionScreen(
                             { option -> Pickers(lobby, picks.filterValues { it == option }.keys.toList()) }
                         },
                     appearing = appearing.value,
+                    places = places,
+                    placesKey = phase.gameId to phase.question.index,
                 )
                 Spacer(Modifier.height(space.md))
                 Strip {
@@ -237,6 +245,10 @@ internal fun QuestionScreen(
  * the first right ones in their order, and every player's standing on one board, the lines sliding from
  * where they stood to where the question put them, a line draining along its foot to the next question.
  * The flag to report the question stands in the question's corner, out of the way of the tiles.
+ *
+ * Its tiles take over the answers' in [places], gliding from where those stood; the question recalled and the
+ * board come in after the answers' own question and strip have gone, as the room's [stage] enters, so no two
+ * of a part are drawn at once.
  */
 @Composable
 internal fun RevealScreen(
@@ -245,6 +257,8 @@ internal fun RevealScreen(
     topics: List<Topic>,
     onReport: (questionId: String) -> Unit = {},
     onLeave: () -> Unit = {},
+    places: TilePlaces? = null,
+    stage: AnimatedVisibilityScope? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -265,6 +279,12 @@ internal fun RevealScreen(
             revealed = true
         }
     }
+    // The question recalled and the board come in once the answers' question and strip have gone.
+    val half = KvizicTheme.skin.motion.stage / 2
+    val afterTheAnswers =
+        stage?.run {
+            Modifier.animateEnterExit(enter = fadeIn(tween(half, delayMillis = half)), exit = ExitTransition.None)
+        } ?: Modifier
     Page {
         RoundBar(
             reveal.index,
@@ -281,7 +301,7 @@ internal fun RevealScreen(
             boardLeast = space.avatar.xs * BOARD_LEAST_LINES + space.md * 2 + space.sm + space.xs,
             modifier = Modifier.weight(1f),
             panel = {
-                Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
+                Panel(Modifier.fillMaxWidth().then(afterTheAnswers), kind = PanelKind.SCREEN, padding = space.lg) {
                     Box {
                         Column(
                             Modifier.padding(horizontal = space.lg),
@@ -331,6 +351,8 @@ internal fun RevealScreen(
                 AnswerGrid(
                     options = reveal.options.map { shown(it) },
                     modifier = gridModifier,
+                    places = places,
+                    placesKey = phase.gameId to reveal.index,
                     states =
                         reveal.options.indices.map { i ->
                             when {
@@ -397,7 +419,7 @@ internal fun RevealScreen(
                             state.you,
                             language,
                         ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().then(afterTheAnswers),
                     reorderKey = reveal.questionId,
                     timeLeft = phase.next::fractionLeft,
                     timeDescription = (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
