@@ -73,6 +73,10 @@ class QuestionRulesTest {
         assertEquals(60, check(options = listOf("а", "б".repeat(60)), correct = 0).options.last().length)
         assertTrue(KvizicApi.Limits.MAX_QUESTION_TEXT_LENGTH <= Questions.TEXT_COLUMN, "the question fits its column")
         assertTrue(KvizicApi.Limits.MAX_OPTION_LENGTH <= QuestionOptions.TEXT_COLUMN, "an answer fits its column")
+        assertTrue(
+            KvizicApi.Limits.MAX_EXPLANATION_LENGTH <= Questions.EXPLANATION_COLUMN,
+            "an explanation fits its column",
+        )
     }
 
     @Test

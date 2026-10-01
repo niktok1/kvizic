@@ -362,6 +362,26 @@ private fun answerLayout(
     }
 }
 
+/**
+ * Whether [options] can each be set whole in an [AnswerGrid] given a box, in a column or a grid, at no less
+ * than the skin's least answer size: for a screen that must choose what else to show beside the answers, as
+ * the reveal does, before it hands the grid its room.
+ */
+@Composable
+fun rememberAnswersFit(options: List<String>): (Constraints) -> Boolean {
+    val skin = KvizicTheme.skin
+    val type = KvizicTheme.type
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(options, skin, type, measurer, density) {
+        { constraints ->
+            val boxes = AnswerBoxes.of(skin, constraints, options.size, density)
+            options.all { largestFit(measurer, type, it, boxes.column) > 0f } ||
+                (options.size > IN_A_COLUMN && options.all { largestFit(measurer, type, it, boxes.grid) > 0f })
+        }
+    }
+}
+
 /** Whether a question's answers stand in a grid, and the one size they are all set at. */
 private data class AnswerLayout(
     val inGrid: Boolean,

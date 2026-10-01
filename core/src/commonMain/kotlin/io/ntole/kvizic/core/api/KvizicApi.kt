@@ -178,11 +178,13 @@ public object KvizicApi {
         /**
          * Longest question, answer and explanation, in UTF-16 units once trimmed. A question is read against
          * the clock, so it is short: the longest reads in some seven seconds, and four of the longest answers
-         * still stand whole on the smallest phone, where each is at most a few lines.
+         * still stand whole on the smallest phone, where each is at most a few lines. The explanation is read
+         * on the reveal, over the answers and beside eight players' standings, in a few seconds: the longest
+         * leaves the answers whole on the smallest phone (`RevealFitTest`).
          */
         public const val MAX_QUESTION_TEXT_LENGTH: Int = 120
         public const val MAX_OPTION_LENGTH: Int = 60
-        public const val MAX_EXPLANATION_LENGTH: Int = 300
+        public const val MAX_EXPLANATION_LENGTH: Int = 160
 
         /** Longest source URL a draft may cite, and topic name. */
         public const val MAX_SOURCE_URL_LENGTH: Int = 500

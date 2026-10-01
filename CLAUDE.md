@@ -97,7 +97,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
 ## 8. Questions
 
 - **Limits** (`KvizicApi.Limits`, decided 2026-10-01): a question at most **120** characters, an answer
-  **60**, an explanation 300. The content repo's house style is stricter for answers (40).
+  **60**, an explanation **160** (300 at first: on a small phone with eight players it left the reveal's
+  answers no room). The content repo's house style is stricter for answers (40).
 - Topics: Географија, Историја, Спорт, Музика, Филм и серије, Наука и технологија, Језик и књижевност,
   Наши простори; all feed Све. Questions are ekavian Serbian Cyrillic; Latin is made by transliteration.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
@@ -133,6 +134,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
   and 360×640 in every skin while answering and locked in. A question is at most 7 lines read alone and 4
   over its answers; four answers stand in a 2×2 grid unless a column sets them larger, measured in the room
   each tile leaves; all answers of a question share one size.
+- **The reveal** (`RevealFitTest`): with eight players, the longest question, answers and explanation it fits
+  the same phones; the question is set small there (a recap), and the standings list gives way when keeping
+  it would leave the answers no room (the player's points stay in the bar and the verdict).
 - **Picks peek from behind the card**: those who picked an answer stand behind its tile, their heads over
   its top edge; a crowd closes up to fit the tile (`crowdOverlap`); rows keep a gap for the heads.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
@@ -166,6 +170,6 @@ makes the draw tests write PNGs to look at.
 
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
-- The reveal's layout with eight standings (the long-text test leaves the reveal out until it is designed).
+- The reveal's look with eight standings: built to fit (standings give way), not yet designed at the gate.
 - Play Games on a device, sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.

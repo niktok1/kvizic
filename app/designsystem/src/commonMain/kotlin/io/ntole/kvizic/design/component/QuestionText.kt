@@ -12,16 +12,25 @@ import io.ntole.kvizic.design.skin.KvizicTheme
  * most [ANSWERING_LINES], so a long question leaves the answers their room. Either shrinks in steps down
  * to the skin's `questionMin`, the size at which the longest question the rules allow still fits both, and
  * is cut only past that, on a screen smaller than any the game is drawn for.
+ *
+ * On the reveal ([recap]) the question was read already and the answers are what is looked at, so it is
+ * set at `questionMin` alone, over at most [ANSWERING_LINES].
  */
 @Composable
 fun QuestionText(
     text: String,
     modifier: Modifier = Modifier,
     reading: Boolean = false,
+    recap: Boolean = false,
     textAlign: TextAlign = if (reading) TextAlign.Center else TextAlign.Start,
 ) {
     val type = KvizicTheme.type
-    val style = if (reading) type.questionReading else type.question
+    val style =
+        when {
+            reading -> type.questionReading
+            recap -> type.questionMin
+            else -> type.question
+        }
     KvizicText(
         text = text,
         modifier = modifier,

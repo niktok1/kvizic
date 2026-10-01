@@ -11,7 +11,7 @@ public object QuestionRules {
     public const val MIN_OPTIONS: Int = 2
     public const val MAX_OPTIONS: Int = 4
     public const val MAX_TOPICS: Int = 3
-    public const val MAX_EXPLANATION_LENGTH: Int = 300
+    public const val MAX_EXPLANATION_LENGTH: Int = 160
     public const val MAX_SOURCE_LENGTH: Int = 500
     public const val MAX_REASON_LENGTH: Int = 200
 

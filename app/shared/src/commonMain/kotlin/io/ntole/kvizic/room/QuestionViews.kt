@@ -14,7 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.GamePhase
@@ -41,6 +44,7 @@ import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
 import io.ntole.kvizic.design.component.WaitingFor
+import io.ntole.kvizic.design.component.rememberAnswersFit
 import io.ntole.kvizic.design.component.signed
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -248,55 +252,72 @@ internal fun RevealScreen(
             onLeave = onLeave,
         )
         Spacer(Modifier.height(space.md))
-        Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
-            Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
-                QuestionText(shown(reveal.text), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
-                reveal.explanation?.let { explanation ->
-                    KvizicText(
-                        shown(explanation),
-                        style = type.caption,
-                        color = colors.onRaisedMuted,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(space.md))
-        AnswerGrid(
-            options = reveal.options.map { shown(it) },
+        RevealBody(
+            fits = rememberAnswersFit(reveal.options.map { shown(it) }),
+            gap = space.md,
             modifier = Modifier.weight(1f),
-            states =
-                reveal.options.indices.map { i ->
-                    when {
-                        i == reveal.correct -> AnswerTileState.CORRECT
-                        i == mine?.option -> AnswerTileState.WRONG
-                        else -> AnswerTileState.DIMMED
+            panel = {
+                Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
+                    Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
+                        QuestionText(
+                            shown(reveal.text),
+                            Modifier.fillMaxWidth(),
+                            recap = true,
+                            textAlign = TextAlign.Center,
+                        )
+                        reveal.explanation?.let { explanation ->
+                            KvizicText(
+                                shown(explanation),
+                                style = type.caption,
+                                color = colors.onRaisedMuted,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
-                },
-            stateDescriptions =
-                reveal.options.indices.map { i ->
-                    when {
-                        i == reveal.correct -> words.rightAnswer
-                        i == mine?.option -> words.wrongAnswer
-                        else -> null
-                    }
-                },
-            pickers = { option ->
-                val picked =
-                    reveal.results.filter { it.option == option }.sortedWith(
-                        compareBy(nullsLast()) { it.order },
-                    )
-                if (picked.isNotEmpty()) {
-                    AvatarStack(
-                        picked.mapNotNull { result ->
-                            lobby.member(result.playerId)?.let { AvatarChip(it.avatar, it.seat, order = result.order) }
-                        },
-                    )
                 }
             },
+            grid = { gridModifier ->
+                AnswerGrid(
+                    options = reveal.options.map { shown(it) },
+                    modifier = gridModifier,
+                    states =
+                        reveal.options.indices.map { i ->
+                            when {
+                                i == reveal.correct -> AnswerTileState.CORRECT
+                                i == mine?.option -> AnswerTileState.WRONG
+                                else -> AnswerTileState.DIMMED
+                            }
+                        },
+                    stateDescriptions =
+                        reveal.options.indices.map { i ->
+                            when {
+                                i == reveal.correct -> words.rightAnswer
+                                i == mine?.option -> words.wrongAnswer
+                                else -> null
+                            }
+                        },
+                    pickers = { option ->
+                        val picked =
+                            reveal.results.filter { it.option == option }.sortedWith(
+                                compareBy(nullsLast()) { it.order },
+                            )
+                        if (picked.isNotEmpty()) {
+                            AvatarStack(
+                                picked.mapNotNull { result ->
+                                    lobby
+                                        .member(
+                                            result.playerId,
+                                        )?.let { AvatarChip(it.avatar, it.seat, order = result.order) }
+                                },
+                            )
+                        }
+                    },
+                )
+            },
+            standings = {
+                Standings(lobby, reveal.standings, reveal.results.associate { it.playerId to it.points }, state.you)
+            },
         )
-        Spacer(Modifier.height(space.md))
-        Standings(lobby, reveal.standings, reveal.results.associate { it.playerId to it.points }, state.you)
         Spacer(Modifier.height(space.sm))
         Row(verticalAlignment = Alignment.CenterVertically) {
             val verdict =
@@ -420,3 +441,44 @@ private const val MILLIS_PER_SECOND = 1_000
 
 /** How many of the standings a reveal shows, the player's own line besides. */
 private const val STANDINGS_HEAD = 3
+
+/**
+ * The reveal between its bar and its verdict: the question over the answers, and the standings under them
+ * while that leaves the answers room to be set whole ([fits]). On a small phone with eight players and
+ * long answers it does not, and the standings give way: the player's own points stay in the bar and the
+ * verdict, and the answers, which the reveal is for, keep their room. [gap] stands between the three.
+ */
+@Composable
+private fun RevealBody(
+    fits: (Constraints) -> Boolean,
+    gap: Dp,
+    modifier: Modifier = Modifier,
+    panel: @Composable () -> Unit,
+    grid: @Composable (Modifier) -> Unit,
+    standings: @Composable () -> Unit,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val width = constraints.maxWidth
+        val loose = Constraints(maxWidth = width)
+        val space = gap.roundToPx()
+        val top = subcompose(RevealSlot.PANEL, panel).map { it.measure(loose) }
+        val topHeight = top.maxOfOrNull { it.height } ?: 0
+        val below = subcompose(RevealSlot.STANDINGS, standings).map { it.measure(loose) }
+        val belowHeight = below.maxOfOrNull { it.height } ?: 0
+        val withStandings = constraints.maxHeight - topHeight - belowHeight - space * 2
+        val keepStandings = withStandings > 0 && fits(Constraints.fixed(width, withStandings))
+        val gridHeight =
+            (if (keepStandings) withStandings else constraints.maxHeight - topHeight - space).coerceAtLeast(0)
+        val answers =
+            subcompose(RevealSlot.GRID) { grid(Modifier.fillMaxSize()) }.map {
+                it.measure(Constraints.fixed(width, gridHeight))
+            }
+        layout(width, constraints.maxHeight) {
+            top.forEach { it.place(0, 0) }
+            answers.forEach { it.place(0, topHeight + space) }
+            if (keepStandings) below.forEach { it.place(0, topHeight + space + gridHeight + space) }
+        }
+    }
+}
+
+private enum class RevealSlot { PANEL, GRID, STANDINGS }

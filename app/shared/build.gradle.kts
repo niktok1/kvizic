@@ -98,6 +98,8 @@ kotlin {
         jvmTest.dependencies {
             // This machine's Skia, so a test can draw a screen off screen (ImageComposeScene).
             implementation(compose.desktop.currentOs)
+            // The wire's limits, so a test draws the longest texts the rules allow and never a copy of them.
+            implementation(project(":core"))
         }
     }
 }

@@ -118,7 +118,7 @@ object Questions : Table("questions") {
     /** Which of [QuestionOptions] is right, by its slot. */
     val correctSlot = integer("correct_slot")
     val difficulty = enumerationByName<Difficulty>("difficulty", 16)
-    val explanation = varchar("explanation", KvizicApi.Limits.MAX_EXPLANATION_LENGTH).nullable()
+    val explanation = varchar("explanation", EXPLANATION_COLUMN).nullable()
     val sourceUrl = varchar("source_url", KvizicApi.Limits.MAX_SOURCE_URL_LENGTH).nullable()
     val language = varchar("lang", 16)
     val author = varchar("author", 64)
@@ -141,6 +141,9 @@ object Questions : Table("questions") {
 
     /** Wider than [KvizicApi.Limits.MAX_QUESTION_TEXT_LENGTH], so the limit can rise this far with no migration. */
     const val TEXT_COLUMN = 200
+
+    /** Wider than [KvizicApi.Limits.MAX_EXPLANATION_LENGTH], which was 300 when V1 made the column. */
+    const val EXPLANATION_COLUMN = 300
 }
 
 /** A question's 2 to 4 answers, by slot, from 0: never a fixed number of columns. */
