@@ -65,12 +65,24 @@ public class LinkPlayGames(
      * From launch on, never returning but by the caller's cancellation: [automatically]'s try for the
      * session stored then, and again for every session stored after it. A dead session found after the
      * launch's try (a dev server's data reset, a refresh token expired) is replaced by a fresh guest and
-     * unsettles the device, so that guest is signed in with Play Games at once, not at the next launch. A
-     * session the player chose settles it, so its try asks Play Games nothing.
+     * unsettles the device, so that guest is signed in with Play Games at once, not at the next launch, or,
+     * replaced while the app was in the background, as it comes back ([cameToForeground]). A session the
+     * player chose settles it, so its try asks Play Games nothing.
      */
     public suspend fun run() {
         if (!playGames.available) return
         session.sessions.collect { tryUnsettled() }
+    }
+
+    /**
+     * The app came back to the foreground: [automatically]'s try once more, for the session stored now.
+     * Play Games is asked through the activity on screen, so a session stored while the app was in the
+     * background found nobody to ask and is signed in now. Returns whether it was. A settled device asks
+     * Play Games nothing, and one with no session yet signs in to nothing, as a launch waits for one.
+     */
+    public suspend fun cameToForeground(): Boolean {
+        if (!playGames.available || session.current() == null) return false
+        return tryUnsettled()
     }
 
     private suspend fun tryUnsettled(): Boolean =

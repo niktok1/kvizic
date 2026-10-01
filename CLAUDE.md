@@ -159,8 +159,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - Analytics: PostHog over HTTP, never a name, a code or a question's text; every tap through `tapped`
   (`TapsTest` taps every screen). Game events: `room_entered`, `room_exited`, `game_finished`.
 - **Play Games** (signed in on a phone against dev, 2026-10-01): a launch signs in by itself, with no button
-  yet (`LinkPlayGames`); a sign-in that links the guest playing keeps their id and gives them their Play
-  Games name, which Home hears through `LinkPlayGames.signedIn`. The ids are the developer's, in
+  yet (`LinkPlayGames`), and so does coming back to the foreground, for a session replaced in the background,
+  where Play Games cannot be asked; a sign-in that links the guest playing keeps their id and gives them
+  their Play Games name, which Home hears through `LinkPlayGames.signedIn`. The ids are the developer's, in
   `local.properties` (`kvizic.playgames.appId`, `kvizic.playgames.serverClientId`; none is Play Games off);
   the server's `PLAY_GAMES_CLIENT_ID` and `PLAY_GAMES_CLIENT_SECRET` are on Render. The Play Console takes
   Android credentials for `io.ntole.kvizic` (Play's signing key and the debug key) and `io.ntole.kvizic.dev`

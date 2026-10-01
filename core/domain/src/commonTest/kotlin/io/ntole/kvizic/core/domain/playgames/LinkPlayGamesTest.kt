@@ -101,6 +101,20 @@ class LinkPlayGamesTest {
             assertEquals(listOf("isAuthenticated", "serverAuthCode", "signIn code-1", "identify guest2"), calls)
         }
 
+    /** A session stored while the app was in the background is signed in as it comes back, and once. */
+    @Test
+    fun `coming back to the foreground signs in an unsettled session and mints none`() =
+        runTest {
+            assertFalse(linking.cameToForeground())
+            assertEquals(emptyList(), calls, "no session yet: nothing asked")
+
+            session.player.value = "guest2"
+            assertTrue(linking.cameToForeground())
+            assertFalse(linking.cameToForeground(), "settled by its sign-in")
+
+            assertEquals(listOf("isAuthenticated", "serverAuthCode", "signIn code-1", "identify guest2"), calls)
+        }
+
     /** The session a sign-in stores settles the device: its own session asks Play Games nothing more. */
     @Test
     fun `the session a sign-in stores asks for no second sign-in`() =

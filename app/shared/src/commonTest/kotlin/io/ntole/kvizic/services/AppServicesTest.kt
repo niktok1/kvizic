@@ -13,10 +13,12 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** What the app does by itself as it comes to the foreground: the launch's Play Games sign-in. */
+/** What the app does by itself as it comes to the foreground: the launch's Play Games sign-in, and again after. */
 class AppServicesTest {
     private val signIns = mutableListOf<String>()
     private val session = FakeSession()
+    private val playGames = FakePlayGames()
+    private val link = FakeLink(signIns)
 
     @Test
     fun `the launch signs in with Play Games once and coming back does not again`() =
@@ -48,16 +50,42 @@ class AppServicesTest {
             assertEquals(listOf("code"), signIns)
         }
 
+    /**
+     * A dead session replaced by a fresh guest while the app was in the background, where Play Games, which
+     * asks the activity on screen, could not be asked: the sign-in comes as the app does.
+     */
+    @Test
+    fun `coming back to the foreground signs in the session stored in the background`() =
+        runTest {
+            session.player.value = "p1"
+            val services = services()
+            services.foreground()
+            testScheduler.runCurrent()
+
+            playGames.onScreen = false
+            link.settled = false
+            session.player.value = "guest2"
+            testScheduler.runCurrent()
+            assertEquals(listOf("code"), signIns, "nobody on screen to ask")
+
+            playGames.onScreen = true
+            services.foreground()
+            testScheduler.runCurrent()
+            assertEquals(listOf("code", "code"), signIns)
+        }
+
     private fun TestScope.services(): AppServices {
-        val linking = LinkPlayGames(SignedInPlayGames, FakeLink(signIns), session, Analytics.None)
+        val linking = LinkPlayGames(playGames, link, session, Analytics.None)
         return AppServices(linking, scope = backgroundScope)
     }
 
-    /** Play Games with a player signed in, who always has a code. */
-    private object SignedInPlayGames : PlayGames {
+    /** Play Games with a player signed in, who always has a code, asked only while the app is [onScreen]. */
+    private class FakePlayGames : PlayGames {
+        var onScreen = true
+
         override val available: Boolean = true
 
-        override suspend fun isAuthenticated(): Boolean = true
+        override suspend fun isAuthenticated(): Boolean = onScreen
 
         override suspend fun signIn(): Boolean = true
 
@@ -68,7 +96,7 @@ class AppServicesTest {
     private class FakeLink(
         private val signIns: MutableList<String>,
     ) : PlayGamesRepository {
-        private var settled = false
+        var settled = false
 
         override fun isSettled(): Boolean = settled
 
