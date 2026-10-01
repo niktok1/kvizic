@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -58,7 +59,11 @@ fun JoinScreen(
     val colors = KvizicTheme.colors
     val taking = entry is Entry.Taking
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    // Once drawn, so a keyboard types the code from the start: before its first frame nothing can take focus.
+    LaunchedEffect(Unit) {
+        withFrameNanos {}
+        runCatching { focus.requestFocus() }
+    }
     val typeDigit = { digit: Char -> if (!taking && code.length < CODE_LENGTH) onCode(code + digit) }
     val delete = { if (!taking && code.isNotEmpty()) onCode(code.dropLast(1)) }
     val join = { if (!taking && code.length == CODE_LENGTH) onJoin() }

@@ -166,7 +166,8 @@ class TapsTest {
             elementsTapped { RoomScreen(host, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
         )
         assertEquals(
-            setOf("question.answer"),
+            // Leaving mid-game asks first, as anywhere in the room.
+            setOf("question.leave", "question.answer", "room.leave_cancel", "room.leave_confirm"),
             elementsTapped {
                 RoomScreen(
                     inLobby(answering()),
@@ -178,7 +179,14 @@ class TapsTest {
             },
         )
         assertEquals(
-            setOf("reveal.report", "report.reason", "report.cancel"),
+            setOf(
+                "question.leave",
+                "reveal.report",
+                "report.reason",
+                "report.cancel",
+                "room.leave_cancel",
+                "room.leave_confirm",
+            ),
             elementsTapped {
                 RoomScreen(
                     inLobby(revealing()),

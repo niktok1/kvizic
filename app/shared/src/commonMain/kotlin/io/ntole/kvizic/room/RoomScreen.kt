@@ -58,6 +58,7 @@ import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.navigation.BackTopBar
+import io.ntole.kvizic.navigation.SystemBack
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.time.Duration.Companion.milliseconds
@@ -95,6 +96,8 @@ fun RoomScreen(
     var leaving by rememberSaveable { mutableStateOf(false) }
     // Held here, not on the reveal, so the dialog stays as the next question comes.
     var reporting by rememberSaveable { mutableStateOf<String?>(null) }
+    // The system's back asks before it leaves the room, wherever in it the player is.
+    SystemBack(enabled = true) { leaving = true }
     Column(modifier.fillMaxSize()) {
         RoomBanner(reconnecting = state.reconnecting, note = note)
         when (val phase = state.phase) {
@@ -117,15 +120,15 @@ fun RoomScreen(
             }
 
             is GamePhase.Reading -> {
-                QuestionScreen(state, phase, topics, actions)
+                QuestionScreen(state, phase, topics, actions, onLeave = { leaving = true })
             }
 
             is GamePhase.Answering -> {
-                QuestionScreen(state, phase, topics, actions)
+                QuestionScreen(state, phase, topics, actions, onLeave = { leaving = true })
             }
 
             is GamePhase.Revealing -> {
-                RevealScreen(state, phase, topics, onReport = { reporting = it })
+                RevealScreen(state, phase, topics, onReport = { reporting = it }, onLeave = { leaving = true })
             }
         }
     }

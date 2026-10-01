@@ -329,7 +329,16 @@ private fun NewRoom(room: RoomViewModel) {
             settings = settings,
             topics = topics,
             onChange = { settings = it },
-            doneLabel = LocalStrings.current.game.create,
+            doneLabel =
+                with(LocalStrings.current.game) {
+                    if (entry ==
+                        Entry.Taking(EntryWay.CREATE)
+                    ) {
+                        entering
+                    } else {
+                        create
+                    }
+                },
             onDone = { room.create(settings) },
             enabled = entry !is Entry.Taking,
         )

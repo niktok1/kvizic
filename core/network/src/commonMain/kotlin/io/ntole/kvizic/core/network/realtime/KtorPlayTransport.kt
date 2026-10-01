@@ -72,18 +72,13 @@ public class KtorPlayTransport(
 
         /**
          * A client for sockets alone. Ktor's pings are off, since the server pings in the protocol and the
-         * client answers there, and frames from the server may be as large as a whole lobby's snapshot.
+         * client answers there. No frame size is set: the browser's and OkHttp's engines refuse to open a
+         * socket that sets one, and the server, the one that sends, holds its own frames small.
          */
         public fun realtimeClient(engine: HttpClientEngine? = null): HttpClient {
-            val config: io.ktor.client.HttpClientConfig<*>.() -> Unit = {
-                install(WebSockets) {
-                    maxFrameSize = MAX_SERVER_FRAME_BYTES
-                }
-            }
+            val config: io.ktor.client.HttpClientConfig<*>.() -> Unit = { install(WebSockets) }
             return if (engine == null) HttpClient(config) else HttpClient(engine, config)
         }
-
-        private const val MAX_SERVER_FRAME_BYTES = 1L shl 20
     }
 }
 

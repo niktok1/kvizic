@@ -59,6 +59,7 @@ internal fun QuestionScreen(
     phase: GamePhase,
     topics: List<Topic>,
     actions: RoomActions,
+    onLeave: () -> Unit = {},
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -91,6 +92,7 @@ internal fun QuestionScreen(
                     topics,
                     phase.standings,
                     state.you,
+                    onLeave = onLeave,
                 )
                 Spacer(Modifier.height(space.xl))
                 QuestionTimer(
@@ -149,6 +151,7 @@ internal fun QuestionScreen(
                     state.you,
                     timer = timer,
                     timerDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
+                    onLeave = onLeave,
                 )
                 Spacer(Modifier.height(space.md))
                 Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
@@ -221,6 +224,7 @@ internal fun RevealScreen(
     phase: GamePhase.Revealing,
     topics: List<Topic>,
     onReport: (questionId: String) -> Unit = {},
+    onLeave: () -> Unit = {},
 ) {
     val words = LocalStrings.current.game
     val space = KvizicTheme.space
@@ -239,6 +243,7 @@ internal fun RevealScreen(
             reveal.standings,
             state.you,
             timer = TimerPhase.Stopped(lobby.settings.secondsPerQuestion * MILLIS_PER_SECOND, 0),
+            onLeave = onLeave,
         )
         Spacer(Modifier.height(space.md))
         Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
@@ -366,6 +371,7 @@ private fun RoundBar(
     you: String,
     timer: TimerPhase? = null,
     timerDescription: String? = null,
+    onLeave: () -> Unit = {},
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -373,6 +379,14 @@ private fun RoundBar(
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically) {
+        StageIconButton(
+            KvizicIcons.Leave,
+            contentDescription = words.leave,
+            onClick = tapped("question.leave", onClick = onLeave),
+            kind = ButtonKind.QUIET,
+            small = true,
+        )
+        Spacer(Modifier.width(space.xs))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 KvizicText(words.question, style = type.label, color = colors.onPageMuted)
