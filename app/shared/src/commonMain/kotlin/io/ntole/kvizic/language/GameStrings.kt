@@ -42,9 +42,7 @@ data class Plural(
  */
 data class GameStrings(
     // Home.
-    val tagline: String,
     val quickPlay: String,
-    val quickPlayHint: String,
     /** How many play now, `{0}`, and how many look for a game, `{1}`. */
     val presence: String,
     val createRoom: String,
@@ -183,9 +181,7 @@ data class GameStrings(
 ) {
     internal fun map(transform: (String) -> String): GameStrings =
         GameStrings(
-            tagline = transform(tagline),
             quickPlay = transform(quickPlay),
-            quickPlayHint = transform(quickPlayHint),
             presence = transform(presence),
             createRoom = transform(createRoom),
             joinByCode = transform(joinByCode),
@@ -306,9 +302,7 @@ data class GameStrings(
  */
 internal val SerbianCyrillicGameStrings: GameStrings =
     GameStrings(
-        tagline = "Квиз уживо, са друштвом",
         quickPlay = "Брза игра",
-        quickPlayHint = "Прва слободна соба, за тренутак",
         presence = "{0} на мрежи · {1} тражи игру",
         createRoom = "Направи собу",
         joinByCode = "Уђи кодом",
@@ -442,9 +436,7 @@ internal val SerbianCyrillicGameStrings: GameStrings =
 
 internal val EnglishGameStrings: GameStrings =
     GameStrings(
-        tagline = "A live quiz, with friends",
         quickPlay = "Quick play",
-        quickPlayHint = "The first open room, in a moment",
         presence = "{0} online · {1} looking for a game",
         createRoom = "Create a room",
         joinByCode = "Join with a code",

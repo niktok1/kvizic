@@ -149,14 +149,6 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(space.xl))
             Wordmark(strings.gameName, Modifier.fillMaxWidth())
-            Spacer(Modifier.height(space.md))
-            KvizicText(
-                words.tagline,
-                Modifier.fillMaxWidth(),
-                style = type.label,
-                color = colors.onPageMuted,
-                textAlign = TextAlign.Center,
-            )
             Spacer(Modifier.weight(1f))
             if (entry is Entry.Failed) {
                 Notice(
@@ -170,7 +162,6 @@ fun HomeScreen(
                 onClick = tapped("home.quick_play", onClick = actions.quickPlay),
                 modifier = Modifier.fillMaxWidth(),
                 size = ButtonSize.HERO,
-                supportingText = words.quickPlayHint,
                 enabled = !taking,
             )
             Spacer(Modifier.height(space.sm))

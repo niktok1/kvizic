@@ -42,9 +42,7 @@ class HomeScreenDrawTest {
                 val shown = scene.everyText()
                 listOf(
                     words.games.of(12, language) + " · " + words.wins.of(3, language),
-                    words.tagline,
                     words.quickPlay,
-                    words.quickPlayHint,
                     words.presence.fill(128, 7),
                     words.createRoom,
                     words.joinByCode,
