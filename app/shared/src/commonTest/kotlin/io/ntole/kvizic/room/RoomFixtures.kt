@@ -43,7 +43,11 @@ internal val MEMBERS =
     )
 
 internal val TOPICS =
-    listOf(Topic("GEOGRAPHY", "Географија", "Geography", 40), Topic("HISTORY", "Историја", "History", 30))
+    listOf(
+        Topic("GEOGRAPHY", "Географија", "Geography", 40, groupId = "KNOWLEDGE"),
+        Topic("HISTORY", "Историја", "History", 30, groupId = "KNOWLEDGE"),
+        Topic("LOCAL", "Наши простори", "Our region", 4),
+    )
 
 internal fun lobby(
     members: List<LobbyMember> = MEMBERS,

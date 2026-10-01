@@ -26,6 +26,7 @@ import io.ntole.kvizic.core.domain.lobby.PublicLobbies
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.domain.topic.TopicGroup
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.home.HomeActions
 import io.ntole.kvizic.home.HomeFailure
@@ -240,14 +241,22 @@ class TapsTest {
             setOf(
                 "settings.questions",
                 "settings.time",
-                "settings.all_topics",
-                "settings.topic",
+                "settings.topics",
                 "settings.players",
                 "settings.visibility",
                 "settings.penalty",
                 "settings.done",
+                // The topics' picker, which the topics' line opens in the settings' place.
+                "top_bar.back",
+                "topics.all",
+                "topics.group",
+                "topics.whole_group",
+                "topics.topic",
+                "topics.done",
             ),
-            elementsTapped { SettingsScreen(LobbySettings(), TOPICS, onChange = {}, doneLabel = "OK", onDone = {}) },
+            elementsTapped {
+                SettingsScreen(LobbySettings(), TOPICS, onChange = {}, doneLabel = "OK", onDone = {}, groups = GROUPS)
+            },
         )
     }
 
@@ -315,6 +324,8 @@ class TapsTest {
 
         /** `screen.what`, in lower case and underscores. */
         val ELEMENT_NAME = Regex("[a-z_]+\\.[a-z_]+")
+
+        val GROUPS = listOf(TopicGroup("KNOWLEDGE", "Знање", "Knowledge"))
 
         val PROFILE =
             Profile(

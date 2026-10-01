@@ -9,26 +9,39 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
 import io.ntole.kvizic.core.domain.topic.Topic
+import io.ntole.kvizic.core.domain.topic.TopicGroup
+import io.ntole.kvizic.design.component.ButtonKind
+import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
+import io.ntole.kvizic.design.component.KvizicIcon
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.Toggle
+import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
+import io.ntole.kvizic.navigation.SystemBack
 
 /**
  * A room's settings, to make a room with or for its host to change: how many questions and how long each,
  * which topics, Све being none picked, how many seats, at the least [minPlayers] (the members a room
  * already has), who may find it, and whether a wrong answer costs points. [settings] is what is picked,
  * which [onChange] changes; [onDone] makes the room or saves the change, its button [doneLabel].
+ *
+ * The topics are one line, what is picked in a few words, which opens the [TopicPicker] in the settings'
+ * place, searched and grouped by [groups], for the hundreds of topics to come; back closes it.
  */
 @Composable
 fun SettingsScreen(
@@ -40,7 +53,21 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     minPlayers: Int = LobbyRules.MIN_PLAYERS,
     enabled: Boolean = true,
+    groups: List<TopicGroup> = emptyList(),
 ) {
+    var picking by rememberSaveable { mutableStateOf(false) }
+    SystemBack(enabled = picking) { picking = false }
+    if (picking) {
+        TopicPicker(
+            picked = settings.topics,
+            topics = topics,
+            groups = groups,
+            questionCount = settings.questionCount,
+            onChange = { onChange(settings.copy(topics = it)) },
+            onDone = { picking = false },
+        )
+        return
+    }
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
     val space = KvizicTheme.space
@@ -88,28 +115,14 @@ fun SettingsScreen(
             }
             Column {
                 heading(words.topics)
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(space.xs),
-                    verticalArrangement = Arrangement.spacedBy(space.xs),
-                ) {
-                    Chip(
-                        words.allTopics,
-                        selected = settings.topics.isEmpty(),
-                        onClick = tapped("settings.all_topics") { onChange(settings.copy(topics = emptyList())) },
-                    )
-                    topics.forEach { topic ->
-                        val picked = topic.id in settings.topics
-                        Chip(
-                            topicName(topic, language),
-                            selected = picked,
-                            onClick =
-                                tapped("settings.topic", mapOf("topic" to topic.id)) {
-                                    val next = if (picked) settings.topics - topic.id else settings.topics + topic.id
-                                    onChange(settings.copy(topics = next))
-                                },
-                        )
-                    }
-                }
+                StageButton(
+                    topicsSummary(settings.topics, topics, language, words.allTopics),
+                    onClick = tapped("settings.topics") { picking = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    kind = ButtonKind.DARK,
+                    size = ButtonSize.SMALL,
+                    trailing = { KvizicIcon(KvizicIcons.ChevronRight, contentDescription = null) },
+                )
             }
             Column {
                 heading(words.players)

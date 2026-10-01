@@ -40,6 +40,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.topic.GetTopics
 import io.ntole.kvizic.core.domain.topic.Topic
+import io.ntole.kvizic.core.domain.topic.TopicGroup
 import io.ntole.kvizic.core.domain.topic.TopicRepository
 import io.ntole.kvizic.core.domain.update.AppUpdate
 import io.ntole.kvizic.design.component.Stage
@@ -328,6 +329,7 @@ private fun NewRoom(room: RoomViewModel) {
         SettingsScreen(
             settings = settings,
             topics = topics,
+            groups = rememberTopicGroups(),
             onChange = { settings = it },
             doneLabel =
                 with(LocalStrings.current.game) {
@@ -390,6 +392,7 @@ private fun RoomSettings(
     SettingsScreen(
         settings = settings,
         topics = topics,
+        groups = rememberTopicGroups(),
         onChange = { settings = it },
         doneLabel = LocalStrings.current.game.save,
         onDone = {
@@ -398,6 +401,14 @@ private fun RoomSettings(
         },
         minPlayers = state.lobby.members.size,
     )
+}
+
+/** The groups the topics are listed under, as [rememberTopics]'s read last brought them. */
+@Composable
+private fun rememberTopicGroups(): List<TopicGroup> {
+    val repository = koinInject<TopicRepository>()
+    val groups by repository.groups.collectAsStateWithLifecycle()
+    return groups
 }
 
 /** Every topic, as last read, read again as the screen calling this is shown. */

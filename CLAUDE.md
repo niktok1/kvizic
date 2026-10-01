@@ -103,6 +103,11 @@ Play Games Services v2. **No Material**: the design system draws everything.
   answers no room). The content repo's house style is stricter for answers (40).
 - Topics: Географија, Историја, Спорт, Музика, Филм и серије, Наука и технологија, Језик и књижевност,
   Наши простори; all feed Све. Questions are ekavian Serbian Cyrillic; Latin is made by transliteration.
+- **Topic groups** (the owner's B, 2026-10-01): server data (`topic_groups`, V3), each topic in one or none:
+  Знање, Забава, Спорт, Наши простори. Written by migrations for now; moderator routes come with a topics tab.
+  The settings show the topics picked in a few words („Спорт, Музика +3“), which open the picker: a search by
+  any part of a name in either script with no accents needed, the groups opened and closed by their names,
+  each with a chip for the whole group, counts, and thin topics greyed.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
   Dev loads the seed from a Render secret file (`QUESTION_SEED_FILE`), H2 only.
 - **Publishing drafts**: `KVIZIC_ADMIN_TOKEN=… ./publish.py dev drafts/*.json` in the content repo checks them,

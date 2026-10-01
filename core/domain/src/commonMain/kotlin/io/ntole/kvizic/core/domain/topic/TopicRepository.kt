@@ -13,6 +13,9 @@ public interface TopicRepository {
     /** The topics as [refresh] last read them, in the server's order; empty until a read works. */
     public val topics: StateFlow<List<Topic>>
 
+    /** The groups as [refresh] last read them, in the server's order; empty until a read works, or from a server before groups. */
+    public val groups: StateFlow<List<TopicGroup>>
+
     /**
      * Reads every topic from the server again, keeps it in [topics], and returns it.
      *

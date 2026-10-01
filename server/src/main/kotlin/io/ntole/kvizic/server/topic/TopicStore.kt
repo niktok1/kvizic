@@ -2,8 +2,10 @@ package io.ntole.kvizic.server.topic
 
 import io.ntole.kvizic.core.question.QuestionStatus
 import io.ntole.kvizic.core.topic.TopicDto
+import io.ntole.kvizic.core.topic.TopicGroupDto
 import io.ntole.kvizic.server.db.QuestionTopics
 import io.ntole.kvizic.server.db.Questions
+import io.ntole.kvizic.server.db.TopicGroups
 import io.ntole.kvizic.server.db.Topics
 import io.ntole.kvizic.server.plugins.ApiFailure
 import org.jetbrains.exposed.v1.core.JoinType
@@ -36,9 +38,17 @@ object TopicStore {
                     nameSr = row[Topics.nameSr],
                     nameEn = row[Topics.nameEn],
                     questionCount = counts[row[Topics.id]] ?: 0,
+                    groupId = row[Topics.groupId],
                 )
             }
     }
+
+    /** Every group topics are listed under, in its order. Must run inside a transaction. */
+    fun groups(): List<TopicGroupDto> =
+        TopicGroups
+            .selectAll()
+            .orderBy(TopicGroups.listOrder to SortOrder.ASC, TopicGroups.id to SortOrder.ASC)
+            .map { row -> TopicGroupDto(row[TopicGroups.id], row[TopicGroups.nameSr], row[TopicGroups.nameEn]) }
 
     /** Every topic's id. Must run inside a transaction. */
     fun ids(): Set<String> = Topics.select(Topics.id).map { it[Topics.id] }.toSet()

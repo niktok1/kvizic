@@ -95,6 +95,19 @@ object Profiles : Table("profiles") {
     override val primaryKey = PrimaryKey(playerId)
 }
 
+/**
+ * What topics are grouped under in the picker, so hundreds stay easy to find: Знање, Забава and the rest.
+ * Server data, in [listOrder]'s order; a topic in none is listed after every group.
+ */
+object TopicGroups : Table("topic_groups") {
+    val id = varchar("id", KvizicApi.Limits.MAX_ID_LENGTH)
+    val nameSr = varchar("name_sr", KvizicApi.Limits.MAX_TOPIC_NAME_LENGTH)
+    val nameEn = varchar("name_en", KvizicApi.Limits.MAX_TOPIC_NAME_LENGTH)
+    val listOrder = integer("list_order")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
 /** The topics questions are filed under. Never deleted; the order of topics is when each was added. */
 object Topics : Table("topics") {
     val id = varchar("id", KvizicApi.Limits.MAX_ID_LENGTH)
@@ -102,7 +115,14 @@ object Topics : Table("topics") {
     val nameEn = varchar("name_en", KvizicApi.Limits.MAX_TOPIC_NAME_LENGTH)
     val createdAt = long("created_at")
 
+    /** The group the topic is listed under, or none. */
+    val groupId = varchar("group_id", KvizicApi.Limits.MAX_ID_LENGTH).references(TopicGroups.id).nullable()
+
     override val primaryKey = PrimaryKey(id)
+
+    init {
+        index(isUnique = false, groupId, id)
+    }
 }
 
 /**
@@ -299,6 +319,7 @@ val appTables: Array<Table> =
         Sessions,
         Identities,
         Profiles,
+        TopicGroups,
         Topics,
         Questions,
         QuestionOptions,

@@ -129,7 +129,7 @@ fun RoomScreen(
                     if (shownMe?.onResults == true && results != null) {
                         Results(results, shown.lobby, shown.you, newGameStarting = false, actions)
                     } else {
-                        Waiting(shown, countdown = null, bursts, actions, onLeave = { leaving = true })
+                        Waiting(shown, countdown = null, bursts, actions, onLeave = { leaving = true }, topics = topics)
                     }
                 }
 
@@ -138,7 +138,14 @@ fun RoomScreen(
                     if (shownMe?.onResults == true && results != null) {
                         Results(results, shown.lobby, shown.you, newGameStarting = true, actions)
                     } else {
-                        Waiting(shown, countdown = phase.deadline, bursts, actions, onLeave = { leaving = true })
+                        Waiting(
+                            shown,
+                            countdown = phase.deadline,
+                            bursts,
+                            actions,
+                            onLeave = { leaving = true },
+                            topics = topics,
+                        )
                     }
                 }
 
@@ -248,6 +255,7 @@ private fun Waiting(
     bursts: Map<String, Burst>,
     actions: RoomActions,
     onLeave: () -> Unit,
+    topics: List<Topic> = emptyList(),
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -327,7 +335,7 @@ private fun Waiting(
             Spacer(Modifier.height(space.md))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
-            settingsChips(lobby.settings).forEach { chip ->
+            settingsChips(lobby.settings, topics).forEach { chip ->
                 Chip(
                     chip,
                     onClick =

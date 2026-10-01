@@ -14,6 +14,7 @@ import io.ntole.kvizic.core.domain.moderation.QuestionPlay
 import io.ntole.kvizic.core.domain.moderation.ReportOutcome
 import io.ntole.kvizic.core.domain.moderation.ReportedQuestion
 import io.ntole.kvizic.core.domain.topic.Topic
+import io.ntole.kvizic.core.domain.topic.TopicGroup
 import io.ntole.kvizic.core.domain.topic.TopicRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -157,6 +158,7 @@ internal class StaticTopics : TopicRepository {
             listOf(Topic("GEOGRAPHY", "Географија", "Geography", 6), Topic("SPORT", "Спорт", "Sport", 6)),
         )
     override val topics: StateFlow<List<Topic>> = listed
+    override val groups: StateFlow<List<TopicGroup>> = MutableStateFlow(emptyList())
 
     override suspend fun refresh(): List<Topic> = listed.value
 }

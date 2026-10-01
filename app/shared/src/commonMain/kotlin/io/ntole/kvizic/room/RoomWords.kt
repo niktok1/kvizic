@@ -130,13 +130,16 @@ internal fun topicNameOf(
 /** A room's settings, each in a few words, as its chips show them. */
 @Composable
 @ReadOnlyComposable
-internal fun settingsChips(settings: LobbySettings): List<String> {
+internal fun settingsChips(
+    settings: LobbySettings,
+    topics: List<Topic> = emptyList(),
+): List<String> {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
     return listOf(
         words.questionCount.of(settings.questionCount, language),
         words.seconds.fill(settings.secondsPerQuestion),
-        if (settings.topics.isEmpty()) words.allTopics else words.topicCount.of(settings.topics.size, language),
+        topicsSummary(settings.topics, topics, language, words.allTopics),
         if (settings.wrongAnswerPenalty) words.penaltyOn else words.penaltyOff,
     )
 }

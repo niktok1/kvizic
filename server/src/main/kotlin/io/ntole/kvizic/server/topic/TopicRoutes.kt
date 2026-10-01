@@ -21,7 +21,7 @@ import io.ntole.kvizic.server.plugins.receiveOrReject
 fun Route.topicRoutes(db: Db) {
     rateLimit(RouteLimit.TOPICS) {
         get(KvizicApi.Paths.TOPICS) {
-            call.respond(TopicListDto(db.query { TopicStore.all() }))
+            call.respond(db.query { TopicListDto(TopicStore.all(), TopicStore.groups()) })
         }
     }
 }

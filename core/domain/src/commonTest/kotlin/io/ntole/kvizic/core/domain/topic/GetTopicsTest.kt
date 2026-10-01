@@ -1,5 +1,6 @@
 package io.ntole.kvizic.core.domain.topic
 
+import io.ntole.kvizic.core.domain.topic.TopicGroup
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
@@ -25,6 +26,7 @@ class GetTopicsTest {
         private val read = MutableStateFlow<List<Topic>>(emptyList())
 
         override val topics: StateFlow<List<Topic>> = read
+        override val groups: StateFlow<List<TopicGroup>> = MutableStateFlow(emptyList())
 
         override suspend fun refresh(): List<Topic> {
             reads++
