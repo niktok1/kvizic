@@ -226,8 +226,11 @@ Play Games Services v2. **No Material**: the design system draws everything.
 
 ## 12. Verifying
 
-CI (`.github/workflows/ci.yml`) is the definition of green: `verify` (lint, every JVM test including
-`:e2e:test`, every client target, release signing), `server-postgres`, `docker-smoke`, `ios`. Locally:
+CI (`.github/workflows/ci.yml`) is the definition of green, its jobs side by side: `verify` (lint, every JVM
+test but the draw tests, `:e2e:test` among them), `ui-tests` (`:app:designsystem` and `:app:shared`'s JVM
+tests, the slowest: every still draws 6 s of frames in software, so their classes share out among up to four
+test JVMs, and a class that grows long is split), `clients` (every client target, release signing),
+`server-postgres`, `docker-smoke`, `ios`. Locally:
 `./gradlew ktlintCheck` and the module tests; iOS needs full Xcode, so compile with
 `:app:shared:compileKotlinIosSimulatorArm64` and let CI link; Kotlin/Native refuses a comma in a common
 test's name, so compile `compileTestKotlinIosSimulatorArm64` before pushing one. `KVIZIC_DESIGN_DIR=<dir>`

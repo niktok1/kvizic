@@ -107,3 +107,9 @@ kotlin {
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
 }
+
+// The draw tests render every skin a frame at a time in software, bound by the processor: their classes are
+// shared out among test JVMs, one a core, up to four (CI's runner has four). The tests of a class share one.
+tasks.named<Test>("jvmTest") {
+    maxParallelForks = Runtime.getRuntime().availableProcessors().coerceIn(1, 4)
+}

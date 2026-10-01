@@ -13,9 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Lint and every JVM test but the draw tests, which ui-tests runs beside it.
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -32,10 +33,9 @@ jobs:
       - name: Lint
         run: ./gradlew ktlintCheck --no-daemon
 
-      # Every JVM-hosted test: the whole server suite, the realtime socket tests on real WebSockets and
-      # the drain on a real Netty server among them, the protocol's golden frames, the client layers, the
-      # real client sessions against the real server through a fault proxy (:e2e), the skin engine's
-      # contrast, motion, font and long-text checks, and the Android host tests.
+      # The whole server suite, the realtime socket tests on real WebSockets and the drain on a real Netty
+      # server among them, the protocol's golden frames, the client layers, the real client sessions against
+      # the real server through a fault proxy (:e2e), the moderation app, and the Android host tests.
       - name: Test
         run: |
           ./gradlew --no-daemon \
@@ -46,14 +46,63 @@ jobs:
             :core:network:jvmTest \
             :core:network:testAndroidHostTest \
             :core:data:jvmTest \
-            :app:designsystem:jvmTest \
-            :app:shared:jvmTest \
             :app:shared:testAndroidHostTest \
             :app:adminApp:jvmTest \
             :app:androidApp:testDevDebugUnitTest
 
-      # Every in-scope client target still compiles, both web targets included, and R8 still shrinks the
-      # release build: without the upload key, which CI never has, it is signed with the debug key.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/**'
+          retention-days: 7
+
+  # The skin engine's contrast, motion, font and long-text checks and every screen drawn off screen in every
+  # skin, a frame at a time in software: the longest of the JVM tests, so a job of its own, a test JVM a core.
+  ui-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Draw tests
+        run: ./gradlew --no-daemon :app:designsystem:jvmTest :app:shared:jvmTest
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-ui
+          path: '**/build/reports/tests/**'
+          retention-days: 7
+
+  # Every in-scope client target still compiles, both web targets included, and R8 still shrinks the release
+  # build: without the upload key, which CI never has, it is signed with the debug key.
+  clients:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Compile all client targets
         run: |
           ./gradlew --no-daemon \
@@ -79,14 +128,6 @@ jobs:
             fi
             grep -q 'must be signed with the Play upload key' "$log" || { cat "$log"; exit 1; }
           done
-
-      - name: Upload test reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: '**/build/reports/tests/**'
-          retention-days: 7
 
   # The server suite against the engine production runs on. H2 only approximates PostgreSQL, so the
   # dialect's differences, types, constraint errors and locking, surface here and nowhere else, and so do
