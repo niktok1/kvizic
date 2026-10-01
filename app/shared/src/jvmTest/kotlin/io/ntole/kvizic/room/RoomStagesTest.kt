@@ -22,6 +22,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A game's steps give way to each other rather than cut: the question read rises into its answers, which
@@ -49,11 +51,15 @@ class RoomStagesTest {
         }
     }
 
+    /**
+     * The reveal's count to the next question ticks on the device's clock, not the scene's: a slow machine
+     * took a second over these frames, and the tick composed among them. Its count has run out here.
+     */
     @Test
     fun `the answers fade into their reveal`() {
         Skins.ALL.forEach { skin ->
             stages(skin, inLobby(answering(myPick = 1))) { scene, change ->
-                change(inLobby(revealing()), MIDWAY) { mid -> mid() }
+                change(inLobby(revealing().copy(next = deadline(Duration.ZERO, 5.seconds))), MIDWAY) { mid -> mid() }
                 assertTrue(words.reportQuestion in scene.descriptions(), "${skin.id}: the reveal is not shown")
             }
         }
