@@ -11,6 +11,8 @@ import io.ntole.kvizic.core.network.analytics.PostHogConfig
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.home.HomeViewModel
 import io.ntole.kvizic.language.LanguageViewModel
+import io.ntole.kvizic.room.PublicRoomsViewModel
+import io.ntole.kvizic.room.RoomViewModel
 import io.ntole.kvizic.services.AppServices
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
@@ -25,6 +27,8 @@ internal val uiModule =
         viewModelOf(::HomeViewModel)
         viewModelOf(::AboutViewModel)
         viewModelOf(::LanguageViewModel)
+        viewModelOf(::RoomViewModel)
+        viewModelOf(::PublicRoomsViewModel)
         // What the analytics time with: how long a screen or the app was shown.
         single<TimeSource.WithComparableMarks> { TimeSource.Monotonic }
         // One for the app's life, as the analytics are: a rotation's new activity finds it.

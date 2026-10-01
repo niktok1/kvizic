@@ -37,8 +37,6 @@ data class Strings(
     val tooManyTriesNoWait: String,
     /** Any other failure, which asks in [tryAgain]'s own words. */
     val somethingWrong: String,
-    /** The Home screen's words. */
-    val homeScreen: HomeStrings,
     /** The About screen's words. */
     val aboutScreen: AboutStrings,
     /** The words of the screen shown once the server serves this build nothing more. */
@@ -63,20 +61,10 @@ data class Strings(
             tooManyTries = transform(tooManyTries),
             tooManyTriesNoWait = transform(tooManyTriesNoWait),
             somethingWrong = transform(somethingWrong),
-            homeScreen = homeScreen.map(transform),
             aboutScreen = aboutScreen.map(transform),
             updateScreen = updateScreen.map(transform),
             game = game.map(transform),
         )
-}
-
-/** The Home screen's words, as [Strings.homeScreen]. */
-data class HomeStrings(
-    /** The player's avatar, by its id, `{0}`, until the avatars are drawn. */
-    val avatar: String,
-) {
-    /** These strings with [transform] applied to every one of them, as [Strings.map] asks. */
-    internal fun map(transform: (String) -> String): HomeStrings = HomeStrings(avatar = transform(avatar))
 }
 
 /** The source text, written by hand. */
@@ -92,7 +80,6 @@ val SerbianCyrillicStrings: Strings =
         tooManyTries = "Превише покушаја. Сачекај {0} сек.",
         tooManyTriesNoWait = "Превише покушаја. Сачекај мало.",
         somethingWrong = "Нешто није у реду. Покушај поново.",
-        homeScreen = HomeStrings(avatar = "Аватар: {0}"),
         aboutScreen = SerbianCyrillicAboutStrings,
         updateScreen = SerbianCyrillicUpdateStrings,
         game = SerbianCyrillicGameStrings,
@@ -113,7 +100,6 @@ val EnglishStrings: Strings =
         tooManyTries = "Too many tries. Wait {0} s.",
         tooManyTriesNoWait = "Too many tries. Wait a moment.",
         somethingWrong = "Something went wrong. Try again.",
-        homeScreen = HomeStrings(avatar = "Avatar: {0}"),
         aboutScreen = EnglishAboutStrings,
         updateScreen = EnglishUpdateStrings,
         game = EnglishGameStrings,

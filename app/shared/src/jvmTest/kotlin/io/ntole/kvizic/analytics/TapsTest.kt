@@ -19,16 +19,20 @@ import io.ntole.kvizic.about.Deletion
 import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.CoreError
+import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
+import io.ntole.kvizic.home.HomeActions
 import io.ntole.kvizic.home.HomeFailure
 import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeState
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.nodes
+import io.ntole.kvizic.room.Entry
+import io.ntole.kvizic.room.EntryWay
 import io.ntole.kvizic.settle
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
@@ -57,14 +61,29 @@ class TapsTest {
 
     @Test
     fun `every tap on Home and the top bar is reported`() {
+        val buttons =
+            setOf(
+                "home.about",
+                "home.quick_play",
+                "home.create_room",
+                "home.join_by_code",
+                "home.public_rooms",
+                "home.solo",
+            )
+        assertEquals(buttons, elementsTapped { HomeScreen(HomeState(profile = PROFILE), HomeActions()) })
         assertEquals(
-            setOf("home.about"),
-            elementsTapped { HomeScreen(HomeState(profile = PROFILE), onAbout = {}, onRetry = {}) },
+            buttons + "home.try_again",
+            elementsTapped { HomeScreen(HomeState(failure = HomeFailure(CoreError.NETWORK)), HomeActions()) },
         )
         assertEquals(
-            setOf("home.try_again", "home.about"),
+            buttons + "home.exit_ok" + "home.failure_ok",
             elementsTapped {
-                HomeScreen(HomeState(failure = HomeFailure(CoreError.NETWORK)), onAbout = {}, onRetry = {})
+                HomeScreen(
+                    HomeState(profile = PROFILE),
+                    HomeActions(),
+                    entry = Entry.Failed(EntryWay.QUICK_PLAY, CoreError.NETWORK),
+                    exit = LobbyExit.KICKED,
+                )
             },
         )
         assertEquals(setOf("top_bar.back"), elementsTapped { BackTopBar(onBack = {}) })

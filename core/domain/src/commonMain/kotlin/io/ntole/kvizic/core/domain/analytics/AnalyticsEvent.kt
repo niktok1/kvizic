@@ -5,7 +5,7 @@ package io.ntole.kvizic.core.domain.analytics
  * changes once it is sent: a dashboard built on it would lose it. The properties each carries are
  * [AnalyticsProperty]'s.
  *
- * Only the platform's events for now; the game's own join them as the game is built.
+ * The game's own: a room entered and left, and a game played to its end.
  */
 public object AnalyticsEvent {
     /** The app came to the foreground: at launch, and from the background ([AnalyticsProperty.FROM_BACKGROUND]). */
@@ -37,4 +37,16 @@ public object AnalyticsEvent {
 
     /** The player deleted their account, and plays on as a fresh guest. */
     public const val ACCOUNT_DELETED: String = "account_deleted"
+
+    /** The player took a seat in a room, [AnalyticsProperty.WAY]: `quick_play`, `solo`, `create` or `join`. */
+    public const val ROOM_ENTERED: String = "room_entered"
+
+    /** The player is out of the room they were in, for [AnalyticsProperty.EXIT], a `LobbyExit`'s name. */
+    public const val ROOM_EXITED: String = "room_exited"
+
+    /**
+     * A game the player played was over: their [AnalyticsProperty.RANK] among [AnalyticsProperty.PLAYERS],
+     * after [AnalyticsProperty.QUESTIONS], and [AnalyticsProperty.SOLO] whether alone.
+     */
+    public const val GAME_FINISHED: String = "game_finished"
 }

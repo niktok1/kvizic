@@ -1,0 +1,168 @@
+package io.ntole.kvizic.room
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.core.domain.lobby.LobbyRules
+import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
+import io.ntole.kvizic.core.domain.topic.Topic
+import io.ntole.kvizic.design.component.Chip
+import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.component.Toggle
+import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.language.LocalLanguage
+import io.ntole.kvizic.language.LocalStrings
+import io.ntole.kvizic.language.fill
+
+/**
+ * A room's settings, to make a room with or for its host to change: how many questions and how long each,
+ * which topics, Све being none picked, how many seats, at the least [minPlayers] (the members a room
+ * already has), who may find it, and whether a wrong answer costs points. [settings] is what is picked,
+ * which [onChange] changes; [onDone] makes the room or saves the change, its button [doneLabel].
+ */
+@Composable
+fun SettingsScreen(
+    settings: LobbySettings,
+    topics: List<Topic>,
+    onChange: (LobbySettings) -> Unit,
+    doneLabel: String,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+    minPlayers: Int = LobbyRules.MIN_PLAYERS,
+    enabled: Boolean = true,
+) {
+    val words = LocalStrings.current.game
+    val language = LocalLanguage.current
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
+    val heading: @Composable (String) -> Unit = { text ->
+        KvizicText(text, style = type.label, color = colors.onPageMuted)
+        Spacer(Modifier.height(space.xs))
+    }
+    Page {
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(space.md),
+        ) {
+            Column {
+                heading(words.questions)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+                    LobbyRules.QUESTION_COUNTS.forEach { count ->
+                        Chip(
+                            count.toString(),
+                            selected = settings.questionCount == count,
+                            onClick =
+                                tapped(
+                                    "settings.questions",
+                                    mapOf("count" to count),
+                                ) { onChange(settings.copy(questionCount = count)) },
+                        )
+                    }
+                }
+            }
+            Column {
+                heading(words.time)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+                    LobbyRules.ANSWER_SECONDS.forEach { seconds ->
+                        Chip(
+                            words.seconds.fill(seconds),
+                            selected = settings.secondsPerQuestion == seconds,
+                            onClick =
+                                tapped("settings.time", mapOf("seconds" to seconds)) {
+                                    onChange(settings.copy(secondsPerQuestion = seconds))
+                                },
+                        )
+                    }
+                }
+            }
+            Column {
+                heading(words.topics)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs),
+                    verticalArrangement = Arrangement.spacedBy(space.xs),
+                ) {
+                    Chip(
+                        words.allTopics,
+                        selected = settings.topics.isEmpty(),
+                        onClick = tapped("settings.all_topics") { onChange(settings.copy(topics = emptyList())) },
+                    )
+                    topics.forEach { topic ->
+                        val picked = topic.id in settings.topics
+                        Chip(
+                            topicName(topic, language),
+                            selected = picked,
+                            onClick =
+                                tapped("settings.topic", mapOf("topic" to topic.id)) {
+                                    val next = if (picked) settings.topics - topic.id else settings.topics + topic.id
+                                    onChange(settings.copy(topics = next))
+                                },
+                        )
+                    }
+                }
+            }
+            Column {
+                heading(words.players)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs),
+                    verticalArrangement = Arrangement.spacedBy(space.xs),
+                ) {
+                    (minPlayers.coerceAtLeast(LobbyRules.MIN_PLAYERS)..LobbyRules.MAX_PLAYERS).forEach { players ->
+                        Chip(
+                            players.toString(),
+                            selected = settings.maxPlayers == players,
+                            onClick =
+                                tapped(
+                                    "settings.players",
+                                    mapOf("players" to players),
+                                ) { onChange(settings.copy(maxPlayers = players)) },
+                        )
+                    }
+                }
+            }
+            Column {
+                heading(words.whoCanJoin)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+                    val ways = listOf(LobbyVisibility.PRIVATE to words.codeOnly, LobbyVisibility.PUBLIC to words.anyone)
+                    ways.forEach { (visibility, label) ->
+                        Chip(
+                            label,
+                            selected = settings.visibility == visibility,
+                            onClick =
+                                tapped("settings.visibility", mapOf("visibility" to visibility.name.lowercase())) {
+                                    onChange(settings.copy(visibility = visibility))
+                                },
+                        )
+                    }
+                }
+            }
+            val penalty =
+                tapped(
+                    "settings.penalty",
+                ) { onChange(settings.copy(wrongAnswerPenalty = !settings.wrongAnswerPenalty)) }
+            Toggle(
+                checked = settings.wrongAnswerPenalty,
+                onCheckedChange = { penalty() },
+                label = words.wrongAnswerPenalty,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(space.md))
+        StageButton(
+            doneLabel,
+            onClick = tapped("settings.done", onClick = onDone),
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+        )
+    }
+}

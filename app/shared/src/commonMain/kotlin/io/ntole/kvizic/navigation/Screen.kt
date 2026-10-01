@@ -15,6 +15,21 @@ sealed class Screen(
     /** The game's version, its legal pages, the player's account id and statistics, and deleting the account. */
     data object About : Screen("about")
 
+    /** A room's code typed, to join it. */
+    data object Join : Screen("join")
+
+    /** The open public rooms, to join one. */
+    data object PublicRooms : Screen("public_rooms")
+
+    /** A room of the player's own, its settings picked first. */
+    data object NewRoom : Screen("new_room")
+
+    /** The room the player is in, whatever it does: shown while they are in one, and never otherwise. */
+    data object Room : Screen("room")
+
+    /** The settings of the room the player hosts, changed. */
+    data object RoomSettings : Screen("room_settings")
+
     /**
      * That a new version is available, once the server refuses this build: shown in place of every other
      * screen for the app's life, never on the back stack, since every call would be refused again.
@@ -24,6 +39,7 @@ sealed class Screen(
     internal companion object {
         // Listed on each call, not kept in a property: the companion's properties are set up with the class,
         // before the objects are when one of them is used first, so a kept list could hold nulls.
-        fun ofKey(key: String): Screen? = listOf(Home, About, Update).firstOrNull { it.key == key }
+        fun ofKey(key: String): Screen? =
+            listOf(Home, About, Join, PublicRooms, NewRoom, Room, RoomSettings, Update).firstOrNull { it.key == key }
     }
 }

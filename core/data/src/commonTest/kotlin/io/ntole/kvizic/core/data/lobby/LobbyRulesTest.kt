@@ -1,0 +1,17 @@
+package io.ntole.kvizic.core.data.lobby
+
+import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.domain.lobby.LobbyRules
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/** The domain's copies of the wire's settings limits, which the screens offer, are the wire's. */
+class LobbyRulesTest {
+    @Test
+    fun `the settings a room may have are the wire's`() {
+        assertEquals(KvizicApi.Limits.QUESTION_COUNTS, LobbyRules.QUESTION_COUNTS)
+        assertEquals(KvizicApi.Limits.ANSWER_SECONDS, LobbyRules.ANSWER_SECONDS)
+        assertEquals(KvizicApi.Limits.MIN_MAX_PLAYERS, LobbyRules.MIN_PLAYERS)
+        assertEquals(KvizicApi.Limits.MAX_PLAYERS, LobbyRules.MAX_PLAYERS)
+    }
+}

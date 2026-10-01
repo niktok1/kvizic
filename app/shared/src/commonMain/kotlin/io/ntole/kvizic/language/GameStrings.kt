@@ -152,8 +152,7 @@ data class GameStrings(
     val nextQuestionIn: String,
     /** The results come in `{0}` seconds. */
     val resultsIn: String,
-    // The results.
-    /** The game is over, after `{0}` questions. */
+    /** The results: the game is over, after `{0}` questions. */
     val gameOver: String,
     /** The winner's name, `{0}`. */
     val winner: String,

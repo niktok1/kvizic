@@ -28,4 +28,22 @@ public object AnalyticsProperty {
 
     /** A language's tag: `sr-Cyrl`, `sr-Latn` or `en`. */
     public const val LANGUAGE: String = "language"
+
+    /** How a seat was taken: `quick_play`, `solo`, `create` or `join`. */
+    public const val WAY: String = "way"
+
+    /** Why a room let the player go: a `LobbyExit`'s name. */
+    public const val EXIT: String = "exit"
+
+    /** A player's place at a game's end, 1 for the winner. */
+    public const val RANK: String = "rank"
+
+    /** How many played a game to its end. */
+    public const val PLAYERS: String = "players"
+
+    /** How many questions a game had. */
+    public const val QUESTIONS: String = "questions"
+
+    /** Whether a game was a solo run. */
+    public const val SOLO: String = "solo"
 }
