@@ -85,7 +85,7 @@ Play Games Services v2. **No Material**: the design system draws everything.
 
 ## 7. Game rules (defaults; server config, `GameTimings`, `ScoringRules`)
 
-- Flow: lobby → countdown 3 s (5 s when someone is still on results) → **read** → **answer** → reveal 5 s
+- Flow: lobby → countdown 5 s (7 s when someone is still on results) → **read** → **answer** → reveal 5 s
   (7 with an explanation) → … → results → back to the lobby by hand.
 - **Read time**: 1.5 s + 45 ms a character, at most 7 s (the longest question reads in 6.9 s).
 - Answers: 2 to 4 per question, never hard-coded to 4. One locked answer each; a player sees the others'

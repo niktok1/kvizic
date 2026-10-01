@@ -11,10 +11,10 @@ import kotlin.time.Duration.Companion.seconds
  * tests run on [FAST].
  */
 data class GameTimings(
-    /** From the host's start to the first question. */
-    val countdown: Duration = 3.seconds,
+    /** From the host's start to the first question: long enough for the room to settle in. */
+    val countdown: Duration = 5.seconds,
     /** The same, when a member still looks at the last game's results, so they can tap in. */
-    val countdownWithStragglers: Duration = 5.seconds,
+    val countdownWithStragglers: Duration = 7.seconds,
     /**
      * How long a question shows alone before its answers: a base, plus a reader's time per character, up to
      * a cap. The longest question the rules allow, 120 characters, reads in 6.9 seconds, one of 40 in 3.3.
