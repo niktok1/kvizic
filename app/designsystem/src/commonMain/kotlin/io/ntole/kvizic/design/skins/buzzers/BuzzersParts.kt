@@ -445,19 +445,24 @@ private object BuzzersTile : TilePart {
         index: Int,
     ): Color = if (state == AnswerTileState.DIMMED) colors.onLetterUnlit else colors.onLetter
 
+    override fun markColor(
+        state: AnswerTileState,
+        index: Int,
+    ): Color = if (state == AnswerTileState.DIMMED) colors.letterUnlit else colors.letter(index)
+
     override fun DrawScope.drawLetterMark(
         state: AnswerTileState,
         index: Int,
         lit: Float,
+        color: Color,
     ) {
-        val glass = if (state == AnswerTileState.DIMMED) colors.letterUnlit else colors.letter(index)
         val edge = space.strokeThin.toPx()
         val radius = size.minDimension / 2
         if (lit > 0f) {
             val reach = radius * 1.9f
             drawCircle(
                 Brush.radialGradient(
-                    0f to glass.copy(alpha = 0.6f * lit),
+                    0f to color.copy(alpha = 0.6f * lit),
                     1f to Color.Transparent,
                     center = center,
                     radius = reach,
@@ -465,7 +470,7 @@ private object BuzzersTile : TilePart {
                 radius = reach,
             )
         }
-        drawCircle(glass, radius - edge / 2)
+        drawCircle(color, radius - edge / 2)
         // A lit bulb's filament, warm in its middle.
         if (lit > 0f) drawCircle(colors.bulbOn.copy(alpha = 0.45f * lit), radius * 0.5f)
         drawCircle(Ink, radius - edge / 2, style = Stroke(width = edge))

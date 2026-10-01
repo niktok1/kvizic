@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
@@ -22,6 +23,7 @@ import io.ntole.kvizic.design.skin.SkinTextStyle
 /**
  * Text in the skin's type: [style], one of `KvizicTheme.type`'s, which also decides whether the text is
  * set in capitals, drawn so and read to a screen reader as written; in [color], or else the colour of what it stands on; underlined, a link, by [textDecoration].
+ * [colorInDraw], when given, is the colour instead, read in the draw alone: one on its way to another.
  */
 @Composable
 fun KvizicText(
@@ -35,6 +37,7 @@ fun KvizicText(
     overflow: TextOverflow = TextOverflow.Ellipsis,
     autoSize: TextAutoSize? = null,
     textDecoration: TextDecoration? = null,
+    colorInDraw: ColorProducer? = null,
 ) {
     val tint = if (color.isSpecified) color else LocalContentColor.current
     if (style.caps) {
@@ -52,10 +55,23 @@ fun KvizicText(
                 overflow,
                 autoSize,
                 textDecoration,
+                colorInDraw,
             )
         }
     } else {
-        SetText(text, modifier, style, tint, textAlign, maxLines, minLines, overflow, autoSize, textDecoration)
+        SetText(
+            text,
+            modifier,
+            style,
+            tint,
+            textAlign,
+            maxLines,
+            minLines,
+            overflow,
+            autoSize,
+            textDecoration,
+            colorInDraw,
+        )
     }
 }
 
@@ -71,6 +87,7 @@ private fun SetText(
     overflow: TextOverflow,
     autoSize: TextAutoSize?,
     textDecoration: TextDecoration?,
+    colorInDraw: ColorProducer?,
 ) {
     BasicText(
         text = text,
@@ -85,6 +102,7 @@ private fun SetText(
         overflow = if (autoSize != null) TextOverflow.Clip else overflow,
         maxLines = maxLines,
         minLines = minLines,
+        color = colorInDraw,
         autoSize = autoSize,
     )
 }

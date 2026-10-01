@@ -95,16 +95,21 @@ internal object NotebookParts : SkinParts {
                 index: Int,
             ): Color = if (state == AnswerTileState.DIMMED) colors.onLetterUnlit else colors.onLetter
 
+            override fun markColor(
+                state: AnswerTileState,
+                index: Int,
+            ): Color = if (state == AnswerTileState.DIMMED) colors.letterUnlit else colors.letter(index)
+
             override fun DrawScope.drawLetterMark(
                 state: AnswerTileState,
                 index: Int,
                 lit: Float,
+                color: Color,
             ) {
                 // The letter circled in marker, the circle filled in harder once it counts.
-                val marker = if (state == AnswerTileState.DIMMED) colors.letterUnlit else colors.letter(index)
                 val ring = circleWobble(size.minDimension / 2 - space.strokeThin.toPx(), index)
-                drawPath(ring, marker.copy(alpha = 0.35f + 0.5f * lit))
-                drawPath(ring, marker, style = Stroke(width = space.strokeThin.toPx() * 1.2f, cap = StrokeCap.Round))
+                drawPath(ring, color.copy(alpha = 0.35f + 0.5f * lit))
+                drawPath(ring, color, style = Stroke(width = space.strokeThin.toPx() * 1.2f, cap = StrokeCap.Round))
             }
 
             override fun DrawScope.drawStamp(

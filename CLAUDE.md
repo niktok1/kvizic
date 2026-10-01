@@ -62,7 +62,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
   than the rules' limits (`Questions.TEXT_COLUMN`), so a limit can rise without a migration.
 - **The design system's single source**: no colour, dp or sp literal in a screen; every value is a skin
   token. **Motion is draw-only**: an animation's value is read in a draw or placement lambda, never in
-  composition.
+  composition. What stands on a raised surface **turns with its face**: a word, an icon or a tile's mark
+  whose colour follows a state takes it through `rememberSettlingColor`, never a colour that snaps while the
+  face settles (light words on a face still light flicker; `SettleTogetherTest`).
 - Text a skin sets in capitals is **read to a screen reader as written** (`KvizicText`).
 
 ## 6. Realtime

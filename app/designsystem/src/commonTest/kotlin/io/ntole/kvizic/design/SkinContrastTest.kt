@@ -119,7 +119,7 @@ class SkinContrastTest {
         AnswerTileState.entries.forEach { state ->
             c.letters.indices.forEach { i ->
                 val look = parts.tile.surface(state, i)
-                val mark = if (state == AnswerTileState.DIMMED) c.letterUnlit else c.letter(i)
+                val mark = parts.tile.markColor(state, i)
                 pair("a tile's answer, $state", parts.tile.content(state), look.fill.solidOver(c.page))
                 pair("a tile's letter, $state", parts.tile.letterColor(state, i), mark)
             }

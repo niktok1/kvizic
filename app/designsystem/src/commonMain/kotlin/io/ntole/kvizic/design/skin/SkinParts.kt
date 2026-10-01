@@ -53,11 +53,21 @@ interface TilePart {
         index: Int,
     ): Color
 
-    /** The mark the letter stands in, over this scope, [lit] from 0 at rest to 1 once the tile lights up. */
+    /** The colour of the mark the letter stands in: its bulb's glass, its marker's ink. */
+    fun markColor(
+        state: AnswerTileState,
+        index: Int,
+    ): Color
+
+    /**
+     * The mark the letter stands in, over this scope, in [color]: [markColor]'s for [state], or one on its
+     * way there as the tile settles into it. [lit] from 0 at rest to 1 once the tile lights up.
+     */
     fun DrawScope.drawLetterMark(
         state: AnswerTileState,
         index: Int,
         lit: Float,
+        color: Color,
     )
 
     /**

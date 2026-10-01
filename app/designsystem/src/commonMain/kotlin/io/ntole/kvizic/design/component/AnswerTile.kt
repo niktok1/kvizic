@@ -158,6 +158,10 @@ private fun Card(
     val space = skin.space
     val type = KvizicTheme.type
     val part = skin.parts.tile
+    // What stands on the face turns with it as it settles into the state, never ahead of it.
+    val content = rememberSettlingColor(part.content(state))
+    val letterColor = rememberSettlingColor(part.letterColor(state, index))
+    val markColor = rememberSettlingColor(part.markColor(state, index))
     Box(
         modifier =
             modifier
@@ -183,14 +187,14 @@ private fun Card(
                         Modifier
                             .size(space.tile.letterMark)
                             .drawWithContent {
-                                with(part) { drawLetterMark(state, index, lit()) }
+                                with(part) { drawLetterMark(state, index, lit(), markColor()) }
                                 drawContent()
                                 // The result's stamp, over the letter, and moving with the face.
                                 with(part) { drawStamp(state, stamp()) }
                             },
                     contentAlignment = Alignment.Center,
                 ) {
-                    KvizicText(letter, style = type.letter, color = part.letterColor(state, index), maxLines = 1)
+                    KvizicText(letter, style = type.letter, maxLines = 1, colorInDraw = letterColor)
                 }
             }
             val answer: @Composable (Modifier) -> Unit = { answerModifier ->
@@ -199,6 +203,7 @@ private fun Card(
                     modifier = answerModifier,
                     style = type.answer,
                     maxLines = ANSWER_LINES,
+                    colorInDraw = content,
                     autoSize =
                         TextAutoSize.StepBased(
                             minFontSize = type.answerMin.style.fontSize,

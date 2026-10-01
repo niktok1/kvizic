@@ -65,6 +65,8 @@ fun Chip(
     val space = skin.space
     val part = skin.parts.chip
     val source = remember { MutableInteractionSource() }
+    // Its word turns with its face as it is picked or left, never ahead of it.
+    val content = rememberSettlingColor(part.content(tone, selected))
     val tap =
         if (onClick != null) {
             Modifier
@@ -87,8 +89,10 @@ fun Chip(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(space.xs),
                 ) {
-                    if (icon != null) KvizicIcon(icon, contentDescription = null, size = space.icon.small)
-                    KvizicText(text, style = KvizicTheme.type.chip, maxLines = 1)
+                    if (icon != null) {
+                        KvizicIcon(icon, contentDescription = null, size = space.icon.small, tintInDraw = content)
+                    }
+                    KvizicText(text, style = KvizicTheme.type.chip, maxLines = 1, colorInDraw = content)
                 }
             }
         }

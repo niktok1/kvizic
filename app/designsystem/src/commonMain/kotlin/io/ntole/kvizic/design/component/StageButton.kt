@@ -49,6 +49,9 @@ fun StageButton(
     val type = KvizicTheme.type
     val part = skin.parts.button
     val source = interactionSource ?: remember { MutableInteractionSource() }
+    // Its words turn with its face as it is turned on or off, never ahead of it.
+    val content = rememberSettlingColor(part.content(kind, enabled))
+    val supporting = rememberSettlingColor(part.supporting(kind, enabled))
     val height =
         when (size) {
             ButtonSize.HERO -> space.button.hero
@@ -89,6 +92,7 @@ fun StageButton(
                         style = label,
                         maxLines = 1,
                         textAlign = TextAlign.Center,
+                        colorInDraw = content,
                         // A long word in a narrow button shrinks rather than being cut.
                         autoSize =
                             TextAutoSize.StepBased(
@@ -100,9 +104,9 @@ fun StageButton(
                         KvizicText(
                             supportingText,
                             style = type.caption,
-                            color = part.supporting(kind, enabled),
                             maxLines = 1,
                             textAlign = TextAlign.Center,
+                            colorInDraw = supporting,
                         )
                     }
                 }
@@ -114,7 +118,7 @@ fun StageButton(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(space.xs),
                 ) {
-                    if (icon != null) KvizicIcon(icon, contentDescription = null, size = iconSize)
+                    if (icon != null) KvizicIcon(icon, contentDescription = null, size = iconSize, tintInDraw = content)
                     words()
                 }
             } else {
@@ -123,7 +127,7 @@ fun StageButton(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(space.sm),
                 ) {
-                    if (icon != null) KvizicIcon(icon, contentDescription = null, size = iconSize)
+                    if (icon != null) KvizicIcon(icon, contentDescription = null, size = iconSize, tintInDraw = content)
                     words()
                     trailing?.invoke()
                 }
@@ -152,6 +156,7 @@ fun StageIconButton(
     val part = skin.parts.button
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val look = part.surface(kind, ButtonSize.SMALL, enabled).copy(shape = skin.shapes.roundButton)
+    val tint = rememberSettlingColor(part.content(kind, enabled))
     val whole = if (small) space.button.roundSmall else space.button.round
     Box(
         modifier =
@@ -177,8 +182,8 @@ fun StageIconButton(
             KvizicIcon(
                 icon,
                 contentDescription = null,
-                tint = part.content(kind, enabled),
                 size = if (small) space.icon.small else space.icon.medium,
+                tintInDraw = tint,
             )
         }
     }

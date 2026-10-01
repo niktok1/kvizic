@@ -59,9 +59,10 @@ private object ColouredTile : TilePart by BuzzersParts.tile {
         state: AnswerTileState,
         index: Int,
         lit: Float,
+        color: Color,
     ) {
         if (state != AnswerTileState.IDLE && state != AnswerTileState.LOCKED_IN) {
-            with(BuzzersParts.tile) { drawLetterMark(state, index, lit) }
+            with(BuzzersParts.tile) { drawLetterMark(state, index, lit, color) }
             return
         }
         // The letter on a cream cap, as a key's legend, since the face is the colour now.
