@@ -31,8 +31,10 @@ data class Strings(
     val stillLoading: String,
     /** A failure: the device is offline. */
     val offline: String,
-    /** A failure: too many tries, and the server said to wait `{0}` seconds. */
+    /** A failure: too many tries, and the server said to wait `{0}` seconds, less than a minute. */
     val tooManyTries: String,
+    /** A failure: too many tries, and the server said to wait a minute or more, `{0}` minutes rounded up. */
+    val tooManyTriesMinutes: String,
     /** A failure: too many tries, and the server named no wait. */
     val tooManyTriesNoWait: String,
     /** Any other failure, which asks in [tryAgain]'s own words. */
@@ -59,6 +61,7 @@ data class Strings(
             stillLoading = transform(stillLoading),
             offline = transform(offline),
             tooManyTries = transform(tooManyTries),
+            tooManyTriesMinutes = transform(tooManyTriesMinutes),
             tooManyTriesNoWait = transform(tooManyTriesNoWait),
             somethingWrong = transform(somethingWrong),
             aboutScreen = aboutScreen.map(transform),
@@ -78,6 +81,7 @@ val SerbianCyrillicStrings: Strings =
         stillLoading = "Још мало…",
         offline = "Нема интернет везе.",
         tooManyTries = "Превише покушаја. Сачекај {0} сек.",
+        tooManyTriesMinutes = "Превише покушаја. Сачекај {0} мин.",
         tooManyTriesNoWait = "Превише покушаја. Сачекај мало.",
         somethingWrong = "Нешто није у реду. Покушај поново.",
         aboutScreen = SerbianCyrillicAboutStrings,
@@ -98,6 +102,7 @@ val EnglishStrings: Strings =
         stillLoading = "Just a moment…",
         offline = "No connection. Check your internet.",
         tooManyTries = "Too many tries. Wait {0} s.",
+        tooManyTriesMinutes = "Too many tries. Wait {0} min.",
         tooManyTriesNoWait = "Too many tries. Wait a moment.",
         somethingWrong = "Something went wrong. Try again.",
         aboutScreen = EnglishAboutStrings,

@@ -176,7 +176,7 @@ class ServerConfigTest {
         assertEquals(RequestBudget(30, 1.minutes), limits.logouts)
         assertEquals(RequestBudget(10, 1.hours), limits.deletions)
         assertEquals(RequestBudget(120, 1.minutes), limits.me)
-        assertEquals(RequestBudget(20, 1.hours), limits.avatars)
+        assertEquals(RequestBudget(30, 1.minutes), limits.avatars)
         assertEquals(RequestBudget(60, 1.minutes), limits.topics)
         assertEquals(RequestBudget(30, 1.minutes), limits.lobbyList)
         assertEquals(RequestBudget(30, 1.hours), limits.lobbyCreates)
@@ -200,7 +200,7 @@ class ServerConfigTest {
                 Triple("RATE_LIMIT_LOGOUTS_PER_MINUTE", RateLimits::logouts, 1.minutes),
                 Triple("RATE_LIMIT_DELETIONS_PER_HOUR", RateLimits::deletions, 1.hours),
                 Triple("RATE_LIMIT_ME_PER_MINUTE", RateLimits::me, 1.minutes),
-                Triple("RATE_LIMIT_AVATARS_PER_HOUR", RateLimits::avatars, 1.hours),
+                Triple("RATE_LIMIT_AVATARS_PER_MINUTE", RateLimits::avatars, 1.minutes),
                 Triple("RATE_LIMIT_TOPICS_PER_MINUTE", RateLimits::topics, 1.minutes),
                 Triple("RATE_LIMIT_LOBBY_LIST_PER_MINUTE", RateLimits::lobbyList, 1.minutes),
                 Triple("RATE_LIMIT_LOBBY_CREATES_PER_HOUR", RateLimits::lobbyCreates, 1.hours),

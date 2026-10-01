@@ -2,7 +2,9 @@ package io.ntole.kvizic.language
 
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.DomainError
+import kotlin.math.ceil
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * What a screen says of a failure, [error], in a few words: offline, a rate limit with the wait the server
@@ -19,6 +21,13 @@ fun Strings.failureText(
         else -> somethingWrong
     }
 
-/** Too many tries, and how long to wait when the server named it. */
+/**
+ * Too many tries, and how long to wait when the server named it: in seconds under a minute, and in minutes
+ * rounded up from one, so an hour's budget spent never reads as thousands of seconds.
+ */
 private fun Strings.rateLimited(retryAfter: Duration?): String =
-    retryAfter?.let { wait -> tooManyTries.fill(wait.inWholeSeconds) } ?: tooManyTriesNoWait
+    when {
+        retryAfter == null -> tooManyTriesNoWait
+        retryAfter < 1.minutes -> tooManyTries.fill(retryAfter.inWholeSeconds)
+        else -> tooManyTriesMinutes.fill(ceil(retryAfter / 1.minutes).toLong())
+    }

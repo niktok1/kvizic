@@ -31,7 +31,10 @@ data class RateLimits(
     val deletions: RequestBudget,
     /** `GET /v1/me`. */
     val me: RequestBudget,
-    /** `POST /v1/me/avatar`. */
+    /**
+     * `POST /v1/me/avatar`: one row's write, so per minute, which bounds the wait to one; an hour's budget
+     * of picks, spent browsing, kept the player waiting most of an hour.
+     */
     val avatars: RequestBudget,
     /** `GET /v1/topics`, per address: it needs no session. */
     val topics: RequestBudget,
@@ -65,7 +68,7 @@ data class RateLimits(
                 logouts = RequestBudget(requests = 30, per = 1.minutes),
                 deletions = RequestBudget(requests = 10, per = 1.hours),
                 me = RequestBudget(requests = 120, per = 1.minutes),
-                avatars = RequestBudget(requests = 20, per = 1.hours),
+                avatars = RequestBudget(requests = 30, per = 1.minutes),
                 topics = RequestBudget(requests = 60, per = 1.minutes),
                 lobbyList = RequestBudget(requests = 30, per = 1.minutes),
                 lobbyCreates = RequestBudget(requests = 30, per = 1.hours),
@@ -104,7 +107,7 @@ data class RateLimits(
                     logouts = budget("RATE_LIMIT_LOGOUTS_PER_MINUTE", logouts),
                     deletions = budget("RATE_LIMIT_DELETIONS_PER_HOUR", deletions),
                     me = budget("RATE_LIMIT_ME_PER_MINUTE", me),
-                    avatars = budget("RATE_LIMIT_AVATARS_PER_HOUR", avatars),
+                    avatars = budget("RATE_LIMIT_AVATARS_PER_MINUTE", avatars),
                     topics = budget("RATE_LIMIT_TOPICS_PER_MINUTE", topics),
                     lobbyList = budget("RATE_LIMIT_LOBBY_LIST_PER_MINUTE", lobbyList),
                     lobbyCreates = budget("RATE_LIMIT_LOBBY_CREATES_PER_HOUR", lobbyCreates),
