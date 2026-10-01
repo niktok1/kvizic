@@ -9,6 +9,7 @@ import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.CloseCodes
 import io.ntole.kvizic.core.protocol.Protocol
 import io.ntole.kvizic.core.protocol.ProtocolJson
+import io.ntole.kvizic.server.lobby.Delivery
 import io.ntole.kvizic.server.lobby.GameTimings
 import io.ntole.kvizic.server.lobby.Lobby
 import io.ntole.kvizic.server.lobby.LobbyCommand
@@ -125,8 +126,13 @@ class PlaySockets(
         connection: SocketConnection,
         lobby: Lobby,
     ) {
-        if (!lobby.send(LobbyCommand.Attach(connection))) return session.closeWith(CloseCodes.LOBBY_GONE)
         try {
+            // A lobby busy with a flood is waited for a while: told it is gone, the player would leave it.
+            when (lobby.deliver(LobbyCommand.Attach(connection), within = ATTACH_WAIT)) {
+                Delivery.QUEUED -> Unit
+                Delivery.NO_ROOM -> return session.closeWith(CloseCodes.TOO_MUCH)
+                Delivery.CLOSED -> return session.closeWith(CloseCodes.LOBBY_GONE)
+            }
             coroutineScope {
                 val heartbeat =
                     launch {
@@ -144,7 +150,9 @@ class PlaySockets(
                 heartbeat.cancel()
             }
         } finally {
-            lobby.send(LobbyCommand.Detach(connection))
+            // Never dropped for a full inbox, and harmless for a socket the lobby never took: the attach
+            // above may have been queued even as its wait ran out.
+            lobby.deliver(LobbyCommand.Detach(connection))
         }
     }
 
@@ -242,6 +250,9 @@ class PlaySockets(
     private companion object {
         val log = LoggerFactory.getLogger(PlaySockets::class.java)
         val CLOSE_WAIT: Duration = 5.seconds
+
+        /** How long a socket waits for room in its lobby's full inbox before it is told to come again. */
+        val ATTACH_WAIT: Duration = 2.seconds
         val CLOSED_POLL: Duration = 50.milliseconds
     }
 }

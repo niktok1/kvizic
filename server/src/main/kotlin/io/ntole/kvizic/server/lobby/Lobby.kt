@@ -33,6 +33,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.delay
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -135,6 +137,24 @@ class Lobby(
 
     /** Queues [command] for the lobby's loop. False when the inbox is full or the lobby has closed. */
     fun send(command: LobbyCommand): Boolean = inbox.trySend(command).isSuccess
+
+    /**
+     * Queues [command] as [send] does, but waits for room in a full inbox, up to [within]: for what must not
+     * be dropped, a socket's coming and going, which a flood filling the inbox would otherwise lose. A
+     * socket's end dropped so left its member connected for good, their grace never begun. Not cancelled
+     * once begun, so a socket's end is told however its handler ends.
+     */
+    suspend fun deliver(
+        command: LobbyCommand,
+        within: Duration = Duration.INFINITE,
+    ): Delivery =
+        withContext(NonCancellable) {
+            try {
+                withTimeoutOrNull(within) { inbox.send(command) }?.let { Delivery.QUEUED } ?: Delivery.NO_ROOM
+            } catch (closed: ClosedSendChannelException) {
+                Delivery.CLOSED
+            }
+        }
 
     /** Holds a seat for [seat], answered by the lobby's loop; [ReserveResult.Closed] if it never answers. */
     suspend fun reserve(seat: Seat): ReserveResult {

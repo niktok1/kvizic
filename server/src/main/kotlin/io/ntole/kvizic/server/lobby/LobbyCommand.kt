@@ -94,3 +94,15 @@ sealed interface ReserveResult {
 
     data object Draining : ReserveResult
 }
+
+/** What came of [Lobby.deliver]. */
+enum class Delivery {
+    /** In the inbox, for the lobby's loop to handle. */
+    QUEUED,
+
+    /** The inbox stayed full for the whole wait. */
+    NO_ROOM,
+
+    /** The lobby has closed, and handles nothing more. */
+    CLOSED,
+}
