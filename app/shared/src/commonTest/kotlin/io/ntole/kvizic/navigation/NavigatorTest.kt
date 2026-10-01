@@ -120,4 +120,42 @@ class NavigatorTest {
     }
 
     private fun restore(saved: Any): Navigator = checkNotNull(Navigator.Saver.restore(saved))
+
+    @Test
+    fun `a seat taken from any screen opens the room over Home`() {
+        listOf(Screen.Home, Screen.Join, Screen.PublicRooms, Screen.NewRoom).forEach { from ->
+            val navigator = Navigator()
+            navigator.open(from)
+
+            navigator.followRoom(inRoom = true)
+
+            assertEquals(listOf(Home, Screen.Room), navigator.screens, "from $from")
+        }
+    }
+
+    @Test
+    fun `the room letting the player go goes back Home, from its settings too`() {
+        listOf(listOf(Screen.Room), listOf(Screen.Room, Screen.RoomSettings)).forEach { above ->
+            val navigator = Navigator()
+            above.forEach(navigator::open)
+
+            navigator.followRoom(inRoom = false)
+
+            assertEquals(listOf(Home), navigator.screens, "from $above")
+        }
+    }
+
+    @Test
+    fun `following the room changes nothing where the screen already agrees`() {
+        val navigator = Navigator()
+        navigator.open(Screen.Room)
+        navigator.open(Screen.RoomSettings)
+        navigator.followRoom(inRoom = true)
+        assertEquals(listOf(Home, Screen.Room, Screen.RoomSettings), navigator.screens)
+
+        val away = Navigator()
+        away.open(About)
+        away.followRoom(inRoom = false)
+        assertEquals(listOf(Home, About), away.screens)
+    }
 }

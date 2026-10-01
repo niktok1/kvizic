@@ -65,6 +65,20 @@ class Navigator internal constructor(
         return true
     }
 
+    /**
+     * Follows the room: once the player is in one, [inRoom], the room over Home, wherever the seat was taken
+     * from; once they are not, Home, from the room or its settings. Any other change leaves the stack be.
+     */
+    fun followRoom(inRoom: Boolean) {
+        val showingRoom = current == Screen.Room || current == Screen.RoomSettings
+        if (inRoom && !showingRoom) {
+            open(Screen.Home)
+            open(Screen.Room)
+        } else if (!inRoom && showingRoom) {
+            open(Screen.Home)
+        }
+    }
+
     companion object {
         /**
          * Keeps the back stack in saved state, as each screen's key, so an Android activity made anew, on a

@@ -137,15 +137,7 @@ private fun Screens(usage: UsageTracker) {
     val inRoom = roomState is LobbySessionState.InLobby
     SystemBack(enabled = navigator.canGoBack, onBack = { navigator.back() })
     LaunchedEffect(navigator.current) { usage.show(navigator.current.key) }
-    LaunchedEffect(inRoom) {
-        val current = navigator.current
-        if (inRoom && current != Screen.Room && current != Screen.RoomSettings) {
-            navigator.open(Screen.Home)
-            navigator.open(Screen.Room)
-        } else if (!inRoom && (current == Screen.Room || current == Screen.RoomSettings)) {
-            navigator.open(Screen.Home)
-        }
-    }
+    LaunchedEffect(inRoom) { navigator.followRoom(inRoom) }
     LifecycleStartEffect(room) {
         room.wake()
         onStopOrDispose {}
