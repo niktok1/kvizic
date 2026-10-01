@@ -183,6 +183,8 @@ internal val NotebookAvatars =
         grey = Color(0xFFB4B9C6),
         greyDark = Color(0xFF7C8396),
         gold = Color(0xFFFFD43B),
+        green = Color(0xFF9BD27A),
+        greenDark = Color(0xFF5E9442),
         disc = Card,
         silhouette = Color(0xFFCDD2DC),
     )

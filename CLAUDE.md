@@ -128,6 +128,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
   them until they answer; no words, no count.
 - Reactions are the server's six: bravo, applause, fire, wow, laugh, oops.
+- Avatars: the server's sixteen Balkan animals, each drawn by hand (`AvatarArt`); an id this build does not
+  know shows a silhouette.
 
 ## 11. Hosting
 
@@ -148,5 +150,4 @@ write PNGs to look at.
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
 - The reveal's layout with eight standings (the long-text test leaves the reveal out until it is designed).
-- Avatars: 4 of the 16 animals are drawn; the rest show a silhouette.
 - Profile and stats screen, reports from the reveal, Play Games on a device, sound and haptics, share links.

@@ -23,8 +23,11 @@ data class AvatarPalette(
     val tanDark: Color,
     val grey: Color,
     val greyDark: Color,
-    /** An owl's eyes, and whatever else of an animal shines. */
+    /** An owl's eyes, a bee, and whatever else of an animal shines. */
     val gold: Color,
+    /** A frog, a tortoise. */
+    val green: Color,
+    val greenDark: Color,
     /** The disc behind the animal, and the silhouette drawn for an avatar this build cannot draw. */
     val disc: Color,
     val silhouette: Color,

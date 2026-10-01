@@ -261,6 +261,8 @@ internal val BuzzersAvatars =
         grey = Color(0xFF8C8794),
         greyDark = Color(0xFF55505D),
         gold = Color(0xFFF5C234),
+        green = Color(0xFF6DBE45),
+        greenDark = Color(0xFF3E7A23),
         disc = Color(0xFF2B2530),
         silhouette = Color(0xFF6A6372),
     )
