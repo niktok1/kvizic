@@ -185,6 +185,10 @@ Play Games Services v2. **No Material**: the design system draws everything.
   and 360×640 in every skin while answering and locked in. A question is at most 7 lines read alone and 4
   over its answers; four answers stand in a 2×2 grid unless a column sets them larger, measured in the room
   each tile leaves; all answers of a question share one size.
+- **The bar over a question** (the owner, 2026-10-01): the way out and the round in numbers alone („3 / 10“,
+  said „Питање 3 од 10“), the clock in the middle of the screen, the points on MEDIUM flaps, the two sides
+  alike, so 1 210 stands whole at 360 dp; the topic is no part of it but a tab on the question card's top
+  edge, where the longest fits (`RoomScreenDrawTest`).
 - **The reveal** is one standings board under the answers (the owner's, 2026-10-01): every player, scrolling
   when there is no room, the player's line lit and kept in sight, ▲/▼ for places moved, the lines sliding
   from their places before the question, and a line draining along its foot to the next question. The

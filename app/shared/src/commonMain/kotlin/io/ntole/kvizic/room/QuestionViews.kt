@@ -23,6 +23,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -65,8 +67,9 @@ import kotlin.math.roundToInt
 
 /**
  * A question of the game under way, read alone ([GamePhase.Reading]) and then answered
- * ([GamePhase.Answering]): the round, its topic, the clock and the player's points over it, its answers under
- * it, and who it still waits for. A member who joined during the game watches it: their answers take no tap.
+ * ([GamePhase.Answering]): the round, the clock and the player's points over it, its topic on its card's edge,
+ * its answers under it, and who it still waits for. A member who joined during the game watches it: their
+ * answers take no tap.
  */
 @Composable
 internal fun QuestionScreen(
@@ -103,8 +106,6 @@ internal fun QuestionScreen(
                 RoundBar(
                     phase.question.index,
                     phase.question.count,
-                    phase.question.topic,
-                    topics,
                     phase.standings,
                     state.you,
                     onLeave = onLeave,
@@ -116,7 +117,7 @@ internal fun QuestionScreen(
                     contentDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
                 )
                 Spacer(Modifier.height(space.xl))
-                Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.xl) {
+                QuestionCard(phase.question.topic, topics, padding = space.xl) {
                     QuestionText(shown(phase.question.text), Modifier.fillMaxWidth(), reading = true)
                 }
                 Spacer(Modifier.height(space.xl))
@@ -164,8 +165,6 @@ internal fun QuestionScreen(
                 RoundBar(
                     phase.question.index,
                     phase.question.count,
-                    phase.question.topic,
-                    topics,
                     phase.standings,
                     state.you,
                     timer = timer,
@@ -173,7 +172,7 @@ internal fun QuestionScreen(
                     onLeave = onLeave,
                 )
                 Spacer(Modifier.height(space.md))
-                Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
+                QuestionCard(phase.question.topic, topics, padding = space.lg) {
                     QuestionText(shown(phase.question.text), Modifier.fillMaxWidth())
                 }
                 Spacer(Modifier.height(space.lg))
@@ -270,8 +269,6 @@ internal fun RevealScreen(
         RoundBar(
             reveal.index,
             reveal.count,
-            topic = null,
-            topics,
             reveal.standings,
             state.you,
             timer = TimerPhase.Stopped(lobby.settings.secondsPerQuestion * MILLIS_PER_SECOND, 0),
@@ -458,13 +455,15 @@ private fun Pickers(
     if (members.isNotEmpty()) AvatarStack(members.map { AvatarChip(it.avatar, it.seat) })
 }
 
-/** The bar over a question: the round and its topic, the clock in the middle, and the player's points on flaps. */
+/**
+ * The bar over a question: the way out and the round in numbers alone („3 / 10“, said in words), the clock in
+ * the middle of the screen, and the player's points on flaps. The two sides share the width alike, so the
+ * clock stands in the middle and the points have half of what it leaves, four digits whole.
+ */
 @Composable
 private fun RoundBar(
     index: Int,
     count: Int,
-    topic: String?,
-    topics: List<Topic>,
     standings: List<Standing>,
     you: String,
     timer: TimerPhase? = null,
@@ -472,35 +471,57 @@ private fun RoundBar(
     onLeave: () -> Unit = {},
 ) {
     val words = LocalStrings.current.game
-    val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically) {
-        StageIconButton(
-            KvizicIcons.Leave,
-            contentDescription = words.leave,
-            onClick = tapped("question.leave", onClick = onLeave),
-            kind = ButtonKind.QUIET,
-            small = true,
-        )
-        Spacer(Modifier.width(space.xs))
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                KvizicText(words.question, style = type.label, color = colors.onPageMuted)
-                Spacer(Modifier.width(space.xs))
-                KvizicText("${index + 1} / $count", style = type.label, color = colors.onPageAccent)
-            }
-            if (topic != null) {
-                Spacer(Modifier.height(space.xs))
-                Chip(topicNameOf(topic, topics, language))
-            }
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            StageIconButton(
+                KvizicIcons.Leave,
+                contentDescription = words.leave,
+                onClick = tapped("question.leave", onClick = onLeave),
+                kind = ButtonKind.QUIET,
+                small = true,
+            )
+            Spacer(Modifier.width(space.xs))
+            KvizicText(
+                "${index + 1} / $count",
+                Modifier.clearAndSetSemantics { contentDescription = words.questionOf.fill(index + 1, count) },
+                style = type.label,
+                color = colors.onPageAccent,
+                maxLines = 1,
+            )
         }
         if (timer != null) QuestionTimer(timer, size = TimerSize.SMALL, contentDescription = timerDescription)
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
             KvizicText(words.points, style = type.label, color = colors.onPageMuted)
             Spacer(Modifier.height(space.xs))
             FlipNumber(standings.firstOrNull { it.playerId == you }?.score ?: 0, size = FlapSize.MEDIUM)
+        }
+    }
+}
+
+/**
+ * The question's card, its topic, when it has one, a tab on its top edge at the start, half over the
+ * border: the card's width holds the longest topic, and the tab takes none of the room the question and its
+ * answers share. It stands in by the same space whatever the card's [padding], so it stays put as the read
+ * question rises into its answers.
+ */
+@Composable
+private fun QuestionCard(
+    topic: String?,
+    topics: List<Topic>,
+    padding: Dp,
+    content: @Composable () -> Unit,
+) {
+    val space = KvizicTheme.space
+    Box(Modifier.fillMaxWidth()) {
+        Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = padding) { content() }
+        if (topic != null) {
+            Chip(
+                topicNameOf(topic, topics, LocalLanguage.current),
+                Modifier.offset(x = space.lg, y = -space.chip.height / 2),
+            )
         }
     }
 }

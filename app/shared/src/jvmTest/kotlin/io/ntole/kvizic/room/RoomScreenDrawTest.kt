@@ -3,17 +3,22 @@ package io.ntole.kvizic.room
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.toSize
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
+import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.component.signed
 import io.ntole.kvizic.design.skin.Skin
 import io.ntole.kvizic.design.skin.Skins
+import io.ntole.kvizic.everyNode
 import io.ntole.kvizic.everyText
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.fill
@@ -167,9 +172,13 @@ class RoomScreenDrawTest {
             val words = stringsOf(Language.DEFAULT).game
             draw(skin, "reading", inLobby(reading())) { scene ->
                 val shown = scene.everyText()
-                listOf(QUESTION.text, words.answersComing, words.question, "Географија").forEach {
+                listOf(QUESTION.text, words.answersComing, "Географија").forEach {
                     assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown")
                 }
+                // The round stands in numbers alone, and is said in words.
+                val round = words.questionOf.fill(3, 10)
+                assertTrue(round in scene.descriptions(), "${skin.id}: \"$round\" is not said: ${scene.descriptions()}")
+                assertFalse(shown.any { "Питање" in it }, "${skin.id}: the round is written in words: $shown")
             }
         }
     }
@@ -188,6 +197,40 @@ class RoomScreenDrawTest {
                 scene.tap(OPTIONS[2])
             }
             assertEquals(listOf(2), answers, skin.id)
+        }
+    }
+
+    @Test
+    fun `the bar keeps its clock in the middle and four digits of points whole, and the topic stands on the card`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            val (before, after) = words.secondsToAnswer.split("{0}")
+            val asked = inLobby(answering().copy(question = QUESTION.copy(topic = LONGEST_TOPIC.id)))
+            val topics = TOPICS + LONGEST_TOPIC
+            listOf("answering-long-topic" to asked, "reveal" to inLobby(revealing())).forEach { (name, state) ->
+                // As wide as with room to spare: no flap cut off.
+                var roomy = 0f
+                draw(skin, "$name-wide", state, topics = topics, width = WIDE) { roomy = it.laidOut(POINTS).width }
+                draw(skin, name, state, topics = topics) { scene ->
+                    val points = scene.laidOut(POINTS)
+                    assertTrue(points.left >= 0f && points.right <= WIDTH, "${skin.id} $name: the points at $points")
+                    assertEquals(roomy, points.width, 0.5f, "${skin.id} $name: the points are cut off at $points")
+                }
+            }
+            draw(skin, "answering-long-topic", asked, topics = topics) { scene ->
+                val clock =
+                    scene.laidOut { node ->
+                        node.descriptions.any { it.startsWith(before) && it.endsWith(after) }
+                    }
+                assertEquals(WIDTH / 2f, clock.center.x, 1f, "${skin.id}: the clock at $clock is not in the middle")
+                // The tab stands on the card's edge, clear of the bar and of the question.
+                val tab = scene.laidOut { LONGEST_TOPIC.nameSr in it.texts }
+                val leave = scene.laidOut { words.leave in it.descriptions }
+                val question = scene.laidOut { QUESTION.text in it.texts }
+                assertTrue(tab.left >= 0f && tab.right <= WIDTH, "${skin.id}: the topic at $tab")
+                assertTrue(tab.top >= leave.bottom, "${skin.id}: the topic at $tab is on the bar at $leave")
+                assertTrue(tab.bottom <= question.top, "${skin.id}: the topic at $tab is on the question at $question")
+            }
         }
     }
 
@@ -334,18 +377,24 @@ class RoomScreenDrawTest {
         scene.renderSettled()
     }
 
+    /** Where the first node that [matches] is laid out, cut by nothing. */
+    private fun ImageComposeScene.laidOut(matches: (SemanticsNode) -> Boolean): Rect =
+        everyNode().first(matches).let { Rect(it.positionInRoot, it.size.toSize()) }
+
     private fun draw(
         skin: Skin,
         name: String,
         state: LobbySessionState.InLobby,
         actions: RoomActions = RoomActions(),
+        topics: List<Topic> = TOPICS,
+        width: Int = WIDTH,
         check: (ImageComposeScene) -> Unit,
     ) {
         val scene =
-            ImageComposeScene(width = WIDTH, height = HEIGHT, density = Density(1f)) {
+            ImageComposeScene(width = width, height = HEIGHT, density = Density(1f)) {
                 GameTheme(Language.DEFAULT, skin) {
                     Stage(Modifier.fillMaxSize()) {
-                        RoomScreen(state, TOPICS, note = null, bursts = emptyMap(), actions = actions)
+                        RoomScreen(state, topics, note = null, bursts = emptyMap(), actions = actions)
                     }
                 }
             }
@@ -371,5 +420,14 @@ class RoomScreenDrawTest {
     private companion object {
         const val WIDTH = 360
         const val HEIGHT = 640
+
+        /** A screen with room to spare across. */
+        const val WIDE = 720
+
+        /** The player's points on the bar, the first of them in the scene: 1 210, four digits. */
+        val POINTS: (SemanticsNode) -> Boolean = { "1210" in it.descriptions }
+
+        /** The longest of the server's topics' names, as its migrations write it. */
+        val LONGEST_TOPIC = Topic("SCIENCE", "Наука и технологија", "Science & tech", 30, groupId = "KNOWLEDGE")
     }
 }

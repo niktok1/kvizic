@@ -157,8 +157,9 @@ data class GameStrings(
     val topicsToppedUp: String,
     val gameShortened: String,
     // A question.
-    val question: String,
     val points: String,
+    /** Which question this is, `{0}`, of how many, `{1}`, for a screen reader: the bar shows the numbers alone. */
+    val questionOf: String,
     val answersComing: String,
     /** Who the question still waits for, their names, `{0}`, for a screen reader. */
     val waitingFor: String,
@@ -297,7 +298,7 @@ data class GameStrings(
             voteTooSoon = transform(voteTooSoon),
             topicsToppedUp = transform(topicsToppedUp),
             gameShortened = transform(gameShortened),
-            question = transform(question),
+            questionOf = transform(questionOf),
             points = transform(points),
             answersComing = transform(answersComing),
             waitingFor = transform(waitingFor),
@@ -434,7 +435,7 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         voteTooSoon = "Сачекај мало пре новог гласа.",
         topicsToppedUp = "Изабраних тема је мало, па има и других питања.",
         gameShortened = "Питања је мало, па је игра краћа.",
-        question = "Питање",
+        questionOf = "Питање {0} од {1}",
         points = "Поени",
         answersComing = "Одговори стижу…",
         waitingFor = "Чека се: {0}",
@@ -582,7 +583,7 @@ internal val EnglishGameStrings: GameStrings =
         voteTooSoon = "Wait a moment before voting again.",
         topicsToppedUp = "The topics picked had few questions, so others joined in.",
         gameShortened = "There were few questions, so the game is shorter.",
-        question = "Question",
+        questionOf = "Question {0} of {1}",
         points = "Points",
         answersComing = "Answers coming…",
         waitingFor = "Waiting for: {0}",
