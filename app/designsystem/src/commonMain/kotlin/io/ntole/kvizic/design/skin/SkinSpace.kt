@@ -22,6 +22,10 @@ data class SkinSpace(
     val screen: Dp,
     /** The least a finger's target is, whatever the thing tapped draws. */
     val touchTarget: Dp,
+    /** The widest a screen's column of content grows on a wide window, a tablet's or a desktop's. */
+    val contentWidth: Dp,
+    /** The widest a dialog grows. */
+    val dialogWidth: Dp,
     /** The outline drawn round a raised thing, and the thinner one of small things. */
     val stroke: Dp,
     val strokeThin: Dp,

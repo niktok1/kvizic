@@ -40,6 +40,10 @@ import io.ntole.kvizic.design.component.PodiumPlace
 import io.ntole.kvizic.design.component.QuestionText
 import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ReactionBurst
+import io.ntole.kvizic.design.component.ScoreRow
+import io.ntole.kvizic.design.component.Scoreboard
+import io.ntole.kvizic.design.component.SeatGrid
+import io.ntole.kvizic.design.component.SeatOccupant
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.TimerPhase
@@ -248,50 +252,26 @@ internal fun LobbyMock(burst: Any? = "boban") {
     }
 }
 
-/** A room's eight seats, in rows of the skin's columns; an empty seat waits, outlined. */
+/** A room's eight seats, the design system's, the host's titled. */
 @Composable
 private fun Seats(members: List<Member?>) {
-    val space = KvizicTheme.space
-    val columns = space.seat.columns
-    Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
-        members.chunked(columns).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(space.sm)) {
-                row.forEach { member -> Seat(member, Modifier.weight(1f)) }
+    SeatGrid(
+        members.map { member ->
+            member?.let {
+                SeatOccupant(
+                    it.name,
+                    it.avatar,
+                    it.seat,
+                    badge =
+                        "водитељ".takeIf { _ ->
+                            it.host
+                        },
+                    host = it.host,
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun Seat(
-    member: Member?,
-    modifier: Modifier,
-) {
-    val space = KvizicTheme.space
-    val type = KvizicTheme.type
-    val colors = KvizicTheme.colors
-    Panel(
-        modifier = modifier.height(space.seat.height),
-        kind = if (member == null) PanelKind.EMPTY else PanelKind.PLAIN,
-        padding = space.xs,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            if (member == null) {
-                KvizicText("слободно", style = type.caption, color = colors.onPageMuted)
-            } else {
-                Avatar(member.avatar, member.seat, size = AvatarSize.MD, host = member.host)
-                Spacer(Modifier.height(space.xs))
-                KvizicText(member.name, style = type.caption, maxLines = 1, textAlign = TextAlign.Center)
-                if (member.host) {
-                    KvizicText("водитељ", style = type.caption, color = colors.onPageAccent, maxLines = 1)
-                }
-            }
-        }
-    }
+        },
+        emptyLabel = "слободно",
+    )
 }
 
 // 3. The question read alone: no answers yet, the lights coming up round the clock.
@@ -677,49 +657,23 @@ internal data class Standing(
     val place: Int? = null,
 )
 
-/** The standings on a board: place, avatar, name, what the question gave, and the total on flaps. */
+/** The standings, on the design system's board. */
 @Composable
 private fun Scoreboard(rows: List<Standing>) {
-    val space = KvizicTheme.space
-    val type = KvizicTheme.type
-    Panel(Modifier.fillMaxWidth(), padding = space.md) {
-        Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
-            rows.forEachIndexed { i, row ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(space.sm),
-                ) {
-                    KvizicText(
-                        "${row.place ?: (i + 1)}.",
-                        Modifier.width(space.lg),
-                        style = type.name,
-                        color = KvizicTheme.colors.onRaisedMuted,
-                    )
-                    Avatar(row.member.avatar, row.member.seat, size = AvatarSize.XS, host = row.member.host)
-                    KvizicText(row.member.name, Modifier.weight(1f), style = type.name, maxLines = 1)
-                    val delta = row.delta
-                    if (delta != null) {
-                        Chip(
-                            if (delta > 0) {
-                                "+$delta"
-                            } else if (delta < 0) {
-                                "−${-delta}"
-                            } else {
-                                "0"
-                            },
-                            tone =
-                                when {
-                                    delta > 0 -> ChipTone.GAIN
-                                    delta < 0 -> ChipTone.LOSS
-                                    else -> ChipTone.NEUTRAL
-                                },
-                        )
-                    }
-                    FlipNumber(row.total, size = FlapSize.SMALL)
-                }
-            }
-        }
-    }
+    Scoreboard(
+        rows.mapIndexed { i, row ->
+            ScoreRow(
+                place = row.place ?: (i + 1),
+                name = row.member.name,
+                avatarId = row.member.avatar,
+                seat = row.member.seat,
+                total = row.total,
+                delta = row.delta,
+                host = row.member.host,
+            )
+        },
+        Modifier.fillMaxWidth(),
+    )
 }
 
 /** A screen's top: back, its title, and what else it offers. */

@@ -149,6 +149,8 @@ internal val BuzzersSpace =
         xxl = 32.dp,
         screen = 20.dp,
         touchTarget = 48.dp,
+        contentWidth = 560.dp,
+        dialogWidth = 400.dp,
         stroke = 3.dp,
         strokeThin = 2.dp,
         icon = IconSizes(small = 16.dp, medium = 22.dp, large = 30.dp),
