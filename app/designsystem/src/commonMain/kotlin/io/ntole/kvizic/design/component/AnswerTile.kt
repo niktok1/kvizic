@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -60,6 +61,10 @@ import kotlin.math.ceil
  * stands behind the tile, their heads over its top edge: the avatars of those who picked it. [stateDescription] says the
  * state to a screen reader, in the screen's own words. [textSize] is the largest its answer is set at,
  * the skin's answer size when unspecified: [AnswerGrid] gives all its tiles one, so they are set alike.
+ *
+ * [appearing] has the tile come up as it is first composed, after [appearDelay] milliseconds: from a little
+ * small and clear to its place, in its layer alone, as the answers open. Read once, when the tile is first
+ * composed.
  */
 @Composable
 fun AnswerTile(
@@ -73,12 +78,23 @@ fun AnswerTile(
     stateDescription: String? = null,
     pickers: (@Composable () -> Unit)? = null,
     textSize: TextUnit = TextUnit.Unspecified,
+    appearing: Boolean = false,
+    appearDelay: Int = 0,
 ) {
     val skin = KvizicTheme.skin
     val space = skin.space
     val type = KvizicTheme.type
     val part = skin.parts.tile
     val source = interactionSource ?: remember { MutableInteractionSource() }
+    val shown = remember { Animatable(if (appearing) 0f else 1f) }
+    LaunchedEffect(Unit) {
+        if (shown.value < 1f) {
+            shown.animateTo(
+                1f,
+                tween(skin.motion.tileAppear.coerceAtLeast(1), delayMillis = appearDelay, easing = FastOutSlowInEasing),
+            )
+        }
+    }
     // How lit the letter is and how far the result's stamp has come in: read in the draw alone.
     val lit = remember { Animatable(state.lit) }
     val stamp = remember { Animatable(state.stamped) }
@@ -108,8 +124,20 @@ fun AnswerTile(
             stamp = { stamp.value },
         )
     }
-    PickersBehind(pickers, modifier) { card(Modifier) }
+    PickersBehind(
+        pickers,
+        modifier.graphicsLayer {
+            val p = shown.value
+            alpha = p
+            val scale = APPEAR_SCALE + (1f - APPEAR_SCALE) * p
+            scaleX = scale
+            scaleY = scale
+        },
+    ) { card(Modifier) }
 }
+
+/** How small a tile starts as it comes up. */
+private const val APPEAR_SCALE = 0.86f
 
 /** An answer tile's card: its surface, its letter and its answer. */
 @Composable
@@ -260,6 +288,8 @@ private fun PickersBehind(
  * Four answers stand in a grid of two by two unless a column, each across the whole width, sets them
  * larger: one long answer takes them all to a column, where it has the width. And all are set at one
  * size, the largest the answer that needs the most room is whole at ([answerLayout]).
+ *
+ * [appearing] has the tiles come up one after another as they are first composed, as the answers open.
  */
 @Composable
 fun AnswerGrid(
@@ -269,11 +299,13 @@ fun AnswerGrid(
     onPick: ((index: Int) -> Unit)? = null,
     stateDescriptions: List<String?> = options.map { null },
     pickers: (@Composable (index: Int) -> Unit)? = null,
+    appearing: Boolean = false,
 ) {
     require(options.size >= MIN_ANSWERS) { "a question has at least $MIN_ANSWERS answers, not ${options.size}" }
     require(states.size == options.size) { "a state for each of the ${options.size} answers" }
     require(stateDescriptions.size == options.size) { "a description for each of the ${options.size} answers" }
-    val space = KvizicTheme.space
+    val skin = KvizicTheme.skin
+    val space = skin.space
     BoxWithConstraints(modifier) {
         val layout = answerLayout(options, constraints)
         val tile: @Composable (Int, TileArrangement, Modifier) -> Unit = { i, arrangement, tileModifier ->
@@ -287,6 +319,8 @@ fun AnswerGrid(
                 stateDescription = stateDescriptions[i],
                 pickers = pickers?.let { slot -> { slot(i) } },
                 textSize = layout.textSize,
+                appearing = appearing,
+                appearDelay = i * skin.motion.tileStagger,
             )
         }
         // Between rows of tiles, room for the heads of those who picked one ([PickersBehind]).

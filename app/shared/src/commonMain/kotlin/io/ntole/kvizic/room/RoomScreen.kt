@@ -1,5 +1,16 @@
 package io.ntole.kvizic.room
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +66,7 @@ import io.ntole.kvizic.design.component.StageDialog
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.skin.SkinMotion
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
@@ -93,43 +105,54 @@ fun RoomScreen(
     actions: RoomActions,
     modifier: Modifier = Modifier,
 ) {
-    val me = state.lobby.member(state.you)
     var leaving by rememberSaveable { mutableStateOf(false) }
     // Held here, not on the reveal, so the dialog stays as the next question comes.
     var reporting by rememberSaveable { mutableStateOf<String?>(null) }
     // The system's back asks before it leaves the room, wherever in it the player is.
     SystemBack(enabled = true) { leaving = true }
+    val motion = KvizicTheme.skin.motion
     Column(modifier.fillMaxSize()) {
         RoomBanner(reconnecting = state.reconnecting, note = note)
-        when (val phase = state.phase) {
-            is GamePhase.Waiting -> {
-                val results = phase.lastResults
-                if (me?.onResults == true && results != null) {
-                    Results(results, state.lobby, state.you, newGameStarting = false, actions)
-                } else {
-                    Waiting(state, countdown = null, bursts, actions, onLeave = { leaving = true })
+        // Each step of the game gives way to the next, never a cut: the stage changes by its key, and within
+        // one step the screen only takes the new state.
+        AnimatedContent(
+            targetState = state,
+            modifier = Modifier.weight(1f),
+            contentKey = ::stageOf,
+            transitionSpec = { stageChange(stageOf(initialState), stageOf(targetState), motion) },
+            label = "stage",
+        ) { shown ->
+            val shownMe = shown.lobby.member(shown.you)
+            when (val phase = shown.phase) {
+                is GamePhase.Waiting -> {
+                    val results = phase.lastResults
+                    if (shownMe?.onResults == true && results != null) {
+                        Results(results, shown.lobby, shown.you, newGameStarting = false, actions)
+                    } else {
+                        Waiting(shown, countdown = null, bursts, actions, onLeave = { leaving = true })
+                    }
                 }
-            }
 
-            is GamePhase.Countdown -> {
-                val results = phase.lastResults
-                if (me?.onResults == true && results != null) {
-                    Results(results, state.lobby, state.you, newGameStarting = true, actions)
-                } else {
-                    Waiting(state, countdown = phase.deadline, bursts, actions, onLeave = { leaving = true })
+                is GamePhase.Countdown -> {
+                    val results = phase.lastResults
+                    if (shownMe?.onResults == true && results != null) {
+                        Results(results, shown.lobby, shown.you, newGameStarting = true, actions)
+                    } else {
+                        Waiting(shown, countdown = phase.deadline, bursts, actions, onLeave = { leaving = true })
+                    }
                 }
-            }
 
-            is GamePhase.Reading -> {
-                QuestionScreen(state, phase, topics, actions, onLeave = { leaving = true })
-            }
+                is GamePhase.Reading -> {
+                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
+                }
 
-            is GamePhase.Answering -> {
-                QuestionScreen(state, phase, topics, actions, onLeave = { leaving = true })
-            }
+                is GamePhase.Answering -> {
+                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
+                }
 
-            is GamePhase.Revealing -> {
-                RevealScreen(state, phase, topics, onReport = { reporting = it }, onLeave = { leaving = true })
+                is GamePhase.Revealing -> {
+                    RevealScreen(shown, phase, topics, onReport = { reporting = it }, onLeave = { leaving = true })
+                }
             }
         }
     }
@@ -643,3 +666,107 @@ internal fun Page(content: @Composable ColumnScope.() -> Unit) {
 
 /** How many of a game's best stand on its podium. */
 private const val PODIUM = 3
+
+/** Which step of the room a state shows: a change of it is a change of the stage, and the screen moves. */
+private data class Stage(
+    val kind: StageKind,
+    val game: String? = null,
+    val question: Int = -1,
+)
+
+private enum class StageKind { LOBBY, RESULTS, READ, ANSWER, REVEAL }
+
+private fun stageOf(state: LobbySessionState.InLobby): Stage {
+    val onResults = state.lobby.member(state.you)?.onResults == true
+    return when (val phase = state.phase) {
+        is GamePhase.Waiting -> {
+            Stage(
+                if (onResults &&
+                    phase.lastResults != null
+                ) {
+                    StageKind.RESULTS
+                } else {
+                    StageKind.LOBBY
+                },
+            )
+        }
+
+        is GamePhase.Countdown -> {
+            Stage(
+                if (onResults &&
+                    phase.lastResults != null
+                ) {
+                    StageKind.RESULTS
+                } else {
+                    StageKind.LOBBY
+                },
+            )
+        }
+
+        is GamePhase.Reading -> {
+            Stage(StageKind.READ, phase.gameId, phase.question.index)
+        }
+
+        is GamePhase.Answering -> {
+            Stage(StageKind.ANSWER, phase.gameId, phase.question.index)
+        }
+
+        is GamePhase.Revealing -> {
+            Stage(StageKind.REVEAL, phase.gameId, phase.reveal.index)
+        }
+    }
+}
+
+/**
+ * How one stage gives way to the next, over the skin's [SkinMotion.stage]: a question read rises into its
+ * answers, its answers fade into their reveal, and every new question comes in from the side like the next
+ * card, the last one going out the other way; the rest fade.
+ */
+private fun stageChange(
+    from: Stage,
+    to: Stage,
+    motion: SkinMotion,
+): ContentTransform {
+    val time = motion.stage.coerceAtLeast(1)
+    val sameQuestion = from.game == to.game && from.question == to.question
+    val transform =
+        when {
+            sameQuestion && from.kind == StageKind.READ && to.kind == StageKind.ANSWER -> {
+                (
+                    fadeIn(
+                        tween(time),
+                    ) + slideInVertically(tween(time, easing = FastOutSlowInEasing)) { it / RISE }
+                ) togetherWith
+                    (
+                        fadeOut(tween(time / 2)) +
+                            slideOutVertically(tween(time, easing = FastOutSlowInEasing)) { -it / RISE }
+                    )
+            }
+
+            sameQuestion && from.kind == StageKind.ANSWER && to.kind == StageKind.REVEAL -> {
+                fadeIn(tween(time / 2)) togetherWith fadeOut(tween(time / 2))
+            }
+
+            to.kind == StageKind.READ -> {
+                (
+                    slideInHorizontally(
+                        tween(time, easing = FastOutSlowInEasing),
+                    ) { it } + fadeIn(tween(time))
+                ) togetherWith
+                    (
+                        slideOutHorizontally(tween(time, easing = FastOutSlowInEasing)) { -it / AWAY } +
+                            fadeOut(tween(time / 2))
+                    )
+            }
+
+            else -> {
+                fadeIn(tween(time)) togetherWith fadeOut(tween(time))
+            }
+        }
+    // No size to animate: the stage fills the room either way.
+    return ContentTransform(transform.targetContentEnter, transform.initialContentExit, sizeTransform = null)
+}
+
+/** How far a question read rises as its answers come, and how far the last question goes as the next comes: shares. */
+private const val RISE = 10
+private const val AWAY = 3

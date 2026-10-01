@@ -13,8 +13,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -152,6 +157,9 @@ internal fun QuestionScreen(
             val myPick = phase.myPick
             val picks: Map<String, Int> = if (myPick != null) phase.picks + (state.you to myPick) else phase.picks
             val answer = tappedAt("question.answer", withLockInHaptic(actions.answer))
+            // The tiles come up one after another as the answers open, once a question: not again after a rotation.
+            val appearing = rememberSaveable(phase.gameId, phase.question.index) { mutableStateOf(true) }
+            LaunchedEffect(phase.gameId, phase.question.index) { appearing.value = false }
             Page {
                 RoundBar(
                     phase.question.index,
@@ -188,6 +196,7 @@ internal fun QuestionScreen(
                         } else {
                             { option -> Pickers(lobby, picks.filterValues { it == option }.keys.toList()) }
                         },
+                    appearing = appearing.value,
                 )
                 Spacer(Modifier.height(space.md))
                 Strip {
@@ -248,6 +257,15 @@ internal fun RevealScreen(
     val mine = reveal.results.firstOrNull { it.playerId == state.you }
     val seconds by secondsLeft(phase.next)
     RevealHaptic(reveal.questionId, right = mine?.option?.let { it == reveal.correct })
+    // The tiles stand a frame as they were answered, then light up and stamp: the reveal's moment, once a
+    // question, and not again after a rotation.
+    var revealed by rememberSaveable(reveal.questionId) { mutableStateOf(false) }
+    LaunchedEffect(reveal.questionId) {
+        if (!revealed) {
+            withFrameNanos {}
+            revealed = true
+        }
+    }
     Page {
         RoundBar(
             reveal.index,
@@ -319,9 +337,31 @@ internal fun RevealScreen(
                     states =
                         reveal.options.indices.map { i ->
                             when {
-                                i == reveal.correct -> AnswerTileState.CORRECT
-                                i == mine?.option -> AnswerTileState.WRONG
-                                else -> AnswerTileState.DIMMED
+                                !revealed && mine?.option == null -> {
+                                    AnswerTileState.IDLE
+                                }
+
+                                !revealed -> {
+                                    if (i ==
+                                        mine?.option
+                                    ) {
+                                        AnswerTileState.LOCKED_IN
+                                    } else {
+                                        AnswerTileState.DIMMED
+                                    }
+                                }
+
+                                i == reveal.correct -> {
+                                    AnswerTileState.CORRECT
+                                }
+
+                                i == mine?.option -> {
+                                    AnswerTileState.WRONG
+                                }
+
+                                else -> {
+                                    AnswerTileState.DIMMED
+                                }
                             }
                         },
                     stateDescriptions =

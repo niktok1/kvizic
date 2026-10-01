@@ -245,6 +245,9 @@ internal val BuzzersMotion =
         warnSeconds = 5,
         burst = 1_400,
         spinnerTurn = 1_100,
+        stage = 320,
+        tileAppear = 260,
+        tileStagger = 70,
     )
 
 internal val BuzzersAvatars =

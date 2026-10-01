@@ -167,6 +167,9 @@ internal val NotebookMotion =
         warnSeconds = 5,
         burst = 1_400,
         spinnerTurn = 1_300,
+        stage = 360,
+        tileAppear = 300,
+        tileStagger = 80,
     )
 
 internal val NotebookAvatars =

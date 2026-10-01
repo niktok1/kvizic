@@ -147,6 +147,10 @@ Play Games Services v2. **No Material**: the design system draws everything.
   player's line stays on the board (`RevealFitTest`), at the wire's it may give way.
 - **Picks peek from behind the card**: those who picked an answer stand behind its tile, their heads over
   its top edge; a crowd closes up to fit the tile (`crowdOverlap`); rows keep a gap for the heads.
+- **A game's steps give way to each other**, never a cut (`RoomStagesTest`): the question read rises into its
+  answers, which come up one after another; the answers fade into the reveal, whose tiles light up from how
+  they stood; each new question comes in from the side like the next card. Times are skin motion tokens
+  (`stage`, `tileAppear`, `tileStagger`); nothing replays after a rotation.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
   them until they answer; no words, no count.
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,

@@ -29,6 +29,11 @@ data class SkinMotion(
     /** A reaction's burst, whole, and one turn of the spinner. */
     val burst: Int,
     val spinnerTurn: Int,
+    /** One step of a game giving way to the next: read to answered, answered to revealed, on to the next. */
+    val stage: Int,
+    /** An answer tile coming up as the answers open, and the delay between one tile and the next. */
+    val tileAppear: Int,
+    val tileStagger: Int,
 ) {
     init {
         require(flapsPerDigit >= 1) { "a digit flaps at least once" }
