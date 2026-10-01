@@ -27,7 +27,8 @@ import kotlin.math.abs
 /**
  * A number on split-flap cells, a digit a cell, in groups of three: a score, a count. When [value]
  * changes each digit that changes flaps on to its new one, the right-most first, through at most the
- * skin's few flaps however far it goes. The new value is laid out once, as the flaps' place and what a
+ * skin's few flaps however far it goes: up the digits as the number rises, down them as it falls, so a
+ * countdown flaps 5 to 4 at once. The new value is laid out once, as the flaps' place and what a
  * screen reader reads; the flaps are only drawn.
  *
  * [signed] shows a plus before a value that is not negative: points won. [minDigits] pads with zeros.
@@ -185,6 +186,9 @@ internal class FlipTimeline(
     var to: String = initial
         private set
 
+    /** Whether the number this flip goes to is less than the one before, so its digits turn back. */
+    private var falling = false
+
     /** Starts a flip to [to] from whatever [shownAt] of the flip before shows, so a flip cut short goes on from there. */
     fun moveOn(
         to: String,
@@ -196,6 +200,7 @@ internal class FlipTimeline(
             val fromRight = this.to.length - 1 - i
             shown.append(at(fromRight, shownAt, motion).second ?: ' ')
         }
+        falling = magnitude(to) < magnitude(this.to)
         from = shown.toString()
         this.to = to
     }
@@ -234,15 +239,20 @@ internal class FlipTimeline(
         val new = to.getOrNull(to.length - 1 - fromRight)?.takeUnless { it == ' ' }
         if (old == new) return listOf(new)
         if (old == null || new == null || !old.isDigit() || !new.isDigit()) return listOf(old, new)
-        // Forward round the drum, as a real flap board turns: through the digits after the old one.
-        val distance = (new - old).mod(DIGITS)
+        // Round the drum the way the number goes: through the digits after the old one as it rises, and
+        // before it as it falls, so a countdown reads 5, 4, 3 and a score that falls never counts up.
+        val step = if (falling) -1 else 1
+        val distance = ((new - old) * step).mod(DIGITS)
         val between = minOf(distance, motion.flapsPerDigit) - 1
         return buildList {
             add(old)
-            for (k in 1..between) add('0' + (old - '0' + k).mod(DIGITS))
+            for (k in 1..between) add('0' + (old - '0' + k * step).mod(DIGITS))
             add(new)
         }
     }
+
+    /** The number [text]'s digits make, whatever its sign: how far round its drums stand. */
+    private fun magnitude(text: String): Long = text.filter { it.isDigit() }.toLongOrNull() ?: 0L
 }
 
 private const val DIGITS = 10
