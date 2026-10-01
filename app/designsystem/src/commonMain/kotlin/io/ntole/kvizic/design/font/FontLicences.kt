@@ -15,6 +15,7 @@ object FontLicences {
 
     val ALL: List<Licence> =
         listOf(
+            Licence(listOf(Faces.Nunito), "files/licenses/nunito_ofl.txt"),
             Licence(listOf(Faces.FiraCompressed, Faces.FiraSans), "files/licenses/fira_sans_ofl.txt"),
             Licence(listOf(Faces.Oswald), "files/licenses/oswald_ofl.txt"),
             Licence(listOf(Faces.SofiaExtraCondensed), "files/licenses/sofia_sans_ofl.txt"),

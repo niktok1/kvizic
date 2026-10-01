@@ -7,6 +7,7 @@ import org.jetbrains.skia.Data
 import org.jetbrains.skia.Font
 import org.jetbrains.skia.FontHinting
 import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.FontVariation
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.Surface
 import org.jetbrains.skia.Typeface
@@ -187,10 +188,17 @@ class FontCoverageTest {
         return checkNotNull(surface.makeImageSnapshot().encodeToData()).bytes
     }
 
+    /** The file's typeface, a variable one drawn at the file's weight on its `wght` axis, as the app draws it. */
     private fun typefaceOf(file: FaceFile): Typeface =
-        typefaces.getOrPut(file.fileName) {
+        typefaces.getOrPut("${file.fileName}@${file.weight.weight}") {
             val bytes = File(FONTS, file.fileName).readBytes()
-            checkNotNull(FontMgr.default.makeFromData(Data.makeFromBytes(bytes))) { "${file.fileName} is no font" }
+            val typeface =
+                checkNotNull(FontMgr.default.makeFromData(Data.makeFromBytes(bytes))) { "${file.fileName} is no font" }
+            if (file.variable) {
+                typeface.makeClone(arrayOf(FontVariation("wght", file.weight.weight.toFloat())))
+            } else {
+                typeface
+            }
         }
 
     private companion object {

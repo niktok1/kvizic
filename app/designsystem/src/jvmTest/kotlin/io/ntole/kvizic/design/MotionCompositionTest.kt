@@ -136,11 +136,43 @@ class MotionCompositionTest {
         }
     }
 
-    /** Only the stage's sign has lights; the notebook's sticky note has none to flicker. */
+    /**
+     * Only the stage's sign has lights; the notebook's sticky note has none to flicker. The wait between two
+     * flickers is real time, which a phone's sleep would not burn as frames, so the scene is drawn as a screen
+     * draws it, a frame each 16 ms, until a bulb dims.
+     */
     @Test
     fun `the sign's bulbs flicker now and then and compose nothing`() {
-        motion(Skins.Buzzers, { Wordmark("КВИЗИЋ", Modifier.fillMaxWidth()) }) {
-            step("a bulb's flicker", start = {}, millis = FLICKER_WITHIN)
+        val recompositions = Recompositions()
+        val scene =
+            ImageComposeScene(width = SIZE, height = SIZE, density = Density(1f)) {
+                CountedBy(recompositions) {
+                    KvizicSkin(Skins.Buzzers) {
+                        Stage(Modifier.fillMaxSize()) { Wordmark("КВИЗИЋ", Modifier.fillMaxWidth()) }
+                    }
+                }
+            }
+        try {
+            var time = 0L
+            while (time < SETTLE * MILLI) {
+                time += FRAME
+                scene.renderAt(time)
+            }
+            val before = recompositions.scopesEntered
+            val first = pixelsOf(scene.render(time))
+            val start = System.nanoTime()
+            var dimmed = false
+            while (!dimmed && System.nanoTime() - start < FLICKER_WITHIN * MILLI) {
+                Thread.sleep(FRAME / MILLI)
+                time += FRAME
+                scene.renderAt(time)
+                dimmed = !pixelsOf(scene.render(time)).contentEquals(first)
+            }
+            assertTrue(dimmed, "no bulb flickered within $FLICKER_WITHIN ms")
+            assertEquals(before, recompositions.scopesEntered, "a frame of the flicker composed")
+            recompositions.assertCounting(scene, time)
+        } finally {
+            scene.close()
         }
     }
 

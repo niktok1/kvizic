@@ -23,6 +23,10 @@ data class ScoreRow(
     val host: Boolean = false,
     /** The player's own line, set in the accent. */
     val own: Boolean = false,
+    /** How many places the line rose since the last standings, a fall below 0: what [StandingsBoard] slides. */
+    val moved: Int = 0,
+    /** What tells the line from the others' as it moves: the player's id. */
+    val id: String = name,
 )
 
 /** The standings on a board: place, avatar, name, what the last question gave, and the total on flaps. */
@@ -32,34 +36,9 @@ fun Scoreboard(
     modifier: Modifier = Modifier,
 ) {
     val space = KvizicTheme.space
-    val type = KvizicTheme.type
-    val colors = KvizicTheme.colors
     Panel(modifier, padding = space.md) {
         Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
-            rows.forEach { row ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(space.sm),
-                ) {
-                    KvizicText(
-                        "${row.place}.",
-                        Modifier.width(space.lg),
-                        style = type.name,
-                        color = colors.onRaisedMuted,
-                        maxLines = 1,
-                    )
-                    Avatar(row.avatarId, row.seat, size = AvatarSize.XS, host = row.host)
-                    KvizicText(
-                        row.name,
-                        Modifier.weight(1f),
-                        style = type.name,
-                        color = if (row.own) colors.onPageAccent else colors.onRaised,
-                        maxLines = 1,
-                    )
-                    row.delta?.let { delta -> Chip(signed(delta), tone = toneOf(delta)) }
-                    FlipNumber(row.total, size = FlapSize.SMALL)
-                }
-            }
+            rows.forEach { row -> ScoreLine(row) }
         }
     }
 }
@@ -70,11 +49,4 @@ fun signed(points: Int): String =
         points > 0 -> "+$points"
         points < 0 -> "−${-points}"
         else -> "0"
-    }
-
-private fun toneOf(delta: Int): ChipTone =
-    when {
-        delta > 0 -> ChipTone.GAIN
-        delta < 0 -> ChipTone.LOSS
-        else -> ChipTone.NEUTRAL
     }

@@ -168,15 +168,18 @@ class RoomScreenDrawTest {
     }
 
     @Test
-    fun `the reveal lights the right answer, says what it gave the player, and when the next comes`() {
+    fun `the reveal lights the right answer and boards every player with what it gave them and when the next comes`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game
             draw(skin, "reveal", inLobby(revealing())) { scene ->
                 val shown = scene.everyText()
-                assertTrue(words.verdictWrong.fill(signed(-25)) in shown, "${skin.id}: $shown")
+                assertTrue(signed(-25) in shown, "${skin.id}: the player's points are not on the board: $shown")
+                MEMBERS.forEach { member ->
+                    assertTrue(member.name in shown, "${skin.id}: ${member.name} is not on the board: $shown")
+                }
                 assertTrue(
-                    shown.any { it.startsWith(words.nextQuestionIn.substringBefore("{0}")) },
-                    "${skin.id}: $shown",
+                    scene.descriptions().any { it.startsWith(words.nextQuestionIn.substringBefore("{0}")) },
+                    "${skin.id}: ${scene.descriptions()}",
                 )
                 val right = scene.nodes().single { OPTIONS[0] in it.texts }
                 assertEquals(

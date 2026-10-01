@@ -1,6 +1,7 @@
 package io.ntole.kvizic.room
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import io.ntole.kvizic.analytics.tapped
@@ -39,8 +43,8 @@ import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.component.QuestionText
 import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ScoreRow
-import io.ntole.kvizic.design.component.Scoreboard
 import io.ntole.kvizic.design.component.StageIconButton
+import io.ntole.kvizic.design.component.StandingsBoard
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
 import io.ntole.kvizic.design.component.WaitingFor
@@ -48,9 +52,11 @@ import io.ntole.kvizic.design.component.rememberAnswersFit
 import io.ntole.kvizic.design.component.signed
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
+import kotlin.math.roundToInt
 
 /**
  * A question of the game under way, read alone ([GamePhase.Reading]) and then answered
@@ -220,8 +226,9 @@ internal fun QuestionScreen(
 
 /**
  * A question revealed: the right answer lit, the player's own stamped wrong where it was, who picked each,
- * the first right ones in their order, what it gave the player, and the standings' head, until the next
- * question or the results.
+ * the first right ones in their order, and every player's standing on one board, the lines sliding from
+ * where they stood to where the question put them, a line draining along its foot to the next question.
+ * The flag to report the question stands in the question's corner, out of the way of the tiles.
  */
 @Composable
 internal fun RevealScreen(
@@ -232,6 +239,7 @@ internal fun RevealScreen(
     onLeave: () -> Unit = {},
 ) {
     val words = LocalStrings.current.game
+    val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
@@ -255,24 +263,52 @@ internal fun RevealScreen(
         RevealBody(
             fits = rememberAnswersFit(reveal.options.map { shown(it) }),
             gap = space.md,
+            boardLeast = space.avatar.xs * BOARD_LEAST_LINES + space.md * 2 + space.sm + space.xs,
             modifier = Modifier.weight(1f),
             panel = {
                 Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
-                    Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
-                        QuestionText(
-                            shown(reveal.text),
-                            Modifier.fillMaxWidth(),
-                            recap = true,
-                            textAlign = TextAlign.Center,
-                        )
-                        reveal.explanation?.let { explanation ->
-                            KvizicText(
-                                shown(explanation),
-                                style = type.caption,
-                                color = colors.onRaisedMuted,
-                                textAlign = TextAlign.Center,
-                            )
+                    Box {
+                        Column(
+                            Modifier.padding(horizontal = space.lg),
+                            verticalArrangement = Arrangement.spacedBy(space.sm),
+                        ) {
+                            val explanation = reveal.explanation
+                            if (explanation == null) {
+                                QuestionText(
+                                    shown(reveal.text),
+                                    Modifier.fillMaxWidth(),
+                                    recap = true,
+                                    textAlign = TextAlign.Center,
+                                )
+                            } else {
+                                // With an explanation to read, the question it explains, read whole a moment
+                                // ago, is recalled in a line or two, and a screen reader still hears it whole.
+                                KvizicText(
+                                    shown(reveal.text),
+                                    Modifier.fillMaxWidth(),
+                                    style = type.bodyStrong,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = RECAP_LINES,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            reveal.explanation?.let { explanation ->
+                                KvizicText(
+                                    shown(explanation),
+                                    style = type.caption,
+                                    color = colors.onRaisedMuted,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                         }
+                        StageIconButton(
+                            KvizicIcons.Flag,
+                            contentDescription = words.reportQuestion,
+                            onClick = tapped("reveal.report") { onReport(reveal.questionId) },
+                            modifier = Modifier.align(Alignment.TopEnd).offset(x = space.md, y = -space.md),
+                            kind = ButtonKind.QUIET,
+                            small = true,
+                        )
                     }
                 }
             },
@@ -314,63 +350,62 @@ internal fun RevealScreen(
                     },
                 )
             },
-            standings = {
-                Standings(lobby, reveal.standings, reveal.results.associate { it.playerId to it.points }, state.you)
+            board = {
+                StandingsBoard(
+                    rows =
+                        boardRows(
+                            lobby,
+                            reveal.standings,
+                            reveal.results.associate { it.playerId to it.points },
+                            state.you,
+                            language,
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
+                    reorderKey = reveal.questionId,
+                    timeLeft = phase.next::fractionLeft,
+                    timeDescription = (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
+                )
             },
         )
-        Spacer(Modifier.height(space.sm))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val verdict =
-                when {
-                    mine?.option == null -> words.verdictNone
-                    mine.option == reveal.correct -> words.verdictRight.fill(signed(mine.points))
-                    else -> words.verdictWrong.fill(signed(mine.points))
-                }
-            Chip(verdict)
-            Spacer(Modifier.weight(1f))
-            KvizicText(
-                (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
-                style = type.caption,
-                color = colors.onPageMuted,
-            )
-            Spacer(Modifier.width(space.sm))
-            StageIconButton(
-                KvizicIcons.Flag,
-                contentDescription = words.reportQuestion,
-                onClick = tapped("reveal.report") { onReport(reveal.questionId) },
-                kind = ButtonKind.QUIET,
-                small = true,
-            )
-        }
     }
 }
 
-/** The standings' head, the first three, and the player's own line under them when it is not among them. */
-@Composable
-private fun Standings(
+/**
+ * Every player's line on the reveal's board, in their new order, each saying how many places the question
+ * moved it: where it stood is its order by the score before the question, the points it gave taken back,
+ * ties kept in the new order.
+ */
+internal fun boardRows(
     lobby: Lobby,
     standings: List<Standing>,
     points: Map<String, Int>,
     you: String,
-) {
+    language: Language,
+): List<ScoreRow> {
     val ranked = standings.sortedBy { it.rank }
-    val shownRows = ranked.take(STANDINGS_HEAD) + ranked.drop(STANDINGS_HEAD).filter { it.playerId == you }
-    Scoreboard(
-        shownRows.mapNotNull { standing ->
-            val member = lobby.member(standing.playerId) ?: return@mapNotNull null
-            ScoreRow(
-                place = standing.rank,
-                name = shown(member.name),
-                avatarId = member.avatar,
-                seat = member.seat,
-                total = standing.score,
-                delta = points[standing.playerId],
-                host = member.playerId == lobby.host,
-                own = member.playerId == you,
-            )
-        },
-        Modifier.fillMaxWidth(),
-    )
+    val before =
+        ranked
+            .withIndex()
+            .sortedWith(
+                compareByDescending<IndexedValue<Standing>> {
+                    it.value.score - (points[it.value.playerId] ?: 0)
+                }.thenBy { it.index },
+            ).map { it.value.playerId }
+    return ranked.mapIndexedNotNull { index, standing ->
+        val member = lobby.member(standing.playerId) ?: return@mapIndexedNotNull null
+        ScoreRow(
+            place = standing.rank,
+            name = shownIn(member.name, language),
+            avatarId = member.avatar,
+            seat = member.seat,
+            total = standing.score,
+            delta = points[standing.playerId],
+            host = member.playerId == lobby.host,
+            own = member.playerId == you,
+            moved = before.indexOf(standing.playerId) - index,
+            id = member.playerId,
+        )
+    }
 }
 
 /** Those who picked an answer, in their seats' order, behind its tile. */
@@ -439,36 +474,56 @@ private fun Strip(content: @Composable () -> Unit) {
 
 private const val MILLIS_PER_SECOND = 1_000
 
-/** How many of the standings a reveal shows, the player's own line besides. */
-private const val STANDINGS_HEAD = 3
+/** The most lines the question is recalled in on the reveal, beside its explanation. */
+private const val RECAP_LINES = 2
 
 /**
- * The reveal between its bar and its verdict: the question over the answers, and the standings under them
- * while that leaves the answers room to be set whole ([fits]). On a small phone with eight players and
- * long answers it does not, and the standings give way: the player's own points stay in the bar and the
- * verdict, and the answers, which the reveal is for, keep their room. [gap] stands between the three.
+ * The fewest of the board's lines a reveal keeps in sight, when it has room for a board at all: the
+ * player's own, which the board scrolls to, and the rest a scroll away.
+ */
+private const val BOARD_LEAST_LINES = 1
+
+/** The least share of the room the answers keep beside the board, however long the board. */
+private const val GRID_SHARE = 0.45f
+
+/**
+ * The reveal under its bar: the question over the answers, and the standings' board under them. The answers
+ * come first: they keep the least room that sets them whole ([fits]) and at least [GRID_SHARE] of what is
+ * left, and the board takes the rest up to its own height, scrolling past it. Where not even [boardLeast]
+ * is left, on a phone too small for both, the board gives way and the player's points stay in the bar.
+ * [gap] stands between the three.
  */
 @Composable
 private fun RevealBody(
     fits: (Constraints) -> Boolean,
     gap: Dp,
+    boardLeast: Dp,
     modifier: Modifier = Modifier,
     panel: @Composable () -> Unit,
     grid: @Composable (Modifier) -> Unit,
-    standings: @Composable () -> Unit,
+    board: @Composable () -> Unit,
 ) {
     SubcomposeLayout(modifier) { constraints ->
         val width = constraints.maxWidth
-        val loose = Constraints(maxWidth = width)
         val space = gap.roundToPx()
-        val top = subcompose(RevealSlot.PANEL, panel).map { it.measure(loose) }
+        val top = subcompose(RevealSlot.PANEL, panel).map { it.measure(Constraints(maxWidth = width)) }
         val topHeight = top.maxOfOrNull { it.height } ?: 0
-        val below = subcompose(RevealSlot.STANDINGS, standings).map { it.measure(loose) }
-        val belowHeight = below.maxOfOrNull { it.height } ?: 0
-        val withStandings = constraints.maxHeight - topHeight - belowHeight - space * 2
-        val keepStandings = withStandings > 0 && fits(Constraints.fixed(width, withStandings))
-        val gridHeight =
-            (if (keepStandings) withStandings else constraints.maxHeight - topHeight - space).coerceAtLeast(0)
+        val room = (constraints.maxHeight - topHeight - space).coerceAtLeast(0)
+        // A margin past the least, which the fit is measured at to the pixel, for the tiles' own rounding.
+        val gridLeast = leastFitting(room) { height -> fits(Constraints.fixed(width, height)) } + space
+        val gridKept = maxOf(gridLeast, (room * GRID_SHARE).roundToInt()).coerceAtMost(room)
+        val boardRoom = room - gridKept - space
+        val below =
+            if (boardRoom >= boardLeast.roundToPx()) {
+                subcompose(
+                    RevealSlot.STANDINGS,
+                    board,
+                ).map { it.measure(Constraints(maxWidth = width, maxHeight = boardRoom)) }
+            } else {
+                emptyList()
+            }
+        val boardHeight = below.maxOfOrNull { it.height } ?: 0
+        val gridHeight = (room - if (below.isEmpty()) 0 else boardHeight + space).coerceAtLeast(0)
         val answers =
             subcompose(RevealSlot.GRID) { grid(Modifier.fillMaxSize()) }.map {
                 it.measure(Constraints.fixed(width, gridHeight))
@@ -476,9 +531,24 @@ private fun RevealBody(
         layout(width, constraints.maxHeight) {
             top.forEach { it.place(0, 0) }
             answers.forEach { it.place(0, topHeight + space) }
-            if (keepStandings) below.forEach { it.place(0, topHeight + space + gridHeight + space) }
+            below.forEach { it.place(0, topHeight + space + gridHeight + space) }
         }
     }
+}
+
+/** The least height up to [most] at which [fits] holds, or [most] when not even that does. */
+private inline fun leastFitting(
+    most: Int,
+    fits: (Int) -> Boolean,
+): Int {
+    if (most <= 0 || !fits(most)) return most.coerceAtLeast(0)
+    var low = 0
+    var high = most
+    while (high - low > 1) {
+        val mid = (low + high) / 2
+        if (fits(mid)) high = mid else low = mid
+    }
+    return high
 }
 
 private enum class RevealSlot { PANEL, GRID, STANDINGS }

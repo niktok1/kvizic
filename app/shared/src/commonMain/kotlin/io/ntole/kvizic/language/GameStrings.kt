@@ -141,11 +141,6 @@ data class GameStrings(
     val yourAnswer: String,
     val rightAnswer: String,
     val wrongAnswer: String,
-    /** The player answered right, and scored `{0}`. */
-    val verdictRight: String,
-    /** The player answered wrong, and scored `{0}`. */
-    val verdictWrong: String,
-    val verdictNone: String,
     /** The next question comes in `{0}` seconds. */
     val nextQuestionIn: String,
     /** The results come in `{0}` seconds. */
@@ -267,9 +262,6 @@ data class GameStrings(
             yourAnswer = transform(yourAnswer),
             rightAnswer = transform(rightAnswer),
             wrongAnswer = transform(wrongAnswer),
-            verdictRight = transform(verdictRight),
-            verdictWrong = transform(verdictWrong),
-            verdictNone = transform(verdictNone),
             nextQuestionIn = transform(nextQuestionIn),
             resultsIn = transform(resultsIn),
             gameOver = transform(gameOver),
@@ -388,9 +380,6 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         yourAnswer = "Твој одговор",
         rightAnswer = "Тачан одговор",
         wrongAnswer = "Погрешан одговор",
-        verdictRight = "Тачно · {0}",
-        verdictWrong = "Нетачно · {0}",
-        verdictNone = "Без одговора",
         nextQuestionIn = "Следеће питање за {0} с",
         resultsIn = "Резултати за {0} с",
         gameOver = "Крај игре · {0}",
@@ -522,9 +511,6 @@ internal val EnglishGameStrings: GameStrings =
         yourAnswer = "Your answer",
         rightAnswer = "The right answer",
         wrongAnswer = "A wrong answer",
-        verdictRight = "Right · {0}",
-        verdictWrong = "Wrong · {0}",
-        verdictNone = "No answer",
         nextQuestionIn = "Next question in {0} s",
         resultsIn = "Results in {0} s",
         gameOver = "Game over · {0}",

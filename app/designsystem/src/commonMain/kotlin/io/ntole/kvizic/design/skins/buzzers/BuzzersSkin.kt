@@ -14,7 +14,7 @@ internal val BuzzersSkin: Skin =
         id = "buzzers",
         name = "Buzzers",
         colors = BuzzersColors,
-        fonts = SkinFonts(display = Faces.FiraCompressed, body = Faces.FiraSans),
+        fonts = SkinFonts(display = Faces.Nunito, body = Faces.Nunito),
         type = BuzzersType,
         shapes = BuzzersShapes,
         depth = BuzzersDepth,

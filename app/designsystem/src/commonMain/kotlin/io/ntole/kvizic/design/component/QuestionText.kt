@@ -14,7 +14,8 @@ import io.ntole.kvizic.design.skin.KvizicTheme
  * is cut only past that, on a screen smaller than any the game is drawn for.
  *
  * On the reveal ([recap]) the question was read already and the answers are what is looked at, so it is
- * set at `questionMin` alone, over at most [ANSWERING_LINES].
+ * set as strong body text, smaller still down to the caption's size when long, over at most
+ * [ANSWERING_LINES].
  */
 @Composable
 fun QuestionText(
@@ -28,9 +29,10 @@ fun QuestionText(
     val style =
         when {
             reading -> type.questionReading
-            recap -> type.questionMin
+            recap -> type.bodyStrong
             else -> type.question
         }
+    val least = if (recap) type.caption.style.fontSize else type.questionMin.style.fontSize
     KvizicText(
         text = text,
         modifier = modifier,
@@ -39,7 +41,7 @@ fun QuestionText(
         maxLines = if (reading) READING_LINES else ANSWERING_LINES,
         autoSize =
             TextAutoSize.StepBased(
-                minFontSize = type.questionMin.style.fontSize,
+                minFontSize = least,
                 maxFontSize = style.style.fontSize,
             ),
     )

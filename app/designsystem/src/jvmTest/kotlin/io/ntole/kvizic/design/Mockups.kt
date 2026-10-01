@@ -116,22 +116,8 @@ internal fun HomeMock() {
         }
         Spacer(Modifier.height(space.xl))
         Wordmark("Квизић", Modifier.fillMaxWidth())
-        Spacer(Modifier.height(space.md))
-        KvizicText(
-            "Квиз уживо, са друштвом",
-            modifier = Modifier.fillMaxWidth(),
-            style = type.label,
-            color = colors.onPageMuted,
-            textAlign = TextAlign.Center,
-        )
         Spacer(Modifier.weight(1f))
-        StageButton(
-            "Брза игра",
-            onClick = {},
-            modifier = Modifier.fillMaxWidth(),
-            size = ButtonSize.HERO,
-            supportingText = "Прва слободна соба, за тренутак",
-        )
+        StageButton("Брза игра", onClick = {}, modifier = Modifier.fillMaxWidth(), size = ButtonSize.HERO)
         Spacer(Modifier.height(space.sm))
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -4,12 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import io.ntole.kvizic.design.resources.Res
 import io.ntole.kvizic.design.resources.fira_sans_compressed_bold
 import io.ntole.kvizic.design.resources.fira_sans_compressed_heavy
 import io.ntole.kvizic.design.resources.fira_sans_regular
 import io.ntole.kvizic.design.resources.fira_sans_semibold
+import io.ntole.kvizic.design.resources.nunito_variable
 import io.ntole.kvizic.design.resources.oswald_bold
 import io.ntole.kvizic.design.resources.oswald_semibold
 import io.ntole.kvizic.design.resources.sofia_sans_extra_condensed_black
@@ -39,17 +41,41 @@ class Face internal constructor(
     override fun toString(): String = "Face($id)"
 }
 
-/** One weight of a [Face], as the file it ships in. */
+/**
+ * One weight of a [Face], as the file it ships in: a file of its own, or, when [variable], one variable file
+ * drawn at this [weight] on its `wght` axis.
+ */
 @Immutable
 internal class FaceFile(
     val resource: FontResource,
     val weight: FontWeight,
     /** The file's name under `composeResources/font`, which the font tests read it by. */
     val fileName: String,
+    val variable: Boolean = false,
 )
 
 /** Every face the game bundles. */
 object Faces {
+    /**
+     * Nunito, the game's face since 2026-10-01, the owner's pick: rounded and friendly, set in Black where
+     * Fira Compressed stood and at its normal weights for reading. One variable file serves every weight;
+     * Android before 8.0 draws only its default, regular, instance. Wider than Fira Compressed, so a long
+     * answer is set smaller.
+     */
+    val Nunito: Face =
+        Face(
+            id = "nunito",
+            name = "Nunito",
+            files =
+                listOf(FontWeight.Black, FontWeight.ExtraBold, FontWeight.Bold, FontWeight.SemiBold, FontWeight.Normal)
+                    .map { weight ->
+                        FaceFile(Res.font.nunito_variable, weight, "nunito_variable.ttf", variable = true)
+                    },
+            sizeScale = NUNITO_SCALE,
+            hasSerbianForms = NUNITO_SERBIAN_FORMS,
+            figureHeight = NUNITO_FIGURES,
+        )
+
     /**
      * Fira Sans Compressed, which Google Fonts calls Fira Sans Extra Condensed: the default display
      * face, heavy and narrow, so a long Serbian answer still fits a tile. The foundry's 4.301, which
@@ -125,9 +151,9 @@ object Faces {
         )
 
     /** The display faces a skin may be compared in, the default first. */
-    val DISPLAY: List<Face> = listOf(FiraCompressed, Oswald, SofiaExtraCondensed)
+    val DISPLAY: List<Face> = listOf(Nunito, FiraCompressed, Oswald, SofiaExtraCondensed)
 
-    val ALL: List<Face> = listOf(FiraCompressed, FiraSans, Oswald, SofiaExtraCondensed)
+    val ALL: List<Face> = listOf(Nunito, FiraCompressed, FiraSans, Oswald, SofiaExtraCondensed)
 
     fun ofId(id: String): Face? = ALL.firstOrNull { it.id == id }
 }
@@ -135,11 +161,25 @@ object Faces {
 /** The face as a [FontFamily] of every weight it ships in, loaded from the bundled files. */
 @Composable
 internal fun Face.family(): FontFamily {
-    val fonts = files.map { Font(it.resource, it.weight) }
+    val fonts =
+        files.map {
+            if (it.variable) {
+                Font(
+                    it.resource,
+                    it.weight,
+                    variationSettings = FontVariation.Settings(FontVariation.weight(it.weight.weight)),
+                )
+            } else {
+                Font(it.resource, it.weight)
+            }
+        }
     return remember(fonts) { FontFamily(fonts) }
 }
 
 // Each face's figures, in em, as FontCoverageTest measures them from the files' outlines.
+private const val NUNITO_FIGURES = 0.713f
+private const val NUNITO_SCALE = 1f
+private const val NUNITO_SERBIAN_FORMS = false
 private const val FIRA_COMPRESSED_FIGURES = 0.68f
 private const val FIRA_SANS_FIGURES = 0.67f
 private const val OSWALD_FIGURES = 0.81f

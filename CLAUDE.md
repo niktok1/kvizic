@@ -132,13 +132,19 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - Skins swap colours, type, shapes, depth, motion, parts, backdrop and avatar palette; every test runs
   every skin (`Skins.ALL`). Fonts are bundled (OFL); each face declares its figures' height from its
   outlines (measured unhinted, alike on macOS and Linux).
+- **The face is Nunito** (the owner's pick, 2026-10-01), display and body, one variable file drawn at each
+  weight on its `wght` axis; Android before 8.0 draws its regular instance only. It has no Serbian forms:
+  б is drawn as in Russian. Fira stays for the notebook skin's body and the comparisons.
 - **Long text** (`LongTextFitTest`): the longest question and four longest answers fit whole on 375×667
   and 360×640 in every skin while answering and locked in. A question is at most 7 lines read alone and 4
   over its answers; four answers stand in a 2×2 grid unless a column sets them larger, measured in the room
   each tile leaves; all answers of a question share one size.
-- **The reveal** (`RevealFitTest`): with eight players, the longest question, answers and explanation it fits
-  the same phones; the question is set small there (a recap), and the standings list gives way when keeping
-  it would leave the answers no room (the player's points stay in the bar and the verdict).
+- **The reveal** is one standings board under the answers (the owner's, 2026-10-01): every player, scrolling
+  when there is no room, the player's line lit and kept in sight, ▲/▼ for places moved, the lines sliding
+  from their places before the question, and a line draining along its foot to the next question. The
+  question is recalled small, in two lines beside an explanation; the report flag stands in its corner. The
+  answers keep the least room that sets them whole and 45% of the rest; at the content style's limits the
+  player's line stays on the board (`RevealFitTest`), at the wire's it may give way.
 - **Picks peek from behind the card**: those who picked an answer stand behind its tile, their heads over
   its top edge; a crowd closes up to fit the tile (`crowdOverlap`); rows keep a gap for the heads.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
@@ -177,6 +183,5 @@ makes the draw tests write PNGs to look at.
 
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
-- The reveal's look with eight standings: built to fit (standings give way), not yet designed at the gate.
 - Play Games on a device, sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.

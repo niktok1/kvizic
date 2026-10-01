@@ -13,6 +13,7 @@ import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.Reveal
 import io.ntole.kvizic.core.domain.lobby.Standing
 import io.ntole.kvizic.design.component.Stage
+import io.ntole.kvizic.design.component.signed
 import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.everyNode
 import io.ntole.kvizic.language.Language
@@ -28,9 +29,9 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * The reveal at its fullest on the smallest phones, in every skin: eight players, the longest question,
- * four of the longest answers and the longest explanation the rules allow. Every one of those texts is
- * set whole, every answer stands on screen apart from the rest, and the player's verdict and the next
- * question's countdown are on screen.
+ * four of the longest answers and the longest explanation the rules allow. The explanation and every
+ * answer are set whole, every answer stands on screen apart from the rest, the question is recalled, and
+ * the player's own line, with their points for the question, is on the board.
  */
 class RevealFitTest {
     @Test
@@ -42,8 +43,23 @@ class RevealFitTest {
         assertEquals(KvizicApi.Limits.MAX_PLAYERS, EIGHT.size)
     }
 
+    /** At the wire's own limits the answers keep the room they need, and the board may give way. */
     @Test
-    fun `a full reveal fits a small phone whole`() {
+    fun `a full reveal at the wire's limits keeps its answers whole`() {
+        assertFits(ANSWERS, "wire", boardShown = false)
+    }
+
+    /** At the content style's limits, answers of 40, the player's own line stands on the board as well. */
+    @Test
+    fun `a full reveal at the content style's limits shows the player's line on the board too`() {
+        assertFits(HOUSE_ANSWERS, "house", boardShown = true)
+    }
+
+    private fun assertFits(
+        answers: List<String>,
+        name: String,
+        boardShown: Boolean,
+    ) {
         val failures = mutableListOf<String>()
         Skins.ALL.forEach { skin ->
             PHONES.forEach { (width, height) ->
@@ -52,13 +68,23 @@ class RevealFitTest {
                     ImageComposeScene(width = width, height = height, density = Density(1f)) {
                         GameTheme(Language.DEFAULT, skin) {
                             Stage(Modifier.fillMaxSize()) {
-                                RoomScreen(FULL, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions())
+                                RoomScreen(
+                                    full(answers),
+                                    TOPICS,
+                                    note = null,
+                                    bursts = emptyMap(),
+                                    actions = RoomActions(),
+                                )
                             }
                         }
                     }
                 try {
-                    write("reveal-full-${skin.id}-${width}x$height", scene.renderSettled())
-                    (listOf(QUESTION_TEXT, EXPLANATION) + ANSWERS).forEach { text ->
+                    write("reveal-$name-${skin.id}-${width}x$height", scene.renderSettled())
+                    // Beside its explanation the question is recalled in two lines: shown, not whole.
+                    if (scene.everyNode().none { node -> node.texts.any { it.equals(QUESTION_TEXT, true) } }) {
+                        failures += "$where: the question is not recalled"
+                    }
+                    (listOf(EXPLANATION) + answers).forEach { text ->
                         val node = scene.everyNode().firstOrNull { node -> node.texts.any { it.equals(text, true) } }
                         when {
                             node == null -> {
@@ -75,7 +101,7 @@ class RevealFitTest {
                             }
                         }
                     }
-                    val tiles = ANSWERS.mapNotNull { answer -> scene.everyNode().firstOrNull { answer in it.texts } }
+                    val tiles = answers.mapNotNull { answer -> scene.everyNode().firstOrNull { answer in it.texts } }
                     tiles.forEachIndexed { i, tile ->
                         tiles.drop(i + 1).forEach { other ->
                             if (tile.boundsInRoot.overlaps(other.boundsInRoot)) {
@@ -84,8 +110,10 @@ class RevealFitTest {
                             }
                         }
                     }
-                    val texts = scene.everyNode().filter { it.boundsInRoot.bottom <= height }.flatMap { it.texts }
-                    if (texts.none { "−" in it || "-" in it }) failures += "$where: no verdict on screen in $texts"
+                    if (boardShown) {
+                        val texts = scene.everyNode().filter { it.boundsInRoot.bottom <= height }.flatMap { it.texts }
+                        if (signed(-31) !in texts) failures += "$where: the player's points are not on screen in $texts"
+                    }
                 } finally {
                     scene.close()
                 }
@@ -113,6 +141,7 @@ class RevealFitTest {
     private companion object {
         /** An iPhone SE, and the smallest Android phone in wide use, in dp at one pixel each. */
         val PHONES = listOf(375 to 667, 360 to 640)
+        const val HOUSE_ANSWER_LENGTH = 40
 
         /** [words] repeated, cut to exactly [length] characters, never ending on a space. */
         fun textOf(
@@ -132,6 +161,10 @@ class RevealFitTest {
                 textOf("Сплит у Хрватској, са Диоклецијановом палатом у центру", 60),
                 textOf("Пирин у Словенији, са старим венецијанским трговима", 60),
             )
+
+        /** The content style's longest answers, 40 characters each. */
+        val HOUSE_ANSWERS = ANSWERS.map { textOf(it, HOUSE_ANSWER_LENGTH) }
+
         val EXPLANATION =
             textOf(
                 "Апотека Мале браће у Дубровнику ради без прекида од 1317. године и једна је од најстаријих у Европи",
@@ -146,7 +179,7 @@ class RevealFitTest {
                     member("jelen", "Јелен Јова", "deer", 7),
                 )
 
-        val FULL =
+        fun full(options: List<String>) =
             inLobby(
                 GamePhase.Revealing(
                     "game-1",
@@ -156,7 +189,7 @@ class RevealFitTest {
                         count = 10,
                         questionId = "q1",
                         text = QUESTION_TEXT,
-                        options = ANSWERS,
+                        options = options,
                         correct = 0,
                         results =
                             listOf(
