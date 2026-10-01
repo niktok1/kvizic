@@ -25,7 +25,7 @@ public object CloseCodes {
     /** The hello's ticket is unknown, expired or used already. Ask REST for a new one. */
     public const val TICKET_INVALID: Short = 4401
 
-    /** The host kicked this player; they may not come back while the lobby lasts. */
+    /** The host kicked this player, or the room voted them out; they may not come back while the lobby lasts. */
     public const val KICKED: Short = 4403
 
     /** The lobby is gone. */

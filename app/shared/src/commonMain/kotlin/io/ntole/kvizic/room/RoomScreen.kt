@@ -85,6 +85,8 @@ class RoomActions(
     val openSettings: () -> Unit = {},
     val chooseDifficulty: (LobbyDifficulty) -> Unit = {},
     val kick: (String) -> Unit = {},
+    /** A member's vote to put a player out, or, for none, their vote taken back. */
+    val voteKick: (String?) -> Unit = {},
     val transferHost: (String) -> Unit = {},
     val backToLobby: () -> Unit = {},
     val react: (String) -> Unit = {},
@@ -319,7 +321,9 @@ private fun Waiting(
                 )
             }
             Spacer(Modifier.height(space.sm))
-            Seats(lobby, state.you, bursts, onChoose = if (hosting) ({ chosen = it }) else null)
+            // The host chooses what to do with a member at any time; the rest may vote one out while the room waits.
+            val choosing = hosting || (lobby.kind != LobbyKind.SOLO && countdown == null)
+            Seats(lobby, state.you, bursts, onChoose = if (choosing) ({ chosen = it }) else null)
             Spacer(Modifier.height(space.sm))
             val status =
                 when {
@@ -426,19 +430,40 @@ private fun Waiting(
         }
     }
     val target = chosen?.let { lobby.member(it) }
-    if (target != null) {
-        MemberDialog(
-            target,
-            onDismiss = { chosen = null },
-            onKick = {
-                chosen = null
-                actions.kick(target.playerId)
-            },
-            onMakeHost = {
-                chosen = null
-                actions.transferHost(target.playerId)
-            },
-        )
+    when {
+        target == null -> {
+            Unit
+        }
+
+        hosting -> {
+            MemberDialog(
+                target,
+                onDismiss = { chosen = null },
+                onKick = {
+                    chosen = null
+                    actions.kick(target.playerId)
+                },
+                onMakeHost = {
+                    chosen = null
+                    actions.transferHost(target.playerId)
+                },
+            )
+        }
+
+        countdown == null -> {
+            VoteDialog(
+                target,
+                onDismiss = { chosen = null },
+                onVote = {
+                    chosen = null
+                    actions.voteKick(target.playerId)
+                },
+                onWithdraw = {
+                    chosen = null
+                    actions.voteKick(null)
+                },
+            )
+        }
     }
 }
 
@@ -509,8 +534,21 @@ private fun occupantOf(
             },
         host = host,
         away = !member.connected || member.onResults,
+        // A count is the same in every language, so it is no string of theirs.
+        votes = if (member.kickVotes > 0) "${member.kickVotes}/${member.kickVotesNeeded}" else null,
+        votesDescription = votesLine(member),
     )
 }
+
+/** How many vote [member] out, of how many it takes, in words; none while nobody does. */
+@Composable
+private fun votesLine(member: LobbyMember): String? =
+    if (member.kickVotes > 0) {
+        LocalStrings.current.game.kickVotes
+            .fill(member.kickVotes, member.kickVotesNeeded)
+    } else {
+        null
+    }
 
 /** The host's choice about another member: hand them the hosting, or remove them for good. */
 @Composable
@@ -521,7 +559,7 @@ private fun MemberDialog(
     onMakeHost: () -> Unit,
 ) {
     val strings = LocalStrings.current
-    StageDialog(onDismiss = onDismiss, title = shown(member.name)) {
+    StageDialog(onDismiss = onDismiss, title = shown(member.name), text = votesLine(member)) {
         StageButton(
             strings.cancel,
             onClick = tapped("room.member_cancel", onClick = onDismiss),
@@ -540,6 +578,44 @@ private fun MemberDialog(
             kind = ButtonKind.DARK,
             size = ButtonSize.SMALL,
         )
+    }
+}
+
+/**
+ * A member's choice about another: vote them out of the room, which takes more than half of it, or take the
+ * vote back; how many vote them out already, and how many it takes, when anyone does.
+ */
+@Composable
+private fun VoteDialog(
+    member: LobbyMember,
+    onDismiss: () -> Unit,
+    onVote: () -> Unit,
+    onWithdraw: () -> Unit,
+) {
+    val strings = LocalStrings.current
+    StageDialog(onDismiss = onDismiss, title = shown(member.name), text = votesLine(member)) {
+        StageButton(
+            strings.cancel,
+            onClick = tapped("room.vote_cancel", onClick = onDismiss),
+            kind = ButtonKind.QUIET,
+            size = ButtonSize.SMALL,
+        )
+        if (member.kickVotedByYou) {
+            StageButton(
+                strings.game.withdrawVote,
+                onClick = tapped("room.withdraw_vote", onClick = onWithdraw),
+                kind = ButtonKind.SECONDARY,
+                size = ButtonSize.SMALL,
+            )
+        } else {
+            StageButton(
+                strings.game.voteKick,
+                onClick = tapped("room.vote_kick", onClick = onVote),
+                kind = ButtonKind.DARK,
+                size = ButtonSize.SMALL,
+                icon = KvizicIcons.Leave,
+            )
+        }
     }
 }
 

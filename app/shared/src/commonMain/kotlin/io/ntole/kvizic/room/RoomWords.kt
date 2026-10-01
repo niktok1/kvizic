@@ -27,6 +27,8 @@ internal fun GameStrings.exitText(exit: LobbyExit): String? =
     when (exit) {
         LobbyExit.LEFT, LobbyExit.UPGRADE_REQUIRED -> null
         LobbyExit.KICKED -> exitKicked
+        LobbyExit.VOTED_OUT -> exitVotedOut
+        LobbyExit.NOT_BACK -> exitNotBack
         LobbyExit.LOBBY_CLOSED -> exitClosed
         LobbyExit.LOBBY_GONE -> exitGone
         LobbyExit.REPLACED -> exitReplaced
@@ -59,6 +61,7 @@ internal fun GameStrings.noteText(note: RoomNote): String =
         RoomNote.SERVER_RESTARTING -> exitRestarting
         RoomNote.REPORTED -> reported
         RoomNote.REPORT_FAILED -> refused
+        RoomNote.VOTE_TOO_SOON -> voteTooSoon
     }
 
 /** A reason to report a question, as the report's dialog says it. */

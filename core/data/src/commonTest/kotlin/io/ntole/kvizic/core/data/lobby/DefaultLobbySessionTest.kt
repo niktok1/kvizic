@@ -273,6 +273,43 @@ class DefaultLobbySessionTest {
         }
 
     @Test
+    fun `a vote out and a game started without the player each end the stay and say why`() =
+        runTest {
+            val ending =
+                listOf(
+                    Triple(CloseCodes.KICKED, CloseReason.VOTED_OUT, LobbyExit.VOTED_OUT),
+                    Triple(CloseCodes.KICKED, CloseReason.KICKED, LobbyExit.KICKED),
+                    Triple(CloseCodes.NORMAL, CloseReason.NOT_BACK, LobbyExit.NOT_BACK),
+                )
+            ending.forEach { (code, reason, exit) ->
+                val harness = Harness(this)
+                harness.inLobby().closeWith(code, reason)
+                harness.settle()
+                assertEquals(LobbySessionState.Ended(exit, CODE), harness.state(), "close $code for $reason")
+                harness.wait(1.minutes)
+                assertEquals(1, harness.transport.opened.size, "no reconnect after $reason")
+            }
+        }
+
+    @Test
+    fun `a vote goes with an id and one cast too soon is refused as such`() =
+        runTest {
+            val harness = Harness(this)
+            val socket = harness.inLobby()
+            harness.lobby.voteKick("guest2")
+            harness.lobby.voteKick(null)
+            harness.settle()
+            val (cast, takenBack) = socket.sentOf<ClientMessage.VoteKick>()
+            assertEquals("guest2" to null, cast.player to takenBack.player)
+            socket.push(ServerMessage.Rejected(cast.id, RejectCode.TOO_SOON))
+            harness.settle()
+            assertEquals(
+                LobbyEvent.Refused(LobbyCommandKind.VOTE_KICK, RefusalReason.TOO_SOON),
+                harness.events.last(),
+            )
+        }
+
+    @Test
     fun `an old build is told to update`() =
         runTest {
             val harness = Harness(this)

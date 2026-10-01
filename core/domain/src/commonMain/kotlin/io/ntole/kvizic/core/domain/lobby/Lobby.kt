@@ -34,6 +34,11 @@ public data class LobbyMember(
     val onResults: Boolean,
     /** A player of the game under way, where there is one. */
     val playing: Boolean,
+    /** How many in the room vote them out now, and how many it takes: both 0 while nobody does. */
+    val kickVotes: Int = 0,
+    val kickVotesNeeded: Int = 0,
+    /** Whether this device's player is one who votes them out. */
+    val kickVotedByYou: Boolean = false,
 )
 
 /** A lobby as it stands. */

@@ -63,6 +63,11 @@ data class GameTimings(
     /** The fewest time between two reactions of one member, after a burst of [reactionBurst]. */
     val reactionEvery: Duration = 1_500.milliseconds,
     val reactionBurst: Int = 3,
+    /**
+     * The fewest time between two votes one member casts to put someone out, so nobody spams them; taking
+     * a vote back is never held up.
+     */
+    val kickVoteEvery: Duration = 30.seconds,
 ) {
     /** How long [text] shows before its answers. */
     fun readTime(text: String): Duration = (readBase + readPerCharacter * text.length).coerceAtMost(readMax)

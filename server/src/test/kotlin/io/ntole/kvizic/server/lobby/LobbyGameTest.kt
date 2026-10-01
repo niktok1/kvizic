@@ -1,6 +1,9 @@
 package io.ntole.kvizic.server.lobby
 
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.protocol.CloseCodes
+import io.ntole.kvizic.core.protocol.CloseReason
+import io.ntole.kvizic.core.protocol.LeaveReason
 import io.ntole.kvizic.core.protocol.PhaseView
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ServerMessage
@@ -477,7 +480,7 @@ class LobbyGameTest {
         }
 
     @Test
-    fun `players go back to the lobby by hand, and a start waits a little for those still on the results`() =
+    fun `players go back to the lobby by hand, a start waits a little for them, and whoever is not back leaves`() =
         runTest {
             val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))
             val ana = lobby.player("ana").join()
@@ -506,13 +509,13 @@ class LobbyGameTest {
                 ana.last<ServerMessage.GameStarted>().players,
                 "ceca stayed on the results",
             )
-            assertTrue(
-                ceca
-                    .lastSnapshotAfterResync(lobby)
-                    .lobby.members
-                    .first { it.player == "ceca" }
-                    .onResults,
-            )
+            // And so left the room as the game started, her seat with her: she may come back like anyone.
+            val left = ana.last<ServerMessage.MemberLeft>()
+            assertEquals("ceca" to LeaveReason.NOT_BACK, left.player to left.reason)
+            assertEquals(ServerMessage.Closing(CloseReason.NOT_BACK), ceca.history.last())
+            assertEquals(CloseCodes.NORMAL, ceca.closedCode())
+            assertEquals(2, lobby.summary().seatsTaken)
+            assertEquals(ReserveResult.Reserved, ceca.reserve())
             lobby.assertInvariants()
         }
 

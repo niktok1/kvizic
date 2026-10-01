@@ -29,6 +29,13 @@ class GoldenFramesTest {
             """{"t":"presence","online":12,"searching":3}""",
             """{"t":"notice","kind":"SERVER_RESTARTING","remainingMs":60000}""",
             """{"t":"closing","reason":"KICKED"}""",
+            // Since 2026-10-01: votes to put a member out, and a member gone for not coming back.
+            """{"t":"member","v":11,"member":{"player":"p3","name":"Нина","avatar":"owl","seat":2,"connected":true,"onResults":false,"playing":false,"kickVotes":2,"kickVotesNeeded":3,"kickVoted":true}}""",
+            """{"t":"left","v":12,"player":"p3","reason":"VOTED_OUT"}""",
+            """{"t":"left","v":13,"player":"p4","reason":"NOT_BACK"}""",
+            """{"t":"rejected","id":7,"code":"TOO_SOON"}""",
+            """{"t":"closing","reason":"VOTED_OUT"}""",
+            """{"t":"closing","reason":"NOT_BACK"}""",
         )
 
     private val v1ClientFrames =
@@ -43,6 +50,9 @@ class GoldenFramesTest {
             """{"t":"host","id":5,"player":"p2"}""",
             """{"t":"back","id":6}""",
             """{"t":"leave"}""",
+            // Since 2026-10-01: a vote to put a member out, and one taken back.
+            """{"t":"vote_kick","id":7,"player":"p3"}""",
+            """{"t":"vote_kick","id":8}""",
         )
 
     @Test
@@ -59,6 +69,18 @@ class GoldenFramesTest {
             val decoded = ProtocolJson.decodeFromString(ClientMessage.serializer(), frame)
             assert(decoded != ClientMessage.Unknown) { "$frame no longer decodes" }
         }
+    }
+
+    @Test
+    fun theShippedVoteFramesMeanWhatTheyMeant() {
+        val frame = v1ServerFrames.first { "kickVotes" in it }
+        val member = ProtocolJson.decodeFromString(ServerMessage.serializer(), frame)
+        assertIs<ServerMessage.MemberUpdated>(member)
+        assertEquals(Triple(2, 3, true), member.member.let { Triple(it.kickVotes, it.kickVotesNeeded, it.kickVoted) })
+        assertEquals(
+            ClientMessage.VoteKick(id = 8, player = null),
+            ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames.last()),
+        )
     }
 
     @Test

@@ -82,6 +82,17 @@ public sealed interface ClientMessage {
         public val player: String,
     ) : ClientMessage
 
+    /**
+     * A member's vote to put [player] out of the lobby while it waits, or, with none, their vote taken
+     * back. One vote at a time: a vote for another member moves it.
+     */
+    @Serializable
+    @SerialName("vote_kick")
+    public data class VoteKick(
+        public val id: Int,
+        public val player: String? = null,
+    ) : ClientMessage
+
     /** Leaves the results screen for the lobby, by hand: nothing moves a player back by itself. */
     @Serializable
     @SerialName("back")

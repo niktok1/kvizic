@@ -83,6 +83,53 @@ class RoomScreenDrawTest {
     }
 
     @Test
+    fun `a member votes a player out from their seat, sees the count there, and takes the vote back`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            val votes = mutableListOf<String?>()
+            draw(
+                skin,
+                "lobby-vote",
+                inLobby(GamePhase.Waiting(null)),
+                RoomActions(voteKick = { votes += it }),
+            ) { scene ->
+                tapSeat(scene, "Бојан")
+                assertFalse(words.withdrawVote in scene.texts(), "${skin.id}: no vote of his to take back")
+                scene.tap(words.voteKick)
+            }
+            val voted =
+                MEMBERS.map {
+                    if (it.playerId ==
+                        "bojan"
+                    ) {
+                        it.copy(kickVotes = 2, kickVotesNeeded = 3, kickVotedByYou = true)
+                    } else {
+                        it
+                    }
+                }
+            val state = inLobby(GamePhase.Waiting(null), lobby = lobby(members = voted))
+            draw(skin, "lobby-voted", state, RoomActions(voteKick = { votes += it })) { scene ->
+                val said = words.kickVotes.fill(2, 3)
+                assertTrue(said in scene.descriptions(), "${skin.id}: the seat does not say the votes")
+                tapSeat(scene, "Бојан")
+                assertTrue(said in scene.everyText(), "${skin.id}: the dialog does not say the votes")
+                scene.tap(words.withdrawVote)
+            }
+            assertEquals(listOf("bojan", null), votes, skin.id)
+        }
+    }
+
+    @Test
+    fun `nobody votes during the countdown, but the host still chooses`() {
+        val words = stringsOf(Language.DEFAULT).game
+        draw(Skins.Default, "countdown-member", inLobby(GamePhase.Countdown(deadline(3.seconds()), null))) { scene ->
+            val seat = scene.nodes().first { "Бојан" in it.texts }
+            assertFalse(androidx.compose.ui.semantics.SemanticsActions.OnClick in seat.config, "a seat to vote from")
+            assertFalse(words.voteKick in scene.texts())
+        }
+    }
+
+    @Test
     fun `the countdown takes the start's place`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game
@@ -259,6 +306,16 @@ class RoomScreenDrawTest {
     }
 
     private fun eachSkin(check: (Skin) -> Unit) = Skins.ALL.forEach(check)
+
+    /** Taps the seat of the member named [name], as a finger would. */
+    private fun tapSeat(
+        scene: ImageComposeScene,
+        name: String,
+    ) {
+        val seat = scene.nodes().first { name in it.texts }
+        seat.config[androidx.compose.ui.semantics.SemanticsActions.OnClick].action?.invoke()
+        scene.renderSettled()
+    }
 
     private fun draw(
         skin: Skin,

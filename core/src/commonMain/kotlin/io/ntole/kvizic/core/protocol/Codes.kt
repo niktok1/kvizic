@@ -41,6 +41,9 @@ public enum class RejectCode {
     /** A start while the server is restarting. */
     DRAINING,
 
+    /** A vote to put a member out, again before the voter's wait between two votes is over. */
+    TOO_SOON,
+
     UNKNOWN,
 }
 
@@ -57,6 +60,12 @@ public enum class LeaveReason {
 
     /** Logged out, or deleted their account. */
     SESSION_ENDED,
+
+    /** Most of the others in the room voted them out. */
+    VOTED_OUT,
+
+    /** Still on the last game's results when the next one started: they never came back to the room. */
+    NOT_BACK,
     UNKNOWN,
 }
 
@@ -95,5 +104,7 @@ public enum class CloseReason {
     REPLACED,
     SESSION_ENDED,
     SERVER_RESTARTING,
+    VOTED_OUT,
+    NOT_BACK,
     UNKNOWN,
 }

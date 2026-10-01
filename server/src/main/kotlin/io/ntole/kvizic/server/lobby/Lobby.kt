@@ -157,6 +157,7 @@ class Lobby(
                 for (command in inbox) {
                     try {
                         handle(command)
+                        settleKickVotes()
                         dropSlowMembers()
                     } catch (cancelled: CancellationException) {
                         throw cancelled
@@ -306,9 +307,9 @@ class Lobby(
         connection.send(ServerMessage.Welcome(Protocol.VERSION, member.playerId, timings.pingEvery.inWholeMilliseconds))
         if (!member.announced) {
             member.announced = true
-            changed(except = member) { v, _ -> ServerMessage.MemberJoined(v, viewOf(member)) }
+            changed(except = member) { v, reader -> ServerMessage.MemberJoined(v, viewOf(member, reader)) }
         } else if (previous == null) {
-            changed(except = member) { v, _ -> ServerMessage.MemberUpdated(v, viewOf(member)) }
+            changed(except = member) { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
         }
         send(member, snapshotFor(member))
         lastPresence?.let { send(member, it) }
@@ -325,7 +326,7 @@ class Lobby(
         member.connection = null
         member.goneSince = now()
         member.holdUntil = now() + timings.lobbyGrace
-        if (member.announced) changed { v, _ -> ServerMessage.MemberUpdated(v, viewOf(member)) }
+        if (member.announced) changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
         revealIfEveryoneAnswered()
     }
 
@@ -343,6 +344,7 @@ class Lobby(
             is ClientMessage.UpdateSettings -> updateSettings(member, message.id, message.settings)
             is ClientMessage.Start -> startGame(member, message.id)
             is ClientMessage.Kick -> kick(member, message.id, message.player)
+            is ClientMessage.VoteKick -> voteKick(member, message.id, message.player)
             is ClientMessage.TransferHost -> transferHost(member, message.id, message.player)
             is ClientMessage.BackToLobby -> backToLobby(member, message.id)
             ClientMessage.Leave -> remove(member, LeaveReason.LEFT)
@@ -405,6 +407,35 @@ class Lobby(
         remove(kicked, LeaveReason.KICKED)
     }
 
+    /**
+     * [voter]'s vote to put [target] out of the room, or, for none, their vote taken back. Cast only while
+     * the room waits, by a member in it rather than on the last game's results; one vote at a time, and a
+     * new one at most once per [GameTimings.kickVoteEvery], so nobody spams them, though taking one back is
+     * never held up. [settleKickVotes], after the command, puts out whoever the votes reach.
+     */
+    private fun voteKick(
+        voter: Member,
+        id: Int,
+        target: String?,
+    ) {
+        if (kind == LobbyKind.SOLO || phase !is Phase.Waiting || voter.onResults) {
+            return reject(voter, id, RejectCode.WRONG_PHASE)
+        }
+        if (target == null) {
+            voter.kickVote = null
+            return ack(voter, id)
+        }
+        val against =
+            members[target]?.takeIf { it.announced && it.playerId != voter.playerId }
+                ?: return reject(voter, id, RejectCode.NO_SUCH_PLAYER)
+        if (voter.kickVote == against.playerId) return ack(voter, id)
+        val at = now()
+        if (voter.nextVoteAt?.let { at < it } == true) return reject(voter, id, RejectCode.TOO_SOON)
+        voter.kickVote = against.playerId
+        voter.nextVoteAt = at + timings.kickVoteEvery
+        ack(voter, id)
+    }
+
     private fun transferHost(
         member: Member,
         id: Int,
@@ -425,7 +456,7 @@ class Lobby(
     ) {
         if (member.onResults) {
             member.onResults = false
-            changed { v, _ -> ServerMessage.MemberUpdated(v, viewOf(member)) }
+            changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
         }
         ack(member, id)
     }
@@ -521,6 +552,8 @@ class Lobby(
     // --- The game ---
 
     private fun beginCountdown() {
+        // A game wipes the slate: the votes to put someone out are for a room that waits.
+        members.values.forEach { it.kickVote = null }
         val stragglers = members.values.any { it.announced && it.connection != null && it.onResults }
         val length = if (stragglers) timings.countdownWithStragglers else timings.countdown
         val loadEpoch = ++loads
@@ -616,6 +649,13 @@ class Lobby(
     }
 
     private fun beginGame(picked: PickResult) {
+        // Whoever still looks at the last game's results as the next one starts never came back: they leave
+        // the room, so nobody away from it holds a seat, and may join again like anyone.
+        members.values
+            .filter { it.announced && it.onResults }
+            .toList()
+            .forEach { remove(it, LeaveReason.NOT_BACK) }
+        if (closing) return
         val at = now()
         val players =
             members.values
@@ -946,7 +986,13 @@ class Lobby(
         reason: LeaveReason,
     ) {
         if (members.remove(member.playerId) == null) return
-        if (reason == LeaveReason.KICKED) banned += member.playerId
+        if (reason == LeaveReason.KICKED || reason == LeaveReason.VOTED_OUT) banned += member.playerId
+        // Votes against them have nobody left to count for; a vote that put them out was no spam, so its
+        // voters may vote again at once.
+        members.values.filter { it.kickVote == member.playerId }.forEach { voter ->
+            voter.kickVote = null
+            if (reason == LeaveReason.VOTED_OUT) voter.nextVoteAt = null
+        }
         member.connection?.let { connection ->
             connection.send(ServerMessage.Closing(closeReasonFor(reason)))
             connection.close(closeCodeFor(reason))
@@ -988,7 +1034,7 @@ class Lobby(
         if (member.name == name && member.avatar == avatar) return
         member.name = name
         member.avatar = avatar
-        if (member.announced) changed { v, _ -> ServerMessage.MemberUpdated(v, viewOf(member)) }
+        if (member.announced) changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
     }
 
     private fun close(
@@ -1038,6 +1084,41 @@ class Lobby(
         }
         log.warn("lobby $code abandoned")
         runCatching { env.events.closed(this) }
+    }
+
+    // --- Votes to put a member out ---
+
+    /** Who may vote [target] out now: every member in the room, connected and back from the results, but them. */
+    private fun votersAgainst(target: Member): List<Member> =
+        members.values.filter { it.announced && it.connection != null && !it.onResults && it !== target }
+
+    /** The votes against [target] that count now: none but while the room waits. */
+    private fun tallyOf(target: Member): KickTally {
+        if (phase !is Phase.Waiting) return KickTally.NONE
+        val voters = votersAgainst(target)
+        val votes = voters.count { it.kickVote == target.playerId }
+        return if (votes == 0) KickTally.NONE else KickTally(votes, kickVotesNeeded(voters.size))
+    }
+
+    /**
+     * Puts out whoever the room has voted out, then tells everyone each tally that moved. Run after every
+     * command, since more than a vote can tip one: a member who could vote leaving, dropping or coming back
+     * from the results changes how many it takes, and whose votes count.
+     */
+    private fun settleKickVotes() {
+        if (closing) return
+        while (true) {
+            val out = members.values.firstOrNull { it.announced && tallyOf(it).reached } ?: break
+            remove(out, LeaveReason.VOTED_OUT)
+            if (closing) return
+        }
+        members.values.filter { it.announced }.forEach { member ->
+            val tally = tallyOf(member)
+            if (tally != member.toldTally) {
+                member.toldTally = tally
+                changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
+            }
+        }
     }
 
     // --- Sending ---
@@ -1090,19 +1171,23 @@ class Lobby(
     // --- Views ---
 
     private fun snapshotFor(member: Member): ServerMessage.Snapshot =
-        ServerMessage.Snapshot(version, member.playerId, lobbyView(), phaseViewFor(member))
+        ServerMessage.Snapshot(version, member.playerId, lobbyView(member), phaseViewFor(member))
 
-    private fun lobbyView(): LobbyView =
+    private fun lobbyView(reader: Member): LobbyView =
         LobbyView(
             id = id,
             code = code,
             kind = kind,
             settings = settings,
             host = host.orEmpty(),
-            members = members.values.filter { it.announced }.map(::viewOf),
+            members = members.values.filter { it.announced }.map { viewOf(it, reader) },
         )
 
-    private fun viewOf(member: Member): MemberView {
+    /** [member] as [reader] sees them: whether the reader is one who votes them out is theirs alone to know. */
+    private fun viewOf(
+        member: Member,
+        reader: Member,
+    ): MemberView {
         val game = (phase as? Phase.Playing)?.game
         return MemberView(
             player = member.playerId,
@@ -1112,6 +1197,9 @@ class Lobby(
             connected = member.connection != null,
             onResults = member.onResults,
             playing = game != null && member.playerId in game.players && member.playerId !in game.left,
+            kickVotes = member.toldTally.votes,
+            kickVotesNeeded = member.toldTally.needed,
+            kickVoted = reader.kickVote == member.playerId,
         )
     }
 
@@ -1252,6 +1340,8 @@ class Lobby(
     private fun closeReasonFor(reason: LeaveReason): CloseReason =
         when (reason) {
             LeaveReason.KICKED -> CloseReason.KICKED
+            LeaveReason.VOTED_OUT -> CloseReason.VOTED_OUT
+            LeaveReason.NOT_BACK -> CloseReason.NOT_BACK
             LeaveReason.SESSION_ENDED -> CloseReason.SESSION_ENDED
             LeaveReason.JOINED_ANOTHER, LeaveReason.LEFT -> CloseReason.LEFT
             LeaveReason.TIMED_OUT, LeaveReason.UNKNOWN -> CloseReason.LOBBY_CLOSED
@@ -1259,7 +1349,7 @@ class Lobby(
 
     private fun closeCodeFor(reason: LeaveReason): Short =
         when (reason) {
-            LeaveReason.KICKED -> CloseCodes.KICKED
+            LeaveReason.KICKED, LeaveReason.VOTED_OUT -> CloseCodes.KICKED
             LeaveReason.SESSION_ENDED -> CloseCodes.SESSION_ENDED
             else -> CloseCodes.NORMAL
         }
@@ -1282,6 +1372,15 @@ class Lobby(
         /** False while only a seat is held for them: nobody else sees them yet. */
         var announced = false
         var onResults = false
+
+        /** The member they vote out of the room, while it waits: one at a time. */
+        var kickVote: String? = null
+
+        /** Until when a vote of theirs is refused: one cast per [GameTimings.kickVoteEvery]. */
+        var nextVoteAt: ComparableTimeMark? = null
+
+        /** The votes against them as the room was last told, so only a change is sent. */
+        var toldTally: KickTally = KickTally.NONE
 
         /** While they have no socket: when their seat goes. */
         var holdUntil: ComparableTimeMark? = null

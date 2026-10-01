@@ -55,7 +55,16 @@ sealed interface Entry {
 }
 
 /** A line the room shows for a moment: a notice of the server's, or a command it refused. */
-enum class RoomNote { ONLY_HOST, REFUSED, TOPICS_TOPPED_UP, GAME_SHORTENED, SERVER_RESTARTING, REPORTED, REPORT_FAILED }
+enum class RoomNote {
+    ONLY_HOST,
+    REFUSED,
+    TOPICS_TOPPED_UP,
+    GAME_SHORTENED,
+    SERVER_RESTARTING,
+    REPORTED,
+    REPORT_FAILED,
+    VOTE_TOO_SOON,
+}
 
 /**
  * A reaction one member sent, a key that tells it from the one before, so the same reaction bursts again,
@@ -163,6 +172,9 @@ class RoomViewModel(
 
     fun kick(playerId: String) = session.kick(playerId)
 
+    /** Votes [playerId] out of the room, or, for none, takes the vote back. */
+    fun voteKick(playerId: String?) = session.voteKick(playerId)
+
     fun transferHost(playerId: String) = session.transferHost(playerId)
 
     fun backToLobby() = session.backToLobby()
@@ -238,12 +250,10 @@ class RoomViewModel(
 
             is LobbyEvent.Refused -> {
                 show(
-                    if (event.reason ==
-                        RefusalReason.NOT_HOST
-                    ) {
-                        RoomNote.ONLY_HOST
-                    } else {
-                        RoomNote.REFUSED
+                    when (event.reason) {
+                        RefusalReason.NOT_HOST -> RoomNote.ONLY_HOST
+                        RefusalReason.TOO_SOON -> RoomNote.VOTE_TOO_SOON
+                        else -> RoomNote.REFUSED
                     },
                 )
             }

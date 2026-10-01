@@ -45,7 +45,7 @@ class LobbyFuzzTest {
             repeat(STEPS) {
                 if (lobby.closed) return@repeat
                 val player = others.random(random)
-                when (random.nextInt(16)) {
+                when (random.nextInt(17)) {
                     0 -> {
                         if (player.connection ==
                             null
@@ -108,6 +108,12 @@ class LobbyFuzzTest {
 
                     13 -> {
                         lobby.wait(random.nextLong(5_000, 30_000).milliseconds)
+                    }
+
+                    14 -> {
+                        // A vote against another, never the watcher, who must see everything; or one taken back.
+                        val against = others.random(random).takeIf { random.nextInt(4) != 0 }
+                        if (player.connection != null) player.voteKick(against)
                     }
 
                     else -> {

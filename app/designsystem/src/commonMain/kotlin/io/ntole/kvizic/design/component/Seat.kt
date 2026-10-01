@@ -2,6 +2,7 @@ package io.ntole.kvizic.design.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,9 +13,11 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 
 /** Who sits in a lobby's seat, as the seat shows them. */
@@ -29,11 +32,18 @@ data class SeatOccupant(
     val host: Boolean = false,
     /** Not in the room now: their connection dropped, or they still look at the last game's results. */
     val away: Boolean = false,
+    /**
+     * The votes to put them out of the room, as the seat shows them in its badge's place ("2/3"), and in
+     * words for a screen reader: none while nobody votes them out.
+     */
+    val votes: String? = null,
+    val votesDescription: String? = null,
 )
 
 /**
  * A lobby's seat: its [occupant]'s avatar, name and [SeatOccupant.badge], greyed while they are away, or,
- * empty, [emptyLabel] on an outlined well. [onClick] makes it a button, a host's way to a member;
+ * empty, [emptyLabel] on an outlined well. Votes to put the occupant out show in the badge's place, a chip in
+ * the loss tone. [onClick] makes it a button, a host's way to a member;
  * [contentDescription] says the seat to a screen reader.
  */
 @Composable
@@ -76,8 +86,19 @@ fun Seat(
                 )
                 Spacer(Modifier.height(space.xs))
                 KvizicText(occupant.name, style = type.caption, maxLines = 1, textAlign = TextAlign.Center)
-                occupant.badge?.let { badge ->
-                    KvizicText(badge, style = type.caption, color = colors.onPageAccent, maxLines = 1)
+                val votes = occupant.votes
+                if (votes != null) {
+                    Box(
+                        Modifier.clearAndSetSemantics {
+                            occupant.votesDescription?.let { this.contentDescription = it }
+                        },
+                    ) {
+                        Chip(votes, icon = KvizicIcons.Leave, tone = ChipTone.LOSS)
+                    }
+                } else {
+                    occupant.badge?.let { badge ->
+                        KvizicText(badge, style = type.caption, color = colors.onPageAccent, maxLines = 1)
+                    }
                 }
             }
         }

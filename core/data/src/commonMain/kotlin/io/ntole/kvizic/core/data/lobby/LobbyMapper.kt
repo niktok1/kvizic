@@ -112,6 +112,9 @@ internal fun MemberView.toDomain(): LobbyMember =
         connected = connected,
         onResults = onResults,
         playing = playing,
+        kickVotes = kickVotes,
+        kickVotesNeeded = kickVotesNeeded,
+        kickVotedByYou = kickVoted,
     )
 
 internal fun LobbyView.toDomain(): Lobby {
@@ -242,6 +245,7 @@ internal fun RejectCode.toDomain(): RefusalReason =
         RejectCode.NOT_PLAYING -> RefusalReason.NOT_PLAYING
         RejectCode.RATE_LIMITED -> RefusalReason.RATE_LIMITED
         RejectCode.DRAINING -> RefusalReason.SERVER_DRAINING
+        RejectCode.TOO_SOON -> RefusalReason.TOO_SOON
     }
 
 /**
@@ -254,7 +258,7 @@ internal fun exitFor(
 ): LobbyExit? =
     when (code) {
         CloseCodes.KICKED -> {
-            LobbyExit.KICKED
+            if (said == CloseReason.VOTED_OUT) LobbyExit.VOTED_OUT else LobbyExit.KICKED
         }
 
         CloseCodes.LOBBY_GONE -> {
@@ -280,6 +284,10 @@ internal fun exitFor(
         CloseCodes.NORMAL -> {
             when (said) {
                 CloseReason.KICKED -> LobbyExit.KICKED
+
+                CloseReason.VOTED_OUT -> LobbyExit.VOTED_OUT
+
+                CloseReason.NOT_BACK -> LobbyExit.NOT_BACK
 
                 CloseReason.LEFT -> LobbyExit.LEFT
 

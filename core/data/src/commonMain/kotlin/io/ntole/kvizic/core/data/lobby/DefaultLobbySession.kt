@@ -184,6 +184,11 @@ public class DefaultLobbySession(
 
     override fun kick(playerId: String): Unit = command(LobbyCommandKind.KICK) { ClientMessage.Kick(it, playerId) }
 
+    override fun voteKick(playerId: String?): Unit =
+        command(LobbyCommandKind.VOTE_KICK) {
+            ClientMessage.VoteKick(it, playerId)
+        }
+
     override fun transferHost(playerId: String): Unit =
         command(LobbyCommandKind.TRANSFER_HOST) {
             ClientMessage.TransferHost(it, playerId)

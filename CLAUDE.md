@@ -74,8 +74,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - One client address holds at most `MAX_SOCKETS_PER_ADDRESS` sockets (200): a mobile carrier's CGNAT puts
   many phones behind one address, and guest minting's per-address budget already bounds an abuser.
   Every state message carries `v`; a connect gets a snapshot; a gap resyncs. Times on the wire are relative.
-- Close codes are a contract: 4400 protocol, 4401 ticket, 4403 kicked, 4404 gone, 4408 silent, 4409
-  replaced, 4410 session ended, 4426 update, 4429 slow, 4503 restarting.
+- Close codes are a contract: 4400 protocol, 4401 ticket, 4403 kicked (by the host, or voted out, which the
+  `closing` message tells apart), 4404 gone, 4408 silent, 4409 replaced, 4410 session ended, 4426 update,
+  4429 slow, 4503 restarting.
 - A disconnect is not a leave: grace 2 min in the lobby, the rest of the game in a game. A player dropped
   less than `dropGrace` ago (3 s) is still waited for before an early reveal.
 - Deploys drain: Render waits `maxShutdownDelaySeconds` (300, prod) and the server drains lobbies for
@@ -87,6 +88,19 @@ Play Games Services v2. **No Material**: the design system draws everything.
 
 - Flow: lobby → countdown 5 s (7 s when someone is still on results) → **read** → **answer** → reveal 5 s
   (7 with an explanation) → … → results → back to the lobby by hand.
+- **Not back, not in** (the owner, 2026-10-01): whoever is still on the last game's results when the next
+  game's first question comes leaves the room (`NOT_BACK`, a normal close; not banned, they may join again),
+  so nobody away holds a seat: an AFK player is out after at most one game. The countdown's „Нова игра почиње
+  — уђи“ is their last call.
+- **Host and vote-kick** (the owner, 2026-10-01; no ready state, no vote to start): the host starts, kicks and
+  hands over as before, and a public room's idle host still hands over after 3 min. The rest may **vote a
+  member out**, the host included, from the member's seat, while the room waits (never mid-game or in the
+  countdown). It takes more than half of the other members in the room (connected and back from the
+  results), and at least two (`kickVotesNeeded`), so of two players neither can; the tally moves with who is
+  in. Voted out is a kick: 4403, banned for the room's life, hosting passing on as when a host leaves. No
+  spam: one vote each at a time, a new one at most every 30 s (`kickVoteEvery`; `TOO_SOON`), taking one back
+  never held up, a vote that worked freeing its voters at once; votes are anonymous, the seat showing only the
+  count („2/3“) to everyone, the one voted on too; a game's countdown wipes them. `LobbyVoteKickTest`.
 - **Read time**: 1.5 s + 45 ms a character, at most 7 s (the longest question reads in 6.9 s).
 - Answers: 2 to 4 per question, never hard-coded to 4. One locked answer each; a player sees the others'
   picks once locked in. The question ends early once everyone it waits for has answered.

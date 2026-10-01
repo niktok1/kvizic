@@ -72,6 +72,10 @@ class ScriptedLobbySession : LobbySession {
         commands += "kick $playerId"
     }
 
+    override fun voteKick(playerId: String?) {
+        commands += "vote $playerId"
+    }
+
     override fun transferHost(playerId: String) {
         commands += "host $playerId"
     }

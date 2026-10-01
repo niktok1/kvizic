@@ -11,6 +11,12 @@ public enum class LobbyExit {
     /** The host removed them; the lobby will not take them back while it lasts. */
     KICKED,
 
+    /** Most of the room voted them out; the lobby will not take them back while it lasts. */
+    VOTED_OUT,
+
+    /** A new game started while they were still on the last one's results: they never came back to the room. */
+    NOT_BACK,
+
     /** The lobby closed: everyone left, it sat idle, or it lived its longest. */
     LOBBY_CLOSED,
 
@@ -87,7 +93,7 @@ public sealed interface LobbyEvent {
 
 public enum class NoticeKind { SERVER_RESTARTING, TOPICS_TOPPED_UP, GAME_SHORTENED, UNKNOWN }
 
-public enum class LobbyCommandKind { ANSWER, SETTINGS, START, KICK, TRANSFER_HOST, BACK_TO_LOBBY }
+public enum class LobbyCommandKind { ANSWER, SETTINGS, START, KICK, VOTE_KICK, TRANSFER_HOST, BACK_TO_LOBBY }
 
 public enum class RefusalReason {
     NOT_HOST,
@@ -99,6 +105,9 @@ public enum class RefusalReason {
     NOT_PLAYING,
     RATE_LIMITED,
     SERVER_DRAINING,
+
+    /** A new vote to put someone out, before the wait between two of them is over. */
+    TOO_SOON,
     UNKNOWN,
 }
 
@@ -127,6 +136,12 @@ public interface LobbySession {
     public fun updateSettings(settings: LobbySettings)
 
     public fun kick(playerId: String)
+
+    /**
+     * Votes [playerId] out of the room while it waits, or, for none, takes the vote back: one vote at a
+     * time, and a new one at most every half minute.
+     */
+    public fun voteKick(playerId: String?)
 
     public fun transferHost(playerId: String)
 

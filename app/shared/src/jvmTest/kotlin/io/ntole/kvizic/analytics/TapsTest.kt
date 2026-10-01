@@ -145,10 +145,27 @@ class TapsTest {
 
     @Test
     fun `every tap in the room is reported`() {
+        // A member votes a player out from their seat...
         val member = inLobby(GamePhase.Waiting(null))
         assertEquals(
-            setOf("top_bar.back", "room.share", "room.reaction", "room.leave_cancel", "room.leave_confirm"),
+            setOf(
+                "top_bar.back",
+                "room.share",
+                "room.reaction",
+                "room.seat",
+                "room.vote_cancel",
+                "room.vote_kick",
+                "room.leave_cancel",
+                "room.leave_confirm",
+            ),
             elementsTapped { RoomScreen(member, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
+        )
+        // ...or takes back a vote they gave: here, whichever seat is tapped.
+        val voted = MEMBERS.map { it.copy(kickVotes = 1, kickVotesNeeded = 3, kickVotedByYou = it.playerId != YOU) }
+        val voter = inLobby(GamePhase.Waiting(null), lobby = lobby(members = voted))
+        assertTrue(
+            "room.withdraw_vote" in
+                elementsTapped { RoomScreen(voter, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
         )
         val host = inLobby(GamePhase.Waiting(null), lobby = lobby(host = YOU))
         assertEquals(

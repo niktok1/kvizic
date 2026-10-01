@@ -216,6 +216,9 @@ internal class TestPlayer(
 
     fun kick(player: TestPlayer): Int = nextId().also { say(ClientMessage.Kick(it, player.id)) }
 
+    /** Votes [player] out of the room, or takes the vote back for none. */
+    fun voteKick(player: TestPlayer?): Int = nextId().also { say(ClientMessage.VoteKick(it, player?.id)) }
+
     fun leave() = say(ClientMessage.Leave)
 
     /** Answers the question asked now with [option], [rtt] the connection's round trip. */
