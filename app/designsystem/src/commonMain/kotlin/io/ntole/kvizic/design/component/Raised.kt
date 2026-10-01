@@ -93,6 +93,7 @@ private class RaisedNode(
     private var watching: Job? = null
     private var pressing: Job? = null
     private var settling: Job? = null
+    private var mixing: Job? = null
     private val cache = SurfaceCache()
 
     override fun onAttach() {
@@ -126,12 +127,15 @@ private class RaisedNode(
             val before = this.look
             this.look = look
             if (isAttached) {
-                // Settle from the colours the surface shows now, even mid-way through a settle before.
+                // Settle from the colours the surface shows now, even mid-way through a settle before, and from
+                // this very frame: a phone runs the settle's coroutine only once the frame is drawn, which would
+                // show the new look a frame and then take it back, a flicker.
                 from = if (mix.value >= 1f) before else from.mixedInto(before, mix.value)
-                coroutineScope.launch {
-                    mix.snapTo(0f)
-                    mix.animateTo(1f, tween(motion.settle, easing = FastOutSlowInEasing))
-                }
+                val next = Animatable(0f)
+                mix = next
+                mixing?.cancel()
+                mixing =
+                    coroutineScope.launch { next.animateTo(1f, tween(motion.settle, easing = FastOutSlowInEasing)) }
                 settle(afterPress = false)
             } else {
                 from = look

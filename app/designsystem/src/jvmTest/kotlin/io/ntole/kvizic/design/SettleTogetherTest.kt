@@ -1,6 +1,7 @@
 package io.ntole.kvizic.design
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -8,9 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import io.ntole.kvizic.design.component.AnswerTile
 import io.ntole.kvizic.design.component.AnswerTileState
@@ -18,12 +22,33 @@ import io.ntole.kvizic.design.component.ButtonKind
 import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
+import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.skin.KvizicSkin
 import io.ntole.kvizic.design.skin.Skin
 import io.ntole.kvizic.design.skin.Skins
+import kotlinx.coroutines.CoroutineDispatcher
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertTrue
+
+/** Runs what is dispatched to it only once [drain]ed: the effects a frame launches, as a phone runs them, after it is drawn. */
+private class AfterTheFrame : CoroutineDispatcher() {
+    private val queue = ConcurrentLinkedQueue<Runnable>()
+
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        queue += block
+    }
+
+    fun drain() {
+        while (true) (queue.poll() ?: return).run()
+    }
+}
 
 /**
  * What stands on a tile or a button turns with its face as the face settles into a new look, never ahead
@@ -104,10 +129,12 @@ class SettleTogetherTest {
     }
 
     /**
-     * Draws [content], makes [change] and draws every frame of its settle, then finds the pixel that best
-     * stands for the [face] and for each colour [onIt], each from its first colour to its second, and holds
-     * every one of those on the face to be no further along than the face at any frame; with nothing on it
-     * that changes, as a skin may keep a chip's word, there is nothing to hold.
+     * Draws [content], makes [change] and draws every frame of its settle as a phone does, the effects a
+     * frame launches run only after it is drawn ([AfterTheFrame]); then finds the pixel that best stands for
+     * the [face] and for each colour [onIt], each from its first colour to its second, and holds each to go
+     * on its way and never back, a frame shown ahead and taken back being a flicker, and what is on the face
+     * to go along with the face. With nothing on it that changes, as a skin may keep a chip's word, there is
+     * nothing to hold.
      */
     private fun assertTurnsWithFace(
         what: String,
@@ -118,32 +145,43 @@ class SettleTogetherTest {
         content: @Composable () -> Unit,
     ) {
         if (onIt.isEmpty()) return
-        val scene = stageScene(skin, WIDTH, HEIGHT, DENSITY) { Box(Modifier.padding(PADDING.dp)) { content() } }
+        val effects = AfterTheFrame()
+        val scene =
+            ImageComposeScene(WIDTH, HEIGHT, Density(DENSITY), coroutineContext = effects) {
+                KvizicSkin(skin) { Stage(Modifier.fillMaxSize()) { Box(Modifier.padding(PADDING.dp)) { content() } } }
+            }
         try {
             var time = 0L
-            while (time < SETTLE * MILLI) {
+            val frame = {
                 time += FRAME
-                scene.renderAt(time)
+                Snapshot.sendApplyNotifications()
+                effects.drain()
+                pixelsOf(scene.render(time))
             }
-            val start = pixelsOf(scene.render(time))
+            var start = frame()
+            while (time < SETTLE * MILLI) start = frame()
             change()
-            val frames = mutableListOf<IntArray>()
-            while (frames.size * FRAME < SETTLE * MILLI) {
-                time += FRAME
-                scene.renderAt(time)
-                frames += pixelsOf(scene.render(time))
-            }
+            val frames = List((SETTLE * MILLI / FRAME).toInt()) { frame() }
             val end = frames.last()
-            val facePixel = pixelFor(face, start, end, "$what, its face")
-            onIt.forEach { (name, colours) ->
-                val pixel = pixelFor(colours, start, end, "$what, $name")
-                frames.forEachIndexed { i, frame ->
-                    val faceAlong = along(facePixel, frame, start, end)
-                    val onItAlong = along(pixel, frame, start, end)
+            val pixels =
+                mapOf("its face" to pixelFor(face, start, end, "$what, its face")) +
+                    onIt.mapValues { (name, colours) -> pixelFor(colours, start, end, "$what, $name") }
+            val along = pixels.mapValues { (_, pixel) -> frames.map { along(pixel, it, start, end) } }
+            along.forEach { (name, steps) ->
+                steps.forEachIndexed { i, step ->
+                    val furthest = steps.take(i).maxOrNull() ?: 0f
                     assertTrue(
-                        onItAlong <= faceAlong + LEAD,
-                        "$what: $name is ${(onItAlong * 100).toInt()}% along at frame $i, " +
-                            "its face ${(faceAlong * 100).toInt()}%",
+                        step >= furthest - BACK,
+                        "$what: $name went back from ${percent(furthest)} to ${percent(step)} at frame $i: $steps",
+                    )
+                }
+            }
+            val faceAlong = along.getValue("its face")
+            onIt.keys.forEach { name ->
+                along.getValue(name).forEachIndexed { i, step ->
+                    assertTrue(
+                        abs(step - faceAlong[i]) <= APART,
+                        "$what: $name is ${percent(step)} along at frame $i, its face ${percent(faceAlong[i])}",
                     )
                 }
             }
@@ -151,6 +189,8 @@ class SettleTogetherTest {
             scene.close()
         }
     }
+
+    private fun percent(along: Float): String = "${(along * 100).toInt()}%"
 
     /** The pixel that stands in [colours]' first in [start] and in their second in [end], as nearly as any does. */
     private fun pixelFor(
@@ -190,7 +230,10 @@ class SettleTogetherTest {
         /** How near, in the three channels' differences together, a pixel's colour stands for one. */
         const val NEAR = 24
 
-        /** How much further along than its face what is on it may be: a frame's give. */
-        const val LEAD = 0.2f
+        /** How far apart, either way, what is on a face and the face may be along their way: a frame's give. */
+        const val APART = 0.25f
+
+        /** How far back a pixel may seem to go, its colour's way not quite a line in the pixels' channels. */
+        const val BACK = 0.1f
     }
 }
