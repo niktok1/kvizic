@@ -194,7 +194,15 @@ class TapsTest {
         )
         assertEquals(
             setOf("join.delete", "join.join"),
-            elementsTapped { JoinScreen("482915", onCode = {}, onJoin = {}, entry = Entry.None, onDismissFailure = {}) },
+            elementsTapped {
+                JoinScreen(
+                    "482915",
+                    onCode = {},
+                    onJoin = {},
+                    entry = Entry.None,
+                    onDismissFailure = {},
+                )
+            },
         )
         assertEquals(
             setOf("public_rooms.quick_play", "public_rooms.create_room"),
