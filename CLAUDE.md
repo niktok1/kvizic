@@ -142,8 +142,15 @@ Play Games Services v2. **No Material**: the design system draws everything.
 CI (`.github/workflows/ci.yml`) is the definition of green: `verify` (lint, every JVM test including
 `:e2e:test`, every client target, release signing), `server-postgres`, `docker-smoke`, `ios`. Locally:
 `./gradlew ktlintCheck` and the module tests; iOS needs full Xcode, so compile with
-`:app:shared:compileKotlinIosSimulatorArm64` and let CI link. `KVIZIC_DESIGN_DIR=<dir>` makes the draw tests
-write PNGs to look at.
+`:app:shared:compileKotlinIosSimulatorArm64` and let CI link; Kotlin/Native refuses a comma in a common
+test's name, so compile `compileTestKotlinIosSimulatorArm64` before pushing one. `KVIZIC_DESIGN_DIR=<dir>`
+makes the draw tests write PNGs to look at.
+- **A smoke test of the real UI**: run `:server:run` with `QUESTION_SEED_FILE` (the content repo's dev seed)
+  and `ALLOWED_WEB_ORIGINS=localhost:8081,127.0.0.1:8081`, serve `:app:webApp:wasmJsBrowserDistribution`'s
+  output on 8081, and open both origins (each its own player). The Browser pane stops painting while hidden,
+  so read state from the server's log, not from a screenshot alone.
+- **Realtime engines differ**: the socket client sets no frame limit, which Ktor's browser and OkHttp engines
+  refuse; `:e2e` plays a player over OkHttp beside one over CIO to hold that.
 
 ## 13. Open
 
