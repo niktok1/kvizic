@@ -321,7 +321,8 @@ internal object BuzzersParts : SkinParts {
         object : LogoPart {
             override val text: Color = Amber
 
-            override fun DrawScope.drawSign() = drawMarqueeSign(space.logo.signBulbsAcross)
+            override fun DrawScope.drawSign(glow: (bulb: Int, of: Int) -> Float) =
+                drawMarqueeSign(space.logo.signBulbsAcross, glow)
         }
 
     override fun contrastPairs(): List<ContrastPair> =
@@ -642,9 +643,12 @@ private fun DrawScope.drawGlint(
 /**
  * The game's name's sign, over this scope: a dark board on its side, edged in ink, a panel inside it with
  * an amber rule, and a track of lit bulbs round its edge, [across] along the top and the bottom and as
- * many down each side as keeps them as far apart.
+ * many down each side as keeps them as far apart, each as bright as [glow] says by its place on the track.
  */
-private fun DrawScope.drawMarqueeSign(across: Int) {
+private fun DrawScope.drawMarqueeSign(
+    across: Int,
+    glow: (bulb: Int, of: Int) -> Float,
+) {
     val space = BuzzersSpace
     val stroke = space.stroke.toPx()
     val lift = BuzzersDepth.lift.toPx()
@@ -670,15 +674,17 @@ private fun DrawScope.drawMarqueeSign(across: Int) {
         val step = (board.width - track * 2) / (across - 1)
         val down = ((board.height - track * 2) / step).toInt().coerceAtLeast(1)
         val stepDown = (board.height - track * 2) / down
+        val count = across * 2 + (down - 1) * 2
+        var n = 0
         for (i in 0 until across) {
             val x = track + i * step
-            drawMarqueeBulb(Offset(x, track), bulb, 1f, BuzzersColors.bulbOn)
-            drawMarqueeBulb(Offset(x, board.height - track), bulb, 1f, BuzzersColors.bulbOn)
+            drawMarqueeBulb(Offset(x, track), bulb, glow(n++, count), BuzzersColors.bulbOn)
+            drawMarqueeBulb(Offset(x, board.height - track), bulb, glow(n++, count), BuzzersColors.bulbOn)
         }
         for (j in 1 until down) {
             val y = track + j * stepDown
-            drawMarqueeBulb(Offset(track, y), bulb, 1f, BuzzersColors.bulbOn)
-            drawMarqueeBulb(Offset(board.width - track, y), bulb, 1f, BuzzersColors.bulbOn)
+            drawMarqueeBulb(Offset(track, y), bulb, glow(n++, count), BuzzersColors.bulbOn)
+            drawMarqueeBulb(Offset(board.width - track, y), bulb, glow(n++, count), BuzzersColors.bulbOn)
         }
     }
 }

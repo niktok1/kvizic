@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,8 +24,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import io.ntole.kvizic.design.skin.KvizicTheme
+import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.sin
+import kotlin.random.Random
+import kotlin.time.TimeMark
 
 /**
  * Something is on its way: the skin's spinner, turning on the frame clock for as long as it is shown,
@@ -71,12 +77,17 @@ fun Spinner(
  * A reaction sent: [icon] bursts out of its place, rises and fades, once for each new [burstKey], and
  * shows nothing between bursts. All of it in its layer and draw alone. A placeholder for the reactions
  * to come; a screen reader is told of a reaction by the screen, not by this.
+ *
+ * [startedAt] is when the reaction arrived: a burst composed anew, after an Android activity is made again
+ * or the screen is come back to, goes on from where it had got to, and one already over stays gone,
+ * rather than every member's last reaction bursting again at once.
  */
 @Composable
 fun ReactionBurst(
     icon: ImageVector,
     burstKey: Any?,
     modifier: Modifier = Modifier,
+    startedAt: TimeMark? = null,
 ) {
     val skin = KvizicTheme.skin
     val space = skin.space
@@ -84,8 +95,16 @@ fun ReactionBurst(
     val progress = remember { Animatable(1f) }
     LaunchedEffect(burstKey) {
         if (burstKey == null) return@LaunchedEffect
-        progress.snapTo(0f)
-        progress.animateTo(1f, tween(skin.motion.burst.coerceAtLeast(1), easing = LinearEasing))
+        val total = skin.motion.burst.coerceAtLeast(1)
+        val done =
+            startedAt
+                ?.elapsedNow()
+                ?.inWholeMilliseconds
+                ?.let { it.toFloat() / total }
+                ?.coerceIn(0f, 1f) ?: 0f
+        if (done >= 1f) return@LaunchedEffect
+        progress.snapTo(done)
+        progress.animateTo(1f, tween(((1f - done) * total).toInt().coerceAtLeast(1), easing = LinearEasing))
     }
     val rise = space.burst
     Box(
@@ -115,6 +134,10 @@ fun ReactionBurst(
 /**
  * The game's name on the skin's sign, set in its logo style: marquee lights round it on the stage,
  * ink on a sticky note in a notebook. A heading to a screen reader.
+ *
+ * Every few seconds a bulb or two of the sign flickers, as an old marquee's do: dims, catches, dims again
+ * and comes back, for under a second. In the draw alone, with no frame between flickers; a skin with no
+ * lights draws none of it.
  */
 @Composable
 fun Wordmark(
@@ -123,12 +146,14 @@ fun Wordmark(
 ) {
     val skin = KvizicTheme.skin
     val part = skin.parts.logo
+    val flicker = remember { SignFlicker() }
+    LaunchedEffect(flicker) { flicker.run() }
     Box(
         modifier =
             modifier
                 .height(skin.space.logo.signHeight)
                 .semantics { heading() }
-                .drawBehind { with(part) { drawSign() } },
+                .drawBehind { with(part) { drawSign(flicker::glow) } },
         contentAlignment = Alignment.Center,
     ) {
         KvizicText(text, style = KvizicTheme.type.logo, color = part.text, maxLines = 1)
@@ -140,3 +165,68 @@ private const val POP_END = 0.2f
 private const val POP_OVER = 1.15f
 private const val RISE = 0.9f
 private const val FADE_FROM = 0.55f
+
+/**
+ * Which of a sign's bulbs flicker now and how far through their flicker: a new pair every
+ * [FLICKER_EVERY_MIN_MS] to [FLICKER_EVERY_MAX_MS], each going through [FLICKER_GLOW] over
+ * [FLICKER_MILLIS]. Read in the draw alone.
+ */
+private class SignFlicker {
+    private val progress = Animatable(1f)
+    private var round by mutableIntStateOf(0)
+
+    suspend fun run() {
+        while (true) {
+            delay(Random.nextLong(FLICKER_EVERY_MIN_MS, FLICKER_EVERY_MAX_MS))
+            round++
+            progress.snapTo(0f)
+            progress.animateTo(1f, tween(FLICKER_MILLIS, easing = LinearEasing))
+        }
+    }
+
+    /** How bright [bulb] of [of] is now: 1 but for this round's pair, mid-flicker. */
+    fun glow(
+        bulb: Int,
+        of: Int,
+    ): Float {
+        val p = progress.value
+        if (p >= 1f || of < 2) return 1f
+        val picked = Random(round)
+        val first = picked.nextInt(of)
+        val second = (first + 1 + picked.nextInt(of - 1)) % of
+        if (bulb != first && bulb != second) return 1f
+        // The second of the pair a little behind the first, as two loose bulbs would not dim together.
+        val at = if (bulb == first) p else (p - SECOND_LAG).coerceAtLeast(0f) / (1f - SECOND_LAG)
+        return glowAt(at)
+    }
+
+    private fun glowAt(p: Float): Float {
+        val steps = FLICKER_GLOW
+        for (i in 1 until steps.size) {
+            val (fromAt, fromGlow) = steps[i - 1]
+            val (toAt, toGlow) = steps[i]
+            if (p <= toAt) return fromGlow + (toGlow - fromGlow) * ((p - fromAt) / (toAt - fromAt))
+        }
+        return 1f
+    }
+}
+
+private const val FLICKER_EVERY_MIN_MS = 2_500L
+private const val FLICKER_EVERY_MAX_MS = 5_500L
+private const val FLICKER_MILLIS = 900
+private const val SECOND_LAG = 0.15f
+
+/** A loose bulb's flicker, as (how far through, how bright): out, a catch, out again, back. */
+private val FLICKER_GLOW =
+    listOf(
+        0f to 1f,
+        0.08f to 0.1f,
+        0.2f to 0.15f,
+        0.28f to 0.85f,
+        0.38f to 0.2f,
+        0.5f to 0.25f,
+        0.62f to 1f,
+        0.74f to 0.55f,
+        0.84f to 1f,
+        1f to 1f,
+    )

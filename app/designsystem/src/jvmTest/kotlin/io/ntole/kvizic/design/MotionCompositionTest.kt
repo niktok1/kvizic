@@ -4,6 +4,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -24,6 +25,7 @@ import io.ntole.kvizic.design.component.Spinner
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.TimerPhase
+import io.ntole.kvizic.design.component.Wordmark
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicSkin
 import io.ntole.kvizic.design.skin.Skin
@@ -134,6 +136,14 @@ class MotionCompositionTest {
         }
     }
 
+    /** Only the stage's sign has lights; the notebook's sticky note has none to flicker. */
+    @Test
+    fun `the sign's bulbs flicker now and then and compose nothing`() {
+        motion(Skins.Buzzers, { Wordmark("КВИЗИЋ", Modifier.fillMaxWidth()) }) {
+            step("a bulb's flicker", start = {}, millis = FLICKER_WITHIN)
+        }
+    }
+
     /** A scene of [content] in [skin], its composition counted, and [steps] run on it. */
     private fun motion(
         skin: Skin,
@@ -198,6 +208,9 @@ class MotionCompositionTest {
     }
 
     private companion object {
+        /** Longer than the longest wait between two flickers of the sign, and one flicker. */
+        const val FLICKER_WITHIN = 7_000L
+
         const val SIZE = 420
         const val SETTLE = 300L
 

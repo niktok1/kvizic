@@ -408,8 +408,8 @@ internal object NotebookParts : SkinParts {
         object : LogoPart {
             override val text: Color = Ballpoint
 
-            override fun DrawScope.drawSign() {
-                // A sticky note, a little askew, its tape across the top.
+            override fun DrawScope.drawSign(glow: (bulb: Int, of: Int) -> Float) {
+                // A sticky note, with no lights to flicker, a little askew, its tape across the top.
                 val note = Size(size.width * 0.86f, size.height * 0.92f)
                 val at = Offset((size.width - note.width) / 2, (size.height - note.height) / 2)
                 rotate(-2.5f) {

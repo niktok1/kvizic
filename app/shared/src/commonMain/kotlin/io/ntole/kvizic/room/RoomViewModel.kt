@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /** How a seat is taken: the first open public room, a solo run, a room of the player's own, or a code. */
 enum class EntryWay(
@@ -55,10 +57,14 @@ sealed interface Entry {
 /** A line the room shows for a moment: a notice of the server's, or a command it refused. */
 enum class RoomNote { ONLY_HOST, REFUSED, TOPICS_TOPPED_UP, GAME_SHORTENED, SERVER_RESTARTING, REPORTED, REPORT_FAILED }
 
-/** A reaction one member sent, and a key that tells it from the one before, so the same reaction bursts again. */
+/**
+ * A reaction one member sent, a key that tells it from the one before, so the same reaction bursts again,
+ * and when it arrived ([at]), so a screen composed anew goes on with its burst rather than playing it again.
+ */
 data class Burst(
     val reaction: String,
     val key: Int,
+    val at: TimeMark = TimeSource.Monotonic.markNow(),
 )
 
 /** How many play now, and how many look for a game, as the server last said. */

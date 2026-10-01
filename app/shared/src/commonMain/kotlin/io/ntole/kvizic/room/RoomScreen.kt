@@ -408,6 +408,7 @@ private fun Seats(
                                 icon,
                                 burstKey = burst.key,
                                 modifier = Modifier.align(Alignment.TopEnd).offset(x = space.sm, y = -space.xl),
+                                startedAt = burst.at,
                             )
                         }
                     }

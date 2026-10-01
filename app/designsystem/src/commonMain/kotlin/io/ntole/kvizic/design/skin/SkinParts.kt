@@ -211,8 +211,11 @@ interface BurstPart {
 }
 
 interface LogoPart {
-    /** The sign the game's name stands on, over this scope. */
-    fun DrawScope.drawSign()
+    /**
+     * The sign the game's name stands on, over this scope. A skin whose sign has lights asks [glow] how
+     * bright each is, from 0, out, to 1, by its place among them, `bulb` of `of`, so a few can flicker.
+     */
+    fun DrawScope.drawSign(glow: (bulb: Int, of: Int) -> Float = { _, _ -> 1f })
 
     val text: Color
 }
