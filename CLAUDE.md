@@ -93,8 +93,13 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - **Scoring**, max 100: right `50 + 40·f` plus +10/+5/+2 for the first three right; wrong `−(5 + 35·f²)`
   (−5 to −40), scaled for fewer answers; none 0; the minus can be turned off per room. `f` is the time
   left when the answer lands, less min(RTT, 300 ms).
-- Settings: questions 5/10/15/20, time 10/15/20/30 s, topics (none = Све), seats 2–8, private or public,
-  minus on/off. Codes are 6 digits, not reused for 30 min; a per-address guard stops guessing.
+- Settings: questions 5/10/15/20, time 10/15/20/30 s, topics (none = Све), difficulty Лако/Средње/Тешко,
+  seats 2–8, private or public, minus on/off. Codes are 6 digits, not reused for 30 min; a per-address guard
+  stops guessing.
+- **Difficulty is a mix, never a filter** (`DifficultyMix`): easy, medium and hard in 60/30/10, 20/60/20 or
+  10/30/60 percent, as whole counts, a share that does not come out whole falling at random. Who has seen
+  what comes first: a game asks an unseen question off its level before a seen one on it, and a level the
+  bank is short of takes the nearest. Solo runs are medium; the room's chips name it in a word, unless medium.
 
 ## 8. Questions
 

@@ -34,6 +34,7 @@ import io.ntole.kvizic.analytics.LocalAnalytics
 import io.ntole.kvizic.analytics.UsageTracker
 import io.ntole.kvizic.analytics.rememberConfigurationChanging
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
@@ -437,6 +438,7 @@ private val LobbySettingsSaver: Saver<LobbySettings, Any> =
                 s.maxPlayers,
                 s.visibility.name,
                 s.wrongAnswerPenalty,
+                s.difficulty.name,
             )
         },
         restore = { saved ->
@@ -447,6 +449,7 @@ private val LobbySettingsSaver: Saver<LobbySettings, Any> =
                 maxPlayers = saved[3] as Int,
                 visibility = LobbyVisibility.valueOf(saved[4] as String),
                 wrongAnswerPenalty = saved[5] as Boolean,
+                difficulty = LobbyDifficulty.valueOf(saved[6] as String),
             )
         },
     )

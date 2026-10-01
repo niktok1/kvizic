@@ -42,7 +42,8 @@ class DbQuestionSourceTest {
         topics: List<String> = emptyList(),
         players: Set<String> = setOf("ana", "boris"),
         solo: String? = null,
-    ) = runBlocking { source.pick(PickRequest(count, topics, players, solo)) }
+        difficulty: Difficulty = Difficulty.MEDIUM,
+    ) = runBlocking { source.pick(PickRequest(count, topics, players, solo, difficulty)) }
 
     @Test
     fun `only approved questions are asked, whole, with their answers in stored order`() {
@@ -129,6 +130,19 @@ class DbQuestionSourceTest {
         val picked = pick(3).questions
         assertEquals(listOf("written hard", "new", "written easy"), picked.map { it.questionId })
         assertEquals(listOf(Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD), picked.map { it.difficulty })
+    }
+
+    @Test
+    fun `a game is mostly at the level its room chose, the rest beside it, from easy to hard`() {
+        bank {
+            Difficulty.entries.filter { it != Difficulty.UNKNOWN }.forEach { level ->
+                (1..10).forEach { question("${level.name.lowercase()}$it", listOf("SPORT"), difficulty = level) }
+            }
+        }
+        val hard = pick(10, difficulty = Difficulty.HARD).questions.map { it.difficulty }
+        assertEquals(List(1) { Difficulty.EASY } + List(3) { Difficulty.MEDIUM } + List(6) { Difficulty.HARD }, hard)
+        val easy = pick(10, difficulty = Difficulty.EASY).questions.map { it.difficulty }
+        assertEquals(List(6) { Difficulty.EASY } + List(3) { Difficulty.MEDIUM } + List(1) { Difficulty.HARD }, easy)
     }
 
     @Test

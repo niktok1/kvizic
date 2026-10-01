@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
@@ -36,8 +37,8 @@ import io.ntole.kvizic.navigation.SystemBack
 
 /**
  * A room's settings, to make a room with or for its host to change: how many questions and how long each,
- * which topics, Све being none picked, how many seats, at the least [minPlayers] (the members a room
- * already has), who may find it, and whether a wrong answer costs points. [settings] is what is picked,
+ * which topics, Све being none picked, how hard, how many seats, at the least [minPlayers] (the members a
+ * room already has), who may find it, and whether a wrong answer costs points. [settings] is what is picked,
  * which [onChange] changes; [onDone] makes the room or saves the change, its button [doneLabel].
  *
  * The topics are one line, what is picked in a few words, which opens the [TopicPicker] in the settings'
@@ -123,6 +124,27 @@ fun SettingsScreen(
                     size = ButtonSize.SMALL,
                     trailing = { KvizicIcon(KvizicIcons.ChevronRight, contentDescription = null) },
                 )
+            }
+            Column {
+                heading(words.difficulty)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+                    val levels =
+                        listOf(
+                            LobbyDifficulty.EASY to words.easy,
+                            LobbyDifficulty.MEDIUM to words.medium,
+                            LobbyDifficulty.HARD to words.hard,
+                        )
+                    levels.forEach { (difficulty, label) ->
+                        Chip(
+                            label,
+                            selected = settings.difficulty == difficulty,
+                            onClick =
+                                tapped("settings.difficulty", mapOf("difficulty" to difficulty.name.lowercase())) {
+                                    onChange(settings.copy(difficulty = difficulty))
+                                },
+                        )
+                    }
+                }
             }
             Column {
                 heading(words.players)

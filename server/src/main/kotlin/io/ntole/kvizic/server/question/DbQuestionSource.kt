@@ -28,10 +28,11 @@ import kotlin.random.Random
 
 /**
  * Picks a game's questions from the bank: approved ones in the topics asked for, those the lobby's
- * players have seen least first (by how many of them saw each, then by when last), ties at random, then
- * asked from easy to hard, each at the level it plays at ([MeasuredDifficulty]). When the topics hold too
- * few, the rest come from every other topic ([PickResult.toppedUp]); when the whole bank does, the game is
- * shorter ([PickResult.shortened]).
+ * players have seen least first (by how many of them saw each, then by when last), ties at random, most
+ * at the level the room chose and the rest beside it ([DifficultyMix]), each at the level it plays at
+ * ([MeasuredDifficulty]), then asked from easy to hard. When the topics hold too few, the rest come from
+ * every other topic ([PickResult.toppedUp]); when the whole bank does, the game is shorter
+ * ([PickResult.shortened]).
  *
  * Reads only, in one transaction, before the game starts, never while it runs.
  */
@@ -39,6 +40,8 @@ class DbQuestionSource(
     private val db: Db,
     private val random: Random = Random.Default,
 ) : QuestionSource {
+    private val mix = DifficultyMix(random)
+
     private data class Candidate(
         val id: String,
         val level: Difficulty,
@@ -48,23 +51,20 @@ class DbQuestionSource(
 
     override suspend fun pick(request: PickRequest): PickResult =
         db.query {
-            val inTopics = leastSeen(candidates(request.topics, request.players), request.count)
-            var toppedUp = false
-            val picked =
+            val inTopics = candidates(request.topics, request.players)
+            val inTopicIds = inTopics.map { it.id }.toSet()
+            val others =
                 if (inTopics.size < request.count && request.topics.isNotEmpty()) {
-                    val taken = inTopics.map { it.id }.toSet()
-                    val others = candidates(emptyList(), request.players).filter { it.id !in taken }
-                    val more = leastSeen(others, request.count - inTopics.size)
-                    toppedUp = more.isNotEmpty()
-                    inTopics + more
+                    candidates(emptyList(), request.players).filter { it.id !in inTopicIds }
                 } else {
-                    inTopics
+                    emptyList()
                 }
+            val picked = mix.pick(tiers(inTopics) + tiers(others), request.count, request.difficulty) { it.level }
             val ramp = picked.sortedBy { rampOrder(it.level) }
             val questions = load(ramp.associate { it.id to it.level })
             PickResult(
                 questions = questions,
-                toppedUp = toppedUp,
+                toppedUp = picked.any { it.id !in inTopicIds },
                 shortened = questions.size < request.count,
                 soloBestBefore = request.soloPlayer?.let(::soloBest),
             )
@@ -123,15 +123,14 @@ class DbQuestionSource(
             }
     }
 
-    /** The [count] seen least, shuffled first so that ties fall at random. */
-    private fun leastSeen(
-        candidates: List<Candidate>,
-        count: Int,
-    ): List<Candidate> =
+    /** [candidates] by how many of the players saw each, the fewest first, those seen longest ago first in each. */
+    private fun tiers(candidates: List<Candidate>): List<List<Candidate>> =
         candidates
             .shuffled(random)
             .sortedWith(compareBy<Candidate> { it.seenBy }.thenBy { it.lastSeen ?: Long.MIN_VALUE })
-            .take(count)
+            .groupBy { it.seenBy }
+            .values
+            .toList()
 
     /**
      * The questions of [levels], in its order and each at its level, whole: a question stored wrong is

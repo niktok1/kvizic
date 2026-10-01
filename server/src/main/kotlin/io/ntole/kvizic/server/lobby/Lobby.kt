@@ -536,6 +536,7 @@ class Lobby(
                         .map { it.playerId }
                         .toSet(),
                 soloPlayer = if (kind == LobbyKind.SOLO) host else null,
+                difficulty = settings.difficulty,
             )
         env.scope.launch(CoroutineName("lobby-$code-questions")) {
             val result =

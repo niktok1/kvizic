@@ -1,6 +1,7 @@
 package io.ntole.kvizic.core.lobby
 
 import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.question.Difficulty
 import kotlinx.serialization.Serializable
 
 /**
@@ -16,6 +17,8 @@ public data class LobbySettingsDto(
     public val visibility: Visibility = Visibility.PRIVATE,
     /** Whether a wrong answer costs points (the minus that makes random fast clicking a loss). */
     public val wrongAnswerPenalty: Boolean = true,
+    /** The level most of a game's questions are at, the others for the rest: a mix, never a filter. */
+    public val difficulty: Difficulty = Difficulty.MEDIUM,
 ) {
     public companion object {
         public const val DEFAULT_QUESTION_COUNT: Int = 10

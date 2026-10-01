@@ -24,13 +24,17 @@ data class GameQuestion(
     }
 }
 
-/** What a game asks for: [count] questions in [topics], none for every topic, best unseen by [players]. */
+/**
+ * What a game asks for: [count] questions in [topics], none for every topic, best unseen by [players],
+ * most at [difficulty] and the rest beside it.
+ */
 data class PickRequest(
     val count: Int,
     val topics: List<String>,
     val players: Set<String>,
     /** The player of a solo run, whose personal best the result carries, or null. */
     val soloPlayer: String? = null,
+    val difficulty: Difficulty = Difficulty.MEDIUM,
 )
 
 /**

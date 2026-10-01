@@ -11,6 +11,7 @@ import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.lobby.TicketDto
 import io.ntole.kvizic.core.lobby.Visibility
 import io.ntole.kvizic.core.protocol.ServerMessage
+import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.server.realtime.bodyOrFail
 import io.ntole.kvizic.server.realtime.createLobby
 import io.ntole.kvizic.server.realtime.joinLobby
@@ -41,6 +42,7 @@ class LobbyRoutesTest {
             assertEquals(ErrorCode.INVALID_SETTINGS, refusal(LobbySettingsDto(topics = listOf("COOKING"))))
             assertEquals(ErrorCode.INVALID_SETTINGS, refusal(LobbySettingsDto(maxPlayers = 1)))
             assertEquals(ErrorCode.INVALID_SETTINGS, refusal(LobbySettingsDto(maxPlayers = 9)))
+            assertEquals(ErrorCode.INVALID_SETTINGS, refusal(LobbySettingsDto(difficulty = Difficulty.UNKNOWN)))
 
             val created = server.client.createLobby(ana, LobbySettingsDto(topics = listOf("GEOGRAPHY", "SPORT")))
             assertEquals(HttpStatusCode.Created, created.status)

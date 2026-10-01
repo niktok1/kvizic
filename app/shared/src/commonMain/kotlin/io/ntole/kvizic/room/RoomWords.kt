@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import io.ntole.kvizic.core.domain.error.DomainError
 import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.language.SerbianScript
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
@@ -127,7 +128,7 @@ internal fun topicNameOf(
     language: Language,
 ): String = topics.firstOrNull { it.id == id }?.let { topicName(it, language) } ?: id
 
-/** A room's settings, each in a few words, as its chips show them. */
+/** A room's settings, each in a few words, as its chips show them: its difficulty only when not medium. */
 @Composable
 @ReadOnlyComposable
 internal fun settingsChips(
@@ -136,10 +137,15 @@ internal fun settingsChips(
 ): List<String> {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
-    return listOf(
+    return listOfNotNull(
         words.questionCount.of(settings.questionCount, language),
         words.seconds.fill(settings.secondsPerQuestion),
         topicsSummary(settings.topics, topics, language, words.allTopics),
+        when (settings.difficulty) {
+            LobbyDifficulty.EASY -> words.easy
+            LobbyDifficulty.MEDIUM -> null
+            LobbyDifficulty.HARD -> words.hard
+        },
         if (settings.wrongAnswerPenalty) words.penaltyOn else words.penaltyOff,
     )
 }

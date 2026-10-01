@@ -1,12 +1,14 @@
 package io.ntole.kvizic.core.data.lobby
 
 import io.ntole.kvizic.core.domain.lobby.GamePhase
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.lobby.Visibility
 import io.ntole.kvizic.core.protocol.PhaseView
 import io.ntole.kvizic.core.protocol.PickView
 import io.ntole.kvizic.core.protocol.ServerMessage
+import io.ntole.kvizic.core.question.Difficulty
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -165,5 +167,13 @@ class LobbyReducerTest {
                     it.copy(lobby = it.lobby.copy(kind = LobbyKind.SOLO))
                 }.then(ServerMessage.SettingsChanged(11, LobbySettingsDto(visibility = Visibility.PUBLIC)))
         assertEquals(LobbyKind.SOLO, solo.lobby.kind)
+    }
+
+    @Test
+    fun `a room's difficulty comes through and one this build cannot name is medium`() {
+        val hard = start().then(ServerMessage.SettingsChanged(11, LobbySettingsDto(difficulty = Difficulty.HARD)))
+        assertEquals(LobbyDifficulty.HARD, hard.lobby.settings.difficulty)
+        val unknown = start().then(ServerMessage.SettingsChanged(11, LobbySettingsDto(difficulty = Difficulty.UNKNOWN)))
+        assertEquals(LobbyDifficulty.MEDIUM, unknown.lobby.settings.difficulty)
     }
 }

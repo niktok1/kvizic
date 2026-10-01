@@ -7,6 +7,7 @@ import io.ntole.kvizic.core.domain.lobby.FinalStanding
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.GameResults
 import io.ntole.kvizic.core.domain.lobby.Lobby
+import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbyMember
@@ -35,6 +36,7 @@ import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ResultsView
 import io.ntole.kvizic.core.protocol.RevealView
 import io.ntole.kvizic.core.protocol.StandingView
+import io.ntole.kvizic.core.question.Difficulty
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration.Companion.milliseconds
 import io.ntole.kvizic.core.lobby.LobbyKind as WireLobbyKind
@@ -52,6 +54,12 @@ internal fun LobbySettingsDto.toDomain(): LobbySettings =
         maxPlayers = maxPlayers,
         visibility = if (visibility == Visibility.PUBLIC) LobbyVisibility.PUBLIC else LobbyVisibility.PRIVATE,
         wrongAnswerPenalty = wrongAnswerPenalty,
+        difficulty =
+            when (difficulty) {
+                Difficulty.EASY -> LobbyDifficulty.EASY
+                Difficulty.HARD -> LobbyDifficulty.HARD
+                Difficulty.MEDIUM, Difficulty.UNKNOWN -> LobbyDifficulty.MEDIUM
+            },
     )
 
 internal fun LobbySettings.toDto(): LobbySettingsDto =
@@ -62,6 +70,12 @@ internal fun LobbySettings.toDto(): LobbySettingsDto =
         maxPlayers = maxPlayers,
         visibility = if (visibility == LobbyVisibility.PUBLIC) Visibility.PUBLIC else Visibility.PRIVATE,
         wrongAnswerPenalty = wrongAnswerPenalty,
+        difficulty =
+            when (difficulty) {
+                LobbyDifficulty.EASY -> Difficulty.EASY
+                LobbyDifficulty.MEDIUM -> Difficulty.MEDIUM
+                LobbyDifficulty.HARD -> Difficulty.HARD
+            },
     )
 
 internal fun WireLobbyKind.toDomain(settings: LobbySettings): LobbyKind =

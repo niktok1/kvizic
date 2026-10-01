@@ -242,6 +242,7 @@ class TapsTest {
                 "settings.questions",
                 "settings.time",
                 "settings.topics",
+                "settings.difficulty",
                 "settings.players",
                 "settings.visibility",
                 "settings.penalty",
