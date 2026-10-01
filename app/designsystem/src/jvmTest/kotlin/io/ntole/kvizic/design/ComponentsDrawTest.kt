@@ -47,6 +47,7 @@ import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.TileArrangement
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
+import io.ntole.kvizic.design.component.Toggle
 import io.ntole.kvizic.design.component.WaitingFor
 import io.ntole.kvizic.design.component.Wordmark
 import io.ntole.kvizic.design.icon.KvizicIcons
@@ -126,6 +127,18 @@ class ComponentsDrawTest {
                     listOf("Дунав", "Сава", "Тиса", "Морава"),
                     listOf("Један", "Два", "Три", "Четири", "Пет"),
                 ).forEach { options -> AnswerGrid(options, Modifier.weight(1f).fillMaxSize(), onPick = {}) }
+            }
+            Section("Toggle · off, on, and off while disabled")
+            Row(horizontalArrangement = Arrangement.spacedBy(space.lg)) {
+                Toggle(checked = false, onCheckedChange = {}, label = "Минус", modifier = Modifier.weight(1f))
+                Toggle(checked = true, onCheckedChange = {}, label = "Статистика", modifier = Modifier.weight(1f))
+                Toggle(
+                    checked = false,
+                    onCheckedChange = {},
+                    label = "Јавна",
+                    modifier = Modifier.weight(1f),
+                    enabled = false,
+                )
             }
             Section("StageButton · StageIconButton")
             Row(
