@@ -396,13 +396,14 @@ private fun answerLayout(
         remember(skin, constraints, options.size, density) {
             AnswerBoxes.of(skin, constraints, options.size, density)
         }
-    return remember(options, boxes, type, measurer) {
-        val inColumn = options.minOf { largestFit(measurer, type, it, boxes.column) }
+    val measures = remember(type, measurer) { AnswerMeasures(measurer, type) }
+    return remember(options, boxes, measures) {
+        val inColumn = options.minOf { measures.largestFit(it, boxes.column) }
         val inGrid =
             if (options.size >
                 IN_A_COLUMN
             ) {
-                options.minOf { largestFit(measurer, type, it, boxes.grid) }
+                options.minOf { measures.largestFit(it, boxes.grid) }
             } else {
                 -1f
             }
@@ -423,11 +424,15 @@ fun rememberAnswersFit(options: List<String>): (Constraints) -> Boolean {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     return remember(options, skin, type, measurer, density) {
-        { constraints ->
+        // Asked at many heights, as the reveal finds the least room its answers take: each answer is measured
+        // once a width, and every height after that is a comparison.
+        val measures = AnswerMeasures(measurer, type)
+        val fits: (Constraints) -> Boolean = { constraints ->
             val boxes = AnswerBoxes.of(skin, constraints, options.size, density)
-            options.all { largestFit(measurer, type, it, boxes.column) > 0f } ||
-                (options.size > IN_A_COLUMN && options.all { largestFit(measurer, type, it, boxes.grid) > 0f })
+            options.all { measures.whole(it, boxes.column) } ||
+                (options.size > IN_A_COLUMN && options.all { measures.whole(it, boxes.grid) })
         }
+        fits
     }
 }
 
@@ -491,41 +496,76 @@ private data class AnswerBox(
 )
 
 /**
- * The largest size, in sp and in the auto size's steps, at which [text] is set whole in [box], at most
- * [ANSWER_LINES] lines: from the skin's answer size down to its least, and 0 when not even that holds it.
+ * The answers' measures in the skin's [type]: each answer laid out once at a size and a width, its lines and
+ * height kept, since a box's height only says whether those fit.
  */
-private fun largestFit(
-    measurer: TextMeasurer,
-    type: SkinType,
-    text: String,
-    box: AnswerBox,
-): Float {
-    val spec = type.answer
-    val largest = spec.style.fontSize.value
-    val least = type.answerMin.style.fontSize.value
-    val set = spec.apply(text)
+private class AnswerMeasures(
+    private val measurer: TextMeasurer,
+    private val type: SkinType,
+) {
+    private val laid = HashMap<Laying, Laid>()
 
-    fun fits(size: Float): Boolean {
-        val laid =
-            measurer.measure(
-                text = set,
-                style = spec.style.copy(fontSize = size.sp),
-                constraints = Constraints(maxWidth = box.width.coerceAtLeast(1)),
-            )
-        return laid.lineCount <= ANSWER_LINES && (box.height == null || laid.size.height <= box.height)
+    /** Whether [text] is set whole in [box] at [size], in sp: in at most [ANSWER_LINES] lines, and its height. */
+    fun fits(
+        text: String,
+        size: Float,
+        box: AnswerBox,
+    ): Boolean {
+        val width = box.width.coerceAtLeast(1)
+        val (lines, height) =
+            laid.getOrPut(Laying(text, size, width)) {
+                val spec = type.answer
+                val result =
+                    measurer.measure(
+                        text = spec.apply(text),
+                        style = spec.style.copy(fontSize = size.sp),
+                        constraints = Constraints(maxWidth = width),
+                    )
+                Laid(result.lineCount, result.size.height)
+            }
+        return lines <= ANSWER_LINES && (box.height == null || height <= box.height)
     }
 
-    fun sizeAt(steps: Int): Float = maxOf(largest - steps * AUTO_SIZE_STEP, least)
-    if (fits(largest)) return largest
-    if (!fits(least)) return 0f
-    // The fewest steps down from the largest that fit, between one that does not and one that does.
-    var tooFew = 0
-    var enough = ceil((largest - least) / AUTO_SIZE_STEP).toInt()
-    while (enough - tooFew > 1) {
-        val mid = (tooFew + enough) / 2
-        if (fits(sizeAt(mid))) enough = mid else tooFew = mid
+    /** Whether [text] is set whole in [box] at the skin's least answer size. */
+    fun whole(
+        text: String,
+        box: AnswerBox,
+    ): Boolean = fits(text, type.answerMin.style.fontSize.value, box)
+
+    /**
+     * The largest size, in sp and in the auto size's steps, at which [text] is set whole in [box]: from the
+     * skin's answer size down to its least, and 0 when not even that holds it.
+     */
+    fun largestFit(
+        text: String,
+        box: AnswerBox,
+    ): Float {
+        val largest = type.answer.style.fontSize.value
+        val least = type.answerMin.style.fontSize.value
+
+        fun sizeAt(steps: Int): Float = maxOf(largest - steps * AUTO_SIZE_STEP, least)
+        if (fits(text, largest, box)) return largest
+        if (!fits(text, least, box)) return 0f
+        // The fewest steps down from the largest that fit, between one that does not and one that does.
+        var tooFew = 0
+        var enough = ceil((largest - least) / AUTO_SIZE_STEP).toInt()
+        while (enough - tooFew > 1) {
+            val mid = (tooFew + enough) / 2
+            if (fits(text, sizeAt(mid), box)) enough = mid else tooFew = mid
+        }
+        return sizeAt(enough)
     }
-    return sizeAt(enough)
+
+    private data class Laying(
+        val text: String,
+        val size: Float,
+        val width: Int,
+    )
+
+    private data class Laid(
+        val lines: Int,
+        val height: Int,
+    )
 }
 
 /** How lit a tile's letter stands in a state. */
