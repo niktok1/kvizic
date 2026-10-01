@@ -380,7 +380,9 @@ class Lobby(
         wanted: LobbySettingsDto,
     ) {
         if (member.playerId != host) return reject(member, id, RejectCode.NOT_HOST)
-        if (phase !is Phase.Waiting) return reject(member, id, RejectCode.WRONG_PHASE)
+        // A game under way keeps the settings it began with, so a change is the next game's; a countdown's
+        // questions are already picked by the settings it began with, so it takes none.
+        if (phase is Phase.Countdown) return reject(member, id, RejectCode.WRONG_PHASE)
         if (settingsProblem(wanted, kind, env.knownTopics(), members.size) != null) {
             return reject(member, id, RejectCode.INVALID_SETTINGS)
         }
@@ -1290,6 +1292,7 @@ class Lobby(
             topic = question.source.topicId,
             optionCount = question.options.size,
             kind = question.source.kind,
+            answerMs = game.duration().inWholeMilliseconds,
         )
     }
 

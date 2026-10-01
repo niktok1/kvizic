@@ -110,6 +110,10 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - Settings: questions 5/10/15/20, time 10/15/20/30 s, topics (none = Све), difficulty Лако/Средње/Тешко,
   seats 2–8, private or public, minus on/off. Codes are 6 digits, not reused for 30 min; a per-address guard
   stops guessing.
+- **The host changes the settings during a game too** (the owner, 2026-10-01), from the game's bar and the
+  results: they are the next game's, the game under way keeping its own, each question saying its own time
+  to answer (`QuestionView.answerMs`, so no clock reads the room's settings); never in a countdown, whose
+  questions are picked.
 - **Difficulty is a mix, never a filter** (`DifficultyMix`): easy, medium and hard in 60/30/10, 20/60/20 or
   10/30/60 percent, as whole counts, a share that does not come out whole falling at random. Who has seen
   what comes first: a game asks an unseen question off its level before a seen one on it, and a level the

@@ -49,11 +49,12 @@ internal object LobbyReducer {
         message: ServerMessage.Snapshot,
         at: ComparableTimeMark,
     ): LobbyModel {
-        val phase = message.phase.toDomain(at) ?: GamePhase.Waiting(lastResults = null)
+        val lobby = message.lobby.toDomain()
+        val phase = message.phase.toDomain(at, lobby.settings) ?: GamePhase.Waiting(lastResults = null)
         return LobbyModel(
             you = message.you,
             version = message.v,
-            lobby = message.lobby.toDomain(),
+            lobby = lobby,
             phase = phase,
             game = gameOf(phase),
         )
@@ -137,7 +138,7 @@ internal object LobbyReducer {
                         GamePhase.Reading(
                             game.gameId,
                             game.players,
-                            change.question.toDomain(),
+                            change.question.toDomain(lobby.settings),
                             deadline(at, change.readMs),
                             game.standings,
                         ),

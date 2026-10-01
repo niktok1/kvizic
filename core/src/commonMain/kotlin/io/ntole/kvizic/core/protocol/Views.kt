@@ -98,7 +98,9 @@ public sealed interface PhaseView {
 
 /**
  * A question as asked: its [index] of [count], its text and topic, and how many answers it offers, so a
- * client lays the tiles out before the answers arrive. Never its id or its answer.
+ * client lays the tiles out before the answers arrive. Never its id or its answer. [answerMs] is how long
+ * its answers stay open, the game's own time, which a change of the room's settings during the game does
+ * not touch; 0 from a server before 2026-10-01, which never changed them mid-game.
  */
 @Serializable
 public data class QuestionView(
@@ -108,6 +110,7 @@ public data class QuestionView(
     public val topic: String,
     public val optionCount: Int,
     public val kind: QuestionKind = QuestionKind.UNKNOWN,
+    public val answerMs: Long = 0,
 )
 
 @Serializable

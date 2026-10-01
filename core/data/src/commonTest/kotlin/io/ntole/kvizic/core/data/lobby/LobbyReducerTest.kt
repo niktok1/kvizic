@@ -158,6 +158,30 @@ class LobbyReducerTest {
     }
 
     @Test
+    fun `a question keeps its game's time to answer through a change of the settings`() {
+        val model =
+            start()
+                .then(ServerMessage.CountdownStarted(11, remainingMs = 3_000))
+                .then(ServerMessage.GameStarted(12, "game-1", listOf("guest1"), questionCount = 5))
+                .then(ServerMessage.SettingsChanged(13, LobbySettingsDto(secondsPerQuestion = 30)))
+                .then(ServerMessage.QuestionShown(14, question(0).copy(answerMs = 20_000), readMs = 2_000))
+        assertEquals(20.seconds, assertIs<GamePhase.Reading>(model.phase).question.answerTime)
+        assertEquals(30, model.lobby.settings.secondsPerQuestion, "the next game's")
+
+        val joined = start(PhaseView.Reading("game-1", listOf("guest1"), question(1).copy(answerMs = 20_000), 1_000))
+        assertEquals(20.seconds, assertIs<GamePhase.Reading>(joined.phase).question.answerTime, "from a snapshot")
+    }
+
+    @Test
+    fun `a question from a server that does not say its time to answer takes the room's`() {
+        val model = start(PhaseView.Reading("game-1", listOf("guest1"), question(0), remainingMs = 1_000))
+        assertEquals(
+            LobbySettingsDto().secondsPerQuestion.seconds,
+            assertIs<GamePhase.Reading>(model.phase).question.answerTime,
+        )
+    }
+
+    @Test
     fun `settings made public list the lobby and a solo run stays one`() {
         val public = start().then(ServerMessage.SettingsChanged(11, LobbySettingsDto(visibility = Visibility.PUBLIC)))
         assertEquals(LobbyKind.PUBLIC, public.lobby.kind)

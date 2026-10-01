@@ -1,9 +1,14 @@
 package io.ntole.kvizic.core.domain.lobby
 
+import kotlin.time.Duration
+
 /** How a question asks: pick one of its answers, or true or false. */
 public enum class QuestionKind { CHOICE, TRUE_FALSE, UNKNOWN }
 
-/** A question as it is asked: its text, and how many answers are to come. */
+/**
+ * A question as it is asked: its text, how many answers are to come, and how long they stay open, the
+ * [answerTime] of the game under way, which the room's settings, changed during the game, no longer say.
+ */
 public data class AskedQuestion(
     val index: Int,
     val count: Int,
@@ -11,6 +16,7 @@ public data class AskedQuestion(
     val topic: String,
     val optionCount: Int,
     val kind: QuestionKind,
+    val answerTime: Duration,
 )
 
 /** Where a player stands in the game under way. */
