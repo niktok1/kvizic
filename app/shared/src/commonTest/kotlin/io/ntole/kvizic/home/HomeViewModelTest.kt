@@ -39,6 +39,9 @@ class HomeViewModelTest {
     private val players = FakePlayers(session)
     private val analytics = RecordingAnalytics()
 
+    /** Less than the wait an avatar picked stands before it is sent. */
+    private val halfASettle = 1.5.seconds
+
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(main)
@@ -135,6 +138,90 @@ class HomeViewModelTest {
             assertNull(home.state.value.changingAvatar)
         }
 
+    /** Trying every avatar spent the server's budget for picks, a request a tap, and then waited an hour. */
+    @Test
+    fun `avatars tried one after another send only the one the player settles on`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+
+            listOf("frog", "wolf", "bear").forEach { avatar ->
+                home.changeAvatar(avatar)
+                testScheduler.advanceTimeBy(halfASettle)
+            }
+            assertEquals("bear", home.state.value.changingAvatar, "the pick shows before it is sent")
+            assertEquals(emptyList(), players.avatarsSent)
+
+            testScheduler.advanceUntilIdle()
+            assertEquals(listOf("bear"), players.avatarsSent)
+            assertEquals(
+                "bear",
+                home.state.value.profile
+                    ?.avatarId,
+            )
+        }
+
+    @Test
+    fun `an avatar picked is sent at once when the profile is left`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+
+            home.changeAvatar("frog")
+            home.keepAvatar()
+            testScheduler.runCurrent()
+
+            assertEquals(listOf("frog"), players.avatarsSent)
+            testScheduler.advanceUntilIdle()
+            assertEquals(listOf("frog"), players.avatarsSent, "the wait over sends nothing more")
+        }
+
+    @Test
+    fun `picking back the avatar the server has sends nothing`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+
+            home.changeAvatar("frog")
+            home.changeAvatar("hedgehog")
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(emptyList(), players.avatarsSent)
+            assertNull(home.state.value.changingAvatar)
+        }
+
+    @Test
+    fun `an avatar picked while one is sent goes after it so the server keeps the last`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+            val sending = CompletableDeferred<Unit>()
+            players.avatarHold = sending
+            home.changeAvatar("frog")
+            home.keepAvatar()
+            testScheduler.runCurrent()
+
+            home.changeAvatar("wolf")
+            home.keepAvatar()
+            testScheduler.runCurrent()
+            assertEquals("wolf", home.state.value.changingAvatar)
+            sending.complete(Unit)
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(listOf("frog", "wolf"), players.avatarsSent)
+            assertEquals("wolf", players.avatar)
+            assertEquals(
+                "wolf",
+                home.state.value.profile
+                    ?.avatarId,
+            )
+            assertNull(home.state.value.changingAvatar)
+        }
+
     @Test
     fun `an avatar the server refuses says why and keeps the one before`() =
         runTest(main) {
@@ -192,8 +279,12 @@ class HomeViewModelTest {
 
         var avatar = "hedgehog"
         var avatarFailWith: KvizicException? = null
+        var avatarHold: CompletableDeferred<Unit>? = null
+        val avatarsSent = mutableListOf<String>()
 
         override suspend fun setAvatar(avatarId: String): Profile {
+            avatarsSent += avatarId
+            avatarHold?.await()
             avatarFailWith?.let { throw it }
             avatar = avatarId
             return profileOf(session.player.value ?: error("no session"))

@@ -12,7 +12,7 @@ data class HomeState(
     val profile: Profile? = null,
     val loading: Boolean = false,
     val failure: HomeFailure? = null,
-    /** The avatar being changed to, while the server is asked. */
+    /** The avatar picked last, shown as the player's until the server has it: settling, then asked. */
     val changingAvatar: String? = null,
     /** Why the last change of avatar failed. */
     val avatarFailure: HomeFailure? = null,

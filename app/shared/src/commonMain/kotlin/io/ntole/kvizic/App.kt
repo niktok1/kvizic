@@ -264,13 +264,14 @@ private fun PollWhileShown(poll: suspend () -> Unit) {
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { latest() } }
 }
 
-/** The player's profile, read as Home reads it, and their avatar picked. */
+/** The player's profile, read as Home reads it, and their avatar picked, sent at once when it is left. */
 @Composable
 private fun Profile() {
     val viewModel = koinViewModel<HomeViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val topics by rememberTopics()
     LaunchedEffect(viewModel) { viewModel.shown() }
+    LifecycleStartEffect(viewModel) { onStopOrDispose { viewModel.keepAvatar() } }
     ProfileScreen(state, topics, onPick = viewModel::changeAvatar)
 }
 

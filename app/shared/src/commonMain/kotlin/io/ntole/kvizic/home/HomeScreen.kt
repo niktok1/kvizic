@@ -111,7 +111,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(space.md),
                     ) {
-                        Avatar(profile.avatarId, seat = 0, size = AvatarSize.SM)
+                        Avatar(state.changingAvatar ?: profile.avatarId, seat = 0, size = AvatarSize.SM)
                         Column(Modifier.weight(1f)) {
                             KvizicText(shown(profile.displayName), style = type.name, maxLines = 1)
                             KvizicText(

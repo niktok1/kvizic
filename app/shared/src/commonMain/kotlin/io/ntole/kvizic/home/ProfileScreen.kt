@@ -126,7 +126,7 @@ fun ProfileScreen(
                                 .semantics(mergeDescendants = true) {
                                     contentDescription = words.avatarNames.getOrElse(index) { id }
                                     selected = chosen
-                                }.clickable(enabled = state.changingAvatar == null, role = Role.Button) { pick(index) },
+                                }.clickable(role = Role.Button) { pick(index) },
                             kind = if (chosen) PanelKind.PLAIN else PanelKind.EMPTY,
                             padding = space.xs,
                         ) {
