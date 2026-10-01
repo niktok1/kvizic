@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -33,6 +35,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.analytics.tappedAt
@@ -54,6 +62,7 @@ import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.CodeDisplay
 import io.ntole.kvizic.design.component.FlapSize
 import io.ntole.kvizic.design.component.FlipNumber
+import io.ntole.kvizic.design.component.KvizicIcon
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Podium
 import io.ntole.kvizic.design.component.PodiumPlace
@@ -92,6 +101,8 @@ class RoomActions(
     val react: (String) -> Unit = {},
     val leave: () -> Unit = {},
     val share: (String) -> Unit = {},
+    /** Copies the room's code, given, to the clipboard. */
+    val copyCode: (String) -> Unit = {},
     val report: (questionId: String, reason: QuestionReportReason) -> Unit = { _, _ -> },
 )
 
@@ -127,11 +138,14 @@ fun RoomScreen(
             label = "stage",
         ) { shown ->
             val shownMe = shown.lobby.member(shown.you)
+            // The host changes the room's settings during a game too, for the next one; a solo run has none.
+            val openSettings =
+                actions.openSettings.takeIf { shown.lobby.host == shown.you && shown.lobby.kind != LobbyKind.SOLO }
             when (val phase = shown.phase) {
                 is GamePhase.Waiting -> {
                     val results = phase.lastResults
                     if (shownMe?.onResults == true && results != null) {
-                        Results(results, shown.lobby, shown.you, newGameStarting = false, actions)
+                        Results(results, shown.lobby, shown.you, newGameStarting = false, actions, openSettings)
                     } else {
                         Waiting(shown, countdown = null, bursts, actions, onLeave = { leaving = true }, topics = topics)
                     }
@@ -140,7 +154,7 @@ fun RoomScreen(
                 is GamePhase.Countdown -> {
                     val results = phase.lastResults
                     if (shownMe?.onResults == true && results != null) {
-                        Results(results, shown.lobby, shown.you, newGameStarting = true, actions)
+                        Results(results, shown.lobby, shown.you, newGameStarting = true, actions, openSettings)
                     } else {
                         Waiting(
                             shown,
@@ -154,15 +168,36 @@ fun RoomScreen(
                 }
 
                 is GamePhase.Reading -> {
-                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
+                    QuestionScreen(
+                        shown,
+                        phase,
+                        topics,
+                        actions,
+                        onLeave = { leaving = true },
+                        onSettings = openSettings,
+                    )
                 }
 
                 is GamePhase.Answering -> {
-                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true })
+                    QuestionScreen(
+                        shown,
+                        phase,
+                        topics,
+                        actions,
+                        onLeave = { leaving = true },
+                        onSettings = openSettings,
+                    )
                 }
 
                 is GamePhase.Revealing -> {
-                    RevealScreen(shown, phase, topics, onReport = { reporting = it }, onLeave = { leaving = true })
+                    RevealScreen(
+                        shown,
+                        phase,
+                        topics,
+                        onReport = { reporting = it },
+                        onLeave = { leaving = true },
+                        onSettings = openSettings,
+                    )
                 }
             }
         }
@@ -249,8 +284,9 @@ private fun LeaveDialog(
 }
 
 /**
- * The lobby waiting: its code on flaps, the seats, the settings, the reactions, and the host's start; or,
- * once the host started, the [countdown] in the start's place.
+ * The lobby waiting: its code, small in the top bar, the seats, the settings, the reactions, and the host's
+ * start; or, once the host started, the [countdown] in the start's place. The seats say who is in and how
+ * many more fit, so no words count them.
  */
 @Composable
 private fun Waiting(
@@ -262,86 +298,34 @@ private fun Waiting(
     topics: List<Topic> = emptyList(),
 ) {
     val words = LocalStrings.current.game
-    val language = LocalLanguage.current
     val space = KvizicTheme.space
-    val type = KvizicTheme.type
-    val colors = KvizicTheme.colors
     val lobby = state.lobby
     val hosting = lobby.host == state.you
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
 
     // One column: the stage lays its content out as a box, where the bar would sit over the page.
     Column(Modifier.fillMaxSize()) {
-        BackTopBar(
-            onBack = onLeave,
-            title =
-                when (lobby.kind) {
-                    LobbyKind.PRIVATE -> words.privateRoom
-                    LobbyKind.PUBLIC -> words.publicRoom
-                    LobbyKind.SOLO -> words.soloRun
+        if (lobby.kind == LobbyKind.SOLO) {
+            BackTopBar(onBack = onLeave, title = words.soloRun)
+        } else {
+            BackTopBar(
+                onBack = onLeave,
+                titleContent = { RoomCode(lobby, onCopy = { actions.copyCode(lobby.code) }) },
+                actions = {
+                    StageIconButton(
+                        KvizicIcons.Share,
+                        contentDescription = words.shareRoom,
+                        onClick = tapped("room.share") { actions.share(words.shareText.fill(lobby.code)) },
+                        small = true,
+                    )
                 },
-            actions =
-                if (lobby.kind == LobbyKind.SOLO) {
-                    null
-                } else {
-                    {
-                        StageIconButton(
-                            KvizicIcons.Share,
-                            contentDescription = words.shareRoom,
-                            onClick = tapped("room.share") { actions.share(words.shareText.fill(lobby.code)) },
-                            small = true,
-                        )
-                    }
-                },
-        )
+            )
+        }
         Page {
-            if (lobby.kind != LobbyKind.SOLO) {
-                KvizicText(
-                    words.roomCode,
-                    Modifier.fillMaxWidth(),
-                    style = type.label,
-                    color = colors.onPageMuted,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(space.sm))
-                CodeDisplay(
-                    lobby.code,
-                    Modifier.align(Alignment.CenterHorizontally),
-                    contentDescription = words.roomCode + ": " + lobby.code.toList().joinToString(" "),
-                )
-                Spacer(Modifier.height(space.lg))
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                KvizicText(words.players, style = type.label, color = colors.onPageMuted)
-                Spacer(Modifier.width(space.sm))
-                KvizicText(
-                    "${lobby.members.size} / ${lobby.settings.maxPlayers}",
-                    style = type.label,
-                    color = colors.onPageAccent,
-                )
-            }
-            Spacer(Modifier.height(space.sm))
             // The host chooses what to do with a member at any time; the rest may vote one out while the room waits.
             val choosing = hosting || (lobby.kind != LobbyKind.SOLO && countdown == null)
             Seats(lobby, state.you, bursts, onChoose = if (choosing) ({ chosen = it }) else null)
-            Spacer(Modifier.height(space.sm))
-            val status =
-                when {
-                    lobby.kind == LobbyKind.SOLO -> null
-                    lobby.members.size < 2 -> words.waitingForPlayers
-                    !hosting -> words.waitingForHost
-                    else -> null
-                }
-            if (status != null) {
-                KvizicText(
-                    status,
-                    Modifier.fillMaxWidth(),
-                    style = type.caption,
-                    color = colors.onPageMuted,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(space.md))
-            }
+            Spacer(Modifier.height(space.md))
             Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
                 if (lobby.kind == LobbyKind.SOLO) {
                     // A solo run's one setting is its level, picked here; each level keeps its own best.
@@ -362,7 +346,8 @@ private fun Waiting(
                 } else {
                     settingsChips(lobby.settings, topics).forEach { chip ->
                         Chip(
-                            chip,
+                            chip.text,
+                            icon = chip.icon,
                             onClick =
                                 if (hosting &&
                                     countdown == null
@@ -403,9 +388,6 @@ private fun Waiting(
                         words.start,
                         onClick = tapped("room.start", onClick = actions.start),
                         modifier = Modifier.fillMaxWidth(),
-                        supportingText =
-                            words.playerCount.of(lobby.members.size, language) + " · " +
-                                words.questionCount.of(lobby.settings.questionCount, language),
                     )
                 }
 
@@ -467,6 +449,54 @@ private fun Waiting(
     }
 }
 
+/**
+ * The room's code in the top bar, small: a lock or a globe for a private room or a public one, the word, and
+ * the code on small flaps. A long press copies it, as [onCopy] does, with the phone's tick.
+ */
+@Composable
+private fun RoomCode(
+    lobby: Lobby,
+    onCopy: () -> Unit,
+) {
+    val words = LocalStrings.current.game
+    val space = KvizicTheme.space
+    val colors = KvizicTheme.colors
+    val haptics = LocalHapticFeedback.current
+    val copy = tapped("room.copy_code", onClick = onCopy)
+    val public = lobby.kind == LobbyKind.PUBLIC
+    val said =
+        (if (public) words.publicRoom else words.privateRoom) + ", " + words.roomCode + ": " +
+            lobby.code.toList().joinToString(" ")
+    Row(
+        Modifier
+            .clearAndSetSemantics {
+                contentDescription = said
+                onLongClick(label = words.copyCode) {
+                    copy()
+                    true
+                }
+            }.pointerInput(copy) {
+                detectTapGestures(
+                    onLongPress = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        copy()
+                    },
+                )
+            },
+        horizontalArrangement = Arrangement.spacedBy(space.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        KvizicIcon(
+            if (public) KvizicIcons.Globe else KvizicIcons.Lock,
+            contentDescription = null,
+            tint = colors.onPageMuted,
+            size = space.icon.small,
+        )
+        KvizicText(words.code, style = KvizicTheme.type.label, color = colors.onPageMuted, maxLines = 1)
+        CodeDisplay(lobby.code, size = FlapSize.SMALL, framed = false)
+    }
+}
+
 /** A room's seats, as many as it holds, the members in their seats' order, each one's last reaction bursting over it. */
 @Composable
 private fun Seats(
@@ -487,7 +517,7 @@ private fun Seats(
                     Box(Modifier.weight(1f)) {
                         Seat(
                             member?.let { occupantOf(it, lobby, you) },
-                            emptyLabel = words.freeSeat,
+                            emptyDescription = words.freeSeat,
                             onClick =
                                 if (member != null && member.playerId != you && onChoose != null) {
                                     tapped("room.seat") { onChoose(member.playerId) }
@@ -521,18 +551,21 @@ private fun occupantOf(
 ): SeatOccupant {
     val words = LocalStrings.current.game
     val host = member.playerId == lobby.host
+    val own = member.playerId == you
     return SeatOccupant(
         name = shown(member.name),
         avatarId = member.avatar,
         seat = member.seat,
+        // Shown otherwise, so said only: the host's microphone, the player's own seat lit, an hourglass.
         badge =
-            when {
-                member.onResults -> words.onResults
-                host -> words.host
-                member.playerId == you -> words.you
-                else -> null
-            },
+            listOfNotNull(
+                words.host.takeIf { host },
+                words.you.takeIf { own },
+                words.onResults.takeIf { member.onResults },
+            ).joinToString(", ").ifEmpty { null },
         host = host,
+        own = own,
+        status = KvizicIcons.Hourglass.takeIf { member.onResults },
         away = !member.connected || member.onResults,
         // A count is the same in every language, so it is no string of theirs.
         votes = if (member.kickVotes > 0) "${member.kickVotes}/${member.kickVotesNeeded}" else null,
@@ -653,7 +686,8 @@ private val TICK = 200.milliseconds
 
 /**
  * A game's end: who won and the podium, the rest of the standings, how the player did, and their own way
- * back to the lobby or out; or, once the host started the next game, the way into it.
+ * back to the lobby or out; or, once the host started the next game, the way into it. [onSettings], the
+ * host's, opens the room's settings for the next game.
  */
 @Composable
 private fun Results(
@@ -662,6 +696,7 @@ private fun Results(
     you: String,
     newGameStarting: Boolean,
     actions: RoomActions,
+    onSettings: (() -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
@@ -671,14 +706,25 @@ private fun Results(
     val ranked = results.standings.sortedBy { it.rank }
     val seatOf = { playerId: String, fallback: Int -> lobby.member(playerId)?.seat ?: fallback }
     Page {
-        Spacer(Modifier.height(space.md))
-        KvizicText(
-            words.gameOver.fill(words.questionCount.of(results.questionCount, language)),
-            Modifier.fillMaxWidth(),
-            style = type.label,
-            color = colors.onPageMuted,
-            textAlign = TextAlign.Center,
-        )
+        Box(Modifier.fillMaxWidth().heightIn(min = space.md * 2), contentAlignment = Alignment.Center) {
+            KvizicText(
+                words.gameOver.fill(words.questionCount.of(results.questionCount, language)),
+                Modifier.fillMaxWidth(),
+                style = type.label,
+                color = colors.onPageMuted,
+                textAlign = TextAlign.Center,
+            )
+            if (onSettings != null) {
+                StageIconButton(
+                    KvizicIcons.Sliders,
+                    contentDescription = LocalStrings.current.game.settings,
+                    onClick = tapped("results.settings", onClick = onSettings),
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    kind = ButtonKind.QUIET,
+                    small = true,
+                )
+            }
+        }
         ranked.firstOrNull()?.let { winner ->
             Spacer(Modifier.height(space.xs))
             KvizicText(

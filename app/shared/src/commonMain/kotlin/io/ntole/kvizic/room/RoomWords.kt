@@ -62,6 +62,7 @@ internal fun GameStrings.noteText(note: RoomNote): String =
         RoomNote.REPORTED -> reported
         RoomNote.REPORT_FAILED -> refused
         RoomNote.VOTE_TOO_SOON -> voteTooSoon
+        RoomNote.CODE_COPIED -> codeCopied
     }
 
 /** A reason to report a question, as the report's dialog says it. */
@@ -139,20 +140,26 @@ internal fun GameStrings.levelName(level: LobbyDifficulty): String =
         LobbyDifficulty.HARD -> hard
     }
 
+/** One of a room's settings on its chip: a few words, and an icon before them where one says it. */
+internal data class SettingChip(
+    val text: String,
+    val icon: ImageVector? = null,
+)
+
 /** A room's settings, each in a few words, as its chips show them: its difficulty only when not medium. */
 @Composable
 @ReadOnlyComposable
 internal fun settingsChips(
     settings: LobbySettings,
     topics: List<Topic> = emptyList(),
-): List<String> {
+): List<SettingChip> {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
     return listOfNotNull(
-        words.questionCount.of(settings.questionCount, language),
-        words.seconds.fill(settings.secondsPerQuestion),
-        topicsSummary(settings.topics, topics, language, words.allTopics),
-        settings.difficulty.takeIf { it != LobbyDifficulty.MEDIUM }?.let(words::levelName),
-        if (settings.wrongAnswerPenalty) words.penaltyOn else words.penaltyOff,
+        SettingChip(words.questionCount.of(settings.questionCount, language)),
+        SettingChip(words.seconds.fill(settings.secondsPerQuestion), KvizicIcons.Clock),
+        SettingChip(topicsSummary(settings.topics, topics, language, words.allTopics)),
+        settings.difficulty.takeIf { it != LobbyDifficulty.MEDIUM }?.let { SettingChip(words.levelName(it)) },
+        SettingChip(if (settings.wrongAnswerPenalty) words.penaltyOn else words.penaltyOff),
     )
 }

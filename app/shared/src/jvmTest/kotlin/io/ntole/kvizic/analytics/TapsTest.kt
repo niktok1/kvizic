@@ -60,7 +60,6 @@ import io.ntole.kvizic.update.UpdateScreen
 import io.ntole.kvizic.update.UpdateWay
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -150,6 +149,7 @@ class TapsTest {
         assertEquals(
             setOf(
                 "top_bar.back",
+                "room.copy_code",
                 "room.share",
                 "room.reaction",
                 "room.seat",
@@ -171,6 +171,7 @@ class TapsTest {
         assertEquals(
             setOf(
                 "top_bar.back",
+                "room.copy_code",
                 "room.share",
                 "room.reaction",
                 "room.settings",
@@ -189,6 +190,19 @@ class TapsTest {
         assertEquals(
             setOf("top_bar.back", "room.difficulty", "room.start", "room.leave_cancel", "room.leave_confirm"),
             elementsTapped { RoomScreen(solo, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
+        )
+        assertEquals(
+            // The host opens the room's settings mid-game too, for the next game.
+            setOf("question.leave", "question.settings", "question.answer", "room.leave_cancel", "room.leave_confirm"),
+            elementsTapped {
+                RoomScreen(
+                    inLobby(answering(), lobby = lobby(host = YOU)),
+                    TOPICS,
+                    note = null,
+                    bursts = emptyMap(),
+                    actions = RoomActions(),
+                )
+            },
         )
         assertEquals(
             // Leaving mid-game asks first, as anywhere in the room.
@@ -228,6 +242,18 @@ class TapsTest {
             elementsTapped {
                 RoomScreen(
                     inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members)),
+                    TOPICS,
+                    note = null,
+                    bursts = emptyMap(),
+                    actions = RoomActions(),
+                )
+            },
+        )
+        assertEquals(
+            setOf("results.settings", "results.back_to_room", "results.leave"),
+            elementsTapped {
+                RoomScreen(
+                    inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members, host = YOU)),
                     TOPICS,
                     note = null,
                     bursts = emptyMap(),
@@ -316,15 +342,24 @@ class TapsTest {
             repeat(2) {
                 scene.tappable().filter { signatureOf(it) !in done }.forEach { node ->
                     done += signatureOf(node)
-                    val before = analytics.named(AnalyticsEvent.TAP).size
-                    val tap = assertNotNull(node.config.getOrNull(SemanticsActions.OnClick)?.action, signatureOf(node))
-                    tap()
-                    scene.settle()
-                    val taps = analytics.named(AnalyticsEvent.TAP).drop(before)
-                    assertEquals(1, taps.size, "a tap on ${signatureOf(node)} reported $taps")
-                    val element = taps.single().properties[AnalyticsProperty.ELEMENT] as? String
-                    assertTrue(element != null && ELEMENT_NAME.matches(element), "\"$element\" is no element's name")
-                    reported += element
+                    val actions =
+                        listOfNotNull(
+                            node.config.getOrNull(SemanticsActions.OnClick)?.action,
+                            node.config.getOrNull(SemanticsActions.OnLongClick)?.action,
+                        )
+                    actions.forEach { tap ->
+                        val before = analytics.named(AnalyticsEvent.TAP).size
+                        tap()
+                        scene.settle()
+                        val taps = analytics.named(AnalyticsEvent.TAP).drop(before)
+                        assertEquals(1, taps.size, "a tap on ${signatureOf(node)} reported $taps")
+                        val element = taps.single().properties[AnalyticsProperty.ELEMENT] as? String
+                        assertTrue(
+                            element != null && ELEMENT_NAME.matches(element),
+                            "\"$element\" is no element's name",
+                        )
+                        reported += element
+                    }
                 }
             }
         } finally {
@@ -333,10 +368,13 @@ class TapsTest {
         return reported
     }
 
-    /** Everything a player could tap: whatever takes a click and is on, but a text field. */
+    /** Everything a player could tap or hold: whatever takes a click or a long one and is on, but a text field. */
     private fun ImageComposeScene.tappable(): List<SemanticsNode> =
         nodes().filter { node ->
-            node.config.getOrNull(SemanticsActions.OnClick)?.action != null &&
+            (
+                node.config.getOrNull(SemanticsActions.OnClick)?.action != null ||
+                    node.config.getOrNull(SemanticsActions.OnLongClick)?.action != null
+            ) &&
                 node.config.getOrNull(SemanticsProperties.Disabled) == null &&
                 node.config.getOrNull(SemanticsActions.SetText) == null
         }

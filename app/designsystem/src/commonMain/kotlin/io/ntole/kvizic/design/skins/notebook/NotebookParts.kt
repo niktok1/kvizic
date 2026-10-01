@@ -211,6 +211,16 @@ internal object NotebookParts : SkinParts {
                         card(seed = 3, height = depth.lift - space.xxs, pressedToo = true, decor = Tape)
                     }
 
+                    PanelKind.OWN -> {
+                        card(
+                            seed = 3,
+                            outline = colors.onPageAccent,
+                            height = depth.lift - space.xxs,
+                            pressedToo = true,
+                            decor = Tape,
+                        )
+                    }
+
                     PanelKind.SCREEN -> {
                         card(seed = 5, height = depth.lift - space.xxs, pressedToo = true, decor = RuledLines)
                     }

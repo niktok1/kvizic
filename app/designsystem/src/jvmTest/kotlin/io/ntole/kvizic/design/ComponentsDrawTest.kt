@@ -265,6 +265,7 @@ class ComponentsDrawTest {
                 "Plus" to KvizicIcons.Plus,
                 "Keypad" to KvizicIcons.Keypad,
                 "Globe" to KvizicIcons.Globe,
+                "Lock" to KvizicIcons.Lock,
                 "Person" to KvizicIcons.Person,
                 "Sliders" to KvizicIcons.Sliders,
                 "ChevronRight" to KvizicIcons.ChevronRight,

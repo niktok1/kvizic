@@ -133,6 +133,33 @@ object KvizicIcons {
         }
     }
 
+    /** A padlock, shut: a private room, which only its code opens. */
+    val Lock: ImageVector by lazy {
+        icon("Lock") {
+            outline {
+                // The shackle, a hoop over the body.
+                moveTo(8f, 10.5f)
+                verticalLineTo(7.5f)
+                arcTo(4f, 4f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 16f, y1 = 7.5f)
+                verticalLineTo(10.5f)
+                // The body, a block with rounded corners.
+                moveTo(7.5f, 10.5f)
+                horizontalLineTo(16.5f)
+                quadTo(18.5f, 10.5f, 18.5f, 12.5f)
+                verticalLineTo(18.5f)
+                quadTo(18.5f, 20.5f, 16.5f, 20.5f)
+                horizontalLineTo(7.5f)
+                quadTo(5.5f, 20.5f, 5.5f, 18.5f)
+                verticalLineTo(12.5f)
+                quadTo(5.5f, 10.5f, 7.5f, 10.5f)
+                close()
+                // The keyhole.
+                moveTo(12f, 14.5f)
+                verticalLineTo(16.5f)
+            }
+        }
+    }
+
     /** One player, alone: a game played solo. */
     val Person: ImageVector by lazy {
         icon("Person") {

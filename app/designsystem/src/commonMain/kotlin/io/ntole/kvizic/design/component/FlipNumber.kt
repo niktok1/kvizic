@@ -46,24 +46,27 @@ fun FlipNumber(
 }
 
 /**
- * A room's code on large split-flap cells, in two groups of three: 482 915. A screen reader reads it
- * digit by digit, or as [contentDescription] says.
+ * A room's code on split-flap cells of [size], in two groups of three: 482 915, on a board sunk into the
+ * page while [framed], or the cells alone, small in a line of their own. A screen reader reads it digit by
+ * digit, or as [contentDescription] says.
  */
 @Composable
 fun CodeDisplay(
     code: String,
     modifier: Modifier = Modifier,
+    size: FlapSize = FlapSize.LARGE,
+    framed: Boolean = true,
     contentDescription: String? = null,
 ) {
     require(code.all { it.isDigit() }) { "a room's code is digits: $code" }
     val grouped = code.chunked(CODE_GROUP).joinToString(" ")
-    Panel(modifier = modifier, kind = PanelKind.WELL, padding = KvizicTheme.space.md) {
-        FlipText(
-            grouped,
-            size = FlapSize.LARGE,
-            contentDescription =
-                contentDescription ?: code.toList().joinToString(" "),
-        )
+    val said = contentDescription ?: code.toList().joinToString(" ")
+    if (framed) {
+        Panel(modifier = modifier, kind = PanelKind.WELL, padding = KvizicTheme.space.md) {
+            FlipText(grouped, size = size, contentDescription = said)
+        }
+    } else {
+        FlipText(grouped, modifier, size = size, contentDescription = said)
     }
 }
 

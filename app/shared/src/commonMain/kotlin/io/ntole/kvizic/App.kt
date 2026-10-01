@@ -20,6 +20,8 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -34,6 +36,7 @@ import io.ntole.kvizic.analytics.LocalAnalytics
 import io.ntole.kvizic.analytics.UsageTracker
 import io.ntole.kvizic.analytics.rememberConfigurationChanging
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
@@ -360,6 +363,7 @@ private fun Room(
     val note by room.note.collectAsStateWithLifecycle()
     val bursts by room.bursts.collectAsStateWithLifecycle()
     val share = LocalShareSheet.current
+    val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     RoomScreen(
         state = state,
@@ -379,12 +383,19 @@ private fun Room(
                 react = room::react,
                 leave = room::leave,
                 share = { text -> scope.launch { share.shareText(text) } },
+                copyCode = { code ->
+                    clipboard.setText(AnnotatedString(code))
+                    room.codeCopied()
+                },
                 report = room::report,
             ),
     )
 }
 
-/** The host's change of the room's settings, from those it has, saved as the screen goes back. */
+/**
+ * The host's change of the room's settings, from those it has, saved as the screen goes back: during a game,
+ * the next game's, which it says; never in a countdown, whose questions are picked.
+ */
 @Composable
 private fun RoomSettings(
     room: RoomViewModel,
@@ -404,8 +415,16 @@ private fun RoomSettings(
             onDone()
         },
         minPlayers = state.lobby.members.size,
+        enabled = state.phase !is GamePhase.Countdown,
+        note =
+            LocalStrings.current.game.forNextGame
+                .takeIf { state.phase.inGame },
     )
 }
+
+/** Whether a game is under way: a question read, answered or revealed. */
+private val GamePhase.inGame: Boolean
+    get() = this is GamePhase.Reading || this is GamePhase.Answering || this is GamePhase.Revealing
 
 /** The groups the topics are listed under, as [rememberTopics]'s read last brought them. */
 @Composable

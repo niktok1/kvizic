@@ -6,7 +6,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.core.domain.lobby.GamePhase
+import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
+import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.Stage
@@ -36,28 +38,44 @@ import kotlin.test.assertTrue
  */
 class RoomScreenDrawTest {
     @Test
-    fun `the lobby shows its code, its seats, its settings and the reactions, and waits for the host`() {
+    fun `the lobby shows its code in the bar, its seats, its settings and the reactions, and counts in no words`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game
-            draw(skin, "lobby", inLobby(GamePhase.Waiting(null))) { scene ->
+            val copied = mutableListOf<String>()
+            draw(skin, "lobby", inLobby(GamePhase.Waiting(null)), RoomActions(copyCode = { copied += it })) { scene ->
                 val shown = scene.everyText()
-                listOf(
-                    words.privateRoom,
-                    words.roomCode,
-                    words.players,
-                    "5 / 8",
-                    words.waitingForHost,
-                    words.host,
-                    words.you,
-                ).forEach { assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown") }
-                EMOTES.forEach { assertTrue(it.name(words) in scene.descriptions(), "${skin.id}: ${it.id}") }
-                // The top bar stands over the page, never on it.
-                val bar = scene.nodes().first { words.privateRoom in it.texts }.boundsInRoot
-                val code = scene.nodes().first { words.roomCode in it.texts }.boundsInRoot
-                assertTrue(bar.bottom <= code.top, "${skin.id}: the bar at $bar is over the code at $code")
+                val said = scene.descriptions()
+                val code = words.privateRoom + ", " + words.roomCode + ": 4 8 2 9 1 5"
+                assertTrue(code in said, "${skin.id}: the code is not said as $code: $said")
+                // The seats show who is in and how many more fit, the host's microphone and the player's own.
+                listOf("5 / 8", words.players, words.freeSeat, words.host, words.you).forEach {
+                    assertFalse(it in shown, "${skin.id}: \"$it\" is written in $shown")
+                }
+                assertEquals(3, said.count { it == words.freeSeat }, "${skin.id}: $said")
+                listOf(words.host, words.you).forEach { word ->
+                    assertTrue(word in said, "${skin.id}: no seat says \"$word\": $said")
+                }
+                EMOTES.forEach { assertTrue(it.name(words) in said, "${skin.id}: ${it.id}") }
+                // The code stands in the top bar, over the seats, never on them.
+                val bar = scene.nodes().first { code in it.descriptions }
+                val seat = scene.nodes().first { "Нина" in it.texts }.boundsInRoot
+                assertTrue(bar.boundsInRoot.bottom <= seat.top, "${skin.id}: the code at $bar is on the seats at $seat")
                 assertTrue(words.reactionNudge in shown, "${skin.id}: a member cannot nudge the host")
                 assertFalse(words.start in shown, "${skin.id}: a member has no Start")
+                // A long press copies the code.
+                bar.config[androidx.compose.ui.semantics.SemanticsActions.OnLongClick].action?.invoke()
             }
+            assertEquals(listOf("482915"), copied, skin.id)
+        }
+    }
+
+    @Test
+    fun `a public room's code is said as public`() {
+        val words = stringsOf(Language.DEFAULT).game
+        val state = inLobby(GamePhase.Waiting(null), lobby = lobby(kind = LobbyKind.PUBLIC))
+        draw(Skins.Default, "lobby-public", state) { scene ->
+            val code = words.publicRoom + ", " + words.roomCode + ": 4 8 2 9 1 5"
+            assertTrue(code in scene.descriptions(), "${scene.descriptions()}")
         }
     }
 
@@ -141,6 +159,42 @@ class RoomScreenDrawTest {
                 assertTrue(words.gameStarting in scene.everyText(), "${skin.id}: ${scene.everyText()}")
                 assertFalse(words.start in scene.everyText(), skin.id)
             }
+        }
+    }
+
+    @Test
+    fun `the host opens the settings during a game and from the results, and nobody else does`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            var opened = 0
+            val hosting = lobby(host = YOU)
+            val onResults = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
+            val steps =
+                listOf(
+                    "reading-host" to inLobby(reading(), lobby = hosting),
+                    "answering-host" to inLobby(answering(), lobby = hosting),
+                    "reveal-host" to inLobby(revealing(), lobby = hosting),
+                    "results-host" to
+                        inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = onResults, host = YOU)),
+                )
+            steps.forEach { (name, state) ->
+                draw(skin, name, state, RoomActions(openSettings = { opened++ })) { scene ->
+                    scene.tap(words.settings)
+                }
+            }
+            assertEquals(steps.size, opened, skin.id)
+            draw(skin, "answering", inLobby(answering())) { scene ->
+                assertFalse(words.settings in scene.descriptions(), "${skin.id}: a member opens the settings")
+            }
+        }
+    }
+
+    @Test
+    fun `a question's clock counts the game's own time, not the room's settings changed since`() {
+        val words = stringsOf(Language.DEFAULT).game
+        val changed = lobby(settings = LobbySettings(secondsPerQuestion = 30))
+        draw(Skins.Default, "reading-changed", inLobby(reading(), lobby = changed)) { scene ->
+            assertTrue(words.secondsToAnswer.fill(15) in scene.descriptions(), "${scene.descriptions()}")
         }
     }
 

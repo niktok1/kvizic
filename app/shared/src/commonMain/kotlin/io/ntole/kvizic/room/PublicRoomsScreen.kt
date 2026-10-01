@@ -166,7 +166,7 @@ private fun PublicRoom(
 
 @Composable
 private fun settingsLine(lobby: PublicLobby): String =
-    settingsChips(lobby.settings).take(SETTINGS_SHOWN).joinToString(" · ")
+    settingsChips(lobby.settings).take(SETTINGS_SHOWN).joinToString(" · ") { it.text }
 
 /** How many of a room's settings its line names: the questions, their time and the topics. */
 private const val SETTINGS_SHOWN = 3

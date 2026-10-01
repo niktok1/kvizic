@@ -1,6 +1,7 @@
 package io.ntole.kvizic.navigation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -20,9 +21,9 @@ import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalStrings
 
 /**
- * A screen's top bar: a button back to the screen before, [onBack], the screen's [title] in the middle,
- * and what else the screen offers at the end, [actions], one round button for the title to stand in the
- * bar's middle.
+ * A screen's top bar: a button back to the screen before, [onBack], the screen's [title] in the middle, or
+ * what [titleContent] draws there, and what else the screen offers at the end, [actions], one round button
+ * for the title to stand in the bar's middle.
  */
 @Composable
 fun BackTopBar(
@@ -30,6 +31,7 @@ fun BackTopBar(
     modifier: Modifier = Modifier,
     title: String? = null,
     actions: (@Composable RowScope.() -> Unit)? = null,
+    titleContent: (@Composable () -> Unit)? = null,
 ) {
     val space = KvizicTheme.space
     Row(
@@ -43,7 +45,9 @@ fun BackTopBar(
             onClick = tapped("top_bar.back", onClick = onBack),
             small = true,
         )
-        if (title != null) {
+        if (titleContent != null) {
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { titleContent() }
+        } else if (title != null) {
             KvizicText(
                 title,
                 Modifier.weight(1f),

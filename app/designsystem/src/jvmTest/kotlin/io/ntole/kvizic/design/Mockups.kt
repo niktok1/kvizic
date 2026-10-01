@@ -257,7 +257,7 @@ private fun Seats(members: List<Member?>) {
                 )
             }
         },
-        emptyLabel = "слободно",
+        emptyDescription = "слободно",
     )
 }
 

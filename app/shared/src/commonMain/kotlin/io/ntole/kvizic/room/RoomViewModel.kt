@@ -64,6 +64,7 @@ enum class RoomNote {
     REPORTED,
     REPORT_FAILED,
     VOTE_TOO_SOON,
+    CODE_COPIED,
 }
 
 /**
@@ -187,6 +188,9 @@ class RoomViewModel(
         mutableEntry.value = Entry.None
         session.leave()
     }
+
+    /** The room's code was copied: the room says so a moment. */
+    fun codeCopied() = show(RoomNote.CODE_COPIED)
 
     /** The app came back to the foreground: a connection being made again is tried now. */
     fun wake() = session.wake()

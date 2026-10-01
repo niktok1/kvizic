@@ -131,6 +131,11 @@ internal object BuzzersParts : SkinParts {
                         fixed(colors.raised, colors.raisedSide, shapes.panel, raised, DarkSheen)
                     }
 
+                    PanelKind.OWN -> {
+                        fixed(colors.raised, colors.raisedSide, shapes.panel, raised, DarkSheen)
+                            .copy(outline = colors.primary)
+                    }
+
                     PanelKind.SCREEN -> {
                         fixed(ScreenFace, colors.raisedSide, shapes.panel, raised, ScreenRule)
                     }

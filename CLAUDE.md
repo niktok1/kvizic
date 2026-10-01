@@ -159,7 +159,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
   which says why (`Navigator.followRoom`).
 - Words: `Strings` (Serbian Cyrillic written by hand, Latin made from it, English), `GameStrings` for the
   game, `Plural` for Serbian's three forms. Server text (questions, names, topics) is shown through
-  `shown()`/`topicName()`.
+  `shown()`/`topicName()`. The noun кôд keeps its length mark (о and a combining U+0302; every bundled face
+  places it), which tells it from код (at).
 - Analytics: PostHog over HTTP, never a name, a code or a question's text; every tap through `tapped`
   (`TapsTest` taps every screen). Game events: `room_entered`, `room_exited`, `game_finished`.
 - **Play Games** (signed in on a phone against dev, 2026-10-01): a launch signs in by itself, with no button
@@ -197,6 +198,11 @@ Play Games Services v2. **No Material**: the design system draws everything.
   (`stage`, `tileAppear`, `tileStagger`); nothing replays after a rotation.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
   them until they answer; no words, no count.
+- **The lobby counts in no words** (the owner, 2026-10-01): the seats show who is in and how many more fit,
+  an empty seat a person's outline, the host by the microphone on the avatar, the player's own seat lit in
+  the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a
+  screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
+  long press copies it; the settings' chips take an icon where one says it (the clock on the time).
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,
   a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
 - Avatars: the server's sixteen Balkan animals, each drawn by hand (`AvatarArt`); an id this build does not

@@ -41,6 +41,9 @@ enum class PanelKind {
     /** A raised dark card: a seat, a scoreboard. */
     PLAIN,
 
+    /** A raised card outlined in the skin's accent: the player's own seat among the others. */
+    OWN,
+
     /** Where the question is shown, framed as a screen on the set. */
     SCREEN,
 
