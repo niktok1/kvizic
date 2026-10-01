@@ -7,6 +7,7 @@ import io.ntole.kvizic.core.domain.error.DomainError
 import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.language.SerbianScript
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
+import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
@@ -85,8 +86,12 @@ internal val REACTIONS: List<ReactionKind> by lazy {
         ReactionKind("wow", KvizicIcons.Wow) { it.reactionWow },
         ReactionKind("laugh", KvizicIcons.Laugh) { it.reactionLaugh },
         ReactionKind("oops", KvizicIcons.Oops) { it.reactionOops },
+        ReactionKind(LobbyRules.NUDGE, KvizicIcons.Bell) { it.reactionNudge },
     )
 }
+
+/** The emotes on the room's bar: every reaction but the nudge, which a member sends with a button of its own. */
+internal val EMOTES: List<ReactionKind> by lazy { REACTIONS.filter { it.id != LobbyRules.NUDGE } }
 
 /** The icon of the reaction [id], or none for one this build does not know. */
 internal fun reactionIcon(id: String): ImageVector? = REACTIONS.firstOrNull { it.id == id }?.icon

@@ -31,6 +31,7 @@ import io.ntole.kvizic.core.domain.lobby.GameResults
 import io.ntole.kvizic.core.domain.lobby.Lobby
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbyMember
+import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
@@ -320,7 +321,7 @@ private fun Waiting(
         Spacer(Modifier.weight(1f))
         if (lobby.kind != LobbyKind.SOLO) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                REACTIONS.forEach { reaction ->
+                EMOTES.forEach { reaction ->
                     StageIconButton(
                         reaction.icon,
                         contentDescription = reaction.name(words),
@@ -348,6 +349,20 @@ private fun Waiting(
                     supportingText =
                         words.playerCount.of(lobby.members.size, language) + " · " +
                             words.questionCount.of(lobby.settings.questionCount, language),
+                )
+            }
+
+            lobby.kind != LobbyKind.SOLO -> {
+                // A member's way to tell the host the room is ready: the nudge bursts as a bell over their seat.
+                StageButton(
+                    words.reactionNudge,
+                    onClick =
+                        tapped("room.reaction", mapOf("reaction" to LobbyRules.NUDGE)) {
+                            actions.react(LobbyRules.NUDGE)
+                        },
+                    modifier = Modifier.fillMaxWidth(),
+                    kind = ButtonKind.SECONDARY,
+                    icon = KvizicIcons.Bell,
                 )
             }
 

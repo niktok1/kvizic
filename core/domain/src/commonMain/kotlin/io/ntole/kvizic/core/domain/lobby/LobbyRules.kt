@@ -14,4 +14,10 @@ public object LobbyRules {
     /** The fewest and most seats a room may hold. */
     public const val MIN_PLAYERS: Int = 2
     public const val MAX_PLAYERS: Int = 8
+
+    /** The quick reactions a room sends, by id, in the server's order. */
+    public val REACTIONS: List<String> = listOf("bravo", "clap", "fire", "wow", "laugh", "oops", "nudge")
+
+    /** The reaction a member nudges the host with: the room is ready, start. */
+    public const val NUDGE: String = "nudge"
 }

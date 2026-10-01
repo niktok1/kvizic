@@ -50,7 +50,8 @@ class RoomScreenDrawTest {
                     words.host,
                     words.you,
                 ).forEach { assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown") }
-                REACTIONS.forEach { assertTrue(it.name(words) in scene.descriptions(), "${skin.id}: ${it.id}") }
+                EMOTES.forEach { assertTrue(it.name(words) in scene.descriptions(), "${skin.id}: ${it.id}") }
+                assertTrue(words.reactionNudge in shown, "${skin.id}: a member cannot nudge the host")
                 assertFalse(words.start in shown, "${skin.id}: a member has no Start")
             }
         }
@@ -65,6 +66,7 @@ class RoomScreenDrawTest {
             val state = inLobby(GamePhase.Waiting(null), lobby = lobby(host = YOU))
             draw(skin, "lobby-host", state, RoomActions(start = { started++ }, kick = { kicked += it })) { scene ->
                 assertTrue(words.start in scene.texts(), "${skin.id}: ${scene.texts()}")
+                assertFalse(words.reactionNudge in scene.texts(), "${skin.id}: the host can nudge themselves")
                 scene.tap(words.start)
                 val nina = scene.nodes().first { "Нина" in it.texts }
                 nina.config[androidx.compose.ui.semantics.SemanticsActions.OnClick].action?.invoke()

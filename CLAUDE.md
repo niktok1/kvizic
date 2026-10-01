@@ -149,7 +149,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
   its top edge; a crowd closes up to fit the tile (`crowdOverlap`); rows keep a gap for the heads.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
   them until they answer; no words, no count.
-- Reactions are the server's six: bravo, applause, fire, wow, laugh, oops.
+- Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,
+  a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
 - Avatars: the server's sixteen Balkan animals, each drawn by hand (`AvatarArt`); an id this build does not
   know shows a silhouette.
 - **The icon** (2026-10-01): the sign's lights in a ring, sixteen lit marquee bulbs round Nunito Black's К in

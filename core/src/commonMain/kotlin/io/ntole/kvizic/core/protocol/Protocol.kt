@@ -50,7 +50,13 @@ public object CloseCodes {
     public const val SERVER_RESTARTING: Short = 4503
 }
 
-/** The fixed quick reactions, by id. The client draws each and names it in its own words. */
+/**
+ * The fixed quick reactions, by id. The client draws each and names it in its own words. [NUDGE] is a
+ * member's word to the host that the room is ready: the client offers it to everyone but the host, while
+ * the room waits.
+ */
 public object Reactions {
-    public val ALL: List<String> = listOf("bravo", "clap", "fire", "wow", "laugh", "oops")
+    public const val NUDGE: String = "nudge"
+
+    public val ALL: List<String> = listOf("bravo", "clap", "fire", "wow", "laugh", "oops", NUDGE)
 }

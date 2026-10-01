@@ -394,6 +394,35 @@ object KvizicIcons {
         }
     }
 
+    /** A hand bell ringing, its knob on top and its clapper below: the nudge to the host to start. */
+    val Bell: ImageVector by lazy {
+        icon("Bell") {
+            outline {
+                // The bell, up from its lip to its crown and down again, and the lip itself.
+                moveTo(7f, 16.5f)
+                curveTo(7f, 9f, 8.5f, 6f, 12f, 6f)
+                curveTo(15.5f, 6f, 17f, 9f, 17f, 16.5f)
+                moveTo(5.5f, 16.5f)
+                horizontalLineTo(18.5f)
+                circle(x = 12f, y = 4.3f, radius = 1.4f)
+                // Its ring, an arc on each side.
+                moveTo(3.5f, 8f)
+                quadTo(2.3f, 10.8f, 3.5f, 13.6f)
+                moveTo(20.5f, 8f)
+                quadTo(21.7f, 10.8f, 20.5f, 13.6f)
+            }
+            path(fill = SolidColor(Color.Black)) {
+                // The clapper, swung out under the lip.
+                moveTo(12f, 17.3f)
+                curveTo(13.1f, 17.3f, 14f, 18.2f, 14f, 19.3f)
+                curveTo(14f, 20.4f, 13.1f, 21.3f, 12f, 21.3f)
+                curveTo(10.9f, 21.3f, 10f, 20.4f, 10f, 19.3f)
+                curveTo(10f, 18.2f, 10.9f, 17.3f, 12f, 17.3f)
+                close()
+            }
+        }
+    }
+
     /** A heart: a reaction. */
     val Heart: ImageVector by lazy {
         icon("Heart") {
@@ -454,7 +483,7 @@ object KvizicIcons {
      * The reactions a room may send, in the order the reactions row shows them: bravo, applause, fire, wow,
      * a laugh and oops, as the server's reactions are listed.
      */
-    val REACTIONS: List<ImageVector> by lazy { listOf(ThumbUp, Clap, Flame, Wow, Laugh, Oops) }
+    val REACTIONS: List<ImageVector> by lazy { listOf(ThumbUp, Clap, Flame, Wow, Laugh, Oops, Bell) }
 
     private fun icon(
         name: String,

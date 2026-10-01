@@ -2,6 +2,7 @@ package io.ntole.kvizic.core.data.lobby
 
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
+import io.ntole.kvizic.core.protocol.Reactions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -13,5 +14,11 @@ class LobbyRulesTest {
         assertEquals(KvizicApi.Limits.ANSWER_SECONDS, LobbyRules.ANSWER_SECONDS)
         assertEquals(KvizicApi.Limits.MIN_MAX_PLAYERS, LobbyRules.MIN_PLAYERS)
         assertEquals(KvizicApi.Limits.MAX_PLAYERS, LobbyRules.MAX_PLAYERS)
+    }
+
+    @Test
+    fun `the reactions a room may send are the wire's`() {
+        assertEquals(Reactions.ALL, LobbyRules.REACTIONS)
+        assertEquals(Reactions.NUDGE, LobbyRules.NUDGE)
     }
 }
