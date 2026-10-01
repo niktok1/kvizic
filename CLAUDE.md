@@ -34,6 +34,7 @@ targets (iOS, desktop, web) keep compiling. Built on WYR's platform, copied and 
 :app:designsystem   the skin engine and every component; no Material. Skins: Buzzers (default), Notebook.
 :app:shared         screens, ViewModels, Strings, navigation, DI; Android's Google services in androidMain.
 :app:androidApp / desktopApp / webApp, app/iosApp   entry points only.
+:app:adminApp       the moderation app, desktop and web: review, the bank, reports, overview, accounts.
 :server             Ktor: auth, lobby actors, realtime, question bank, results, reports, admin. Flyway.
 :e2e                the real server in-process, real client sessions over CIO, through a fault proxy.
 ```
@@ -101,6 +102,15 @@ Play Games Services v2. **No Material**: the design system draws everything.
   Наши простори; all feed Све. Questions are ekavian Serbian Cyrillic; Latin is made by transliteration.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
   Dev loads the seed from a Render secret file (`QUESTION_SEED_FILE`), H2 only.
+- **Publishing drafts**: `KVIZIC_ADMIN_TOKEN=… ./publish.py dev drafts/*.json` in the content repo checks them,
+  imports them (25 a request, a known key a duplicate) and approves the drafts it brought; `--import-only`
+  leaves them to review in the moderation app.
+- **The moderation app** (`:app:adminApp`, `KVIZIC_ENV=dev ./gradlew :app:adminApp:run`, or the web page
+  built with `-Pkvizic.env`): the token is typed and held in memory only, a wrong one forgotten at once (ten
+  a minute lock the address out). Review shows one draft at a time, A approves, R rejects with a reason
+  (ready ones a tap away), E edits, J/K move; the bank filters and pages, retires and restores; reports are
+  marked fixed, dismissed or retired; Overview counts the bank and the live games; Accounts deletes one by
+  its id. English words, the questions as written. It binds `moderationDataModule` alone: no player session.
 
 ## 9. The client
 
@@ -157,4 +167,5 @@ makes the draw tests write PNGs to look at.
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
 - The reveal's layout with eight standings (the long-text test leaves the reveal out until it is designed).
-- Profile and stats screen, reports from the reveal, Play Games on a device, sound and haptics, share links.
+- Play Games on a device, sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
+- The moderation app's web page loses the first key after unlocking until the page is clicked.

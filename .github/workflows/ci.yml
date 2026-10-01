@@ -49,6 +49,7 @@ jobs:
             :app:designsystem:jvmTest \
             :app:shared:jvmTest \
             :app:shared:testAndroidHostTest \
+            :app:adminApp:jvmTest \
             :app:androidApp:testDevDebugUnitTest
 
       # Every in-scope client target still compiles, both web targets included, and R8 still shrinks the
@@ -62,6 +63,8 @@ jobs:
             :app:desktopApp:compileKotlin \
             :app:webApp:compileKotlinJs \
             :app:webApp:compileKotlinWasmJs \
+            :app:adminApp:compileKotlinJs \
+            :app:adminApp:compileKotlinWasmJs \
             :app:androidApp:assembleDebug \
             :app:androidApp:assembleProdRelease
 
