@@ -16,6 +16,7 @@ class TopicSearchTest {
         assertTrue(searchKey("đak") in searchKey("Ђак"))
         assertTrue(searchKey("knjizev") in searchKey("Језик и књижевност"))
         assertTrue(searchKey("cevap") in searchKey("Ћевапи"))
+        assertTrue(searchKey("pice") in searchKey("Храна и пиће"))
     }
 
     @Test
@@ -25,13 +26,13 @@ class TopicSearchTest {
                 Topic("SPORT", "Спорт", "Sport", 10),
                 Topic("MUSIC", "Музика", "Music", 10),
                 Topic("FILM_TV", "Филм и серије", "Film & TV", 10),
-                Topic("LOCAL", "Наши простори", "Our region", 10),
+                Topic("FOOD", "Храна и пиће", "Food & drink", 10),
             )
         assertEquals("Све", topicsSummary(emptyList(), topics, Language.SERBIAN_CYRILLIC, "Све"))
         assertEquals("Спорт, Музика", topicsSummary(listOf("SPORT", "MUSIC"), topics, Language.SERBIAN_CYRILLIC, "Све"))
         assertEquals(
             "Sport, Muzika +2",
-            topicsSummary(listOf("SPORT", "MUSIC", "FILM_TV", "LOCAL"), topics, Language.SERBIAN_LATIN, "Sve"),
+            topicsSummary(listOf("SPORT", "MUSIC", "FILM_TV", "FOOD"), topics, Language.SERBIAN_LATIN, "Sve"),
         )
     }
 }

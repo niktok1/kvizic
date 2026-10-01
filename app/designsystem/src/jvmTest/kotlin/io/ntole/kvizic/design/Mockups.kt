@@ -406,7 +406,7 @@ internal fun TrueFalseMock() {
         states = listOf(AnswerTileState.IDLE, AnswerTileState.IDLE),
         answered = listOf(Sova, Bojan),
         round = 4,
-        topic = "Наши простори",
+        topic = "Географија",
         score = 1328,
     )
 }

@@ -46,7 +46,8 @@ internal val TOPICS =
     listOf(
         Topic("GEOGRAPHY", "Географија", "Geography", 40, groupId = "KNOWLEDGE"),
         Topic("HISTORY", "Историја", "History", 30, groupId = "KNOWLEDGE"),
-        Topic("LOCAL", "Наши простори", "Our region", 4),
+        // In no group the picker knows: listed under the rest.
+        Topic("FOOD", "Храна и пиће", "Food & drink", 4),
     )
 
 internal fun lobby(

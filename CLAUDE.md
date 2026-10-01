@@ -108,9 +108,12 @@ Play Games Services v2. **No Material**: the design system draws everything.
   **60**, an explanation **160** (300 at first: on a small phone with eight players it left the reveal's
   answers no room). The content repo's house style is stricter for answers (40).
 - Topics: Географија, Историја, Спорт, Музика, Филм и серије, Наука и технологија, Језик и књижевност,
-  Наши простори; all feed Све. Questions are ekavian Serbian Cyrillic; Latin is made by transliteration.
+  Храна и пиће; all feed Све. A topic is a subject, never a place: Наши простори went (the owner, 2026-10-01,
+  V6), its questions to their subjects and its dishes to Храна и пиће, the one migration that deletes a
+  topic. Questions are ekavian Serbian Cyrillic; Latin is made by transliteration.
 - **Topic groups** (the owner's B, 2026-10-01): server data (`topic_groups`, V3), each topic in one or none:
-  Знање, Забава, Спорт, Наши простори. Written by migrations for now; moderator routes come with a topics tab.
+  Знање, Забава (with Храна и пиће), Спорт. Written by migrations for now; moderator routes come with a topics
+  tab.
   The settings show the topics picked in a few words („Спорт, Музика +3“), which open the picker: a search by
   any part of a name in either script with no accents needed, the groups opened and closed by their names,
   each with a chip for the whole group, counts, and thin topics greyed.

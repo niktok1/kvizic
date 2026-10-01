@@ -15,10 +15,11 @@ class TopicGroupsFlowTest {
         runTestServer("topic-groups") { client, _ ->
             val list: TopicListDto = client.get(KvizicApi.Paths.TOPICS).body()
 
-            assertEquals(listOf("KNOWLEDGE", "ENTERTAINMENT", "SPORT", "REGION"), list.groups.map { it.id })
-            assertEquals(listOf("Знање", "Забава", "Спорт", "Наши простори"), list.groups.map { it.nameSr })
+            assertEquals(listOf("KNOWLEDGE", "ENTERTAINMENT", "SPORT"), list.groups.map { it.id })
+            assertEquals(listOf("Знање", "Забава", "Спорт"), list.groups.map { it.nameSr })
+            // Наши простори went, a region rather than a subject, and its food has a topic of its own (V6).
             assertEquals(
-                mapOf(
+                listOf(
                     "GEOGRAPHY" to "KNOWLEDGE",
                     "HISTORY" to "KNOWLEDGE",
                     "SPORT" to "SPORT",
@@ -26,9 +27,10 @@ class TopicGroupsFlowTest {
                     "FILM_TV" to "ENTERTAINMENT",
                     "SCIENCE" to "KNOWLEDGE",
                     "LANGUAGE" to "KNOWLEDGE",
-                    "LOCAL" to "REGION",
+                    "FOOD" to "ENTERTAINMENT",
                 ),
-                list.topics.associate { it.id to it.groupId },
+                list.topics.map { it.id to it.groupId },
             )
+            assertEquals("Храна и пиће", list.topics.last().nameSr)
         }
 }
