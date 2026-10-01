@@ -268,157 +268,160 @@ private fun Waiting(
     val hosting = lobby.host == state.you
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
 
-    BackTopBar(
-        onBack = onLeave,
-        title =
-            when (lobby.kind) {
-                LobbyKind.PRIVATE -> words.privateRoom
-                LobbyKind.PUBLIC -> words.publicRoom
-                LobbyKind.SOLO -> words.soloRun
-            },
-        actions =
-            if (lobby.kind == LobbyKind.SOLO) {
-                null
-            } else {
-                {
-                    StageIconButton(
-                        KvizicIcons.Share,
-                        contentDescription = words.shareRoom,
-                        onClick = tapped("room.share") { actions.share(words.shareText.fill(lobby.code)) },
-                        small = true,
-                    )
-                }
-            },
-    )
-    Page {
-        if (lobby.kind != LobbyKind.SOLO) {
-            KvizicText(
-                words.roomCode,
-                Modifier.fillMaxWidth(),
-                style = type.label,
-                color = colors.onPageMuted,
-                textAlign = TextAlign.Center,
-            )
+    // One column: the stage lays its content out as a box, where the bar would sit over the page.
+    Column(Modifier.fillMaxSize()) {
+        BackTopBar(
+            onBack = onLeave,
+            title =
+                when (lobby.kind) {
+                    LobbyKind.PRIVATE -> words.privateRoom
+                    LobbyKind.PUBLIC -> words.publicRoom
+                    LobbyKind.SOLO -> words.soloRun
+                },
+            actions =
+                if (lobby.kind == LobbyKind.SOLO) {
+                    null
+                } else {
+                    {
+                        StageIconButton(
+                            KvizicIcons.Share,
+                            contentDescription = words.shareRoom,
+                            onClick = tapped("room.share") { actions.share(words.shareText.fill(lobby.code)) },
+                            small = true,
+                        )
+                    }
+                },
+        )
+        Page {
+            if (lobby.kind != LobbyKind.SOLO) {
+                KvizicText(
+                    words.roomCode,
+                    Modifier.fillMaxWidth(),
+                    style = type.label,
+                    color = colors.onPageMuted,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(space.sm))
+                CodeDisplay(
+                    lobby.code,
+                    Modifier.align(Alignment.CenterHorizontally),
+                    contentDescription = words.roomCode + ": " + lobby.code.toList().joinToString(" "),
+                )
+                Spacer(Modifier.height(space.lg))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                KvizicText(words.players, style = type.label, color = colors.onPageMuted)
+                Spacer(Modifier.width(space.sm))
+                KvizicText(
+                    "${lobby.members.size} / ${lobby.settings.maxPlayers}",
+                    style = type.label,
+                    color = colors.onPageAccent,
+                )
+            }
             Spacer(Modifier.height(space.sm))
-            CodeDisplay(
-                lobby.code,
-                Modifier.align(Alignment.CenterHorizontally),
-                contentDescription = words.roomCode + ": " + lobby.code.toList().joinToString(" "),
-            )
-            Spacer(Modifier.height(space.lg))
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            KvizicText(words.players, style = type.label, color = colors.onPageMuted)
-            Spacer(Modifier.width(space.sm))
-            KvizicText(
-                "${lobby.members.size} / ${lobby.settings.maxPlayers}",
-                style = type.label,
-                color = colors.onPageAccent,
-            )
-        }
-        Spacer(Modifier.height(space.sm))
-        Seats(lobby, state.you, bursts, onChoose = if (hosting) ({ chosen = it }) else null)
-        Spacer(Modifier.height(space.sm))
-        val status =
+            Seats(lobby, state.you, bursts, onChoose = if (hosting) ({ chosen = it }) else null)
+            Spacer(Modifier.height(space.sm))
+            val status =
+                when {
+                    lobby.kind == LobbyKind.SOLO -> null
+                    lobby.members.size < 2 -> words.waitingForPlayers
+                    !hosting -> words.waitingForHost
+                    else -> null
+                }
+            if (status != null) {
+                KvizicText(
+                    status,
+                    Modifier.fillMaxWidth(),
+                    style = type.caption,
+                    color = colors.onPageMuted,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(space.md))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+                if (lobby.kind == LobbyKind.SOLO) {
+                    // A solo run's one setting is its level, picked here; each level keeps its own best.
+                    LobbyDifficulty.entries.forEach { level ->
+                        Chip(
+                            words.levelName(level),
+                            selected = lobby.settings.difficulty == level,
+                            onClick =
+                                if (countdown == null) {
+                                    tapped("room.difficulty", mapOf("difficulty" to level.name.lowercase())) {
+                                        actions.chooseDifficulty(level)
+                                    }
+                                } else {
+                                    null
+                                },
+                        )
+                    }
+                } else {
+                    settingsChips(lobby.settings, topics).forEach { chip ->
+                        Chip(
+                            chip,
+                            onClick =
+                                if (hosting &&
+                                    countdown == null
+                                ) {
+                                    tapped("room.settings", onClick = actions.openSettings)
+                                } else {
+                                    null
+                                },
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            if (lobby.kind != LobbyKind.SOLO) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    EMOTES.forEach { reaction ->
+                        StageIconButton(
+                            reaction.icon,
+                            contentDescription = reaction.name(words),
+                            onClick =
+                                tapped(
+                                    "room.reaction",
+                                    mapOf("reaction" to reaction.id),
+                                ) { actions.react(reaction.id) },
+                            small = true,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(space.md))
+            }
             when {
-                lobby.kind == LobbyKind.SOLO -> null
-                lobby.members.size < 2 -> words.waitingForPlayers
-                !hosting -> words.waitingForHost
-                else -> null
-            }
-        if (status != null) {
-            KvizicText(
-                status,
-                Modifier.fillMaxWidth(),
-                style = type.caption,
-                color = colors.onPageMuted,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(space.md))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
-            if (lobby.kind == LobbyKind.SOLO) {
-                // A solo run's one setting is its level, picked here; each level keeps its own best.
-                LobbyDifficulty.entries.forEach { level ->
-                    Chip(
-                        words.levelName(level),
-                        selected = lobby.settings.difficulty == level,
+                countdown != null -> {
+                    Countdown(countdown)
+                }
+
+                hosting -> {
+                    StageButton(
+                        words.start,
+                        onClick = tapped("room.start", onClick = actions.start),
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText =
+                            words.playerCount.of(lobby.members.size, language) + " · " +
+                                words.questionCount.of(lobby.settings.questionCount, language),
+                    )
+                }
+
+                lobby.kind != LobbyKind.SOLO -> {
+                    // A member's way to tell the host the room is ready: the nudge bursts as a bell over their seat.
+                    StageButton(
+                        words.reactionNudge,
                         onClick =
-                            if (countdown == null) {
-                                tapped("room.difficulty", mapOf("difficulty" to level.name.lowercase())) {
-                                    actions.chooseDifficulty(level)
-                                }
-                            } else {
-                                null
+                            tapped("room.reaction", mapOf("reaction" to LobbyRules.NUDGE)) {
+                                actions.react(LobbyRules.NUDGE)
                             },
+                        modifier = Modifier.fillMaxWidth(),
+                        kind = ButtonKind.SECONDARY,
+                        icon = KvizicIcons.Bell,
                     )
                 }
-            } else {
-                settingsChips(lobby.settings, topics).forEach { chip ->
-                    Chip(
-                        chip,
-                        onClick =
-                            if (hosting &&
-                                countdown == null
-                            ) {
-                                tapped("room.settings", onClick = actions.openSettings)
-                            } else {
-                                null
-                            },
-                    )
+
+                else -> {
+                    Unit
                 }
-            }
-        }
-        Spacer(Modifier.weight(1f))
-        if (lobby.kind != LobbyKind.SOLO) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                EMOTES.forEach { reaction ->
-                    StageIconButton(
-                        reaction.icon,
-                        contentDescription = reaction.name(words),
-                        onClick =
-                            tapped(
-                                "room.reaction",
-                                mapOf("reaction" to reaction.id),
-                            ) { actions.react(reaction.id) },
-                        small = true,
-                    )
-                }
-            }
-            Spacer(Modifier.height(space.md))
-        }
-        when {
-            countdown != null -> {
-                Countdown(countdown)
-            }
-
-            hosting -> {
-                StageButton(
-                    words.start,
-                    onClick = tapped("room.start", onClick = actions.start),
-                    modifier = Modifier.fillMaxWidth(),
-                    supportingText =
-                        words.playerCount.of(lobby.members.size, language) + " · " +
-                            words.questionCount.of(lobby.settings.questionCount, language),
-                )
-            }
-
-            lobby.kind != LobbyKind.SOLO -> {
-                // A member's way to tell the host the room is ready: the nudge bursts as a bell over their seat.
-                StageButton(
-                    words.reactionNudge,
-                    onClick =
-                        tapped("room.reaction", mapOf("reaction" to LobbyRules.NUDGE)) {
-                            actions.react(LobbyRules.NUDGE)
-                        },
-                    modifier = Modifier.fillMaxWidth(),
-                    kind = ButtonKind.SECONDARY,
-                    icon = KvizicIcons.Bell,
-                )
-            }
-
-            else -> {
-                Unit
             }
         }
     }

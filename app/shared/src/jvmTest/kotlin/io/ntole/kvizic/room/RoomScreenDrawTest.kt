@@ -51,6 +51,10 @@ class RoomScreenDrawTest {
                     words.you,
                 ).forEach { assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown") }
                 EMOTES.forEach { assertTrue(it.name(words) in scene.descriptions(), "${skin.id}: ${it.id}") }
+                // The top bar stands over the page, never on it.
+                val bar = scene.nodes().first { words.privateRoom in it.texts }.boundsInRoot
+                val code = scene.nodes().first { words.roomCode in it.texts }.boundsInRoot
+                assertTrue(bar.bottom <= code.top, "${skin.id}: the bar at $bar is over the code at $code")
                 assertTrue(words.reactionNudge in shown, "${skin.id}: a member cannot nudge the host")
                 assertFalse(words.start in shown, "${skin.id}: a member has no Start")
             }
