@@ -23,7 +23,7 @@ class DefaultReportRepositoryTest {
     private val server = FakeServer()
 
     @Test
-    fun `a report names the question and the reason, with the player's session`() =
+    fun `a report names the question and the reason with the player's session`() =
         runTest {
             val report = reportQuestion(storeHolding(null))
 

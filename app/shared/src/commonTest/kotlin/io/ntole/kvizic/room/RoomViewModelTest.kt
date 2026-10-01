@@ -51,7 +51,7 @@ class RoomViewModelTest {
     }
 
     @Test
-    fun `a seat taken is under way until the room lets the player in, and reported once in`() =
+    fun `a seat taken is under way until the room lets the player in and reported once in`() =
         runTest(main) {
             val room = room()
 
@@ -84,7 +84,7 @@ class RoomViewModelTest {
         }
 
     @Test
-    fun `a seat refused says why, where it was asked, until taken down`() =
+    fun `a seat refused says why where it was asked until taken down`() =
         runTest(main) {
             val room = room()
 
@@ -114,7 +114,7 @@ class RoomViewModelTest {
         }
 
     @Test
-    fun `each member's last reaction bursts, the same one again with a new key`() =
+    fun `each member's last reaction bursts the same one again with a new key`() =
         runTest(main) {
             val room = room()
             testScheduler.advanceUntilIdle()
@@ -131,7 +131,7 @@ class RoomViewModelTest {
         }
 
     @Test
-    fun `a notice or a refusal shows a moment, and the room's counts stay`() =
+    fun `a notice or a refusal shows a moment and the room's counts stay`() =
         runTest(main) {
             val room = room()
             testScheduler.advanceUntilIdle()
@@ -151,7 +151,7 @@ class RoomViewModelTest {
         }
 
     @Test
-    fun `a game played to its end is reported once, by place and size alone`() =
+    fun `a game played to its end is reported once by place and size alone`() =
         runTest(main) {
             val room = room()
             testScheduler.advanceUntilIdle()
@@ -214,7 +214,7 @@ class RoomViewModelTest {
         }
 
     @Test
-    fun `a question reported says so a moment, and a report refused says it could not be`() =
+    fun `a question reported says so a moment and a report refused says it could not be`() =
         runTest(main) {
             val room = room()
 

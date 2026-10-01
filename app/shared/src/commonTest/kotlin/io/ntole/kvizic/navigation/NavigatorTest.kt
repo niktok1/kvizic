@@ -134,7 +134,7 @@ class NavigatorTest {
     }
 
     @Test
-    fun `the room letting the player go goes back Home, from its settings too`() {
+    fun `the room letting the player go goes back Home from its settings too`() {
         listOf(listOf(Screen.Room), listOf(Screen.Room, Screen.RoomSettings)).forEach { above ->
             val navigator = Navigator()
             above.forEach(navigator::open)
