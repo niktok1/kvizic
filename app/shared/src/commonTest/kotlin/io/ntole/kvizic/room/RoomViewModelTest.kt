@@ -4,6 +4,7 @@ import io.ntole.kvizic.analytics.RecordingAnalytics
 import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.GameError
+import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyCommandKind
 import io.ntole.kvizic.core.domain.lobby.LobbyEvent
@@ -12,6 +13,10 @@ import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.NoticeKind
 import io.ntole.kvizic.core.domain.lobby.RefusalReason
+import io.ntole.kvizic.core.domain.report.QuestionReportReason
+import io.ntole.kvizic.core.domain.report.ReportQuestion
+import io.ntole.kvizic.core.domain.report.ReportRepository
+import io.ntole.kvizic.core.domain.session.SessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -33,6 +38,7 @@ class RoomViewModelTest {
     private val main: TestDispatcher = StandardTestDispatcher()
     private val session = ScriptedLobbySession()
     private val analytics = RecordingAnalytics()
+    private val reports = RecordingReports()
 
     @BeforeTest
     fun setUp() {
@@ -47,7 +53,7 @@ class RoomViewModelTest {
     @Test
     fun `a seat taken is under way until the room lets the player in, and reported once in`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
 
             room.quickPlay()
             testScheduler.advanceUntilIdle()
@@ -67,7 +73,7 @@ class RoomViewModelTest {
     @Test
     fun `a second tap while a seat is being taken takes none more`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
 
             room.join("482915")
             room.join("482915")
@@ -80,7 +86,7 @@ class RoomViewModelTest {
     @Test
     fun `a seat refused says why, where it was asked, until taken down`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
 
             room.join("111111")
             testScheduler.advanceUntilIdle()
@@ -99,7 +105,7 @@ class RoomViewModelTest {
     @Test
     fun `a new room is made with the settings picked`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
 
             room.create(LobbySettings(questionCount = 15))
             testScheduler.advanceUntilIdle()
@@ -110,7 +116,7 @@ class RoomViewModelTest {
     @Test
     fun `each member's last reaction bursts, the same one again with a new key`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
             testScheduler.advanceUntilIdle()
 
             session.events.emit(LobbyEvent.Reacted("nina", "fire"))
@@ -127,7 +133,7 @@ class RoomViewModelTest {
     @Test
     fun `a notice or a refusal shows a moment, and the room's counts stay`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
             testScheduler.advanceUntilIdle()
 
             session.events.emit(LobbyEvent.Refused(LobbyCommandKind.START, RefusalReason.NOT_HOST))
@@ -147,7 +153,7 @@ class RoomViewModelTest {
     @Test
     fun `a game played to its end is reported once, by place and size alone`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
             testScheduler.advanceUntilIdle()
 
             session.state.value = inLobby(GamePhase.Waiting(RESULTS))
@@ -171,7 +177,7 @@ class RoomViewModelTest {
     @Test
     fun `a room that lets the player go is reported by why`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
             testScheduler.advanceUntilIdle()
 
             session.state.value = inLobby(GamePhase.Waiting(null))
@@ -190,7 +196,7 @@ class RoomViewModelTest {
     @Test
     fun `commands go to the session as they are`() =
         runTest(main) {
-            val room = RoomViewModel(session, analytics)
+            val room = room()
 
             room.answer(2)
             room.start()
@@ -206,4 +212,40 @@ class RoomViewModelTest {
                 session.commands,
             )
         }
+
+    @Test
+    fun `a question reported says so a moment, and a report refused says it could not be`() =
+        runTest(main) {
+            val room = room()
+
+            room.report("q1", QuestionReportReason.WRONG_ANSWER)
+            testScheduler.runCurrent()
+            assertEquals(listOf("q1" to QuestionReportReason.WRONG_ANSWER), reports.sent)
+            assertEquals(RoomNote.REPORTED, room.note.value)
+
+            reports.refuseWith = KvizicException(GameError.QUESTION_NOT_FOUND)
+            room.report("q2", QuestionReportReason.TYPO)
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.REPORT_FAILED, room.note.value)
+        }
+
+    private fun room() = RoomViewModel(session, ReportQuestion(reports, NoSession), analytics)
+
+    private class RecordingReports : ReportRepository {
+        val sent = mutableListOf<Pair<String, QuestionReportReason>>()
+        var refuseWith: KvizicException? = null
+
+        override suspend fun report(
+            questionId: String,
+            reason: QuestionReportReason,
+        ) {
+            refuseWith?.let { throw it }
+            sent += questionId to reason
+        }
+    }
+
+    /** A session that is always there. */
+    private object NoSession : SessionRepository {
+        override suspend fun ensure(): String = YOU
+    }
 }

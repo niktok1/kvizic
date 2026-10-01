@@ -15,6 +15,8 @@ import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.NoticeKind
 import io.ntole.kvizic.core.domain.lobby.RefusalReason
+import io.ntole.kvizic.core.domain.report.QuestionReportReason
+import io.ntole.kvizic.core.domain.report.ReportQuestion
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +53,7 @@ sealed interface Entry {
 }
 
 /** A line the room shows for a moment: a notice of the server's, or a command it refused. */
-enum class RoomNote { ONLY_HOST, REFUSED, TOPICS_TOPPED_UP, GAME_SHORTENED, SERVER_RESTARTING }
+enum class RoomNote { ONLY_HOST, REFUSED, TOPICS_TOPPED_UP, GAME_SHORTENED, SERVER_RESTARTING, REPORTED, REPORT_FAILED }
 
 /** A reaction one member sent, and a key that tells it from the one before, so the same reaction bursts again. */
 data class Burst(
@@ -75,6 +77,7 @@ data class Presence(
  */
 class RoomViewModel(
     private val session: LobbySession,
+    private val reportQuestion: ReportQuestion,
     private val analytics: Analytics,
 ) : ViewModel() {
     val state: StateFlow<LobbySessionState> = session.state
@@ -169,6 +172,25 @@ class RoomViewModel(
 
     /** The app came back to the foreground: a connection being made again is tried now. */
     fun wake() = session.wake()
+
+    /** Reports question [questionId] for [reason]; the room says a moment whether it went. */
+    fun report(
+        questionId: String,
+        reason: QuestionReportReason,
+    ) {
+        viewModelScope.launch {
+            try {
+                reportQuestion(questionId, reason)
+                show(RoomNote.REPORTED)
+            } catch (failure: KvizicException) {
+                analytics.track(
+                    AnalyticsEvent.ERROR_SHOWN,
+                    mapOf(AnalyticsProperty.CODE to failure.error.name, AnalyticsProperty.ACTION to "report"),
+                )
+                show(RoomNote.REPORT_FAILED)
+            }
+        }
+    }
 
     /** Takes a seat [way], unless one is being taken already, and says why when it could not. */
     private fun take(

@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.data.lobby.DefaultLobbySession
 import io.ntole.kvizic.core.data.lobby.DefaultPublicLobbyRepository
 import io.ntole.kvizic.core.data.player.DefaultPlayerRepository
 import io.ntole.kvizic.core.data.playgames.DefaultPlayGamesRepository
+import io.ntole.kvizic.core.data.report.DefaultReportRepository
 import io.ntole.kvizic.core.data.session.DefaultSessionRepository
 import io.ntole.kvizic.core.data.session.PlayGamesSettled
 import io.ntole.kvizic.core.data.topic.DefaultTopicRepository
@@ -20,6 +21,8 @@ import io.ntole.kvizic.core.domain.player.SetAvatar
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
+import io.ntole.kvizic.core.domain.report.ReportQuestion
+import io.ntole.kvizic.core.domain.report.ReportRepository
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.session.SessionRepository
 import io.ntole.kvizic.core.domain.topic.GetTopics
@@ -35,6 +38,7 @@ import io.ntole.kvizic.core.network.analytics.PostHogConfig
 import io.ntole.kvizic.core.network.api.AuthApi
 import io.ntole.kvizic.core.network.api.LobbyApi
 import io.ntole.kvizic.core.network.api.PlayerApi
+import io.ntole.kvizic.core.network.api.ReportApi
 import io.ntole.kvizic.core.network.api.TopicApi
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.core.network.realtime.KtorPlayTransport
@@ -122,11 +126,13 @@ public fun gameDataModule(
 ): Module =
     module {
         single { TopicApi(get()) }
+        single { ReportApi(get()) }
         single { LobbyApi(get()) }
         single<PlayTransport> { KtorPlayTransport(environment.apiBaseUrl, build) }
 
         single<PlayerRepository> { DefaultPlayerRepository(api = get(), session = get()) }
         single<TopicRepository> { DefaultTopicRepository(api = get()) }
+        single<ReportRepository> { DefaultReportRepository(api = get(), session = get()) }
         single<PublicLobbyRepository> { DefaultPublicLobbyRepository(api = get(), session = get()) }
         single<LobbySession> {
             DefaultLobbySession(api = get(), transport = get(), session = get(), scope = appScope, upgrade = get())
@@ -135,4 +141,5 @@ public fun gameDataModule(
         factory { GetProfile(players = get(), session = get()) }
         factory { SetAvatar(players = get(), session = get()) }
         factory { GetTopics(topics = get()) }
+        factory { ReportQuestion(reports = get(), session = get()) }
     }

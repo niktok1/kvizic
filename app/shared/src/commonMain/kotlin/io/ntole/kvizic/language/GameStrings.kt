@@ -171,6 +171,15 @@ data class GameStrings(
     val pickAvatar: String,
     /** Each avatar's animal, in the order the design system draws them (`AvatarArt.DRAWN`), for a screen reader. */
     val avatarNames: List<String>,
+    /** Reporting a question: the button, the dialog's title, each reason, and that the report went. */
+    val reportQuestion: String,
+    val reportWhy: String,
+    val reportWrongAnswer: String,
+    val reportTypo: String,
+    val reportAmbiguous: String,
+    val reportOffensive: String,
+    val reportOther: String,
+    val reported: String,
 ) {
     internal fun map(transform: (String) -> String): GameStrings =
         GameStrings(
@@ -280,6 +289,14 @@ data class GameStrings(
             bestTopic = transform(bestTopic),
             pickAvatar = transform(pickAvatar),
             avatarNames = avatarNames.map(transform),
+            reportQuestion = transform(reportQuestion),
+            reportWhy = transform(reportWhy),
+            reportWrongAnswer = transform(reportWrongAnswer),
+            reportTypo = transform(reportTypo),
+            reportAmbiguous = transform(reportAmbiguous),
+            reportOffensive = transform(reportOffensive),
+            reportOther = transform(reportOther),
+            reported = transform(reported),
         )
 }
 
@@ -413,6 +430,14 @@ internal val SerbianCyrillicGameStrings: GameStrings =
                 "Пчела",
                 "Мачка",
             ),
+        reportQuestion = "Пријави питање",
+        reportWhy = "Шта није у реду са питањем?",
+        reportWrongAnswer = "Означени одговор није тачан",
+        reportTypo = "Има словну грешку",
+        reportAmbiguous = "Нејасно је, или је више одговора тачно",
+        reportOffensive = "Увредљиво је",
+        reportOther = "Нешто друго",
+        reported = "Хвала! Пријава је послата.",
     )
 
 internal val EnglishGameStrings: GameStrings =
@@ -541,4 +566,12 @@ internal val EnglishGameStrings: GameStrings =
                 "Bee",
                 "Cat",
             ),
+        reportQuestion = "Report the question",
+        reportWhy = "What's wrong with the question?",
+        reportWrongAnswer = "The answer marked right is wrong",
+        reportTypo = "It has a typo",
+        reportAmbiguous = "It's unclear, or more than one answer is right",
+        reportOffensive = "It's offensive",
+        reportOther = "Something else",
+        reported = "Thanks! The report is sent.",
     )

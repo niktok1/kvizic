@@ -364,6 +364,7 @@ private fun Room(
                 react = room::react,
                 leave = room::leave,
                 share = { text -> scope.launch { share.shareText(text) } },
+                report = room::report,
             ),
     )
 }

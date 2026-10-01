@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.Lobby
@@ -25,6 +26,7 @@ import io.ntole.kvizic.design.component.AnswerGrid
 import io.ntole.kvizic.design.component.AnswerTileState
 import io.ntole.kvizic.design.component.AvatarChip
 import io.ntole.kvizic.design.component.AvatarStack
+import io.ntole.kvizic.design.component.ButtonKind
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.FlapSize
 import io.ntole.kvizic.design.component.FlipNumber
@@ -35,10 +37,12 @@ import io.ntole.kvizic.design.component.QuestionText
 import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ScoreRow
 import io.ntole.kvizic.design.component.Scoreboard
+import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.TimerPhase
 import io.ntole.kvizic.design.component.TimerSize
 import io.ntole.kvizic.design.component.WaitingFor
 import io.ntole.kvizic.design.component.signed
+import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
@@ -216,6 +220,7 @@ internal fun RevealScreen(
     state: LobbySessionState.InLobby,
     phase: GamePhase.Revealing,
     topics: List<Topic>,
+    onReport: (questionId: String) -> Unit = {},
 ) {
     val words = LocalStrings.current.game
     val space = KvizicTheme.space
@@ -299,6 +304,14 @@ internal fun RevealScreen(
                 (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
                 style = type.caption,
                 color = colors.onPageMuted,
+            )
+            Spacer(Modifier.width(space.sm))
+            StageIconButton(
+                KvizicIcons.Flag,
+                contentDescription = words.reportQuestion,
+                onClick = tapped("reveal.report") { onReport(reveal.questionId) },
+                kind = ButtonKind.QUIET,
+                small = true,
             )
         }
     }

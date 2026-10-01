@@ -8,6 +8,7 @@ import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.language.SerbianScript
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.language.GameStrings
@@ -54,6 +55,18 @@ internal fun GameStrings.noteText(note: RoomNote): String =
         RoomNote.TOPICS_TOPPED_UP -> topicsToppedUp
         RoomNote.GAME_SHORTENED -> gameShortened
         RoomNote.SERVER_RESTARTING -> exitRestarting
+        RoomNote.REPORTED -> reported
+        RoomNote.REPORT_FAILED -> refused
+    }
+
+/** A reason to report a question, as the report's dialog says it. */
+internal fun GameStrings.reasonText(reason: QuestionReportReason): String =
+    when (reason) {
+        QuestionReportReason.WRONG_ANSWER -> reportWrongAnswer
+        QuestionReportReason.TYPO -> reportTypo
+        QuestionReportReason.AMBIGUOUS -> reportAmbiguous
+        QuestionReportReason.OFFENSIVE -> reportOffensive
+        QuestionReportReason.OTHER -> reportOther
     }
 
 /** A reaction a room may send: its id on the wire, its icon, and its name for a screen reader. */

@@ -23,6 +23,7 @@ import io.ntole.kvizic.core.player.NameSource
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
 import io.ntole.kvizic.core.player.SetAvatarRequest
+import io.ntole.kvizic.core.report.ReportQuestionRequest
 import io.ntole.kvizic.core.topic.TopicDto
 import io.ntole.kvizic.core.topic.TopicListDto
 import kotlinx.coroutines.CoroutineDispatcher
@@ -109,6 +110,12 @@ internal class FakeServer {
     /** What a read of the public lobbies answers. */
     var publicLobbies: LobbyListDto = LobbyListDto()
 
+    /** Every report sent, with the `Authorization` header it went with. */
+    val reportsSentAs = mutableListOf<Pair<String?, ReportQuestionRequest>>()
+
+    /** The questions a report may name; any other is QUESTION_NOT_FOUND. */
+    var reportable: Set<String> = setOf("q1")
+
     val engine = MockEngine { request -> lock.withLock { handle(request) } }
 
     /** The same server on [dispatcher]: a test's own, so its calls run on the test's virtual clock. */
@@ -170,6 +177,10 @@ internal class FakeServer {
 
             KvizicApi.Paths.MY_AVATAR -> {
                 avatar(request)
+            }
+
+            KvizicApi.Paths.REPORTS -> {
+                report(request)
             }
 
             KvizicApi.Paths.ME_DELETION -> {
@@ -289,6 +300,18 @@ internal class FakeServer {
                 avatars[player] = picked.avatarId
                 respondJson(KvizicJson.encodeToString(profileOf(player)))
             }
+        }
+    }
+
+    private suspend fun MockRequestHandleScope.report(request: HttpRequestData): HttpResponseData {
+        val authorization = request.headers[HttpHeaders.Authorization]
+        val report = KvizicJson.decodeFromString<ReportQuestionRequest>(request.body.toByteArray().decodeToString())
+        reportsSentAs += authorization to report
+        val player = authorization.player()
+        return when {
+            player == null || player !in players -> respondErrorDto(HttpStatusCode.Unauthorized, ErrorCode.UNAUTHORIZED)
+            report.questionId !in reportable -> respondErrorDto(HttpStatusCode.NotFound, ErrorCode.QUESTION_NOT_FOUND)
+            else -> respond("", HttpStatusCode.NoContent)
         }
     }
 

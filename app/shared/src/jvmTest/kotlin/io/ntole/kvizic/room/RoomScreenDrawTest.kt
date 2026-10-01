@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
+import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.component.signed
@@ -185,6 +186,26 @@ class RoomScreenDrawTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun `a question is reported from its reveal, for the reason picked`() {
+        val words = stringsOf(Language.DEFAULT).game
+        val reported = mutableListOf<Pair<String, QuestionReportReason>>()
+        draw(
+            Skins.Default,
+            "report",
+            inLobby(revealing()),
+            RoomActions(report = { id, reason ->
+                reported +=
+                    id to reason
+            }),
+        ) { scene ->
+            scene.tap(words.reportQuestion)
+            assertTrue(words.reportWhy in scene.everyText(), "${scene.everyText()}")
+            scene.tap(words.reportAmbiguous)
+        }
+        assertEquals(listOf("q1" to QuestionReportReason.AMBIGUOUS), reported)
     }
 
     @Test

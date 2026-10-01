@@ -49,6 +49,7 @@ import io.ntole.kvizic.room.YOU
 import io.ntole.kvizic.room.answering
 import io.ntole.kvizic.room.inLobby
 import io.ntole.kvizic.room.lobby
+import io.ntole.kvizic.room.revealing
 import io.ntole.kvizic.settle
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
@@ -169,6 +170,18 @@ class TapsTest {
             elementsTapped {
                 RoomScreen(
                     inLobby(answering()),
+                    TOPICS,
+                    note = null,
+                    bursts = emptyMap(),
+                    actions = RoomActions(),
+                )
+            },
+        )
+        assertEquals(
+            setOf("reveal.report", "report.reason", "report.cancel"),
+            elementsTapped {
+                RoomScreen(
+                    inLobby(revealing()),
                     TOPICS,
                     note = null,
                     bursts = emptyMap(),

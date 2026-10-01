@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.Deadline
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.GameResults
@@ -31,6 +32,7 @@ import io.ntole.kvizic.core.domain.lobby.Lobby
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbyMember
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
+import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.component.ButtonKind
 import io.ntole.kvizic.design.component.ButtonSize
@@ -72,6 +74,7 @@ class RoomActions(
     val react: (String) -> Unit = {},
     val leave: () -> Unit = {},
     val share: (String) -> Unit = {},
+    val report: (questionId: String, reason: QuestionReportReason) -> Unit = { _, _ -> },
 )
 
 /**
@@ -90,6 +93,8 @@ fun RoomScreen(
 ) {
     val me = state.lobby.member(state.you)
     var leaving by rememberSaveable { mutableStateOf(false) }
+    // Held here, not on the reveal, so the dialog stays as the next question comes.
+    var reporting by rememberSaveable { mutableStateOf<String?>(null) }
     Column(modifier.fillMaxSize()) {
         RoomBanner(reconnecting = state.reconnecting, note = note)
         when (val phase = state.phase) {
@@ -120,11 +125,51 @@ fun RoomScreen(
             }
 
             is GamePhase.Revealing -> {
-                RevealScreen(state, phase, topics)
+                RevealScreen(state, phase, topics, onReport = { reporting = it })
             }
         }
     }
     if (leaving) LeaveDialog(onStay = { leaving = false }, onLeave = actions.leave)
+    reporting?.let { questionId ->
+        ReportDialog(
+            onDismiss = { reporting = null },
+            onReport = { reason ->
+                reporting = null
+                actions.report(questionId, reason)
+            },
+        )
+    }
+}
+
+/** Why the question is reported: each reason one tap, which sends it. */
+@Composable
+private fun ReportDialog(
+    onDismiss: () -> Unit,
+    onReport: (QuestionReportReason) -> Unit,
+) {
+    val strings = LocalStrings.current
+    val words = strings.game
+    val pick = tappedAt("report.reason") { index -> onReport(QuestionReportReason.entries[index]) }
+    StageDialog(onDismiss = onDismiss, title = words.reportWhy) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(KvizicTheme.space.xs)) {
+            QuestionReportReason.entries.forEachIndexed { index, reason ->
+                StageButton(
+                    words.reasonText(reason),
+                    onClick = { pick(index) },
+                    modifier = Modifier.fillMaxWidth(),
+                    kind = ButtonKind.SECONDARY,
+                    size = ButtonSize.SMALL,
+                )
+            }
+            StageButton(
+                strings.cancel,
+                onClick = tapped("report.cancel", onClick = onDismiss),
+                modifier = Modifier.align(Alignment.End),
+                kind = ButtonKind.QUIET,
+                size = ButtonSize.SMALL,
+            )
+        }
+    }
 }
 
 /** Over the room, while it is so: that the connection is being made again, and a note the room shows. */
