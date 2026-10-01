@@ -264,6 +264,8 @@ class ComponentsDrawTest {
                 "Laugh" to KvizicIcons.Laugh,
                 "Wow" to KvizicIcons.Wow,
                 "Heart" to KvizicIcons.Heart,
+                "Clap" to KvizicIcons.Clap,
+                "Oops" to KvizicIcons.Oops,
                 "Flame" to KvizicIcons.Flame,
                 "ThumbUp" to KvizicIcons.ThumbUp,
             )

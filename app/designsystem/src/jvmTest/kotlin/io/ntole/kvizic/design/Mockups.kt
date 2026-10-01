@@ -238,7 +238,8 @@ internal fun LobbyMock(burst: Any? = "boban") {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            listOf("Смех", "Шок", "Срце", "Ватра", "Браво").zip(KvizicIcons.REACTIONS).forEach { (name, icon) ->
+            val names = listOf("Браво", "Аплауз", "Ватра", "Вау", "Смех", "Упс")
+            names.zip(KvizicIcons.REACTIONS).forEach { (name, icon) ->
                 StageIconButton(icon, contentDescription = name, onClick = {}, small = true)
             }
         }

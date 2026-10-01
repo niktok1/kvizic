@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathBuilder
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
@@ -324,6 +325,75 @@ object KvizicIcons {
         }
     }
 
+    /** Two hands meeting at their heels and opening at the fingers, a spark over them: applause, a reaction. */
+    val Clap: ImageVector by lazy {
+        icon("Clap") {
+            // Each hand upright, its thumb out, then turned out from the heels the two meet at.
+            group(rotate = -CLAP_TURN, pivotX = 12f, pivotY = 20.5f) {
+                outline {
+                    moveTo(12.0f, 20.5f)
+                    verticalLineTo(7.5f)
+                    curveTo(12.0f, 5.8f, 10.9f, 4.8f, 9.6f, 4.8f)
+                    curveTo(8.3f, 4.8f, 7.2f, 5.8f, 7.2f, 7.5f)
+                    verticalLineTo(12.5f)
+                    lineTo(5.6f, 10.6f)
+                    curveTo(4.6f, 9.6f, 3.4f, 10.8f, 4.2f, 11.9f)
+                    lineTo(7.2f, 16.0f)
+                    verticalLineTo(18.0f)
+                    curveTo(7.2f, 19.5f, 8.4f, 20.5f, 9.8f, 20.5f)
+                    close()
+                }
+            }
+            group(rotate = CLAP_TURN, pivotX = 12f, pivotY = 20.5f) {
+                outline {
+                    moveTo(12.0f, 20.5f)
+                    verticalLineTo(7.5f)
+                    curveTo(12.0f, 5.8f, 13.1f, 4.8f, 14.4f, 4.8f)
+                    curveTo(15.7f, 4.8f, 16.8f, 5.8f, 16.8f, 7.5f)
+                    verticalLineTo(12.5f)
+                    lineTo(18.4f, 10.6f)
+                    curveTo(19.4f, 9.6f, 20.6f, 10.8f, 19.8f, 11.9f)
+                    lineTo(16.8f, 16.0f)
+                    verticalLineTo(18.0f)
+                    curveTo(16.8f, 19.5f, 15.6f, 20.5f, 14.2f, 20.5f)
+                    close()
+                }
+            }
+            outline {
+                // The spark of the clap.
+                moveTo(12f, 1.5f)
+                verticalLineTo(3.5f)
+                moveTo(8.2f, 2.4f)
+                lineTo(9.2f, 4f)
+                moveTo(15.8f, 2.4f)
+                lineTo(14.8f, 4f)
+            }
+        }
+    }
+
+    /** A face caught out, its mouth a small round, a drop of sweat at its brow: oops, a reaction. */
+    val Oops: ImageVector by lazy {
+        icon("Oops") {
+            outline {
+                circle(x = 11f, y = 13f, radius = 8.5f)
+                circle(x = 11f, y = 16.5f, radius = 1.6f)
+                moveTo(7.5f, 9.8f)
+                lineTo(9.5f, 10.8f)
+                moveTo(14.5f, 9.8f)
+                lineTo(12.5f, 10.8f)
+            }
+            path(fill = SolidColor(Color.Black)) {
+                // The drop, falling from its point to its round.
+                moveTo(20f, 2.5f)
+                curveTo(21.5f, 5f, 22.2f, 6.2f, 22.2f, 7.2f)
+                curveTo(22.2f, 8.4f, 21.2f, 9.3f, 20f, 9.3f)
+                curveTo(18.8f, 9.3f, 17.8f, 8.4f, 17.8f, 7.2f)
+                curveTo(17.8f, 6.2f, 18.5f, 5f, 20f, 2.5f)
+                close()
+            }
+        }
+    }
+
     /** A heart: a reaction. */
     val Heart: ImageVector by lazy {
         icon("Heart") {
@@ -380,8 +450,11 @@ object KvizicIcons {
         }
     }
 
-    /** The reactions a room may send, in the order the reactions row shows them. */
-    val REACTIONS: List<ImageVector> by lazy { listOf(Laugh, Wow, Heart, Flame, ThumbUp) }
+    /**
+     * The reactions a room may send, in the order the reactions row shows them: bravo, applause, fire, wow,
+     * a laugh and oops, as the server's reactions are listed.
+     */
+    val REACTIONS: List<ImageVector> by lazy { listOf(ThumbUp, Clap, Flame, Wow, Laugh, Oops) }
 
     private fun icon(
         name: String,
@@ -443,6 +516,9 @@ object KvizicIcons {
 
     /** The grid every icon is drawn on, which is also its size in dp. */
     private const val SIZE = 24f
+
+    /** How far each hand of [Clap] turns out from upright, in degrees. */
+    private const val CLAP_TURN = 9f
     private const val STROKE = 2.2f
     private const val BOLD = 3f
 
