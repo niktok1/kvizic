@@ -1,5 +1,8 @@
 package io.ntole.kvizic.design
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.design.component.ReactionBurst
@@ -20,7 +23,7 @@ class BurstResumeTest {
     @Test
     fun `a burst that is over stays gone when composed anew`() {
         Skins.ALL.forEach { skin ->
-            val shown = litPixelsOverTime(skin, TimeSource.Monotonic.markNow() - 10.seconds)
+            val shown = litPixelsOverTime(skin) { TimeSource.Monotonic.markNow() - 10.seconds }
             assertTrue(shown.all { it == 0 }, "${skin.id}: an old reaction burst again: $shown")
         }
     }
@@ -28,21 +31,30 @@ class BurstResumeTest {
     @Test
     fun `a burst just heard plays`() {
         Skins.ALL.forEach { skin ->
-            val shown = litPixelsOverTime(skin, TimeSource.Monotonic.markNow())
+            val shown = litPixelsOverTime(skin) { TimeSource.Monotonic.markNow() }
             assertTrue(shown.any { it > 0 }, "${skin.id}: a new reaction never showed: $shown")
         }
     }
 
-    /** How many pixels the burst draws at a few moments of its first half second, on a transparent scene. */
+    /**
+     * How many pixels the burst draws at a few moments of its first half second, on a transparent scene, the
+     * reaction heard at [startedAt]'s mark. The scene is drawn once before then: the burst reads real time,
+     * and a test JVM's first scene, on a busy machine, can take longer than a whole burst to draw.
+     */
     private fun litPixelsOverTime(
         skin: io.ntole.kvizic.design.skin.Skin,
-        startedAt: TimeMark,
+        startedAt: () -> TimeMark,
     ): List<Int> {
+        var heard by mutableStateOf<TimeMark?>(null)
         val scene =
             ImageComposeScene(width = SIZE, height = SIZE, density = Density(1f)) {
-                KvizicSkin(skin) { ReactionBurst(KvizicIcons.ThumbUp, burstKey = 1, startedAt = startedAt) }
+                KvizicSkin(skin) {
+                    heard?.let { ReactionBurst(KvizicIcons.ThumbUp, burstKey = 1, startedAt = it) }
+                }
             }
         try {
+            scene.renderAt(0)
+            heard = startedAt()
             return MOMENTS.map { millis ->
                 val time = millis * MILLI
                 scene.renderAt(time)
