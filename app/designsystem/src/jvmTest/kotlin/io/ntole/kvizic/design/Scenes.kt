@@ -48,12 +48,22 @@ internal fun ImageComposeScene.renderAt(nanoTime: Long) {
     }
 }
 
-/** The scene drawn a frame at a time, at 60 a second, up to [nanoTime], and that frame as an image. */
+/**
+ * The scene drawn up to [nanoTime], and that frame as an image: a frame at a time, at 60 a second, through
+ * the first half second, where the steps give way to each other, then a frame each 100 ms, drawn once. What
+ * runs on the frame clock takes its value from the frame's time, so the last frame is the one 60 a second
+ * would draw; a slow frame that misses the snapshot manager only starts an animation a frame late.
+ */
 internal fun ImageComposeScene.renderUpTo(nanoTime: Long): Image {
     var t = 0L
-    while (t < nanoTime) {
+    while (t < minOf(nanoTime, SMOOTH)) {
         renderAt(t)
         t += FRAME
+    }
+    while (t < nanoTime) {
+        Snapshot.sendApplyNotifications()
+        render(t).close()
+        t += SLOW_FRAME
     }
     renderAt(nanoTime)
     return render(nanoTime)
@@ -108,6 +118,12 @@ internal fun writeDesign(
 
 internal const val FRAME: Long = 1_000_000_000L / 60
 internal const val MILLI: Long = 1_000_000L
+
+/** How long [renderUpTo] draws at 60 frames a second. */
+private const val SMOOTH = 500L * MILLI
+
+/** [renderUpTo]'s frame after [SMOOTH]. */
+private const val SLOW_FRAME = 100L * MILLI
 
 /**
  * Runs what is dispatched to it only once [drain]ed: a scene's effects, which it then runs as a phone does,
