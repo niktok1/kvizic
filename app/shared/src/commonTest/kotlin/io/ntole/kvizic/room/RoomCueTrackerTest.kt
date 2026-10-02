@@ -4,6 +4,7 @@ import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.GameResults
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
+import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.PersonalBest
 import io.ntole.kvizic.design.sound.Cue
 import kotlin.test.Test
@@ -180,10 +181,20 @@ class RoomCueTrackerTest {
 
     @Test
     fun `a refusal is an error and a notice a ping and a copied code is sounded where it is copied`() {
-        assertEquals(Cue.ERROR, noteCue(RoomNote.REFUSED))
-        assertEquals(Cue.ERROR, noteCue(RoomNote.ONLY_HOST))
-        assertEquals(Cue.NOTICE, noteCue(RoomNote.GAME_SHORTENED))
-        assertEquals(null, noteCue(RoomNote.CODE_COPIED))
-        assertTrue(RoomNote.entries.all { it == RoomNote.CODE_COPIED || noteCue(it) != null }, "every note has a sound")
+        listOf(RoomNote.OnlyHost, RoomNote.Refused, RoomNote.VoteTooSoon, RoomNote.ReportFailed).forEach {
+            assertEquals(Cue.ERROR, noteCue(it), "$it")
+        }
+        listOf(
+            RoomNote.ServerRestarting,
+            RoomNote.TopicsToppedUp,
+            RoomNote.GameShortened,
+            RoomNote.Reported,
+            RoomNote.HostIdle,
+            RoomNote.RoomIdle,
+            RoomNote.SettingsChanged(LobbySettings(), LobbySettings(questionCount = 20)),
+            RoomNote.HostChanged("Нина", you = false),
+        ).forEach { assertEquals(Cue.NOTICE, noteCue(it), "$it") }
+        assertEquals(null, noteCue(RoomNote.CodeCopied))
+        assertEquals(null, noteCue(RoomNote.HostChanged("Марко", you = true)), "the host's own cue is the tracker's")
     }
 }

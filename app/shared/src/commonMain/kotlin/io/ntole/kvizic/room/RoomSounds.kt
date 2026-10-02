@@ -179,15 +179,26 @@ internal fun reactionCue(id: String): Cue? =
         else -> null
     }
 
-/** The sound of the line the room says: a refusal is an error, a notice a soft ping, a copied code its own. */
+/**
+ * The sound of the line the room says: a refusal is an error, the rest a soft ping; a code copied is sounded
+ * where it is copied, at once, and the host's room handed to the player by the tracker's own.
+ */
 internal fun noteCue(note: RoomNote): Cue? =
     when (note) {
-        RoomNote.ONLY_HOST, RoomNote.REFUSED, RoomNote.VOTE_TOO_SOON, RoomNote.REPORT_FAILED -> Cue.ERROR
+        RoomNote.OnlyHost, RoomNote.Refused, RoomNote.VoteTooSoon, RoomNote.ReportFailed -> Cue.ERROR
 
-        RoomNote.SERVER_RESTARTING, RoomNote.TOPICS_TOPPED_UP, RoomNote.GAME_SHORTENED, RoomNote.REPORTED -> Cue.NOTICE
+        RoomNote.ServerRestarting,
+        RoomNote.TopicsToppedUp,
+        RoomNote.GameShortened,
+        RoomNote.Reported,
+        RoomNote.HostIdle,
+        RoomNote.RoomIdle,
+        is RoomNote.SettingsChanged,
+        -> Cue.NOTICE
 
-        // Sounded where the code is copied, at once.
-        RoomNote.CODE_COPIED -> null
+        is RoomNote.HostChanged -> if (note.you) null else Cue.NOTICE
+
+        RoomNote.CodeCopied -> null
     }
 
 /**
