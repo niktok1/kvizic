@@ -79,8 +79,8 @@ It imports 25 a request and approves what it brought. Then the moderation app ag
 ### 6. Operations (20 min)
 
 - **Uptime** ✅ (2026-10-03): UptimeRobot watches `https://kvizic-api.ntole.com/health` every 5 min, email alert.
-- **Backups**: `kvizic-postgres` restores to any moment of the last **3 days** (point-in-time recovery) ✅; ☐ one
-  test restore to a new database, its questions counted, then deleted.
+- **Backups**: `kvizic-postgres` restores to any moment of the last **3 days** (point-in-time recovery) ✅. A test restore is
+  left for after launch (the owner, 2026-10-03).
 - **Origin** (the owner, 2026-10-02: left for now): Render serves `kvizic-server.onrender.com` too, past
   Cloudflare, where a caller could forge `CF-Connecting-IP` and slip the per-address limits. Revisit if abuse
   shows in the log.
