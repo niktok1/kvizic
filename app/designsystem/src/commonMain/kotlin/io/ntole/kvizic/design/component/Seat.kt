@@ -113,7 +113,7 @@ fun Seat(
                             occupant.votesDescription?.let { this.contentDescription = it }
                         },
                     ) {
-                        Chip(votes, icon = KvizicIcons.Leave, tone = ChipTone.LOSS)
+                        Chip(votes, icon = KvizicIcons.Boot, tone = ChipTone.LOSS)
                     }
                 } else {
                     occupant.status?.let { status ->

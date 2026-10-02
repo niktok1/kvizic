@@ -273,6 +273,7 @@ class ComponentsDrawTest {
                 "Crown" to KvizicIcons.Crown,
                 "Flag" to KvizicIcons.Flag,
                 "Leave" to KvizicIcons.Leave,
+                "Boot" to KvizicIcons.Boot,
                 "Clock" to KvizicIcons.Clock,
                 "Hourglass" to KvizicIcons.Hourglass,
                 "Laugh" to KvizicIcons.Laugh,

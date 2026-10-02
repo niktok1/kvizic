@@ -270,6 +270,32 @@ object KvizicIcons {
         }
     }
 
+    /** A boot, its toe to the right, two laces on its shaft: kick a player out of the room. */
+    val Boot: ImageVector by lazy {
+        icon("Boot") {
+            outline {
+                // The boot whole: its shaft down from the open top, the instep into the toe, the sole back to the heel.
+                moveTo(6f, 3.5f)
+                horizontalLineTo(13.5f)
+                verticalLineTo(10.5f)
+                curveTo(13.5f, 12.5f, 14.8f, 13.4f, 16.6f, 14f)
+                lineTo(19.8f, 15.2f)
+                curveTo(20.9f, 15.6f, 21.5f, 16.5f, 21.5f, 17.6f)
+                verticalLineTo(20.5f)
+                horizontalLineTo(6f)
+                close()
+                // The welt between boot and sole.
+                moveTo(6f, 17.5f)
+                horizontalLineTo(21.5f)
+                // The laces.
+                moveTo(13.5f, 6.5f)
+                horizontalLineTo(10.5f)
+                moveTo(13.5f, 9.5f)
+                horizontalLineTo(10.5f)
+            }
+        }
+    }
+
     /** A clock's face: a question's time. */
     val Clock: ImageVector by lazy {
         icon("Clock") {

@@ -354,7 +354,6 @@ private fun Waiting(
                                     "room.reaction",
                                     mapOf("reaction" to reaction.id),
                                 ) { actions.react(reaction.id) },
-                            small = true,
                         )
                     }
                 }
@@ -592,6 +591,7 @@ private fun MemberDialog(
             onClick = tapped("room.kick", onClick = onKick),
             kind = ButtonKind.DARK,
             size = ButtonSize.SMALL,
+            icon = KvizicIcons.Boot,
         )
     }
 }
@@ -628,7 +628,7 @@ private fun VoteDialog(
                 onClick = tapped("room.vote_kick", onClick = onVote),
                 kind = ButtonKind.DARK,
                 size = ButtonSize.SMALL,
-                icon = KvizicIcons.Leave,
+                icon = KvizicIcons.Boot,
             )
         }
     }
