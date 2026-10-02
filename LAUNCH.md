@@ -104,7 +104,7 @@ phone (360×640) and Android 7 (API 24) if you have one.
   from `store/`; screenshots from step 7's phones.
 - **App content**:
   - Privacy policy: `https://kvizic.ntole.com/privacy.html`.
-  - Ads: **No**. App access: **All functionality is available without special access**.
+  - Ads: **No**. App access: see below.
   - Target audience: **13–15, 16–17, 18+** (not under 13: keeps it out of the Families policy).
   - Content rating (IARC): a trivia game; no violence, sex, drugs, gambling or swearing; **users interact**
     (multiplayer rooms, names shown, preset reactions only, no chat); no location shared; no purchases.
@@ -116,17 +116,30 @@ phone (360×640) and Android 7 (API 24) if you have one.
   optional brand verification, left for later); the configuration is published; Play's signing key's SHA-1 is
   on the Android credential for `io.ntole.kvizic`. Every player can sign in now, not only the Testers.
 
-**Data safety**: encrypted in transit: yes. Deletion: yes, users can ask. Shared with third parties: none
-(PostHog and Render process data for us, as service providers).
+**App access**: **All functionality is available without special access** (a guest plays at once; Play Games
+is optional), so Google's reviewers need no sign-in details.
 
-| Data type | Collected | Why | Optional |
-|---|---|---|---|
-| Personal info → Name (Play Games name) | yes | App functionality | yes (sign-in) |
-| Personal info → User IDs (player id, Play Games id) | yes | App functionality, Analytics | no |
-| Location → Approximate (PostHog, from the IP) | yes | Analytics | yes (Статистика off) |
-| App activity → App interactions | yes | Analytics, App functionality | yes (analytics part) |
-| App info and performance → Diagnostics (errors shown) | yes | Analytics | yes |
-| Device or other IDs (PostHog's random device id) | yes | Analytics | yes |
+**Data safety**, as the privacy page says it (Policy → App content → Data safety):
+
+1. Data collection and security: collects or shares required data types **Yes**; encrypted in transit **Yes**;
+   account creation **Yes**, by **OAuth** (Play Games) and **Other** (a guest made at first launch); delete
+   account URL `https://kvizic.ntole.com/delete.html`; deleting some data without the account **No**.
+2. Data types: only these, every one **Collected**, **not Shared** (PostHog, Render and Cloudflare are our
+   service providers), **not processed ephemerally**:
+
+| Data type | Required or optional | Purposes |
+|---|---|---|
+| Personal info → **Name** (the Play Games profile name) | Optional | App functionality, Account management |
+| Personal info → **User IDs** (the player's id, the Play Games player id) | Required | App functionality, Analytics, Account management |
+| Location → **Approximate location** (PostHog, from the IP) | Optional | Analytics |
+| App activity → **App interactions** (results, statistics, seen questions, analytics events) | Required | App functionality, Analytics |
+| App activity → **Other user-generated content** (a room's name, question reports) | Optional | App functionality |
+| App info and performance → **Diagnostics** (errors shown, to analytics) | Optional | Analytics |
+| Device or other IDs → **Device or other IDs** (PostHog's random id on the device) | Optional | Analytics |
+
+   Optional is what the player can refuse: Play Games' sign-in, and analytics with the Статистика switch.
+   Not collected: email, phone, address, contacts, photos, audio, files, calendar, messages, financial, health,
+   web history, precise location, crash logs, installed apps, search history.
 
 #### 8½. Early access (the owner, 2026-10-03)
 
