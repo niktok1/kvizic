@@ -4,8 +4,10 @@ import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.samples
 import kotlinx.coroutines.runBlocking
+import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import javax.sound.sampled.AudioSystem
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -93,6 +95,18 @@ class SoundBankTest {
                 assertTrue(sample.peak in 3_000..30_000, "$name peaks at ${sample.peak}")
                 assertTrue(abs(sample.pcm.first().toInt()) < 100, "$name starts on silence")
                 assertTrue(abs(sample.pcm.last().toInt()) < 100, "$name ends on silence")
+            }
+        }
+    }
+
+    /** The JVM's own decoder, the desktop's sound, takes every sample too. */
+    @Test
+    fun `the desktop's decoder takes every sample`() {
+        banks().forEach { (sound, samples) ->
+            samples.forEach { (cue, bytes) ->
+                val format = AudioSystem.getAudioInputStream(ByteArrayInputStream(bytes)).use { it.format }
+                assertEquals(22_050f, format.sampleRate, "${sound.bank}/${cue.file}")
+                assertEquals(1, format.channels, "${sound.bank}/${cue.file}")
             }
         }
     }

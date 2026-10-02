@@ -47,7 +47,8 @@ UI needs is copied into the domain and pinned by a test in `:core:data`, as `Lob
 Kotlin-first and multiplatform, JetBrains or the KMP standard; versions in `gradle/libs.versions.toml`. A new
 dependency is recorded there and here. Server-only Java exceptions: HikariCP, the PostgreSQL driver,
 `java-jwt`, Flyway; H2 for local development and tests. Android-only Google SDKs behind domain ports:
-Play Games Services v2. **No Material**: the design system draws everything.
+Play Games Services v2. **No Material**: the design system draws everything. **No sound library**: each
+platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`, Web Audio).
 
 ## 5. Code rules that bite
 
@@ -160,14 +161,18 @@ Play Games Services v2. **No Material**: the design system draws everything.
 
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
-  by `GamePhase`), About, Update. The navigator follows the room: in one, the room over Home; out, Home,
+  by `GamePhase`), Settings (the app's: Sound, Statistics, a way to About, the account's id and its
+  deletion; `AppSettingsScreen`, apart from a room's), About (version, legal pages, licences), Update. Home's
+  sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,
   which says why (`Navigator.followRoom`).
 - Words: `Strings` (Serbian Cyrillic written by hand, Latin made from it, English), `GameStrings` for the
   game, `Plural` for Serbian's three forms. Server text (questions, names, topics) is shown through
   `shown()`/`topicName()`. The noun кôд keeps its length mark (о and a combining U+0302; every bundled face
   places it), which tells it from код (at).
 - Analytics: PostHog over HTTP, never a name, a code or a question's text; every tap through `tapped`
-  (`TapsTest` taps every screen). Game events: `room_entered`, `room_exited`, `game_finished`.
+  (`TapsTest` taps every screen). Game events: `room_entered`, `room_exited`, `game_finished`; settings: `language_changed`,
+  `sound_changed`. A name once sent never changes, so the controls that moved from About to Settings keep
+  their `about.*` names.
 - **Play Games** (signed in on a phone against dev, 2026-10-01): a launch signs in by itself, with no button
   yet (`LinkPlayGames`), and so does coming back to the foreground, for a session replaced in the background,
   where Play Games cannot be asked; a sign-in that links the guest playing keeps their id and gives them
@@ -251,6 +256,21 @@ Play Games Services v2. **No Material**: the design system draws everything.
   stays for leaving. The lobby's emotes are the regular round buttons, not the small ones.
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,
   a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
+- **Sound** (the owner, 2026-10-02): a skin part like motion, never a library. `SkinSound` names the bank a skin
+  plays from (`files/sound/<bank>/<cue>.wav`, one WAV for each `Cue`), so wearing another skin is playing from
+  another bank and nothing else knows: `SoundEngine` is one object that follows `KvizicTheme.skin.sound`
+  (`ProvideCues`, inside the theme). A screen asks for a `Cue` (a moment, never a sound) through `LocalCues`,
+  silent by default, so no draw test makes a noise; a control plays its cue on a tap that counts (`cued`), a
+  button by its kind. The room is heard through `RoomCueTracker`, a pure policy over its state (its first state
+  is silent: a rotation or a reconnect replays nothing), the last seconds tick under `sounding`, the reveal
+  sits with the haptic (`Feedback`), the standings board sounds the player's place moving as its lines slide.
+  The engine drops a cue while sound is off or the app is away, before its bank is loaded, or sooner than its
+  `minGapMillis`, and moves a `varied` cue a few percent off pitch. Android plays as a game, takes no audio focus
+  and is silent in silent mode; iOS is on the ambient session; a browser lets sound start after the first
+  touch, so a session's first press is silent. The samples are synthesized (`python3 tools/sound/render.py`,
+  repeatable byte for byte, no licence to carry; 45 cues, a bank under 1 MB); a recorded file may replace any
+  one. `SoundBankTest` holds each bank whole, `TapsTest` fails a tap that makes no sound. The mix has been
+  measured, never heard on a device.
 - Avatars: the server's sixteen Balkan animals, each drawn by hand (`AvatarArt`); an id this build does not
   know shows a silhouette.
 - **The icon** (2026-10-01): the sign's lights in a ring, sixteen lit marquee bulbs round Nunito Black's К in
@@ -294,7 +314,8 @@ makes the draw tests write PNGs to look at.
 
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
-- Sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
+- Share links. Sound's mix on a phone's speaker (the levels, the cues' character), a language and a skin picker
+  in Settings, and a way for a skin to be chosen at all.
 - Play Games before launch: its variables on `kvizic-server`; its consent screen published (in Testing now,
   it wants a privacy policy page first), then its configuration, with its final art.
 - **A Play Games button** for a guest to sign in by hand (`LinkPlayGames.manually` is there, with no screen
