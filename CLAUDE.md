@@ -187,9 +187,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
   weight on its `wght` axis; Android before 8.0 draws its regular instance only. It has no Serbian forms:
   б is drawn as in Russian. Fira stays for the notebook skin's body and the comparisons.
 - **Long text** (`LongTextFitTest`): the longest question and four longest answers fit whole on 375×667
-  and 360×640 in every skin while answering and locked in. A question is at most 7 lines read alone and 4
-  over its answers; all answers of a question share one size, the largest the one that needs the most room
-  is whole at, no word broken between two lines.
+  and 360×640 in every skin while answering and locked in. A question is at most 4 lines over its answers'
+  tiles, read or answered; all answers of a question share one size, the largest the one that needs the most
+  room is whole at, no word broken between two lines.
 - **Answers stand by the window, never by the question** (the owner, 2026-10-02: a question in another shape
   than the last confuses): on a phone held upright every question's answers stand in a column, a tile across
   the width each; on a wide window (`LocalWideWindow`: on its side, or `wideWindow`, 600 dp, across) four
@@ -209,14 +209,15 @@ Play Games Services v2. **No Material**: the design system draws everything.
   of the question's players fits so on every tile, the answers laid out as without them; otherwise on every
   tile's top edge, about half over it, in front of it (`pickersPeek`), in the row gap and the room a screen
   leaves over the grid (`rowGap`). The question decides, never the picks so far, so no one moves as more pick
-  (`CrowdTest`). A crowd closes up to fit (`crowdOverlap`). While a question is read, its answers' places
-  (`AnswerPlaces`) stand in the shape its answers will.
-- **A game's steps give way to each other**, never a cut (`RoomStagesTest`): the question read rises into
-  its answers, which come up one after another; the answers' tiles glide into the reveal's places and light
-  up from how they stood (`TilePlaces`, `TileGlideTest`), the question and its strip fading out before the
-  recalled question and the board fade in, so no part is ever drawn twice (the owner, 2026-10-02: the two
-  layouts crossfading read as a flicker); each new question comes in from the side like the next card. Times
-  are skin motion tokens (`stage`, `tileAppear`, `tileStagger`); nothing replays after a rotation.
+  (`CrowdTest`). A crowd closes up to fit (`crowdOverlap`).
+- **A game's steps give way to each other**, never a cut (`RoomStagesTest`): a question is read over its
+  answers' tiles, dark, the clock's lights coming up in the bar, and its answers come onto those tiles one
+  after another as they light, nothing else moving (the owner, 2026-10-02: the read's own screen put its
+  places for the answers elsewhere than the answers came); the answers' tiles glide into the reveal's places
+  and light up from how they stood (`TilePlaces`, `TileGlideTest`), the question and its strip fading out
+  before the recalled question and the board fade in, so no part is ever drawn twice (the owner, 2026-10-02:
+  the two layouts crossfading read as a flicker); each new question comes in from the side like the next
+  card. Times are skin motion tokens (`stage`, `tileAppear`, `tileStagger`); nothing replays after a rotation.
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
   them until they answer; no words, no count.
 - **The lobby counts in no words** (the owner, 2026-10-01): the seats show who is in and how many more fit,

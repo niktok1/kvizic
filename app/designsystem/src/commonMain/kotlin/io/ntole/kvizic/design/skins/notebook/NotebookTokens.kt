@@ -99,7 +99,6 @@ internal val NotebookType =
         logo = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 64.sp, 64.sp),
         hero = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 40.sp, 42.sp),
         headline = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 32.sp, 34.sp),
-        questionReading = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 38.sp, 1.05.em),
         question = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 29.sp, 1.07.em),
         questionMin = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 17.sp, 1.12.em),
         answer = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 32.sp, 1.06.em),

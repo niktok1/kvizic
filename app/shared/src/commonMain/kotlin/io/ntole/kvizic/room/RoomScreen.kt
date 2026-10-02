@@ -8,9 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -167,11 +165,8 @@ fun RoomScreen(
                     }
                 }
 
-                is GamePhase.Reading -> {
-                    QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true }, places = places)
-                }
-
-                is GamePhase.Answering -> {
+                // One screen while a question is read and answered, so its tiles stay where they stood.
+                is GamePhase.Reading, is GamePhase.Answering -> {
                     QuestionScreen(shown, phase, topics, actions, onLeave = { leaving = true }, places = places)
                 }
 
@@ -801,7 +796,7 @@ private data class Stage(
     val question: Int = -1,
 )
 
-private enum class StageKind { LOBBY, RESULTS, READ, ANSWER, REVEAL }
+private enum class StageKind { LOBBY, RESULTS, QUESTION, REVEAL }
 
 private fun stageOf(state: LobbySessionState.InLobby): Stage {
     val onResults = state.lobby.member(state.you)?.onResults == true
@@ -830,12 +825,13 @@ private fun stageOf(state: LobbySessionState.InLobby): Stage {
             )
         }
 
+        // A question read and then answered is one stage: its answers come onto the tiles it was read over.
         is GamePhase.Reading -> {
-            Stage(StageKind.READ, phase.gameId, phase.question.index)
+            Stage(StageKind.QUESTION, phase.gameId, phase.question.index)
         }
 
         is GamePhase.Answering -> {
-            Stage(StageKind.ANSWER, phase.gameId, phase.question.index)
+            Stage(StageKind.QUESTION, phase.gameId, phase.question.index)
         }
 
         is GamePhase.Revealing -> {
@@ -845,9 +841,9 @@ private fun stageOf(state: LobbySessionState.InLobby): Stage {
 }
 
 /**
- * How one stage gives way to the next, over the skin's [SkinMotion.stage]: a question read rises into its
- * answers, its answers fade into their reveal, and every new question comes in from the side like the next
- * card, the last one going out the other way; the rest fade.
+ * How one stage gives way to the next, over the skin's [SkinMotion.stage]: a question's answers fade into their
+ * reveal, and every new question comes in from the side like the next card, the last one going out the other
+ * way; the rest fade. A question's read gives way to its answers within its own stage ([QuestionScreen]).
  */
 private fun stageChange(
     from: Stage,
@@ -858,25 +854,13 @@ private fun stageChange(
     val sameQuestion = from.game == to.game && from.question == to.question
     val transform =
         when {
-            sameQuestion && from.kind == StageKind.READ && to.kind == StageKind.ANSWER -> {
-                (
-                    fadeIn(
-                        tween(time),
-                    ) + slideInVertically(tween(time, easing = FastOutSlowInEasing)) { it / RISE }
-                ) togetherWith
-                    (
-                        fadeOut(tween(time / 2)) +
-                            slideOutVertically(tween(time, easing = FastOutSlowInEasing)) { -it / RISE }
-                    )
-            }
-
             // The tiles glide from the answers into the reveal on their own (TilePlaces), so only the rest
             // gives way: the question and its strip fade out, and the reveal's own parts in after them.
-            sameQuestion && from.kind == StageKind.ANSWER && to.kind == StageKind.REVEAL -> {
+            sameQuestion && from.kind == StageKind.QUESTION && to.kind == StageKind.REVEAL -> {
                 EnterTransition.None togetherWith fadeOut(tween(time / 2))
             }
 
-            to.kind == StageKind.READ -> {
+            to.kind == StageKind.QUESTION -> {
                 (
                     slideInHorizontally(
                         tween(time, easing = FastOutSlowInEasing),
@@ -896,6 +880,5 @@ private fun stageChange(
     return ContentTransform(transform.targetContentEnter, transform.initialContentExit, sizeTransform = null)
 }
 
-/** How far a question read rises as its answers come, and how far the last question goes as the next comes: shares. */
-private const val RISE = 10
+/** How far the last question goes as the next comes, a share of the width. */
 private const val AWAY = 3

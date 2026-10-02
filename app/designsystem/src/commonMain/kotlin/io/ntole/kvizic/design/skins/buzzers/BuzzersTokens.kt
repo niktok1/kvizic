@@ -119,7 +119,6 @@ internal val BuzzersType =
         logo = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 60.sp, 60.sp, 0.02.em, caps = true),
         hero = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 40.sp, 42.sp, 0.03.em, caps = true),
         headline = TypeSpec(FontRole.DISPLAY, FontWeight.Black, 30.sp, 32.sp, 0.02.em, caps = true),
-        questionReading = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 36.sp, 1.08.em),
         question = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 27.sp, 1.11.em),
         questionMin = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 16.sp, 1.15.em),
         answer = TypeSpec(FontRole.DISPLAY, FontWeight.Bold, 30.sp, 1.07.em),

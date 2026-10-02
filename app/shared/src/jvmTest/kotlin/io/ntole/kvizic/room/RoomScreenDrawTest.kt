@@ -26,12 +26,12 @@ import kotlin.test.assertTrue
  */
 class RoomScreenDrawTest : RoomStills() {
     @Test
-    fun `a question read alone shows its text, its clock and where its answers will stand`() {
+    fun `a question being read shows its text, its clock and its answers' tiles, dark and with no answers`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game
             draw(skin, "reading", inLobby(reading())) { scene ->
                 val shown = scene.everyText()
-                listOf(QUESTION.text, words.answersComing, "Географија").forEach {
+                listOf(QUESTION.text, words.answersComing, "Географија", "А", "Б", "В", "Г").forEach {
                     assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown")
                 }
                 // The round stands in numbers alone, and is said in words.

@@ -40,10 +40,9 @@ data class SkinTypeScale(
     val hero: TypeSpec,
     val headline: TypeSpec,
     /**
-     * A question while it is read alone, and once the answers are up under it, each as large as it fits,
-     * and the least either shrinks to: a long question is set smaller, never cut, down to [questionMin].
+     * A question over its answers' tiles, as large as it fits, and the least it shrinks to: a long question is
+     * set smaller, never cut, down to [questionMin].
      */
-    val questionReading: TypeSpec,
     val question: TypeSpec,
     val questionMin: TypeSpec,
     /** An answer on its tile, as large as it fits, and the least it shrinks to. */
@@ -86,7 +85,6 @@ data class SkinType(
     val logo: SkinTextStyle,
     val hero: SkinTextStyle,
     val headline: SkinTextStyle,
-    val questionReading: SkinTextStyle,
     val question: SkinTextStyle,
     val questionMin: SkinTextStyle,
     val answer: SkinTextStyle,
@@ -144,7 +142,6 @@ data class SkinType(
                 logo = resolve(scale.logo),
                 hero = resolve(scale.hero),
                 headline = resolve(scale.headline),
-                questionReading = resolve(scale.questionReading),
                 question = resolve(scale.question),
                 questionMin = resolve(scale.questionMin),
                 answer = resolve(scale.answer),

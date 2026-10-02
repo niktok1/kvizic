@@ -41,7 +41,6 @@ import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.Standing
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.component.AnswerGrid
-import io.ntole.kvizic.design.component.AnswerPlaces
 import io.ntole.kvizic.design.component.AnswerTileState
 import io.ntole.kvizic.design.component.AvatarChip
 import io.ntole.kvizic.design.component.AvatarStack
@@ -72,10 +71,12 @@ import io.ntole.kvizic.language.fill
 import kotlin.math.roundToInt
 
 /**
- * A question of the game under way, read alone ([GamePhase.Reading]) and then answered
- * ([GamePhase.Answering]): the round, the clock and the player's points over it, its topic on its card's edge,
- * its answers under it, and who it still waits for. A member who joined during the game watches it: their
- * answers take no tap. Its tiles stand in [places], from where they glide into the question's reveal.
+ * A question of the game under way, read ([GamePhase.Reading]) and then answered ([GamePhase.Answering]) on one
+ * screen: the round, the clock and the player's points over it, its topic on its card's edge, its answers'
+ * tiles under it, and who it still waits for. While it is read its tiles stand dark, where its answers will
+ * come, and the clock's lights come up; as its answers open they come onto those tiles, one after another, and
+ * nothing else moves. A member who joined during the game watches it: their answers take no tap. Its tiles
+ * stand in [places], from where they glide into the question's reveal.
  */
 @Composable
 internal fun QuestionScreen(
@@ -92,147 +93,106 @@ internal fun QuestionScreen(
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
     val lobby = state.lobby
+    val answering = phase as? GamePhase.Answering
+    val (gameId, question, players) =
+        when (phase) {
+            is GamePhase.Reading -> Triple(phase.gameId, phase.question, phase.players)
+            is GamePhase.Answering -> Triple(phase.gameId, phase.question, phase.players)
+            else -> return
+        }
+    val reading = phase as? GamePhase.Reading
+    val standings = reading?.standings ?: answering?.standings.orEmpty()
+    val deadline = reading?.deadline ?: answering?.deadline
     val totalMillis = lobby.settings.secondsPerQuestion * MILLIS_PER_SECOND
-    when (phase) {
-        is GamePhase.Reading -> {
-            val timer =
-                remember(phase.deadline) {
-                    TimerPhase.Reading(
-                        totalMillis = totalMillis,
-                        readMillis =
-                            phase.deadline.total.inWholeMilliseconds
-                                .toInt(),
-                        readLeftMillis =
-                            phase.deadline
-                                .remaining()
-                                .inWholeMilliseconds
-                                .toInt(),
-                    )
-                }
-            Page {
-                RoundBar(
-                    phase.question.index,
-                    phase.question.count,
-                    phase.standings,
-                    state.you,
-                    onLeave = onLeave,
-                )
-                Spacer(Modifier.height(space.xl))
-                QuestionTimer(
-                    timer,
-                    Modifier.align(Alignment.CenterHorizontally),
-                    contentDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
-                )
-                Spacer(Modifier.height(space.xl))
-                QuestionCard(phase.question.topic, topics, padding = space.xl) {
-                    QuestionText(shown(phase.question.text), Modifier.fillMaxWidth(), reading = true)
-                }
-                Spacer(Modifier.height(space.xl))
-                // Where the answers will stand, so nothing moves when they come.
-                AnswerPlaces(phase.question.optionCount, Modifier.weight(1f))
-                Spacer(Modifier.height(space.md))
-                KvizicText(
-                    words.answersComing,
-                    Modifier.fillMaxWidth(),
-                    style = type.label,
-                    color = colors.onPageMuted,
-                    textAlign = TextAlign.Center,
-                )
+    // Taken anew as the read gives way to the answers, never as picks come in.
+    val timer =
+        remember(deadline) {
+            val total = deadline?.total?.inWholeMilliseconds?.toInt() ?: 0
+            val left = deadline?.remaining()?.inWholeMilliseconds?.toInt() ?: 0
+            if (reading != null) {
+                TimerPhase.Reading(totalMillis = totalMillis, readMillis = total, readLeftMillis = left)
+            } else {
+                TimerPhase.Running(totalMillis = total, leftMillis = left)
             }
         }
-
-        is GamePhase.Answering -> {
-            val timer =
-                remember(phase.deadline) {
-                    TimerPhase.Running(
-                        totalMillis =
-                            phase.deadline.total.inWholeMilliseconds
-                                .toInt(),
-                        leftMillis =
-                            phase.deadline
-                                .remaining()
-                                .inWholeMilliseconds
-                                .toInt(),
-                    )
-                }
-            val playing = state.you in phase.players
-            val myPick = phase.myPick
-            val picks: Map<String, Int> = if (myPick != null) phase.picks + (state.you to myPick) else phase.picks
-            val answer = tappedAt("question.answer", withLockInHaptic(actions.answer))
-            // The tiles come up one after another as the answers open, once a question: not again after a rotation.
-            val appearing = rememberSaveable(phase.gameId, phase.question.index) { mutableStateOf(true) }
-            LaunchedEffect(phase.gameId, phase.question.index) { appearing.value = false }
-            Page {
-                RoundBar(
-                    phase.question.index,
-                    phase.question.count,
-                    phase.standings,
-                    state.you,
-                    timer = timer,
-                    timerDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
-                    onLeave = onLeave,
-                )
-                Spacer(Modifier.height(space.md))
-                QuestionCard(phase.question.topic, topics, padding = space.lg) {
-                    QuestionText(shown(phase.question.text), Modifier.fillMaxWidth())
-                }
-                // Room for those who picked an answer of the first row to stand on its edge.
-                Spacer(Modifier.height(space.tile.rowGap))
-                AnswerGrid(
-                    options = phase.options.map { shown(it) },
-                    modifier = Modifier.weight(1f),
-                    states =
-                        phase.options.indices.map { i ->
-                            when (myPick) {
-                                null -> AnswerTileState.IDLE
-                                i -> AnswerTileState.LOCKED_IN
-                                else -> AnswerTileState.DIMMED
-                            }
-                        },
-                    onPick = if (playing && myPick == null) answer else null,
-                    stateDescriptions = phase.options.indices.map { i -> if (i == myPick) words.yourAnswer else null },
-                    pickers =
-                        if (picks.isEmpty()) {
-                            null
-                        } else {
-                            { option -> Pickers(lobby, picks.filterValues { it == option }.keys.toList()) }
-                        },
-                    crowd = phase.players.size,
-                    appearing = appearing.value,
-                    places = places,
-                    placesKey = phase.gameId to phase.question.index,
-                )
-                Spacer(Modifier.height(space.md))
-                Strip {
-                    if (playing) {
-                        val waiting =
-                            phase.players.filter {
-                                it !in phase.answered &&
-                                    it != state.you.takeIf { myPick != null }
-                            }
-                        val members = waiting.mapNotNull { lobby.member(it) }.sortedBy { it.seat }
-                        WaitingFor(
-                            members.map { AvatarChip(it.avatar, it.seat) },
-                            Modifier.fillMaxWidth(),
-                            contentDescription =
-                                words.waitingFor.fill(
-                                    members.joinToString { shownIn(it.name, language) },
-                                ),
-                        )
-                    } else {
-                        KvizicText(
-                            words.spectating,
-                            style = type.caption,
-                            color = colors.onRaisedMuted,
-                            textAlign = TextAlign.Center,
-                        )
+    val playing = state.you in players
+    val myPick = answering?.myPick
+    val picks: Map<String, Int> =
+        answering?.let { if (myPick != null) it.picks + (state.you to myPick) else it.picks }.orEmpty()
+    val answer = tappedAt("question.answer", withLockInHaptic(actions.answer))
+    Page {
+        RoundBar(
+            question.index,
+            question.count,
+            standings,
+            state.you,
+            timer = timer,
+            timerDescription = words.secondsToAnswer.fill(lobby.settings.secondsPerQuestion),
+            onLeave = onLeave,
+        )
+        Spacer(Modifier.height(space.md))
+        QuestionCard(question.topic, topics, padding = space.lg) {
+            QuestionText(shown(question.text), Modifier.fillMaxWidth())
+        }
+        // Room for those who picked an answer of the first row to stand on its edge.
+        Spacer(Modifier.height(space.tile.rowGap))
+        AnswerGrid(
+            // While it is read, its tiles with no answers on them yet.
+            options = answering?.options?.map { shown(it) } ?: List(question.optionCount) { "" },
+            modifier = Modifier.weight(1f),
+            states =
+                List(question.optionCount) { i ->
+                    when {
+                        answering == null -> AnswerTileState.DIMMED
+                        myPick == null -> AnswerTileState.IDLE
+                        i == myPick -> AnswerTileState.LOCKED_IN
+                        else -> AnswerTileState.DIMMED
                     }
+                },
+            onPick = if (answering != null && playing && myPick == null) answer else null,
+            stateDescriptions = List(question.optionCount) { i -> if (i == myPick) words.yourAnswer else null },
+            pickers =
+                if (picks.isEmpty()) {
+                    null
+                } else {
+                    { option -> Pickers(lobby, picks.filterValues { it == option }.keys.toList()) }
+                },
+            crowd = players.size,
+            places = places,
+            placesKey = gameId to question.index,
+        )
+        Spacer(Modifier.height(space.md))
+        Strip {
+            when {
+                answering == null -> {
+                    KvizicText(
+                        words.answersComing,
+                        style = type.caption,
+                        color = colors.onRaisedMuted,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                playing -> {
+                    val answered = answering?.answered.orEmpty()
+                    val waiting = players.filter { it !in answered && it != state.you.takeIf { myPick != null } }
+                    val members = waiting.mapNotNull { lobby.member(it) }.sortedBy { it.seat }
+                    WaitingFor(
+                        members.map { AvatarChip(it.avatar, it.seat) },
+                        Modifier.fillMaxWidth(),
+                        contentDescription = words.waitingFor.fill(members.joinToString { shownIn(it.name, language) }),
+                    )
+                }
+
+                else -> {
+                    KvizicText(
+                        words.spectating,
+                        style = type.caption,
+                        color = colors.onRaisedMuted,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
-        }
-
-        else -> {
-            Unit
         }
     }
 }
@@ -551,7 +511,10 @@ private fun QuestionCard(
 @Composable
 private fun Strip(content: @Composable () -> Unit) {
     val space = KvizicTheme.space
-    Panel(Modifier.fillMaxWidth().heightIn(min = space.avatar.xs), padding = space.md) { content() }
+    Panel(Modifier.fillMaxWidth(), padding = space.md) {
+        // As tall with words in it as with the avatars of those waited for, so nothing over it moves.
+        Box(Modifier.fillMaxWidth().heightIn(min = space.avatar.xs), contentAlignment = Alignment.Center) { content() }
+    }
 }
 
 private const val MILLIS_PER_SECOND = 1_000

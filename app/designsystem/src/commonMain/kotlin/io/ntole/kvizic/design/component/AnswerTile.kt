@@ -66,9 +66,9 @@ import kotlin.math.ceil
  * its answer is set at, the skin's answer size when unspecified: [AnswerGrid] gives all its tiles one, so they
  * are set alike.
  *
- * [appearing] has the tile come up as it is first composed, after [appearDelay] milliseconds: from a little
- * small and clear to its place, in its layer alone, as the answers open. Read once, when the tile is first
- * composed.
+ * A tile stands before its answer is known, its [text] empty, while the question is read; the answer comes onto
+ * it once given, [appearDelay] milliseconds on, fading and rising into its place in the draw alone. A tile
+ * first composed with its answer shows it at once, so nothing replays after a rotation.
  */
 @Composable
 fun AnswerTile(
@@ -83,7 +83,6 @@ fun AnswerTile(
     pickers: (@Composable () -> Unit)? = null,
     pickersInside: Dp? = null,
     textSize: TextUnit = TextUnit.Unspecified,
-    appearing: Boolean = false,
     appearDelay: Int = 0,
 ) {
     val skin = KvizicTheme.skin
@@ -91,10 +90,11 @@ fun AnswerTile(
     val type = KvizicTheme.type
     val part = skin.parts.tile
     val source = interactionSource ?: remember { MutableInteractionSource() }
-    val shown = remember { Animatable(if (appearing) 0f else 1f) }
-    LaunchedEffect(Unit) {
-        if (shown.value < 1f) {
-            shown.animateTo(
+    // How far its answer has come onto it: read in the draw alone.
+    val answerShown = remember { Animatable(if (text.isEmpty()) 0f else 1f) }
+    LaunchedEffect(text.isEmpty()) {
+        if (text.isNotEmpty() && answerShown.value < 1f) {
+            answerShown.animateTo(
                 1f,
                 tween(skin.motion.tileAppear.coerceAtLeast(1), delayMillis = appearDelay, easing = FastOutSlowInEasing),
             )
@@ -127,24 +127,13 @@ fun AnswerTile(
             textSize = textSize,
             pickers = pickers.takeIf { pickersInside != null },
             pickersRoom = pickersInside,
+            answerShown = { answerShown.value },
             lit = { lit.value },
             stamp = { stamp.value },
         )
     }
-    PickersOver(
-        pickers.takeIf { pickersInside == null },
-        modifier.graphicsLayer {
-            val p = shown.value
-            alpha = p
-            val scale = APPEAR_SCALE + (1f - APPEAR_SCALE) * p
-            scaleX = scale
-            scaleY = scale
-        },
-    ) { card(Modifier) }
+    PickersOver(pickers.takeIf { pickersInside == null }, modifier) { card(Modifier) }
 }
-
-/** How small a tile starts as it comes up. */
-private const val APPEAR_SCALE = 0.86f
 
 /**
  * An answer tile's card: its surface, its letter and its answer, and [pickers] on its face where it has
@@ -163,6 +152,7 @@ private fun Card(
     textSize: TextUnit,
     pickers: (@Composable () -> Unit)?,
     pickersRoom: Dp?,
+    answerShown: () -> Float,
     lit: () -> Float,
     stamp: () -> Float,
 ) {
@@ -215,10 +205,16 @@ private fun Card(
                     KvizicText(letter, style = type.letter, maxLines = 1, colorInDraw = letterColor)
                 }
             }
+            val rise = space.sm
             val answer: @Composable (Modifier) -> Unit = { answerModifier ->
                 KvizicText(
                     text = text,
-                    modifier = answerModifier,
+                    modifier =
+                        answerModifier.graphicsLayer {
+                            val p = answerShown()
+                            alpha = p
+                            translationY = (1f - p) * rise.toPx()
+                        },
                     style = type.answer,
                     maxLines = ANSWER_LINES,
                     colorInDraw = content,
@@ -355,8 +351,8 @@ private fun PickersOver(
  * All are set at one size, the largest the answer that needs the most room is whole at, no word of it broken
  * ([answerLayout]).
  *
- * [appearing] has the tiles come up one after another as they are first composed, as the answers open.
- * [places], kept above the screens a question's grids stand on, has a grid of the same [placesKey] that
+ * A question being read has its tiles stand with no answers, their [options] empty; the answers come onto them
+ * one after another as they open. [places], kept above the screens a question's grids stand on, has a grid of the same [placesKey] that
  * comes after another take its tiles over, gliding from where they stood ([TilePlaces]).
  */
 @Composable
@@ -368,7 +364,6 @@ fun AnswerGrid(
     stateDescriptions: List<String?> = options.map { null },
     pickers: (@Composable (index: Int) -> Unit)? = null,
     crowd: Int = 0,
-    appearing: Boolean = false,
     places: TilePlaces? = null,
     placesKey: Any? = null,
 ) {
@@ -397,7 +392,6 @@ fun AnswerGrid(
                 pickers = pickers?.let { slot -> { slot(i) } },
                 pickersInside = layout.pickersRoom?.get(i),
                 textSize = layout.textSize,
-                appearing = appearing,
                 appearDelay = i * skin.motion.tileStagger,
             )
         }
@@ -432,28 +426,6 @@ fun AnswerGrid(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-/**
- * Where a question's [count] answers will stand, while it is read and they are yet to come, so they come
- * where it showed: a tile's place for each, in a column, or in rows of two where they stand in a grid
- * ([AnswerGrid]).
- */
-@Composable
-fun AnswerPlaces(
-    count: Int,
-    modifier: Modifier = Modifier,
-) {
-    val space = KvizicTheme.space
-    val perRow = if (inGrid(count, LocalWideWindow.current)) COLUMNS else 1
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(space.tile.rowGap)) {
-        (0 until count).chunked(perRow).forEach { row ->
-            Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(space.tile.gap)) {
-                row.forEach { _ -> Panel(Modifier.weight(1f).fillMaxHeight(), kind = PanelKind.EMPTY) {} }
-                repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

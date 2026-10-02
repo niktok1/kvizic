@@ -66,7 +66,7 @@ class LongTextFitTest {
     }
 
     @Test
-    fun `the longest question read alone fits whole`() {
+    fun `the longest question being read fits whole over its answers' tiles`() {
         eachSkinAndPhone { skin, width, height ->
             val scene = stageScene(skin, width, height) { ReadingMock(LONGEST_QUESTION) }
             try {

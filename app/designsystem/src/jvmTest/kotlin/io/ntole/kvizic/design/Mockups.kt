@@ -261,42 +261,17 @@ private fun Seats(members: List<Member?>) {
     )
 }
 
-// 3. The question read alone: no answers yet, the lights coming up round the clock.
+// 3. The question being read: its answers' tiles dark where the answers will come, the clock's lights coming up.
 @Composable
 internal fun ReadingMock(question: String = QUESTION) {
-    val space = KvizicTheme.space
-    val type = KvizicTheme.type
-    val colors = KvizicTheme.colors
-    Screen {
-        RoundBar(round = 3, topic = "Географија", score = 1240)
-        Spacer(Modifier.height(space.xl))
-        QuestionTimer(
-            TimerPhase.Reading(totalMillis = 15_000, readMillis = 2_400, readLeftMillis = 850),
-            Modifier.align(Alignment.CenterHorizontally),
-            contentDescription = "15 секунди за одговор",
-        )
-        Spacer(Modifier.height(space.xl))
-        Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.xl) {
-            QuestionText(question, Modifier.fillMaxWidth(), reading = true)
-        }
-        Spacer(Modifier.height(space.xl))
-        // Where the answers will stand, so nothing moves when they come.
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.tile.gap)) {
-            repeat(2) {
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(space.tile.gap)) {
-                    repeat(2) { Panel(Modifier.weight(1f).fillMaxSize(), kind = PanelKind.EMPTY) {} }
-                }
-            }
-        }
-        Spacer(Modifier.height(space.md))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            KvizicText("Одговори стижу…", style = type.label, color = colors.onPageMuted)
-        }
-    }
+    QuestionScreen(
+        options = RIVERS.map { "" },
+        timer = TimerPhase.Reading(totalMillis = 15_000, readMillis = 2_400, readLeftMillis = 850),
+        states = RIVERS.map { AnswerTileState.DIMMED },
+        answered = emptyList(),
+        question = question,
+        verdict = "Одговори стижу…",
+    )
 }
 
 // 4. Answering: four buzzers under the question, the clock running, who has answered.

@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.CountedBy
 import io.ntole.kvizic.Recompositions
@@ -16,7 +17,9 @@ import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.everyText
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.stringsOf
+import io.ntole.kvizic.nodes
 import io.ntole.kvizic.renderAt
+import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,30 +29,36 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * A game's steps give way to each other rather than cut: the question read rises into its answers, which
- * come up one by one, and the answers fade into their reveal. Mid-change both steps are drawn, after it
- * only the new one, and a frame of the change composes nothing.
+ * A game's steps give way to each other rather than cut: a question's answers come onto the tiles it was read
+ * over, one by one, the tiles standing where they stood, and the answers fade into their reveal. Mid-change
+ * both steps are drawn, after it only the new one, and a frame of the change composes nothing.
  */
 class RoomStagesTest {
     private val words = stringsOf(Language.DEFAULT).game
 
     @Test
-    fun `the question read rises into its answers`() {
+    fun `a question's answers come onto the tiles it was read over`() {
         Skins.ALL.forEach { skin ->
             stages(skin, inLobby(reading())) { scene, change ->
                 assertTrue(words.answersComing in scene.everyText(), "${skin.id}: the read is not shown")
+                val read = tilesOf(scene)
                 change(inLobby(answering()), MIDWAY) { mid ->
-                    val shown = scene.everyText()
-                    assertTrue(words.answersComing in shown, "${skin.id}: the read went at once: $shown")
-                    assertTrue(OPTIONS[0] in shown, "${skin.id}: the answers did not come with it: $shown")
+                    assertEquals(read, tilesOf(scene), "${skin.id}: the tiles moved as the answers came")
                     mid()
                 }
                 val shown = scene.everyText()
                 assertFalse(words.answersComing in shown, "${skin.id}: the read stayed: $shown")
                 OPTIONS.forEach { assertTrue(it in shown, "${skin.id}: $it is not shown") }
+                assertEquals(read, tilesOf(scene), "${skin.id}: the tiles stand elsewhere than they were read")
             }
         }
     }
+
+    /** Where each answer's tile stands, by its letter. */
+    private fun tilesOf(scene: ImageComposeScene): List<Rect> =
+        LETTERS.take(OPTIONS.size).map { letter ->
+            scene.nodes().single { it.texts.firstOrNull() == letter }.boundsInRoot
+        }
 
     /**
      * The reveal's count to the next question ticks on the device's clock, not the scene's: a slow machine
@@ -124,5 +133,7 @@ class RoomStagesTest {
 
         /** Into the change, short of the skins' stage time. */
         const val MIDWAY = 120_000_000L
+
+        val LETTERS = listOf("А", "Б", "В", "Г")
     }
 }
