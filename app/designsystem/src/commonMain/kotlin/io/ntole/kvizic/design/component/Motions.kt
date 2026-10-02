@@ -6,7 +6,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -133,7 +135,8 @@ fun ReactionBurst(
 
 /**
  * The game's name on the skin's sign, set in its logo style: marquee lights round it on the stage,
- * ink on a sticky note in a notebook. A heading to a screen reader.
+ * ink on a sticky note in a notebook, smaller where the sign is too narrow to hold it inside its panel
+ * (`LogoSizes.wordInset`). A heading to a screen reader.
  *
  * Every few seconds a bulb or two of the sign flickers, as an old marquee's do: dims, catches, dims again
  * and comes back, for under a second. In the draw alone, with no frame between flickers; a skin with no
@@ -156,7 +159,20 @@ fun Wordmark(
                 .drawBehind { with(part) { drawSign(flicker::glow) } },
         contentAlignment = Alignment.Center,
     ) {
-        KvizicText(text, style = KvizicTheme.type.logo, color = part.text, maxLines = 1)
+        val logo = KvizicTheme.type.logo
+        // On a narrow sign the name shrinks to stay inside its panel, never past the bulbs (Nunito is wide).
+        KvizicText(
+            text,
+            Modifier.padding(horizontal = skin.space.logo.wordInset),
+            style = logo,
+            color = part.text,
+            maxLines = 1,
+            autoSize =
+                TextAutoSize.StepBased(
+                    minFontSize = KvizicTheme.type.answerMin.style.fontSize,
+                    maxFontSize = logo.style.fontSize,
+                ),
+        )
     }
 }
 

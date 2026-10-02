@@ -204,7 +204,8 @@ internal val BuzzersSpace =
         burst = 64.dp,
         spinner = 44.dp,
         seat = SeatSizes(height = 112.dp, columns = 4),
-        logo = LogoSizes(signHeight = 124.dp, signBulbsAcross = 11),
+        // The panel inside the bulbs is the sign less `xxl` each side; the name keeps `sm` more from its rule.
+        logo = LogoSizes(signHeight = 124.dp, signBulbsAcross = 11, wordInset = 40.dp),
     )
 
 internal val BuzzersShapes =

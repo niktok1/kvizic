@@ -246,7 +246,8 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   are (`LevelBar`), and under them, for a guest in a build with Play Games, a quiet „Пријави се преко Плеј игара“
   (`HomeState.offersPlayGames`, `LinkPlayGames.manually`): Play Games offers its own sign-in once for an account,
   so a player who backed out of it would stay a guest for good. Clearing the app's data never changes the account
-  Play Games hands it; the game's sign stands in the middle of the room the buttons leave, with no art (the owner chose
+  Play Games hands it; the game's sign stands in the middle of the room the buttons leave, its name shrinking to stay inside the
+  sign's panel where the sign is narrow (`LogoSizes.wordInset`; Nunito is wide), with no art (the owner chose
   it over the icon's bulb ring, an animal cast and a question card). Where a level is shown on an avatar it is a
   badge at the bottom start, where the host's microphone is at the end; a line of a board is too small for it.
 - **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page

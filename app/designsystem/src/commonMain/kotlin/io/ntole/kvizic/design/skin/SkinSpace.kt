@@ -160,4 +160,6 @@ data class LogoSizes(
     /** The wordmark's sign on Home, and how many bulbs run along each of its long edges. */
     val signHeight: Dp,
     val signBulbsAcross: Int,
+    /** How far in from the sign's sides the game's name stays, so it stands inside the sign's panel whole. */
+    val wordInset: Dp,
 )
