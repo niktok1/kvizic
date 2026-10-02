@@ -264,6 +264,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   button by its kind. The room is heard through `RoomCueTracker`, a pure policy over its state (its first state
   is silent: a rotation or a reconnect replays nothing), the last seconds tick under `sounding`, the reveal
   sits with the haptic (`Feedback`), the standings board sounds the player's place moving as its lines slide.
+  Reactions burst over their seat every time but are heard rarely (`ReactionVoices`, the owner, 2026-10-02): a
+  player once in 30 s, the room one reaction at a time (400 ms), the player's own from the server's echo, so a
+  reaction the server dropped is never heard; the buttons themselves only click.
   The engine drops a cue while sound is off or the app is away, before its bank is loaded, or sooner than its
   `minGapMillis`, and moves a `varied` cue a few percent off pitch. Android plays as a game, takes no audio focus
   and is silent in silent mode; iOS is on the ambient session; a browser lets sound start after the first

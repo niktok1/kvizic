@@ -426,7 +426,6 @@ private fun Waiting(
                         StageIconButton(
                             reaction.icon,
                             contentDescription = reaction.name(words),
-                            cue = reactionCue(reaction.id) ?: Cue.TAP_SOFT,
                             onClick =
                                 tapped(
                                     "room.reaction",
@@ -461,7 +460,6 @@ private fun Waiting(
                         modifier = Modifier.fillMaxWidth(),
                         kind = ButtonKind.SECONDARY,
                         icon = KvizicIcons.Bell,
-                        cue = Cue.NUDGE,
                     )
                 }
 

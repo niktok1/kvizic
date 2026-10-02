@@ -23,6 +23,7 @@ import kotlin.math.ceil
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 /** A [cue] the room calls for, [afterMillis] after the change that called for it, at [volume]. */
 internal data class Heard(
@@ -147,6 +148,9 @@ internal class RoomCueTracker(
     }
 }
 
+/** Others' reactions are heard under the player's own. */
+private const val OTHERS_REACTING = 0.7f
+
 /**
  * How a game ended for [you], in a sound: a win's fanfare, the podium's, a solo run's best, or the plain end
  * of the rest.
@@ -229,12 +233,18 @@ internal fun RoomSounds(
     LaunchedEffect(note) { note?.let(::noteCue)?.let { cues.play(it) } }
     val you by rememberUpdatedState(state.you)
     val seen = remember { bursts.mapValuesTo(mutableMapOf()) { it.value.key } }
+    val voices =
+        remember {
+            val started = TimeSource.Monotonic.markNow()
+            ReactionVoices(nowMillis = { started.elapsedNow().inWholeMilliseconds })
+        }
     LaunchedEffect(bursts) {
         bursts.forEach { (player, burst) ->
             if (seen[player] == burst.key) return@forEach
             seen[player] = burst.key
-            // The player's own are sounded by their button, as they are pressed.
-            if (player != you) reactionCue(burst.reaction)?.let { cues.play(it, volume = 0.7f) }
+            // Every reaction bursts; few are heard (ReactionVoices), the player's own from the same echo.
+            val cue = reactionCue(burst.reaction) ?: return@forEach
+            if (voices.allow(player)) cues.play(cue, volume = if (player == you) 1f else OTHERS_REACTING)
         }
     }
     val phase = state.phase
