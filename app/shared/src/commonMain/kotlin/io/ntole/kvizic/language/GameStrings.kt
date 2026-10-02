@@ -174,8 +174,9 @@ data class GameStrings(
     val resultsIn: String,
     /** The results: the game is over, after `{0}` questions. */
     val gameOver: String,
-    /** The winner's name, `{0}`. */
+    /** Over the winner's name, for everyone else, and for the player when they won. */
     val winner: String,
+    val youWon: String,
     /** How many the player got right, `{0}`, of `{1}`. */
     val rightOf: String,
     val backToRoom: String,
@@ -310,6 +311,7 @@ data class GameStrings(
             resultsIn = transform(resultsIn),
             gameOver = transform(gameOver),
             winner = transform(winner),
+            youWon = transform(youWon),
             rightOf = transform(rightOf),
             backToRoom = transform(backToRoom),
             newBest = transform(newBest),
@@ -446,7 +448,8 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         nextQuestionIn = "Следеће питање за {0} с",
         resultsIn = "Резултати за {0} с",
         gameOver = "Крај игре · {0}",
-        winner = "Победа: {0}",
+        winner = "Победник",
+        youWon = "Твоја победа!",
         rightOf = "Тачно {0} од {1}",
         backToRoom = "Назад у собу",
         newBest = "Нови рекорд!",
@@ -594,7 +597,8 @@ internal val EnglishGameStrings: GameStrings =
         nextQuestionIn = "Next question in {0} s",
         resultsIn = "Results in {0} s",
         gameOver = "Game over · {0}",
-        winner = "Winner: {0}",
+        winner = "Winner",
+        youWon = "Your win!",
         rightOf = "Right {0} of {1}",
         backToRoom = "Back to the room",
         newBest = "A new best!",

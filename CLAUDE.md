@@ -225,6 +225,15 @@ Play Games Services v2. **No Material**: the design system draws everything.
   the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
+- **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page
+  (`PresenceStrip`): a lit bulb, a person and the players online, a magnifier and those searching, each count on
+  flaps; it stays line-sized, being only nice to know, and a screen reader is told the sentence.
+- **The results** (the owner, 2026-10-02): the winner stands on a plate of the first step's colour (`WinnerBanner`,
+  "Твоја победа!" for the player's own win) right over the podium, not pinned to the top, popping in once; the
+  podium, the board and the chips stand centred in a region that scrolls when eight players leave no room, the
+  way back fixed at the foot (`RoomRevealDrawTest`).
+- **Kick is a boot** (`KvizicIcons.Boot`: the host's remove, a vote to put out, the votes on a seat); the door
+  stays for leaving. The lobby's emotes are the regular round buttons, not the small ones.
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,
   a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
 - Avatars: the server's sixteen Balkan animals, each drawn by hand (`AvatarArt`); an id this build does not

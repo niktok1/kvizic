@@ -13,6 +13,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -20,10 +21,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -72,6 +76,7 @@ import io.ntole.kvizic.design.component.SeatOccupant
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageDialog
 import io.ntole.kvizic.design.component.StageIconButton
+import io.ntole.kvizic.design.component.WinnerBanner
 import io.ntole.kvizic.design.component.rememberTilePlaces
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -694,66 +699,73 @@ private fun Results(
             color = colors.onPageMuted,
             textAlign = TextAlign.Center,
         )
-        ranked.firstOrNull()?.let { winner ->
-            Spacer(Modifier.height(space.xs))
-            KvizicText(
-                words.winner.fill(shown(winner.name)),
-                Modifier.fillMaxWidth(),
-                style = type.headline,
-                textAlign = TextAlign.Center,
-            )
-        }
-        Spacer(Modifier.weight(1f))
-        Podium(
-            ranked.take(PODIUM).mapIndexed { i, standing ->
-                PodiumPlace(shown(standing.name), standing.avatar, seatOf(standing.playerId, i), standing.score)
-            },
-            Modifier.fillMaxWidth(),
-        )
-        val rest = ranked.drop(PODIUM)
-        if (rest.isNotEmpty()) {
-            Spacer(Modifier.height(space.lg))
-            Scoreboard(
-                rest.mapIndexed { i, standing ->
-                    ScoreRow(
-                        place = standing.rank,
-                        name = shown(standing.name),
-                        avatarId = standing.avatar,
-                        seat = seatOf(standing.playerId, PODIUM + i),
-                        total = standing.score,
-                        own = standing.playerId == you,
+        // The winner, the podium and the rest stand centred in what the buttons leave; with eight players and
+        // no room they scroll, and the way back stays at the foot.
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            Column(
+                Modifier.fillMaxWidth().heightIn(min = maxHeight).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                ranked.firstOrNull()?.let { winner ->
+                    WinnerBanner(
+                        caption = if (winner.playerId == you) words.youWon else words.winner,
+                        name = shown(winner.name),
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
-                },
-                Modifier.fillMaxWidth(),
-            )
-        }
-        Spacer(Modifier.height(space.md))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(space.xs),
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        ) {
-            results.standings.firstOrNull { it.playerId == you }?.let { own ->
-                Chip(words.rightOf.fill(own.correct, results.questionCount), tone = ChipTone.GAIN)
-            }
-            results.personalBest?.let { best ->
-                if (best.isNew) {
-                    Chip(words.newBest, icon = KvizicIcons.Crown, tone = ChipTone.ACCENT)
-                } else {
-                    Chip(words.best.fill(best.previous ?: best.score), icon = KvizicIcons.Crown)
+                    Spacer(Modifier.height(space.md))
+                }
+                Podium(
+                    ranked.take(PODIUM).mapIndexed { i, standing ->
+                        PodiumPlace(shown(standing.name), standing.avatar, seatOf(standing.playerId, i), standing.score)
+                    },
+                    Modifier.fillMaxWidth(),
+                )
+                val rest = ranked.drop(PODIUM)
+                if (rest.isNotEmpty()) {
+                    Spacer(Modifier.height(space.lg))
+                    Scoreboard(
+                        rest.mapIndexed { i, standing ->
+                            ScoreRow(
+                                place = standing.rank,
+                                name = shown(standing.name),
+                                avatarId = standing.avatar,
+                                seat = seatOf(standing.playerId, PODIUM + i),
+                                total = standing.score,
+                                own = standing.playerId == you,
+                            )
+                        },
+                        Modifier.fillMaxWidth(),
+                    )
+                }
+                Spacer(Modifier.height(space.md))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs),
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) {
+                    results.standings.firstOrNull { it.playerId == you }?.let { own ->
+                        Chip(words.rightOf.fill(own.correct, results.questionCount), tone = ChipTone.GAIN)
+                    }
+                    results.personalBest?.let { best ->
+                        if (best.isNew) {
+                            Chip(words.newBest, icon = KvizicIcons.Crown, tone = ChipTone.ACCENT)
+                        } else {
+                            Chip(words.best.fill(best.previous ?: best.score), icon = KvizicIcons.Crown)
+                        }
+                    }
+                }
+                if (results.endedEarly) {
+                    Spacer(Modifier.height(space.sm))
+                    KvizicText(
+                        words.endedEarly,
+                        Modifier.fillMaxWidth(),
+                        style = type.caption,
+                        color = colors.onPageMuted,
+                        textAlign = TextAlign.Center,
+                    )
                 }
             }
         }
-        if (results.endedEarly) {
-            Spacer(Modifier.height(space.sm))
-            KvizicText(
-                words.endedEarly,
-                Modifier.fillMaxWidth(),
-                style = type.caption,
-                color = colors.onPageMuted,
-                textAlign = TextAlign.Center,
-            )
-        }
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(space.md))
         Row(horizontalArrangement = Arrangement.spacedBy(space.md)) {
             StageButton(
                 if (newGameStarting) words.joinNewGame else words.backToRoom,

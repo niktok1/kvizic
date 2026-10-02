@@ -1,6 +1,7 @@
 package io.ntole.kvizic.room
 
 import androidx.compose.ui.semantics.SemanticsProperties
+import io.ntole.kvizic.core.domain.lobby.FinalStanding
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.descriptions
@@ -15,6 +16,7 @@ import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -80,12 +82,52 @@ class RoomRevealDrawTest : RoomStills() {
                 RoomActions(backToLobby = { back += "back" }, leave = { back += "leave" }),
             ) { scene ->
                 val shown = scene.everyText()
-                listOf(words.winner.fill("Нина"), words.rightOf.fill(7, 10), words.backToRoom, words.leave).forEach {
+                listOf(words.winner, "Нина", words.rightOf.fill(7, 10), words.backToRoom, words.leave).forEach {
                     assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown")
                 }
                 scene.tap(words.backToRoom)
             }
             assertEquals(listOf("back"), back, skin.id)
+        }
+    }
+
+    @Test
+    fun `the results fit eight players and the longest name, and say so when the player won`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            // The longest a name may be, in the widest letter there is.
+            val longest = "Ш".repeat(24)
+            val avatars = listOf("fox", "hedgehog", "bear", "owl", "stork", "wolf", "lynx", "deer")
+            val standings =
+                avatars.mapIndexed { i, avatar ->
+                    val place = i + 1
+                    FinalStanding(
+                        if (place == 1) YOU else "p$place",
+                        if (place == 1) longest else "Играч $place",
+                        avatar,
+                        2000 - place * 100,
+                        10 - place,
+                        place,
+                        true,
+                    )
+                }
+            val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
+            val state =
+                inLobby(
+                    GamePhase.Waiting(RESULTS.copy(standings = standings)),
+                    lobby = lobby(members = members),
+                )
+            draw(skin, "results-eight", state) { scene ->
+                val shown = scene.everyText()
+                assertTrue(words.youWon in shown, "${skin.id}: $shown")
+                assertFalse(words.winner in shown, "${skin.id}: $shown")
+                assertTrue(longest in shown, "${skin.id}: the longest name is cut: $shown")
+                // Nothing is pushed off the phone: the way back stands whole at the foot.
+                val back = scene.nodes().single { words.backToRoom in it.texts }.boundsInRoot
+                assertTrue(back.height > 0 && back.bottom <= HEIGHT, "${skin.id}: the way back is at $back")
+                val name = scene.nodes().first { longest in it.texts }.boundsInRoot
+                assertTrue(name.width > 0 && name.right <= WIDTH, "${skin.id}: the winner's name is at $name")
+            }
         }
     }
 
