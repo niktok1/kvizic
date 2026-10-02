@@ -54,6 +54,7 @@ import io.ntole.kvizic.room.answering
 import io.ntole.kvizic.room.inLobby
 import io.ntole.kvizic.room.lobby
 import io.ntole.kvizic.room.revealing
+import io.ntole.kvizic.settings.SettingsScreen
 import io.ntole.kvizic.settle
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
@@ -83,7 +84,7 @@ class TapsTest {
     fun `every tap on Home and the top bar is reported`() {
         val buttons =
             setOf(
-                "home.about",
+                "home.settings",
                 "home.quick_play",
                 "home.create_room",
                 "home.join_by_code",
@@ -117,16 +118,26 @@ class TapsTest {
     @Test
     fun `every tap on the About screen is reported`() {
         assertEquals(
+            setOf("about.privacy", "about.terms", "about.deletion_page", "about.contact", "about.licence"),
+            elementsTapped { AboutScreen(AppVersion("0.1.0", 100)) },
+        )
+        assertTrue(uris.opened.isNotEmpty())
+    }
+
+    /**
+     * The names the Statistics switch, the account id and the deletion were first sent under, on the About
+     * screen, stay: a name once sent never changes.
+     */
+    @Test
+    fun `every tap on the Settings screen is reported`() {
+        assertEquals(
             setOf(
-                "about.privacy",
-                "about.terms",
-                "about.deletion_page",
-                "about.contact",
-                "about.copy_account_id",
+                "settings.sound",
                 "about.statistics",
                 "about.statistics_info",
                 "about.statistics_info_ok",
-                "about.licence",
+                "settings.about",
+                "about.copy_account_id",
                 // Deleting the account, then its dialog's two buttons.
                 "about.delete_account",
                 "about.delete_account_confirm",
@@ -135,13 +146,12 @@ class TapsTest {
             elementsTapped {
                 @Suppress("DEPRECATION")
                 CompositionLocalProvider(LocalClipboardManager provides RecordingClipboard()) {
-                    AboutScreen(AppVersion("0.1.0", 100), accountId = "p1") {
+                    SettingsScreen(accountId = "p1") {
                         DeleteAccountButton(deletion = Deletion.Idle, onDelete = {})
                     }
                 }
             },
         )
-        assertTrue(uris.opened.isNotEmpty())
     }
 
     @Test

@@ -3,6 +3,7 @@ package io.ntole.kvizic.navigation
 import androidx.compose.runtime.saveable.SaverScope
 import io.ntole.kvizic.navigation.Screen.About
 import io.ntole.kvizic.navigation.Screen.Home
+import io.ntole.kvizic.navigation.Screen.Settings
 import io.ntole.kvizic.navigation.Screen.Update
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -110,8 +111,14 @@ class NavigatorTest {
 
     @Test
     fun `each screen's key is its own`() {
-        assertEquals(listOf("home", "about", "update"), listOf(Home, About, Update).map { it.key })
-        assertEquals(listOf(Home, About, Update), listOf("home", "about", "update").map(Screen::ofKey))
+        assertEquals(
+            listOf("home", "about", "settings", "update"),
+            listOf(Home, About, Settings, Update).map { it.key },
+        )
+        assertEquals(
+            listOf(Home, About, Settings, Update),
+            listOf("home", "about", "settings", "update").map(Screen::ofKey),
+        )
     }
 
     private fun save(navigator: Navigator): Any {

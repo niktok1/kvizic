@@ -52,7 +52,7 @@ class HomeScreenDrawTest {
                     "12",
                     words.solo,
                 ).forEach { text -> assertTrue(text in shown, "$language: \"$text\" is not in $shown") }
-                assertTrue(strings.aboutScreen.title in scene.descriptions(), "$language: ${scene.descriptions()}")
+                assertTrue(strings.settingsScreen.title in scene.descriptions(), "$language: ${scene.descriptions()}")
                 // The counts are said whole and shown in no words.
                 assertTrue(words.presence.fill(128, 7) in scene.descriptions(), "$language: ${scene.descriptions()}")
                 // Everything stands on the phone's screen, Solo, the last, too.
@@ -79,7 +79,7 @@ class HomeScreenDrawTest {
                         joinByCode = { tapped += "join" },
                         publicRooms = { tapped += "public" },
                         solo = { tapped += "solo" },
-                        about = { tapped += "about" },
+                        settings = { tapped += "settings" },
                     ),
             )
         try {
@@ -90,11 +90,11 @@ class HomeScreenDrawTest {
                 words.publicRooms,
                 words.solo,
             ).forEach(scene::tap)
-            scene.tap(stringsOf(Language.DEFAULT).aboutScreen.title)
+            scene.tap(stringsOf(Language.DEFAULT).settingsScreen.title)
         } finally {
             scene.close()
         }
-        assertEquals(listOf("quick", "create", "join", "public", "solo", "about"), tapped)
+        assertEquals(listOf("quick", "create", "join", "public", "solo", "settings"), tapped)
     }
 
     @Test

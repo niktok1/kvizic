@@ -60,7 +60,7 @@ data class AboutStrings(
 
 /** The words of deleting an account, as [AboutStrings.deleteAccount]. */
 data class DeleteAccountStrings(
-    /** The quiet button at the bottom of the About screen. */
+    /** The quiet button at the bottom of the Settings screen. */
     val button: String,
     /** The confirm dialog's one line: everything goes, for good. */
     val warning: String,

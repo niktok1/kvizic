@@ -41,20 +41,14 @@ import io.ntole.kvizic.language.fill
 /**
  * The About screen: the game's name, its [version] and build number, the age it is for, links that open in
  * the browser to the site's privacy policy, terms, deleting an account and contact ([Site], in the language
- * shown), the player's [accountId], to copy and send when asking by email for their account to be deleted,
- * none while no session is stored, the Statistics switch, [statisticsOn] whether the player lets the game
- * send analytics, which [onStatisticsChange] changes, the libraries the game ships with, each with its
- * licence ([OPEN_SOURCE_LIBRARIES]), and last, quiet, [deletion], the way to delete the account. It
- * scrolls, its content held to a readable column on a wide window.
+ * shown), and the libraries the game ships with, each with its licence ([OPEN_SOURCE_LIBRARIES]). It
+ * scrolls, its content held to a readable column on a wide window. The player's own settings, their account
+ * among them, are the Settings screen's.
  */
 @Composable
 fun AboutScreen(
     version: AppVersion,
-    accountId: String?,
     modifier: Modifier = Modifier,
-    statisticsOn: Boolean = true,
-    onStatisticsChange: (Boolean) -> Unit = {},
-    deletion: @Composable () -> Unit = {},
 ) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -87,17 +81,10 @@ fun AboutScreen(
                 Triple(strings.deleteAccountPage, SitePage.DELETE_ACCOUNT, "about.deletion_page"),
                 Triple(strings.contact, SitePage.CONTACT, "about.contact"),
             ).forEach { (label, page, element) -> Link(label, Site.url(page, language), element) }
-            accountId?.let { id -> AccountId(id) }
-
-            Divider()
-            StatisticsSwitch(on = statisticsOn, onChange = onStatisticsChange)
 
             Divider()
             KvizicText(text = strings.licences, style = type.bodyStrong)
             OPEN_SOURCE_LIBRARIES.forEach { library -> Library(library) }
-
-            Divider()
-            deletion()
         }
     }
 }
@@ -135,7 +122,7 @@ private fun Link(
  * to have their account deleted by email: a guest has no other name the server knows them by.
  */
 @Composable
-private fun AccountId(accountId: String) {
+internal fun AccountId(accountId: String) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors

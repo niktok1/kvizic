@@ -59,7 +59,7 @@ class HomeActions(
     val joinByCode: () -> Unit = {},
     val publicRooms: () -> Unit = {},
     val solo: () -> Unit = {},
-    val about: () -> Unit = {},
+    val settings: () -> Unit = {},
     val profile: () -> Unit = {},
     val retry: () -> Unit = {},
     val dismissExit: () -> Unit = {},
@@ -136,8 +136,8 @@ fun HomeScreen(
                 }
                 StageIconButton(
                     KvizicIcons.Sliders,
-                    contentDescription = strings.aboutScreen.title,
-                    onClick = tapped("home.about", onClick = actions.about),
+                    contentDescription = strings.settingsScreen.title,
+                    onClick = tapped("home.settings", onClick = actions.settings),
                     small = true,
                 )
             }

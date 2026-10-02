@@ -18,7 +18,7 @@ import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 
 /**
- * Deleting the account, at the bottom of the About screen: a quiet button, which asks in a dialog of one
+ * Deleting the account, at the bottom of the Settings screen: a quiet button, which asks in a dialog of one
  * line whether everything is to go for good, and only then deletes, [onDelete]; why the last one failed,
  * above it. Off while a deletion is in flight.
  */

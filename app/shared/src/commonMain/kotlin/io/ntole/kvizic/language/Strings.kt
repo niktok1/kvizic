@@ -41,6 +41,8 @@ data class Strings(
     val somethingWrong: String,
     /** The About screen's words. */
     val aboutScreen: AboutStrings,
+    /** The Settings screen's words. */
+    val settingsScreen: SettingsScreenStrings,
     /** The words of the screen shown once the server serves this build nothing more. */
     val updateScreen: UpdateStrings,
     /** The game's own words, from Home to the results. */
@@ -65,6 +67,7 @@ data class Strings(
             tooManyTriesNoWait = transform(tooManyTriesNoWait),
             somethingWrong = transform(somethingWrong),
             aboutScreen = aboutScreen.map(transform),
+            settingsScreen = settingsScreen.map(transform),
             updateScreen = updateScreen.map(transform),
             game = game.map(transform),
         )
@@ -85,6 +88,7 @@ val SerbianCyrillicStrings: Strings =
         tooManyTriesNoWait = "Превише покушаја. Сачекај мало.",
         somethingWrong = "Нешто није у реду. Покушај поново.",
         aboutScreen = SerbianCyrillicAboutStrings,
+        settingsScreen = SerbianCyrillicSettingsScreenStrings,
         updateScreen = SerbianCyrillicUpdateStrings,
         game = SerbianCyrillicGameStrings,
     )
@@ -106,6 +110,7 @@ val EnglishStrings: Strings =
         tooManyTriesNoWait = "Too many tries. Wait a moment.",
         somethingWrong = "Something went wrong. Try again.",
         aboutScreen = EnglishAboutStrings,
+        settingsScreen = EnglishSettingsScreenStrings,
         updateScreen = EnglishUpdateStrings,
         game = EnglishGameStrings,
     )

@@ -72,6 +72,7 @@ import io.ntole.kvizic.room.RoomViewModel
 import io.ntole.kvizic.room.SettingsScreen
 import io.ntole.kvizic.room.entryFailureText
 import io.ntole.kvizic.services.AppServices
+import io.ntole.kvizic.settings.SettingsScreen
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
 import io.ntole.kvizic.sound.ProvideCues
@@ -163,7 +164,12 @@ private fun Screens(usage: UsageTracker) {
 
             Screen.About -> {
                 BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.aboutScreen.title)
-                Below { About(onDeleted = { navigator.back() }) }
+                Below { About() }
+            }
+
+            Screen.Settings -> {
+                BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.settingsScreen.title)
+                Below { Settings(onAbout = { navigator.open(Screen.About) }, onDeleted = { navigator.back() }) }
             }
 
             Screen.Profile -> {
@@ -236,7 +242,7 @@ private fun Home(
                 joinByCode = { open(Screen.Join) },
                 publicRooms = { open(Screen.PublicRooms) },
                 solo = room::solo,
-                about = { open(Screen.About) },
+                settings = { open(Screen.Settings) },
                 profile = { open(Screen.Profile) },
                 retry = viewModel::retry,
                 dismissExit = room::leave,
@@ -483,21 +489,32 @@ private val LobbySettingsSaver: Saver<LobbySettings, Any> =
         },
     )
 
+/** The About screen: the game's version, its legal pages and the libraries it ships with. */
+@Composable
+private fun About() {
+    AboutScreen(version = koinInject())
+}
+
 /**
- * The About screen, with the account id of the session stored on the device, which it copies to send by
+ * The Settings screen, with the account id of the session stored on the device, which it copies to send by
  * email for the account's deletion: read from the device and never from the server, so it shows offline
  * and mints no session. None while none is stored; and the new one should the device become another player
- * while it is shown. Once the account is deleted, [onDeleted] goes back, to a Home that reads the fresh
- * guest.
+ * while it is shown. The Statistics switch is the player's choice, kept on the device, which the analytics
+ * hold, and the Sound switch is the one [SoundViewModel] keeps. [onAbout] opens the About screen. Once the
+ * account is deleted, [onDeleted] goes back, to a Home that reads the fresh guest.
  */
 @Composable
-private fun About(onDeleted: () -> Unit) {
+private fun Settings(
+    onAbout: () -> Unit,
+    onDeleted: () -> Unit,
+) {
     val session = koinInject<CurrentSession>()
     val accountId by remember(session) { session.sessions }.collectAsStateWithLifecycle(session.current())
     val viewModel = koinViewModel<AboutViewModel>()
     val deletion by viewModel.deletion.collectAsStateWithLifecycle()
+    val sounds = koinViewModel<SoundViewModel>()
+    val soundOn by sounds.enabled.collectAsStateWithLifecycle()
 
-    // The player's choice, kept on the device, which the analytics hold.
     val analytics = LocalAnalytics.current
     val statisticsOn by analytics.enabled.collectAsStateWithLifecycle()
 
@@ -508,11 +525,13 @@ private fun About(onDeleted: () -> Unit) {
         }
     }
 
-    AboutScreen(
-        version = koinInject(),
+    SettingsScreen(
         accountId = accountId,
+        soundOn = soundOn,
+        onSoundChange = sounds::setEnabled,
         statisticsOn = statisticsOn,
         onStatisticsChange = analytics::setEnabled,
+        onAbout = onAbout,
         deletion = { DeleteAccountButton(deletion = deletion, onDelete = viewModel::delete) },
     )
 }
