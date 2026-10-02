@@ -190,7 +190,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   `local.properties` (`kvizic.playgames.appId`, `kvizic.playgames.serverClientId`; none is Play Games off);
   the server's `PLAY_GAMES_CLIENT_ID` and `PLAY_GAMES_CLIENT_SECRET` are on Render. The Play Console takes
   Android credentials for `io.ntole.kvizic` (Play's signing key and the debug key) and `io.ntole.kvizic.dev`
-  (the debug key). Until its configuration is published, only its Testers sign in.
+  (the debug key). Its consent screen and configuration are published (2026-10-03): every player signs in.
 - **Phones play upright** (the owner, 2026-10-02): Android's activity is portrait and the iPhone takes
   portrait alone; the game is laid out for a phone's height. iPads, desktop and the web take any shape, and
   Android 16 lets a large screen turn the app anyway, where the content keeps its width (`contentWidth`).
@@ -349,8 +349,6 @@ makes the draw tests write PNGs to look at.
   the clap icon's drawing.
 - Share links. Sound's mix on a phone's speaker (the levels, the cues' character), a language and a skin picker
   in Settings, and a way for a skin to be chosen at all.
-- Play Games before launch: its variables on `kvizic-server`; its consent screen published (in Testing now,
-  it wants a privacy policy page first), then its configuration, with its final art.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.
 - **Phones on their side**: phones are portrait-locked (§9) until the game has a landscape layout: the
   question screen in two panes, the bar and the question beside the answers' grid (a phone on its side is

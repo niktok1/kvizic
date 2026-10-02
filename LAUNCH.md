@@ -112,10 +112,9 @@ phone (360×640) and Android 7 (API 24) if you have one.
   - Account deletion: in the app (About → Подаци) and `https://kvizic.ntole.com/delete.html`.
 - **Countries**: Serbia, Bosnia and Herzegovina, Montenegro, North Macedonia, Austria, Germany, Switzerland,
   Sweden, Norway, Denmark.
-- **Play Games Services**: the consent screen is **In production** ✅ (2026-10-03; Google lists only an
-  optional brand verification). Google Cloud → the OAuth consent screen → **Publish app** (the privacy URL from
-  step 1 is required); Play Console → Play Games Services → **Review and publish**. After the first upload,
-  check that **Setup → App signing**'s SHA-1 is among the Android credentials for `io.ntole.kvizic`.
+- **Play Games Services** ✅ (2026-10-03): the consent screen is **In production** (Google lists only an
+  optional brand verification, left for later); the configuration is published; Play's signing key's SHA-1 is
+  on the Android credential for `io.ntole.kvizic`. Every player can sign in now, not only the Testers.
 
 **Data safety**: encrypted in transit: yes. Deletion: yes, users can ask. Shared with third parties: none
 (PostHog and Render process data for us, as service providers).
