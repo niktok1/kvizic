@@ -41,7 +41,8 @@ holds if the plan changes.
 
 `~/keys/kvizic-upload.jks`, alias `kvizic-upload`, its settings in `local.properties`; `bundleProdRelease`
 signs with it. Its certificate's SHA-1 is `7E:7E:42:7E:05:74:0F:B9:13:46:5A:B5:72:E7:4E:00:42:DE:94:76`
-(public, for Play Games' Android credentials if a build signed with it, not by Play, should sign in). Keep
+(public, for Play Games' Android credentials if a build signed with it, not by Play, should sign in). Play's
+app signing key, which signs what Play installs: SHA-1 `0B:6C:BE:53:6B:F9:48:A1:54:6C:21:62:09:B3:3B:8B:75:9E:D7:7A`. Keep
 the file and its password backed up together. Play App Signing is offered at the first upload: accept it.
 
 ### 3. Analytics key ✅ (2026-10-02, the Kvizić project on PostHog EU; the prod bundle carries it)
@@ -111,7 +112,8 @@ phone (360×640) and Android 7 (API 24) if you have one.
   - Account deletion: in the app (About → Подаци) and `https://kvizic.ntole.com/delete.html`.
 - **Countries**: Serbia, Bosnia and Herzegovina, Montenegro, North Macedonia, Austria, Germany, Switzerland,
   Sweden, Norway, Denmark.
-- **Play Games Services**: Google Cloud → the OAuth consent screen → **Publish app** (the privacy URL from
+- **Play Games Services**: the consent screen is **In production** ✅ (2026-10-03; Google lists only an
+  optional brand verification). Google Cloud → the OAuth consent screen → **Publish app** (the privacy URL from
   step 1 is required); Play Console → Play Games Services → **Review and publish**. After the first upload,
   check that **Setup → App signing**'s SHA-1 is among the Android credentials for `io.ntole.kvizic`.
 
