@@ -5,7 +5,7 @@ import io.ntole.kvizic.design.font.Face
 
 /**
  * A whole look of the game: not only its colours but its type, its shapes, how things stand off the
- * page, how they move, how each component is drawn and the art under every screen. Screens and
+ * page, how they move and sound, how each component is drawn and the art under every screen. Screens and
  * components read a skin's tokens and never write a colour, a length or a type size of their own, so a
  * new skin is one package of values and parts, and one line in [Skins.ALL].
  */
@@ -22,6 +22,7 @@ data class Skin(
     val depth: SkinDepth,
     val space: SkinSpace,
     val motion: SkinMotion,
+    val sound: SkinSound,
     val parts: SkinParts,
     val backdrop: Backdrop,
     val avatarPalette: AvatarPalette,

@@ -29,6 +29,9 @@ public object AnalyticsEvent {
     /** The player picked a language to play in, [AnalyticsProperty.LANGUAGE]. */
     public const val LANGUAGE_CHANGED: String = "language_changed"
 
+    /** The player turned the game's sound on or off, [AnalyticsProperty.ENABLED]. */
+    public const val SOUND_CHANGED: String = "sound_changed"
+
     /**
      * The player signed in with Google Play Games Services: [AnalyticsProperty.AUTOMATIC] whether at
      * launch with no tap, and [AnalyticsProperty.SWITCHED] whether it made this device another player's.

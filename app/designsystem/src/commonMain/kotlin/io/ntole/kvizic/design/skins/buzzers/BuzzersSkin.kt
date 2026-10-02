@@ -20,6 +20,7 @@ internal val BuzzersSkin: Skin =
         depth = BuzzersDepth,
         space = BuzzersSpace,
         motion = BuzzersMotion,
+        sound = BuzzersSound,
         parts = BuzzersParts,
         backdrop = BuzzersBackdrop,
         avatarPalette = BuzzersAvatars,

@@ -74,6 +74,8 @@ import io.ntole.kvizic.room.entryFailureText
 import io.ntole.kvizic.services.AppServices
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
+import io.ntole.kvizic.sound.ProvideCues
+import io.ntole.kvizic.sound.SoundViewModel
 import io.ntole.kvizic.theme.GameTheme
 import io.ntole.kvizic.update.UpdateScreen
 import io.ntole.kvizic.update.rememberUpdateButton
@@ -103,12 +105,15 @@ fun App() {
     // Every tap on every screen is counted there, and what is shared goes through the platform's own sheet.
     CompositionLocalProvider(LocalAnalytics provides koinInject(), LocalShareSheet provides rememberShareSheet()) {
         GameTheme(language) {
-            Page {
-                if (updateRequired) {
-                    LaunchedEffect(Unit) { usage.show(Screen.Update.key) }
-                    UpdateScreen(button = rememberUpdateButton())
-                } else {
-                    Screens(usage)
+            // The game's sound, bound to the skin worn: inside the theme, so a skin's own voice follows it.
+            ProvideCues(koinViewModel<SoundViewModel>()) {
+                Page {
+                    if (updateRequired) {
+                        LaunchedEffect(Unit) { usage.show(Screen.Update.key) }
+                        UpdateScreen(button = rememberUpdateButton())
+                    } else {
+                        Screens(usage)
+                    }
                 }
             }
         }

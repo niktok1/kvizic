@@ -29,6 +29,9 @@ public object AnalyticsProperty {
     /** A language's tag: `sr-Cyrl`, `sr-Latn` or `en`. */
     public const val LANGUAGE: String = "language"
 
+    /** Whether a setting the player changed is now on. */
+    public const val ENABLED: String = "enabled"
+
     /** How a seat was taken: `quick_play`, `solo`, `create` or `join`. */
     public const val WAY: String = "way"
 

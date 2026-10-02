@@ -25,6 +25,7 @@ internal val NotebookSkin: Skin =
         depth = NotebookDepth,
         space = NotebookSpace,
         motion = NotebookMotion,
+        sound = NotebookSound,
         parts = NotebookParts,
         backdrop = NotebookBackdrop,
         avatarPalette = NotebookAvatars,

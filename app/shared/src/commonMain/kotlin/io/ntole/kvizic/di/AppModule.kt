@@ -15,6 +15,7 @@ import io.ntole.kvizic.room.PublicRoomsViewModel
 import io.ntole.kvizic.room.RoomPreviewViewModel
 import io.ntole.kvizic.room.RoomViewModel
 import io.ntole.kvizic.services.AppServices
+import io.ntole.kvizic.sound.SoundViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModelOf
@@ -28,6 +29,7 @@ internal val uiModule =
         viewModelOf(::HomeViewModel)
         viewModelOf(::AboutViewModel)
         viewModelOf(::LanguageViewModel)
+        viewModelOf(::SoundViewModel)
         viewModelOf(::RoomViewModel)
         viewModelOf(::PublicRoomsViewModel)
         viewModelOf(::RoomPreviewViewModel)
