@@ -188,8 +188,12 @@ Play Games Services v2. **No Material**: the design system draws everything.
   б is drawn as in Russian. Fira stays for the notebook skin's body and the comparisons.
 - **Long text** (`LongTextFitTest`): the longest question and four longest answers fit whole on 375×667
   and 360×640 in every skin while answering and locked in. A question is at most 7 lines read alone and 4
-  over its answers; four answers stand in a 2×2 grid unless a column sets them larger, measured in the room
-  each tile leaves; all answers of a question share one size.
+  over its answers; all answers of a question share one size, the largest the one that needs the most room
+  is whole at, no word broken between two lines.
+- **Answers stand by the window, never by the question** (the owner, 2026-10-02: a question in another shape
+  than the last confuses): on a phone held upright every question's answers stand in a column, a tile across
+  the width each; on a wide window (`LocalWideWindow`: on its side, or `wideWindow`, 600 dp, across) four
+  stand in a 2×2 grid. A row kept short, as the reveal's, shrinks its letter's mark to `letterMarkLeast`.
 - **The bar over a question** (the owner, 2026-10-01): the way out and the round in numbers alone („3 / 10“,
   said „Питање 3 од 10“), the clock in the middle of the screen, the points on MEDIUM flaps, the two sides
   alike, so 1 210 stands whole at 360 dp; the topic is no part of it but a tab on the question card's top
@@ -201,14 +205,12 @@ Play Games Services v2. **No Material**: the design system draws everything.
   answers keep the least room that sets them whole and 45% of the rest; at the content style's limits the
   player's line stays on the board (`RevealFitTest`), at the wire's it may give way.
 - **Picks stand on the card, or on its edge** (the owner, 2026-10-02): those who picked an answer stand on
-  its tile's face, beside the letter in the grid, in two rows where the answers leave the room, or past the
-  answer's longest line in a column, where a crowd of the question's players fits so on every tile, the
-  answers laid out as without them; otherwise on every tile's top edge, about half over it, in
-  front of it (`pickersPeek`), in the row gap and the room a screen leaves over the grid (`rowGap`). The
-  question decides, never the picks so far, so no one moves as more pick (`CrowdTest`). A row closes up to
-  fit (`crowdOverlap`), a second taking the rest past halfway. While a question is read, its answers' places
-  (`AnswerPlaces`) are tiles for two or three, which always stand in a column, and one place for four, whose
-  texts pick a grid or a column.
+  its tile's face, past the answer's longest line in a column or beside the letter in the grid, where a crowd
+  of the question's players fits so on every tile, the answers laid out as without them; otherwise on every
+  tile's top edge, about half over it, in front of it (`pickersPeek`), in the row gap and the room a screen
+  leaves over the grid (`rowGap`). The question decides, never the picks so far, so no one moves as more pick
+  (`CrowdTest`). A crowd closes up to fit (`crowdOverlap`). While a question is read, its answers' places
+  (`AnswerPlaces`) stand in the shape its answers will.
 - **A game's steps give way to each other**, never a cut (`RoomStagesTest`): the question read rises into
   its answers, which come up one after another; the answers' tiles glide into the reveal's places and light
   up from how they stood (`TilePlaces`, `TileGlideTest`), the question and its strip fading out before the
@@ -271,6 +273,10 @@ makes the draw tests write PNGs to look at.
 - Play Games before launch: its variables on `kvizic-server`; its consent screen published (in Testing now,
   it wants a privacy policy page first), then its configuration, with its final art.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.
+- **Phones on their side**: phones are portrait-locked (§9) until the game has a landscape layout: the
+  question screen in two panes, the bar and the question beside the answers' grid (a phone on its side is
+  wide, so its answers already stand two by two), the reveal's board beside them; the lobby's seats, the join
+  keypad, the settings and the results checked at a phone's height of ~360 dp. Then the lock comes off.
 - `design-tests` hung on CI with four test JVMs (2026-10-02: no output for 29 min, cancelled at the job's
   limit; it passes locally in 42 s), and passed in one. Four again, with `DesignShotsTest` split: if it
   hangs again, the job's thread dumps say where.

@@ -24,6 +24,8 @@ data class SkinSpace(
     val touchTarget: Dp,
     /** The widest a screen's column of content grows on a wide window, a tablet's or a desktop's. */
     val contentWidth: Dp,
+    /** The least a window is across to be wide, as a tablet's is held either way; one on its side is too. */
+    val wideWindow: Dp,
     /** The widest a dialog grows. */
     val dialogWidth: Dp,
     /** The outline drawn round a raised thing, and the thinner one of small things. */
@@ -69,6 +71,8 @@ data class TileSizes(
     val rowPaddingVertical: Dp,
     /** The mark a tile's letter stands in, and how far past the tile's corner a result's stamp reaches. */
     val letterMark: Dp,
+    /** The least a tile across the width shrinks its letter's mark to, in a row kept short, as the reveal's. */
+    val letterMarkLeast: Dp,
     val stamp: Dp,
     /**
      * How far those who picked a tile's answer, standing on its top edge, rise over it: about half of them,

@@ -79,12 +79,17 @@ class LongTextFitTest {
     }
 
     @Test
-    fun `answers that fit half the width keep the grid, and one that does not stands them in a column`() {
+    fun `every question stands alike, in a column on a phone and in a grid on a wide window`() {
         Skins.ALL.forEach { skin ->
             val short = listOf("Дунав", "Сава", "Тиса", "Морава")
-            assertEquals(Layout.GRID, layoutOfGrid(skin, short), "${skin.id}: short answers")
             val oneLong = short.take(3) + LONGEST_ANSWERS.last()
-            assertEquals(Layout.COLUMN, layoutOfGrid(skin, oneLong), "${skin.id}: one long answer")
+            listOf(short, oneLong).forEach { options ->
+                val which = if (options == short) "short answers" else "one long answer"
+                val phone = layoutOfGrid(skin, options, SMALL_WIDTH, SMALL_HEIGHT)
+                assertEquals(Layout.COLUMN, phone, "${skin.id}: $which on a phone")
+                val wide = layoutOfGrid(skin, options, SMALL_HEIGHT, SMALL_WIDTH)
+                assertEquals(Layout.GRID, wide, "${skin.id}: $which on a phone on its side")
+            }
         }
     }
 
@@ -93,9 +98,11 @@ class LongTextFitTest {
     private fun layoutOfGrid(
         skin: Skin,
         options: List<String>,
+        width: Int,
+        height: Int,
     ): Layout {
         val scene =
-            stageScene(skin, SMALL_WIDTH, SMALL_HEIGHT) {
+            stageScene(skin, width, height) {
                 AnswerGrid(options, Modifier.fillMaxSize(), onPick = {})
             }
         try {
