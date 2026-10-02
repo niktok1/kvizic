@@ -12,6 +12,7 @@ a room is as good as solo).
 
 - ✅ Legal pages in `site/` (sr + en): privacy, terms, account deletion, contact, home. They name no country
   now: „available on Android through Google Play“, a player outside Serbia pointed to their own authority.
+  **Live at https://kvizic.ntole.com** (2026-10-02): all 10 pages 200 over HTTPS, the app's links match.
 - ✅ Production bank checked: all 1,536 questions are in `kvizic-content/drafts/`, every topic has at least 52
   (Митологија 52: 18 easy, 21 medium, 13 hard), so a 20-question game fills at every level.
 - ✅ Play Games sign-in for a guest on Home (`LinkPlayGames.manually` had no caller).
@@ -26,15 +27,7 @@ a room is as good as solo).
 
 ## Your steps, in order
 
-### 1. The legal pages go live (15 min)
-
-1. Render → **Blueprints** → the kvizic blueprint → **Manual sync**. It creates `kvizic-site`, a free static site.
-2. Render → `kvizic-site` → **Settings → Custom Domains**: `kvizic.ntole.com` is listed with the
-   `….onrender.com` name to point at.
-3. Cloudflare → `ntole.com` → **DNS → Add record**: type `CNAME`, name `kvizic`, target that
-   `….onrender.com` name, **Proxy status: DNS only** (grey cloud, as `kvizic-api` is).
-4. Render → **Verify** beside the domain, and wait for the certificate (a few minutes).
-5. Tell Claude: it checks all 10 URLs and the About screen's links.
+### 1. The legal pages ✅ live
 
 Check two claims the privacy page makes (§ „Колико чувамо“): PostHog → **Project settings → Data retention**
 should keep events **2 years or less**; Render's log retention on the workspace's plan **30 days or less**. If

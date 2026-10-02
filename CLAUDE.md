@@ -309,7 +309,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 `kvizic-api.ntole.com`. Secrets are Render environment variables, never committed.
 `kvizic-site` (free, static, a green `main` that changes `site/`) is the legal pages the app and Play link to
 (`Site`), at `kvizic.ntole.com`, Serbian at the root and English under `en/`: its own subdomain (2026-10-02),
-since `ntole.com` itself is published from WYR's repository. A page states only what the code does.
+since `ntole.com` itself is published from WYR's repository. A page states only what the code does. Render
+deploys it only when a push's last commit touches `site/`: a site change pushed under later commits needs
+Manual Deploy.
 
 ## 12. Verifying
 
