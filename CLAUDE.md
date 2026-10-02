@@ -273,6 +273,10 @@ makes the draw tests write PNGs to look at.
 - Sound, share links. Haptics: a tap on lock-in, right or wrong on the reveal.
 - Play Games before launch: its variables on `kvizic-server`; its consent screen published (in Testing now,
   it wants a privacy policy page first), then its configuration, with its final art.
+- **A Play Games button** for a guest to sign in by hand (`LinkPlayGames.manually` is there, with no screen
+  calling it): Play Games offers its own sign-in once for an account, so a player who backs out of it stays a
+  guest for good (2026-10-02, the tablet). Clearing the app's data never changes the account Play Games
+  hands it: a device keeps the one the game was first signed in with, while that account is on the device.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.
 - **Phones on their side**: phones are portrait-locked (§9) until the game has a landscape layout: the
   question screen in two panes, the bar and the question beside the answers' grid (a phone on its side is
