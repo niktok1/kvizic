@@ -29,9 +29,8 @@ a room is as good as solo).
 
 ### 1. The legal pages ✅ live
 
-Check two claims the privacy page makes (§ „Колико чувамо“): PostHog → **Project settings → Data retention**
-should keep events **2 years or less**; Render's log retention on the workspace's plan **30 days or less**. If
-either is longer, tell Claude the real numbers.
+The privacy page's retention claims (§ „Колико чувамо“): PostHog keeps events **2 years** ✅ (the owner,
+2026-10-03); ☐ Render's log retention on the workspace's plan must be **30 days or less**.
 
 > Weighed (the owner, 2026-10-02): an EU (GDPR Art. 27) or Swiss (FADP Art. 14) representative may be owed for
 > the diaspora countries; launch as planned on the occasional, low-risk exemption, as WYR does, and revisit as
