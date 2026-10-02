@@ -19,6 +19,11 @@ public data class LobbySettingsDto(
     public val wrongAnswerPenalty: Boolean = true,
     /** The level most of a game's questions are at, the others for the rest: a mix, never a filter. */
     public val difficulty: Difficulty = Difficulty.MEDIUM,
+    /**
+     * What the room is called, if the host named it: at most [KvizicApi.Limits.MAX_ROOM_NAME_LENGTH] code points,
+     * cleaned as a player's name is. Null for a room with no name of its own, which the list calls by its host.
+     */
+    public val name: String? = null,
 ) {
     public companion object {
         public const val DEFAULT_QUESTION_COUNT: Int = 10

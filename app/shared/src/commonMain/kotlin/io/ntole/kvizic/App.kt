@@ -66,6 +66,7 @@ import io.ntole.kvizic.room.JoinScreen
 import io.ntole.kvizic.room.PublicRoomsScreen
 import io.ntole.kvizic.room.PublicRoomsViewModel
 import io.ntole.kvizic.room.RoomActions
+import io.ntole.kvizic.room.RoomPreviewViewModel
 import io.ntole.kvizic.room.RoomScreen
 import io.ntole.kvizic.room.RoomViewModel
 import io.ntole.kvizic.room.SettingsScreen
@@ -283,6 +284,11 @@ private fun Profile() {
 private fun Join(room: RoomViewModel) {
     var code by rememberSaveable { mutableStateOf("") }
     val entry by room.entry.collectAsStateWithLifecycle()
+    val previews = koinViewModel<RoomPreviewViewModel>()
+    val preview by previews.preview.collectAsStateWithLifecycle()
+    val topics by rememberTopics()
+    // The room the code names is read as the sixth digit is typed, and again for any other code.
+    LaunchedEffect(code) { previews.show(code) }
     JoinScreen(
         code = code,
         onCode = {
@@ -292,6 +298,8 @@ private fun Join(room: RoomViewModel) {
         onJoin = { room.join(code) },
         entry = entry.takeIf { it.wayIs(EntryWay.JOIN) } ?: Entry.None,
         onDismissFailure = room::dismissEntryFailure,
+        preview = preview,
+        topics = topics,
     )
 }
 
@@ -305,9 +313,11 @@ private fun PublicRooms(
     val lobbies by rooms.lobbies.collectAsStateWithLifecycle()
     val failure by rooms.failure.collectAsStateWithLifecycle()
     val entry by room.entry.collectAsStateWithLifecycle()
+    val topics by rememberTopics()
     PollWhileShown { rooms.poll(PublicRoomsViewModel.LIST_EVERY) }
     PublicRoomsScreen(
         lobbies = lobbies,
+        topics = topics,
         failure = failure,
         entry = entry,
         onJoin = room::join,
@@ -451,6 +461,7 @@ private val LobbySettingsSaver: Saver<LobbySettings, Any> =
                 s.visibility.name,
                 s.wrongAnswerPenalty,
                 s.difficulty.name,
+                s.name.orEmpty(),
             )
         },
         restore = { saved ->
@@ -462,6 +473,7 @@ private val LobbySettingsSaver: Saver<LobbySettings, Any> =
                 visibility = LobbyVisibility.valueOf(saved[4] as String),
                 wrongAnswerPenalty = saved[5] as Boolean,
                 difficulty = LobbyDifficulty.valueOf(saved[6] as String),
+                name = (saved[7] as String).takeIf { it.isNotEmpty() },
             )
         },
     )

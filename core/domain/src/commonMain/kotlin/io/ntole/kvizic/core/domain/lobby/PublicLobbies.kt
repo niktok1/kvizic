@@ -21,4 +21,10 @@ public data class PublicLobbies(
 /** The public lobbies, read afresh each time. */
 public interface PublicLobbyRepository {
     public suspend fun list(): PublicLobbies
+
+    /**
+     * The room with [code] as the list shows it, public or private: what a player sees before they join. Throws
+     * a `KvizicException` for a code naming no room.
+     */
+    public suspend fun preview(code: String): PublicLobby
 }

@@ -57,25 +57,28 @@ fun Route.lobbyRoutes(
         rateLimit(RouteLimit.LOBBY_LIST) {
             get(KvizicApi.Paths.LOBBIES) {
                 val (online, searching) = registry.presence()
-                val lobbies =
-                    registry.publicList().map { summary ->
-                        PublicLobbyDto(
-                            code = summary.code,
-                            hostName = summary.hostName,
-                            hostAvatar = summary.hostAvatar,
-                            players = summary.seatsTaken,
-                            maxPlayers = summary.settings.maxPlayers,
-                            inGame = summary.inGame,
-                            settings = summary.settings,
-                        )
+                call.respond(LobbyListDto(registry.publicList().map { it.toDto() }, online, searching))
+            }
+
+            get(KvizicApi.Paths.LOBBY_PREVIEWS) {
+                val address = call.request.clientAddress(clientIpHeader)
+                guard.lockedOut(address)?.let { wait ->
+                    call.response.header(HttpHeaders.RetryAfter, wait.retryAfterSeconds())
+                    call.respond(HttpStatusCode.TooManyRequests)
+                    return@get
+                }
+                val summary =
+                    LobbyCode.parse(call.parameters["code"].orEmpty())?.let { registry.preview(it) } ?: run {
+                        guard.missed(address)
+                        throw ApiFailure.lobbyNotFound()
                     }
-                call.respond(LobbyListDto(lobbies, online, searching))
+                call.respond(summary.toDto())
             }
         }
 
         rateLimit(RouteLimit.LOBBY_CREATES) {
             post(KvizicApi.Paths.LOBBIES) {
-                val settings = call.receiveOrReject<CreateLobbyRequest>("lobby").settings
+                val settings = call.receiveOrReject<CreateLobbyRequest>("lobby").settings.tidied()
                 val kind = kindOf(settings)
                 settingsProblem(settings, kind, topics(), members = 1)?.let { throw ApiFailure.invalidSettings(it) }
                 call.respond(HttpStatusCode.Created, registry.create(call.seat(), settings, kind).ticket())
@@ -121,3 +124,14 @@ fun Route.lobbyRoutes(
         }
     }
 }
+
+private fun LobbySummary.toDto() =
+    PublicLobbyDto(
+        code = code,
+        hostName = hostName,
+        hostAvatar = hostAvatar,
+        players = seatsTaken,
+        maxPlayers = settings.maxPlayers,
+        inGame = inGame,
+        settings = settings,
+    )

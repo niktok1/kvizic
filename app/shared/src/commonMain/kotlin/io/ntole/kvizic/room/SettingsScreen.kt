@@ -27,6 +27,7 @@ import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.KvizicIcon
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.component.TextInput
 import io.ntole.kvizic.design.component.Toggle
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -83,6 +84,21 @@ fun SettingsScreen(
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(space.md),
         ) {
+            TextInput(
+                value = settings.name.orEmpty(),
+                onValueChange = {
+                    onChange(
+                        settings.copy(
+                            name =
+                                it.take(LobbyRules.MAX_ROOM_NAME_LENGTH).takeIf { name ->
+                                    name.isNotEmpty()
+                                },
+                        ),
+                    )
+                },
+                label = words.roomName,
+                placeholder = words.roomNameHint,
+            )
             Column {
                 heading(words.questions)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(space.xs)) {

@@ -162,6 +162,17 @@ class LobbyRegistry(
             seatIn(open(LobbySettingsDto.SOLO, LobbyKind.SOLO), seat)
         }
 
+    /**
+     * What the lobby with [code] shows outside itself, public or private, for a player to see before they join:
+     * none for a code naming no open lobby. A solo run is nobody else's to see, as in a join.
+     */
+    fun preview(code: String): LobbySummary? =
+        byCode[code]
+            ?.let { lobbies[it] }
+            ?.summary
+            ?.value
+            ?.takeIf { it.kind != LobbyKind.SOLO && !it.closed }
+
     /** The open public lobbies for the list: waiting ones first, fullest first, at most [PUBLIC_LIST_SIZE]. */
     fun publicList(): List<LobbySummary> =
         lobbies.values

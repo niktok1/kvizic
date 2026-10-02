@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
+import io.ntole.kvizic.core.domain.error.GameError
+import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.component.ButtonKind
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Panel
@@ -34,6 +36,7 @@ import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.home.Notice
 import io.ntole.kvizic.language.LocalStrings
+import io.ntole.kvizic.loading.LoadingSpinner
 
 /** How many digits a room's code has. */
 internal const val CODE_LENGTH = 6
@@ -42,6 +45,8 @@ internal const val CODE_LENGTH = 6
  * Joining a room by its code: six cells the digits fill, a keypad of the skin's buttons, and Join once all
  * six are in ([onJoin]); a hardware keyboard types and deletes too, and Enter joins. [code] is what is typed,
  * which [onCode] changes; [entry] turns the keypad off while the seat is taken, and says why it could not be.
+ * Once all six digits are in, [preview] shows the room they name, its topics named by [topics], so the player
+ * joins knowing what they join.
  */
 @Composable
 fun JoinScreen(
@@ -51,6 +56,8 @@ fun JoinScreen(
     entry: Entry,
     onDismissFailure: () -> Unit,
     modifier: Modifier = Modifier,
+    preview: RoomPreview = RoomPreview.None,
+    topics: List<Topic> = emptyList(),
 ) {
     val strings = LocalStrings.current
     val words = strings.game
@@ -105,6 +112,32 @@ fun JoinScreen(
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                             KvizicText(code.getOrNull(i)?.toString() ?: "", style = type.digits)
                         }
+                    }
+                }
+            }
+            Spacer(Modifier.height(space.md))
+            // What the room is set to, before the player is in it.
+            when (preview) {
+                RoomPreview.None -> {
+                    Unit
+                }
+
+                RoomPreview.Looking -> {
+                    LoadingSpinner(name = strings.loading, modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
+
+                is RoomPreview.Found -> {
+                    RoomCard(preview.lobby, topics)
+                }
+
+                is RoomPreview.Missing -> {
+                    if (preview.error == GameError.LOBBY_NOT_FOUND) {
+                        KvizicText(
+                            words.roomNotFound,
+                            Modifier.fillMaxWidth(),
+                            color = colors.loss,
+                            textAlign = TextAlign.Center,
+                        )
                     }
                 }
             }

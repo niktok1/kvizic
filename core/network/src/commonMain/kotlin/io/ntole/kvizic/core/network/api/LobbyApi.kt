@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.lobby.CreateLobbyRequest
 import io.ntole.kvizic.core.lobby.JoinLobbyRequest
 import io.ntole.kvizic.core.lobby.LobbyListDto
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.lobby.PublicLobbyDto
 import io.ntole.kvizic.core.lobby.TicketDto
 
 /**
@@ -30,4 +31,8 @@ public class LobbyApi(
     public suspend fun solo(): TicketDto = client.post(KvizicApi.Paths.SOLO_RUNS).body()
 
     public suspend fun publicLobbies(): LobbyListDto = client.get(KvizicApi.Paths.LOBBIES).body()
+
+    /** The lobby with [code] as the list shows it, public or private, before a seat is taken in it. */
+    public suspend fun preview(code: String): PublicLobbyDto =
+        client.get(KvizicApi.Paths.LOBBY_PREVIEWS.replace("{code}", code)).body()
 }

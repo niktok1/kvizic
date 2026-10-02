@@ -24,6 +24,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.PublicLobbies
+import io.ntole.kvizic.core.domain.lobby.PublicLobby
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
@@ -267,7 +268,14 @@ class TapsTest {
         assertEquals(
             setOf("public_rooms.quick_play", "public_rooms.create_room"),
             elementsTapped {
-                PublicRoomsScreen(PublicLobbies(emptyList(), 3, 1), null, Entry.None, {}, {}, {}, {})
+                PublicRoomsScreen(PublicLobbies(emptyList(), 3, 1), TOPICS, null, Entry.None, {}, {}, {}, {})
+            },
+        )
+        val open = listOf(PublicLobby("482915", "Нина", "fox", 3, 8, false, LobbySettings(name = "Петак увече")))
+        assertEquals(
+            setOf("public_rooms.room"),
+            elementsTapped {
+                PublicRoomsScreen(PublicLobbies(open, 5, 1), TOPICS, null, Entry.None, {}, {}, {}, {})
             },
         )
         assertEquals(

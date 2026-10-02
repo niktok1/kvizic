@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -359,6 +360,23 @@ private fun Waiting(
         Page {
             // The host chooses what to do with a member at any time; the rest may vote one out while the room waits.
             val choosing = hosting || (lobby.kind != LobbyKind.SOLO && countdown == null)
+            lobby.settings.name?.let { name ->
+                val type = KvizicTheme.type
+                KvizicText(
+                    shown(name),
+                    Modifier.fillMaxWidth(),
+                    style = type.headline,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    // As large as the width lets it be, and never cut: the longest a name may be fits.
+                    autoSize =
+                        TextAutoSize.StepBased(
+                            minFontSize = type.name.style.fontSize,
+                            maxFontSize = type.headline.style.fontSize,
+                        ),
+                )
+                Spacer(Modifier.height(space.md))
+            }
             Seats(lobby, state.you, bursts, onChoose = if (choosing) ({ chosen = it }) else null)
             Spacer(Modifier.height(space.md))
             Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {

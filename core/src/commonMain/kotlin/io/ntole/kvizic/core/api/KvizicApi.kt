@@ -47,6 +47,13 @@ public object KvizicApi {
          */
         public const val LOBBIES: String = "/$VERSION/lobbies"
 
+        /**
+         * GET the lobby with the code in the path, as the list shows it, a `PublicLobbyDto`, public or private:
+         * what a player sees of a room before they take a seat in it. A code naming no lobby spends the address's
+         * guessing budget, as a join does.
+         */
+        public const val LOBBY_PREVIEWS: String = "/$VERSION/lobbies/{code}"
+
         /** POST a `JoinLobbyRequest`: a seat in the lobby with that code, answered with a `TicketDto`. Also every rejoin. */
         public const val LOBBY_JOINS: String = "/$VERSION/lobby-joins"
 
@@ -154,6 +161,9 @@ public object KvizicApi {
 
         /** Longest name a player shows, in code points once cleaned. */
         public const val MAX_DISPLAY_NAME_LENGTH: Int = 24
+
+        /** Longest name a room may be given, in code points once cleaned. */
+        public const val MAX_ROOM_NAME_LENGTH: Int = 24
 
         /** Longest avatar, topic or reaction id: `A`-`Z`, `a`-`z`, `0`-`9` and `_`. */
         public const val MAX_ID_LENGTH: Int = 32

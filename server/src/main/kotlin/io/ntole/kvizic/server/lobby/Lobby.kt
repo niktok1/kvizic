@@ -394,8 +394,9 @@ class Lobby(
     private fun updateSettings(
         member: Member,
         id: Int,
-        wanted: LobbySettingsDto,
+        asked: LobbySettingsDto,
     ) {
+        val wanted = asked.tidied()
         if (member.playerId != host) return reject(member, id, RejectCode.NOT_HOST)
         if (phase !is Phase.Waiting) return reject(member, id, RejectCode.WRONG_PHASE)
         if (settingsProblem(wanted, kind, env.knownTopics(), members.size) != null) {

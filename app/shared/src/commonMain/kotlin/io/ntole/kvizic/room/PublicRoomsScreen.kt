@@ -20,6 +20,7 @@ import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.core.domain.error.DomainError
 import io.ntole.kvizic.core.domain.lobby.PublicLobbies
 import io.ntole.kvizic.core.domain.lobby.PublicLobby
+import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.component.Avatar
 import io.ntole.kvizic.design.component.AvatarSize
 import io.ntole.kvizic.design.component.ButtonKind
@@ -39,12 +40,13 @@ import io.ntole.kvizic.loading.LoadingSpinner
 
 /**
  * The open public rooms, read again every few seconds while shown ([lobbies], none before the first read):
- * each its host, how full it is, its settings and whether a game is under way; a tap joins it ([onJoin], by
- * its code). With none open, the way to Quick play and to a room of the player's own.
+ * each a [RoomCard], with its topics named by [topics]; a tap joins it ([onJoin], by its code). With none open,
+ * the way to Quick play and to a room of the player's own.
  */
 @Composable
 fun PublicRoomsScreen(
     lobbies: PublicLobbies?,
+    topics: List<Topic>,
     failure: DomainError?,
     entry: Entry,
     onJoin: (String) -> Unit,
@@ -115,58 +117,10 @@ fun PublicRoomsScreen(
                 Spacer(Modifier.height(space.md))
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.sm)) {
                     items(lobbies.lobbies, key = { it.code }) { lobby ->
-                        PublicRoom(lobby, enabled = !taking, onJoin = onJoin)
+                        RoomCard(lobby, topics, enabled = !taking, onJoin = onJoin)
                     }
                 }
             }
         }
     }
 }
-
-@Composable
-private fun PublicRoom(
-    lobby: PublicLobby,
-    enabled: Boolean,
-    onJoin: (String) -> Unit,
-) {
-    val words = LocalStrings.current.game
-    val language = LocalLanguage.current
-    val space = KvizicTheme.space
-    val type = KvizicTheme.type
-    val colors = KvizicTheme.colors
-    val full = lobby.players >= lobby.maxPlayers
-    val tap = tapped("public_rooms.room") { onJoin(lobby.code) }
-    Panel(
-        Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {
-                contentDescription =
-                    words.publicRoomOf.fill(shownIn(lobby.hostName, language))
-            }.clickable(enabled = enabled && !full, role = Role.Button, onClick = tap),
-        padding = space.md,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(space.md)) {
-            Avatar(lobby.hostAvatar, seat = 0, size = AvatarSize.SM, host = true)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.xxs)) {
-                KvizicText(shownIn(lobby.hostName, language), style = type.name, maxLines = 1)
-                KvizicText(
-                    settingsLine(lobby),
-                    style = type.caption,
-                    color = colors.onRaisedMuted,
-                    maxLines = 1,
-                )
-            }
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(space.xxs)) {
-                Chip("${lobby.players} / ${lobby.maxPlayers}", tone = if (full) ChipTone.LOSS else ChipTone.NEUTRAL)
-                if (lobby.inGame) KvizicText(words.inGame, style = type.caption, color = colors.onPageAccent)
-            }
-        }
-    }
-}
-
-@Composable
-private fun settingsLine(lobby: PublicLobby): String =
-    settingsChips(lobby.settings).take(SETTINGS_SHOWN).joinToString(" · ") { it.text }
-
-/** How many of a room's settings its line names: the questions, their time and the topics. */
-private const val SETTINGS_SHOWN = 3

@@ -182,6 +182,23 @@ class RoomLobbyDrawTest : RoomStills() {
     }
 
     @Test
+    fun `the lobby calls the room by its name over its seats and the longest name fits whole`() {
+        eachSkin { skin ->
+            val longest = "Ш".repeat(24)
+            listOf("Петак увече", longest).forEach { name ->
+                val state =
+                    inLobby(GamePhase.Waiting(null), lobby = lobby(settings = LobbySettings(name = name)))
+                draw(skin, "lobby-named-${name.length}", state) { scene ->
+                    val title = scene.nodes().first { name in it.texts }.boundsInRoot
+                    val seat = scene.nodes().first { "Нина" in it.texts }.boundsInRoot
+                    assertTrue(title.bottom <= seat.top, "${skin.id}: the name at $title is on the seats at $seat")
+                    assertTrue(title.left >= 0f && title.right <= WIDTH, "${skin.id}: the name is cut: $title")
+                }
+            }
+        }
+    }
+
+    @Test
     fun `the countdown takes the start's place`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game

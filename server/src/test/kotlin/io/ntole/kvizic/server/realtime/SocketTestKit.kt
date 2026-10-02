@@ -144,6 +144,11 @@ internal suspend fun HttpClient.joinLobby(
         setBody(JoinLobbyRequest(code))
     }
 
+internal suspend fun HttpClient.previewLobby(
+    who: SessionDto,
+    code: String,
+): HttpResponse = get(KvizicApi.Paths.LOBBY_PREVIEWS.replace("{code}", code)) { bearerAuth(who.accessToken) }
+
 internal suspend fun HttpClient.quickPlay(who: SessionDto): HttpResponse =
     post(KvizicApi.Paths.QUICK_PLAY) { bearerAuth(who.accessToken) }
 

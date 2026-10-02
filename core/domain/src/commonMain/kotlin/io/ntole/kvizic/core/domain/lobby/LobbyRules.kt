@@ -15,6 +15,9 @@ public object LobbyRules {
     public const val MIN_PLAYERS: Int = 2
     public const val MAX_PLAYERS: Int = 8
 
+    /** The most a room's name may be, in characters. */
+    public const val MAX_ROOM_NAME_LENGTH: Int = 24
+
     /** The quick reactions a room sends, by id, in the server's order. */
     public val REACTIONS: List<String> = listOf("bravo", "clap", "fire", "wow", "laugh", "oops", "nudge")
 

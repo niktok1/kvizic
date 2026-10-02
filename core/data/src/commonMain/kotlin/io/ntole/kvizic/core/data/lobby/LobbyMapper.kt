@@ -23,6 +23,7 @@ import io.ntole.kvizic.core.domain.lobby.Reveal
 import io.ntole.kvizic.core.domain.lobby.Standing
 import io.ntole.kvizic.core.lobby.LobbyListDto
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.lobby.PublicLobbyDto
 import io.ntole.kvizic.core.lobby.Visibility
 import io.ntole.kvizic.core.protocol.AnswerResultView
 import io.ntole.kvizic.core.protocol.CloseCodes
@@ -60,6 +61,7 @@ internal fun LobbySettingsDto.toDomain(): LobbySettings =
                 Difficulty.HARD -> LobbyDifficulty.HARD
                 Difficulty.MEDIUM, Difficulty.UNKNOWN -> LobbyDifficulty.MEDIUM
             },
+        name = name,
     )
 
 internal fun LobbySettings.toDto(): LobbySettingsDto =
@@ -76,6 +78,7 @@ internal fun LobbySettings.toDto(): LobbySettingsDto =
                 LobbyDifficulty.MEDIUM -> Difficulty.MEDIUM
                 LobbyDifficulty.HARD -> Difficulty.HARD
             },
+        name = name,
     )
 
 internal fun WireLobbyKind.toDomain(settings: LobbySettings): LobbyKind =
@@ -317,20 +320,12 @@ internal fun exitFor(
         }
     }
 
+internal fun PublicLobbyDto.toDomain(): PublicLobby =
+    PublicLobby(code, hostName, hostAvatar, players, maxPlayers, inGame, settings.toDomain())
+
 internal fun LobbyListDto.toDomain(): PublicLobbies =
     PublicLobbies(
-        lobbies =
-            lobbies.map {
-                PublicLobby(
-                    it.code,
-                    it.hostName,
-                    it.hostAvatar,
-                    it.players,
-                    it.maxPlayers,
-                    it.inGame,
-                    it.settings.toDomain(),
-                )
-            },
+        lobbies = lobbies.map { it.toDomain() },
         online = online,
         searching = searching,
     )

@@ -8,19 +8,21 @@ import java.text.Normalizer
  *
  * Normalized to NFC; stripped of control and format characters, which is where the bidirectional
  * overrides and the zero-width characters that could disguise a name live, and of anything unassigned
- * or private; whitespace collapsed and trimmed; cut to [KvizicApi.Limits.MAX_DISPLAY_NAME_LENGTH] code
- * points. A name left blank, or holding a word from a short list of slurs and vulgarities, is refused
+ * or private; whitespace collapsed and trimmed; cut to [maxLength] code points, a player's name's by default. A name left blank, or holding a word from a short list of slurs and vulgarities, is refused
  * (null), and the player keeps their generated nickname instead.
  */
 object DisplayNames {
-    fun clean(raw: String?): String? {
+    fun clean(
+        raw: String?,
+        maxLength: Int = KvizicApi.Limits.MAX_DISPLAY_NAME_LENGTH,
+    ): String? {
         if (raw == null) return null
         val normalized = Normalizer.normalize(raw, Normalizer.Form.NFC)
         val kept = StringBuilder()
         var lastWasSpace = true
         var codePoints = 0
         var i = 0
-        while (i < normalized.length && codePoints < KvizicApi.Limits.MAX_DISPLAY_NAME_LENGTH) {
+        while (i < normalized.length && codePoints < maxLength) {
             val cp = normalized.codePointAt(i)
             i += Character.charCount(cp)
             if (Character.isWhitespace(cp) || Character.isSpaceChar(cp)) {

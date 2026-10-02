@@ -38,7 +38,7 @@ data class RateLimits(
     val avatars: RequestBudget,
     /** `GET /v1/topics`, per address: it needs no session. */
     val topics: RequestBudget,
-    /** `GET /v1/lobbies`: the public list, which its screen polls. */
+    /** `GET /v1/lobbies`: the public list, which its screen polls, and `GET /v1/lobbies/{code}`: a room previewed. */
     val lobbyList: RequestBudget,
     /** `POST /v1/lobbies`: each opens a lobby, an actor and a code. */
     val lobbyCreates: RequestBudget,

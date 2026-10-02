@@ -16,6 +16,7 @@ class LobbyRulesTest {
         assertEquals(KvizicApi.Limits.ANSWER_SECONDS, LobbyRules.ANSWER_SECONDS)
         assertEquals(KvizicApi.Limits.MIN_MAX_PLAYERS, LobbyRules.MIN_PLAYERS)
         assertEquals(KvizicApi.Limits.MAX_PLAYERS, LobbyRules.MAX_PLAYERS)
+        assertEquals(KvizicApi.Limits.MAX_ROOM_NAME_LENGTH, LobbyRules.MAX_ROOM_NAME_LENGTH)
         assertEquals(
             Difficulty.entries.filter { it != Difficulty.UNKNOWN }.map { it.name },
             LobbyDifficulty.entries.map { it.name },

@@ -8,6 +8,7 @@ import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.error.ErrorDto
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.lobby.PublicLobbyDto
 import io.ntole.kvizic.core.lobby.TicketDto
 import io.ntole.kvizic.core.lobby.Visibility
 import io.ntole.kvizic.core.protocol.ServerMessage
@@ -15,6 +16,7 @@ import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.server.realtime.bodyOrFail
 import io.ntole.kvizic.server.realtime.createLobby
 import io.ntole.kvizic.server.realtime.joinLobby
+import io.ntole.kvizic.server.realtime.previewLobby
 import io.ntole.kvizic.server.realtime.publicLobbies
 import io.ntole.kvizic.server.realtime.quickPlay
 import io.ntole.kvizic.server.realtime.runGameServer
@@ -22,6 +24,7 @@ import io.ntole.kvizic.server.realtime.soloRun
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Lobbies over REST: opening, joining by code, Quick play, solo runs and the public list. */
@@ -133,9 +136,79 @@ class LobbyRoutesTest {
         }
 
     @Test
+    fun `a room's name is cleaned as a player's is and shows in the list and in a preview`() =
+        runGameServer("lobby-name") { server ->
+            val ana = server.guest()
+            val settings = LobbySettingsDto(visibility = Visibility.PUBLIC, name = "  Шаховски   клуб  ")
+            val ticket = server.create(ana, settings)
+            val snapshot = server.connect(ticket).await<ServerMessage.Snapshot>()
+            assertEquals("Шаховски клуб", snapshot.lobby.settings.name)
+            assertEquals(
+                "Шаховски клуб",
+                server.client
+                    .publicLobbies(ana)
+                    .lobbies
+                    .single()
+                    .settings.name,
+            )
+            assertEquals(
+                "Шаховски клуб",
+                server.client
+                    .previewLobby(server.guest(), ticket.code)
+                    .bodyOrFail<PublicLobbyDto>()
+                    .settings.name,
+            )
+
+            // Cut to a room name's length, and none at all when nothing is left of it.
+            val long =
+                server.create(
+                    ana,
+                    LobbySettingsDto(name = "Ш".repeat(KvizicApi.Limits.MAX_ROOM_NAME_LENGTH + 10)),
+                )
+            assertEquals(
+                "Ш".repeat(KvizicApi.Limits.MAX_ROOM_NAME_LENGTH),
+                server.client
+                    .previewLobby(ana, long.code)
+                    .bodyOrFail<PublicLobbyDto>()
+                    .settings.name,
+            )
+            val blank = server.create(ana, LobbySettingsDto(name = " \u200B  "))
+            assertNull(
+                server.client
+                    .previewLobby(ana, blank.code)
+                    .bodyOrFail<PublicLobbyDto>()
+                    .settings.name,
+            )
+        }
+
+    @Test
+    fun `a room is previewed by its code, private or public, and a code naming none is a miss`() =
+        runGameServer("lobby-preview") { server ->
+            val ana = server.guest()
+            val ticket = server.create(ana, LobbySettingsDto(maxPlayers = 4, questionCount = 15))
+            val preview = server.client.previewLobby(server.guest(), ticket.code).bodyOrFail<PublicLobbyDto>()
+            assertEquals(ticket.code, preview.code)
+            assertEquals(1, preview.players)
+            assertEquals(4, preview.maxPlayers)
+            assertEquals(15, preview.settings.questionCount)
+            assertEquals(false, preview.inGame)
+
+            val boris = server.guest()
+            assertEquals(HttpStatusCode.NotFound, server.client.previewLobby(boris, "123456").status)
+            assertEquals(HttpStatusCode.NotFound, server.client.previewLobby(boris, "12").status)
+            val solo = server.client.soloRun(ana).bodyOrFail<TicketDto>()
+            assertEquals(
+                HttpStatusCode.NotFound,
+                server.client.previewLobby(boris, solo.code).status,
+                "a solo run is nobody else's to see",
+            )
+        }
+
+    @Test
     fun `every lobby route needs a session`() =
         runGameServer("lobby-auth") { server ->
             assertEquals(HttpStatusCode.Unauthorized, server.client.get(KvizicApi.Paths.LOBBIES).status)
+            assertEquals(HttpStatusCode.Unauthorized, server.client.get("/v1/lobbies/482915").status)
             assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.LOBBIES).status)
             assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.LOBBY_JOINS).status)
             assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.QUICK_PLAY).status)

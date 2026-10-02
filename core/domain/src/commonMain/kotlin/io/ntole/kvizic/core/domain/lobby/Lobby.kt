@@ -21,6 +21,8 @@ public data class LobbySettings(
     val visibility: LobbyVisibility = LobbyVisibility.PRIVATE,
     val wrongAnswerPenalty: Boolean = true,
     val difficulty: LobbyDifficulty = LobbyDifficulty.MEDIUM,
+    /** What the room is called, if its host named it; none for a room the list calls by its host. */
+    val name: String? = null,
 )
 
 /** A member as the lobby shows them: their seat's colour comes from [seat]. */

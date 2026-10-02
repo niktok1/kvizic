@@ -167,6 +167,9 @@ data class GameStrings(
     val roomIdle: String,
     val stillWaiting: String,
     val stayInRoom: String,
+    /** The label and the hint of the field a room is named in. */
+    val roomName: String,
+    val roomNameHint: String,
     // A question.
     val points: String,
     /** Which question this is, `{0}`, of how many, `{1}`, for a screen reader: the bar shows the numbers alone. */
@@ -318,6 +321,8 @@ data class GameStrings(
             roomIdle = transform(roomIdle),
             stillWaiting = transform(stillWaiting),
             stayInRoom = transform(stayInRoom),
+            roomName = transform(roomName),
+            roomNameHint = transform(roomNameHint),
             questionOf = transform(questionOf),
             points = transform(points),
             answersComing = transform(answersComing),
@@ -464,6 +469,8 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         roomIdle = "Соба се ускоро затвара јер се ништа не дешава.",
         stillWaiting = "Још чекам",
         stayInRoom = "Остани",
+        roomName = "Назив собе",
+        roomNameHint = "Није обавезан",
         questionOf = "Питање {0} од {1}",
         points = "Поени",
         answersComing = "Одговори стижу…",
@@ -621,6 +628,8 @@ internal val EnglishGameStrings: GameStrings =
         roomIdle = "The room closes soon, as nothing is happening.",
         stillWaiting = "Still waiting",
         stayInRoom = "Stay",
+        roomName = "Room name",
+        roomNameHint = "Optional",
         questionOf = "Question {0} of {1}",
         points = "Points",
         answersComing = "Answers coming…",

@@ -16,6 +16,7 @@ import io.ntole.kvizic.core.auth.RefreshRequest
 import io.ntole.kvizic.core.auth.SessionDto
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.lobby.LobbyListDto
+import io.ntole.kvizic.core.lobby.PublicLobbyDto
 import io.ntole.kvizic.core.lobby.TicketDto
 import io.ntole.kvizic.core.network.KvizicJson
 import io.ntole.kvizic.core.player.Avatars
@@ -109,6 +110,12 @@ internal class FakeServer {
 
     /** What a read of the public lobbies answers. */
     var publicLobbies: LobbyListDto = LobbyListDto()
+
+    /** The rooms a preview by code finds, by their codes; any other code names no room. */
+    val previewable = mutableMapOf<String, PublicLobbyDto>()
+
+    /** The `Authorization` header and the code of every preview, in arrival order. */
+    val previewsSentAs = mutableListOf<Pair<String?, String>>()
 
     /** Every report sent, with the `Authorization` header it went with. */
     val reportsSentAs = mutableListOf<Pair<String?, ReportQuestionRequest>>()
@@ -220,7 +227,27 @@ internal class FakeServer {
             }
 
             else -> {
-                error("FakeServer has no route for ${request.url}")
+                val path = request.url.encodedPath
+                if (request.method == HttpMethod.Get && path.startsWith("${KvizicApi.Paths.LOBBIES}/")) {
+                    val code = path.substringAfterLast('/')
+                    val authorization = request.headers[HttpHeaders.Authorization]
+                    previewsSentAs += authorization to code
+                    when {
+                        authorization.player() !in players -> {
+                            respondErrorDto(HttpStatusCode.Unauthorized, ErrorCode.UNAUTHORIZED)
+                        }
+
+                        code in previewable -> {
+                            respondJson(KvizicJson.encodeToString(previewable.getValue(code)))
+                        }
+
+                        else -> {
+                            respondErrorDto(HttpStatusCode.NotFound, ErrorCode.LOBBY_NOT_FOUND)
+                        }
+                    }
+                } else {
+                    error("FakeServer has no route for ${request.url}")
+                }
             }
         }
 

@@ -17,7 +17,13 @@ class ProtocolJsonTest {
     private val question =
         QuestionView(index = 2, count = 10, text = "Која река?", topic = "GEOGRAPHY", optionCount = 4)
     private val member = MemberView(player = "p1", name = "Брзи Јеж", avatar = "hedgehog", seat = 3)
-    private val settings = LobbySettingsDto(questionCount = 5, topics = listOf("SPORT"), visibility = Visibility.PUBLIC)
+    private val settings =
+        LobbySettingsDto(
+            questionCount = 5,
+            topics = listOf("SPORT"),
+            visibility = Visibility.PUBLIC,
+            name = "Петак увече",
+        )
     private val reveal =
         RevealView(
             index = 2,

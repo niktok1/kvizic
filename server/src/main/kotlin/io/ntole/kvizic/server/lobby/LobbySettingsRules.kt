@@ -5,8 +5,17 @@ import io.ntole.kvizic.core.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.lobby.Visibility
 import io.ntole.kvizic.core.question.Difficulty
+import io.ntole.kvizic.server.player.DisplayNames
 
 private val SEATS = KvizicApi.Limits.MIN_MAX_PLAYERS..KvizicApi.Limits.MAX_PLAYERS
+
+/**
+ * These settings with the room's name cleaned as a player's is, strangers seeing it all the same: cut to
+ * [KvizicApi.Limits.MAX_ROOM_NAME_LENGTH], its control and disguising characters gone, its spaces collapsed,
+ * and none at all when what is left is blank or holds a word from the short list of slurs and vulgarities.
+ */
+fun LobbySettingsDto.tidied(): LobbySettingsDto =
+    copy(name = DisplayNames.clean(name, KvizicApi.Limits.MAX_ROOM_NAME_LENGTH))
 
 /**
  * Why [settings] are not ones a host of a [kind] lobby with [members] could pick, or null when they

@@ -267,6 +267,20 @@ class LobbyLifecycleTest {
         }
 
     @Test
+    fun `a host's new name for the room is cleaned and told to everyone as it is kept`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+
+            ana.settings(LobbySettingsDto(name = "  Петак   увече  "))
+            assertEquals("Петак увече", boris.last<ServerMessage.SettingsChanged>().settings.name)
+
+            ana.settings(LobbySettingsDto(name = " \u200B "))
+            assertNull(boris.last<ServerMessage.SettingsChanged>().settings.name, "a name with nothing left is none")
+        }
+
+    @Test
     fun `a lobby that fails closes its sockets, and leaves the registry`() =
         runTest {
             val lobby = LobbyScenario(this)

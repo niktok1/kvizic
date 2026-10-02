@@ -69,7 +69,7 @@ Play Games Services v2. **No Material**: the design system draws everything.
 
 ## 6. Realtime
 
-- REST takes a seat (create, join by code, Quick play, solo) and answers a one-time ticket (30 s). The
+- REST takes a seat (create, join by code, Quick play, solo) and answers a one-time ticket (30 s). A room may be read first by its code (preview). The
   socket `wss://…/v1/play` takes `hello(ticket, protocol, platform, build)` as its first frame within 5 s;
   nothing secret is in the URL.
 - One coroutine actor per lobby owns its state; outgoing queues are bounded (a slow socket is closed 4429).
@@ -234,6 +234,13 @@ Play Games Services v2. **No Material**: the design system draws everything.
   "Твоја победа!" for the player's own win) right over the podium, not pinned to the top, popping in once; the
   podium, the board and the chips stand centred in a region that scrolls when eight players leave no room, the
   way back fixed at the foot (`RoomRevealDrawTest`).
+- **A room is seen before it is joined** (the owner, 2026-10-02): the public list's card (`RoomCard`) shows the room's
+  name, or its host's when it has none, and every setting on its chips; the join screen reads the room a code names
+  once its six digits are in (`GET /v1/lobbies/{code}`, `RoomPreviewViewModel`) and shows the same card over the
+  keypad, a code with no room saying so at once, a read that failed saying nothing and joining going on. The host
+  names the room in the settings (optional, 24 characters, `LobbySettingsDto.name`), and the lobby calls it by that
+  over the seats. The server cleans a name as a player's (`DisplayNames`, its slur list too) and keeps none of what
+  is left blank; the preview shares the list's rate budget and spends the code-guess guard on a miss, as a join does.
 - **Snacks** (the owner, 2026-10-02): a line said over the room, never moving it (`Snack`, `RoomNote`): who the host
   is now, what the host changed on the chips (the others only), and two the server warns with, both answered by a
   button: a public host who does nothing is told their hosting passes on (`HOST_IDLE`, `afkHostWarning` 30 s before
