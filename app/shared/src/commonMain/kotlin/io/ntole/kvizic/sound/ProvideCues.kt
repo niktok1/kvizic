@@ -5,7 +5,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,16 +21,18 @@ import kotlin.time.TimeSource
 @Composable
 internal fun ProvideCues(
     sounds: SoundViewModel,
+    device: SoundDevice = rememberSoundDevice(),
     content: @Composable () -> Unit,
 ) {
-    val device = rememberSoundDevice()
     val engine =
         remember(device) {
             val started = TimeSource.Monotonic.markNow()
             SoundEngine(device, nowMillis = { started.elapsedNow().inWholeMilliseconds })
         }
     val skin = KvizicTheme.skin.sound
-    val enabled by sounds.enabled.collectAsStateWithLifecycle()
+    // Read here, in the composition, so the switch recomposes this: read inside the SideEffect it would be read
+    // after the composition, and a switch turned would change nothing until something else recomposed it.
+    val enabled = sounds.enabled.collectAsStateWithLifecycle().value
     SideEffect {
         engine.enabled = enabled
         engine.skin = skin

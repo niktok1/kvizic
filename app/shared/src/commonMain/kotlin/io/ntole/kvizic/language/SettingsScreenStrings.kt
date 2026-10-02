@@ -10,15 +10,15 @@ data class SettingsScreenStrings(
     val title: String,
     /** The Sound switch: whether the game makes sound. */
     val sound: String,
-    /** The heading over the player's account: its id, and deleting it. */
-    val account: String,
+    /** The heading over what the game keeps of the player: the statistics sent, the account's id, deleting it. */
+    val data: String,
 ) {
     /** These strings with [transform] applied to every one of them, as [Strings.map] asks. */
     internal fun map(transform: (String) -> String): SettingsScreenStrings =
         SettingsScreenStrings(
             title = transform(title),
             sound = transform(sound),
-            account = transform(account),
+            data = transform(data),
         )
 }
 
@@ -27,12 +27,12 @@ internal val SerbianCyrillicSettingsScreenStrings: SettingsScreenStrings =
     SettingsScreenStrings(
         title = "Подешавања",
         sound = "Звук",
-        account = "Налог",
+        data = "Подаци",
     )
 
 internal val EnglishSettingsScreenStrings: SettingsScreenStrings =
     SettingsScreenStrings(
         title = "Settings",
         sound = "Sound",
-        account = "Account",
+        data = "Data",
     )

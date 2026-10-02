@@ -29,12 +29,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * The Settings screen drawn off screen in each language: the Sound switch, the Statistics switch, the way to
- * About, and the player's account, its id and the deletion last.
+ * The Settings screen drawn off screen in each language: the Sound switch, the way to About, and last what is
+ * kept of the player: the Statistics switch, the account's id and the deletion.
  */
 class AppSettingsScreenDrawTest {
     @Test
-    fun `the screen shows its switches the way to About and the account in that order`() {
+    fun `the screen shows the sound the way to About and what is kept of the player in that order`() {
         Language.entries.forEach { language ->
             val strings = stringsOf(language)
             val scene = scene(language)
@@ -43,9 +43,9 @@ class AppSettingsScreenDrawTest {
                 val order =
                     listOf(
                         strings.settingsScreen.sound,
-                        strings.aboutScreen.statistics,
                         strings.aboutScreen.title,
-                        strings.settingsScreen.account,
+                        strings.settingsScreen.data,
+                        strings.aboutScreen.statistics,
                         strings.aboutScreen.accountId,
                         ACCOUNT_ID,
                     )
@@ -152,7 +152,7 @@ class AppSettingsScreenDrawTest {
                         .single {
                             stringsOf(
                                 language,
-                            ).settingsScreen.account in it.texts
+                            ).settingsScreen.data in it.texts
                         }.boundsInRoot
                 assertFalse(about.copied in scene.texts(), "$language: copied before any tap")
 
@@ -160,7 +160,7 @@ class AppSettingsScreenDrawTest {
 
                 assertEquals(listOf(ACCOUNT_ID), clipboard.copied, "$language")
                 assertTrue(about.copied in scene.texts(), "$language: ${scene.texts()}")
-                val after = scene.nodes().single { stringsOf(language).settingsScreen.account in it.texts }.boundsInRoot
+                val after = scene.nodes().single { stringsOf(language).settingsScreen.data in it.texts }.boundsInRoot
                 assertEquals(before, after, "$language")
             } finally {
                 scene.close()

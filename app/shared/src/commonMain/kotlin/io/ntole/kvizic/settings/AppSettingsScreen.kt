@@ -32,11 +32,11 @@ import io.ntole.kvizic.language.LocalStrings
 
 /**
  * The app's Settings screen, not a room's: what the player sets, in one place. The Sound switch, [soundOn] whether the game
- * makes sound, which [onSoundChange] changes; the Statistics switch, [statisticsOn] whether the player lets
- * the game send analytics, which [onStatisticsChange] changes; a way to the About screen, [onAbout]; and
- * last the player's account: its id, [accountId], to copy and send when asking by email for the account to
- * be deleted, none while no session is stored, and [deletion], the quiet way to delete it. It scrolls, its
- * content held to a readable column on a wide window.
+ * makes sound, which [onSoundChange] changes; a way to the About screen, [onAbout]; and last, together, what
+ * the game keeps of the player: the Statistics switch, [statisticsOn] whether the player lets the game send
+ * analytics, which [onStatisticsChange] changes, the account's id, [accountId], to copy and send when asking by
+ * email for the account to be deleted, none while no session is stored, and [deletion], the quiet way to
+ * delete it. It scrolls, its content held to a readable column on a wide window.
  */
 @Composable
 fun AppSettingsScreen(
@@ -78,9 +78,6 @@ fun AppSettingsScreen(
             )
 
             Divider()
-            StatisticsSwitch(on = statisticsOn, onChange = onStatisticsChange)
-
-            Divider()
             StageButton(
                 strings.aboutScreen.title,
                 onClick = tapped("settings.about", onClick = onAbout),
@@ -89,8 +86,11 @@ fun AppSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // What the game keeps of the player, together at the end: the statistics sent, the account's id,
+            // and the way to delete it all.
             Divider()
-            KvizicText(text = words.account, style = type.bodyStrong)
+            KvizicText(text = words.data, style = type.bodyStrong)
+            StatisticsSwitch(on = statisticsOn, onChange = onStatisticsChange)
             accountId?.let { id -> AccountId(id) }
             deletion()
         }

@@ -161,8 +161,8 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
-  by `GamePhase`), Settings (the app's: Sound, Statistics, a way to About, the account's id and its
-  deletion; `AppSettingsScreen`, apart from a room's), About (version, legal pages, licences), Update. Home's
+  by `GamePhase`), Settings (the app's: Sound, a way to About, then what is kept of the player, together at
+  the end: Statistics, the account's id and its deletion; `AppSettingsScreen`, apart from a room's), About (version, legal pages, licences), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,
   which says why (`Navigator.followRoom`).
 - Words: `Strings` (Serbian Cyrillic written by hand, Latin made from it, English), `GameStrings` for the

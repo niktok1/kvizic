@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 /** What the game's sound plays, and when: the policy over any platform's device. */
 class SoundEngineTest {
-    private val device = RecordingDevice()
+    private val device = RecordingSoundDevice()
     private var now = 0L
     private val buzzers = SkinSound(bank = "buzzers", level = 0.8f, jitter = 0.05f, trim = mapOf(Cue.TICK to 0.5f))
     private val notebook = SkinSound(bank = "notebook", level = 0.5f, jitter = 0f)
@@ -178,33 +178,5 @@ class SoundEngineTest {
     @Test
     fun `no cue holds itself off for more than a couple of seconds`() {
         assertTrue(Cue.entries.all { it.minGapMillis in 0..2_000 })
-    }
-
-    private class RecordingDevice : SoundDevice {
-        class Played(
-            val key: String,
-            val volume: Float,
-            val rate: Float,
-        )
-
-        val loaded = mutableListOf<String>()
-        val played = mutableListOf<Played>()
-
-        override suspend fun load(
-            key: String,
-            wav: ByteArray,
-        ) {
-            loaded += key
-        }
-
-        override fun play(
-            key: String,
-            volume: Float,
-            rate: Float,
-        ) {
-            played += Played(key, volume, rate)
-        }
-
-        override fun release() = Unit
     }
 }
