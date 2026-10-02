@@ -69,8 +69,11 @@ The questions are in Serbian.
 
 ## Graphics
 
-- **App icon** 512×512 PNG: export from the icon's geometry (the marquee ring and the К). Ask Claude to render it.
-- **Feature graphic** 1024×500: the sign („КВИЗИЋ“ in its bulbs) on the stage. Ask Claude to render it.
+- **App icon** 512×512 PNG: [store/icon-512.png](store/icon-512.png), the iOS 1024 tile scaled down (Play rounds
+  the corners itself).
+- **Feature graphic** 1024×500: [store/feature-graphic-1024x500.png](store/feature-graphic-1024x500.png), the
+  sign on the stage as the app draws it; `KVIZIC_DESIGN_DIR=… ./gradlew :app:shared:jvmTest --tests
+  '*StoreArtTest*'` draws it again.
 - **Phone screenshots**, 2–8, 9:16, at least 1080×1920: real-device captures, in this order:
   Home · a question being answered with picks on the tiles · the reveal's board · the results' podium ·
   the lobby with seats filled · the room's settings.

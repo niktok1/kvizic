@@ -19,7 +19,9 @@ a room is as good as solo).
   the icon above their words have less side padding now, and English says „Join by code“.
 - ✅ Version **1.0.0** (build 10000), Android and iOS.
 - ✅ Release signing reads `kvizic.upload.*` from `local.properties`; `bundleProdRelease` refuses the debug key.
-- ✅ Store listing drafted in sr + en: [store-listing.md](store-listing.md).
+- ✅ Store listing drafted in sr + en: [store-listing.md](store-listing.md); the 512² icon and the 1024×500
+  feature graphic in `store/`.
+- ✅ The sign's name stood past its panel since Nunito; it shrinks to fit now (~53 sp on a 360 dp phone).
 - ✅ targetSdk 36, `/health` 200 on Starter in Frankfurt, deploys drain.
 
 ## Your steps, in order
@@ -38,9 +40,9 @@ Check two claims the privacy page makes (§ „Колико чувамо“): Po
 should keep events **2 years or less**; Render's log retention on the workspace's plan **30 days or less**. If
 either is longer, tell Claude the real numbers.
 
-> To weigh: AT, DE, SE and DK are EU, NO is EEA, CH has its own law. A controller outside the EU that serves
-> players there may need a representative in the EU (GDPR Art. 27) and in Switzerland (FADP Art. 14), unless
-> the processing is occasional and low-risk. WYR is in the same position; decide once for both. Not legal advice.
+> Weighed (the owner, 2026-10-02): an EU (GDPR Art. 27) or Swiss (FADP Art. 14) representative may be owed for
+> the diaspora countries; launch as planned on the occasional, low-risk exemption, as WYR does, and revisit as
+> the game grows.
 
 ### 2. The upload key (10 min, once, never lost)
 
@@ -97,10 +99,9 @@ It imports 25 a request and approves what it brought. Then the moderation app ag
 - **Uptime**: UptimeRobot (free) → HTTP monitor `https://kvizic-api.ntole.com/health`, every 5 min, email alert.
 - **Backups**: Render → `kvizic-postgres` → **Recovery**: note the point-in-time window; do one restore to a
   new database, check it has the questions, delete it.
-- **Origin**: Render serves `kvizic-server.onrender.com` too, which skips Cloudflare. The server trusts
-  `CF-Connecting-IP`, so someone calling the `onrender.com` name directly could spoof their address and
-  get past the per-address limits. Tell Claude whether to make the server refuse requests that don't come
-  through Cloudflare.
+- **Origin** (the owner, 2026-10-02: left for now): Render serves `kvizic-server.onrender.com` too, past
+  Cloudflare, where a caller could forge `CF-Connecting-IP` and slip the per-address limits. Revisit if abuse
+  shows in the log.
 
 ### 7. The build and a real phone (30 min)
 
@@ -116,8 +117,8 @@ phone (360×640) and Android 7 (API 24) if you have one.
 ### 8. Play Console (1–2 h)
 
 - **Create app**: name „Квизић“, default language Serbian (`sr`), Game, Free.
-- **Store listing**: paste from [store-listing.md](store-listing.md); screenshots from step 7's phones; Claude
-  renders the 512² icon and the 1024×500 feature graphic on request.
+- **Store listing**: paste from [store-listing.md](store-listing.md), the icon and the feature graphic
+  from `store/`; screenshots from step 7's phones.
 - **App content**:
   - Privacy policy: `https://kvizic.ntole.com/privacy.html`.
   - Ads: **No**. App access: **All functionality is available without special access**.
