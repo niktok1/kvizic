@@ -127,7 +127,16 @@ phone (360×640) and Android 7 (API 24) if you have one.
 | App info and performance → Diagnostics (errors shown) | yes | Analytics | yes |
 | Device or other IDs (PostHog's random device id) | yes | Analytics | yes |
 
-### 9. Launch
+#### 8½. Early access (the owner, 2026-10-03)
+
+Before production, an **open test**: listed on Play as early access, joined by anyone in the 10 countries
+with no invitation, its feedback private, no public ratings. The account predates the 12-testers rule, so the
+track is open now. It is public: the whole of step 8 (listing, content rating, data safety, target audience,
+privacy URL) and Play Games' published configuration come first, or players outside its Testers cannot sign in.
+Internal testing first (no review) for the two-phone smoke test, then the same build promoted to open testing
+(its review takes days). Production later, from the same track.
+
+## 9. Launch
 
 - Production release from the internal build, **staged rollout 20%**, then 50% and 100% over a few days,
   watching Android vitals (crashes, ANRs) and the server's log.
