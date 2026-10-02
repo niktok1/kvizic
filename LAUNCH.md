@@ -37,23 +37,12 @@ either is longer, tell Claude the real numbers.
 > the diaspora countries; launch as planned on the occasional, low-risk exemption, as WYR does, and revisit as
 > the game grows.
 
-### 2. The upload key (10 min, once, never lost)
+### 2. The upload key ✅ (2026-10-02)
 
-```bash
-mkdir -p ~/keys && keytool -genkeypair -v -keystore ~/keys/kvizic-upload.jks -alias kvizic-upload -keyalg RSA -keysize 4096 -validity 10000
-```
-
-Pick a strong password at the prompt (the same one for the key when asked). Then add to `local.properties`:
-
-```
-kvizic.upload.storeFile=/Users/nikolatokic/keys/kvizic-upload.jks
-kvizic.upload.storePassword=…
-kvizic.upload.keyAlias=kvizic-upload
-kvizic.upload.keyPassword=…
-```
-
-Back up `kvizic-upload.jks` and both passwords in your password manager. Play App Signing (Google holds the
-real signing key) is offered at the first upload: accept it.
+`~/keys/kvizic-upload.jks`, alias `kvizic-upload`, its settings in `local.properties`; `bundleProdRelease`
+signs with it. Its certificate's SHA-1 is `7E:7E:42:7E:05:74:0F:B9:13:46:5A:B5:72:E7:4E:00:42:DE:94:76`
+(public, for Play Games' Android credentials if a build signed with it, not by Play, should sign in). Keep
+the file and its password backed up together. Play App Signing is offered at the first upload: accept it.
 
 ### 3. Analytics key (2 min)
 
