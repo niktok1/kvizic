@@ -67,7 +67,7 @@ Render → `kvizic-server` → **Environment**:
 
 Then, once this commit's CI is green and dev works: **Manual Deploy → Deploy latest commit**.
 
-### 5. The production bank (5 min)
+### 5. The production bank ✅ (2026-10-03: all 1,536 approved on prod, every topic as on dev, Митологија the thinnest at 52)
 
 ```bash
 cd ~/Projects/kvizic-content && KVIZIC_ADMIN_TOKEN=… ./publish.py prod drafts/*.json
