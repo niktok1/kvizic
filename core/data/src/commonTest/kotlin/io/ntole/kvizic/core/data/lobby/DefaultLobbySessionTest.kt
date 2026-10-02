@@ -212,7 +212,7 @@ class DefaultLobbySessionTest {
         }
 
     @Test
-    fun `a transport that throws as its socket breaks is a connection lost, not a crash`() =
+    fun `a transport that throws as its socket breaks is a connection lost and no crash`() =
         runTest {
             val harness = Harness(this)
             val first = harness.inLobby(answering(index = 0))
