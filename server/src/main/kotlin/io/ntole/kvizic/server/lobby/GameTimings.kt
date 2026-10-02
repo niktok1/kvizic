@@ -42,6 +42,10 @@ data class GameTimings(
     val maxLifetime: Duration = 12.hours,
     /** A public lobby's host who does nothing this long, with others waiting, hands hosting over. */
     val afkHost: Duration = 3.minutes,
+    /** How long before a public host's hosting passes on, for lack of anything done, they are told. */
+    val afkHostWarning: Duration = 30.seconds,
+    /** How long before a waiting lobby closes, for lack of anything done, its members are told. */
+    val idleWarning: Duration = 1.minutes,
     /** A public lobby's host gone this long hands hosting over; a private host keeps it through their grace. */
     val absentPublicHost: Duration = 30.seconds,
     /**

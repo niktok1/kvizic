@@ -73,6 +73,8 @@ class ProtocolJsonTest {
             ServerMessage.Reacted(player = "p1", reaction = "bravo"),
             ServerMessage.Presence(online = 12, searching = 3),
             ServerMessage.Notice(kind = NoticeKind.SERVER_RESTARTING, remainingMs = 60_000),
+            ServerMessage.Notice(kind = NoticeKind.HOST_IDLE, remainingMs = 30_000),
+            ServerMessage.Notice(kind = NoticeKind.ROOM_IDLE, remainingMs = 60_000),
             ServerMessage.Closing(reason = CloseReason.KICKED),
         )
 
@@ -88,6 +90,7 @@ class ProtocolJsonTest {
             ClientMessage.Kick(id = 4, player = "p2"),
             ClientMessage.TransferHost(id = 5, player = "p2"),
             ClientMessage.BackToLobby(id = 6),
+            ClientMessage.Stay,
             ClientMessage.Leave,
         )
 

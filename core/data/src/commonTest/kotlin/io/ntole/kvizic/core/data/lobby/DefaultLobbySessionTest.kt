@@ -13,6 +13,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyEvent
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.domain.lobby.NoticeKind
 import io.ntole.kvizic.core.domain.lobby.RefusalReason
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.network.KvizicHttpClient
@@ -43,6 +44,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import io.ntole.kvizic.core.protocol.NoticeKind as WireNoticeKind
 
 /**
  * The lobby session over a fake socket and the fake REST server, on the test's virtual clock: joining,
@@ -435,6 +437,28 @@ class DefaultLobbySessionTest {
                 listOf(LobbyEvent.Reacted("guest2", "bravo"), LobbyEvent.Presence(12, 3)),
                 harness.events.takeLast(2),
             )
+        }
+
+    @Test
+    fun `an idle notice says how long is left and staying answers it`() =
+        runTest {
+            val harness = Harness(this)
+            val socket = harness.inLobby()
+            socket.push(
+                ServerMessage.Notice(WireNoticeKind.HOST_IDLE, 30_000),
+                ServerMessage.Notice(WireNoticeKind.ROOM_IDLE, 60_000),
+            )
+            harness.settle()
+            assertEquals(
+                listOf(
+                    LobbyEvent.Notice(NoticeKind.HOST_IDLE, 30_000),
+                    LobbyEvent.Notice(NoticeKind.ROOM_IDLE, 60_000),
+                ),
+                harness.events.takeLast(2),
+            )
+            harness.lobby.stay()
+            harness.settle()
+            assertEquals(1, socket.sentOf<ClientMessage.Stay>().size)
         }
 
     @Test

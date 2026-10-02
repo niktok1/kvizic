@@ -31,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -73,6 +74,7 @@ import io.ntole.kvizic.design.component.ScoreRow
 import io.ntole.kvizic.design.component.Scoreboard
 import io.ntole.kvizic.design.component.Seat
 import io.ntole.kvizic.design.component.SeatOccupant
+import io.ntole.kvizic.design.component.Snack
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageDialog
 import io.ntole.kvizic.design.component.StageIconButton
@@ -103,6 +105,8 @@ class RoomActions(
     val transferHost: (String) -> Unit = {},
     val backToLobby: () -> Unit = {},
     val react: (String) -> Unit = {},
+    /** Answers a snack that asks if the player still waits: the host's time and the room's start over. */
+    val stay: () -> Unit = {},
     val leave: () -> Unit = {},
     val share: (String) -> Unit = {},
     /** Copies the room's code, given, to the clipboard. */
@@ -132,13 +136,12 @@ fun RoomScreen(
     val motion = KvizicTheme.skin.motion
     // Where a question's tiles stand, so its answers' tiles glide into their reveal rather than fade into it.
     val places = rememberTilePlaces()
-    Column(modifier.fillMaxSize()) {
-        RoomBanner(reconnecting = state.reconnecting, note = note)
+    Box(modifier.fillMaxSize()) {
         // Each step of the game gives way to the next, never a cut: the stage changes by its key, and within
         // one step the screen only takes the new state.
         AnimatedContent(
             targetState = state,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxSize(),
             contentKey = ::stageOf,
             transitionSpec = { stageChange(stageOf(initialState), stageOf(targetState), motion) },
             label = "stage",
@@ -188,6 +191,14 @@ fun RoomScreen(
                 }
             }
         }
+        // Over the room, so a snack coming down moves nothing under it.
+        RoomBanner(
+            reconnecting = state.reconnecting,
+            note = note,
+            topics = topics,
+            onStay = actions.stay,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
     }
     if (leaving) LeaveDialog(onStay = { leaving = false }, onLeave = actions.leave)
     reporting?.let { questionId ->
@@ -232,20 +243,57 @@ private fun ReportDialog(
     }
 }
 
-/** Over the room, while it is so: that the connection is being made again, and a note the room shows. */
+/**
+ * Over the room, while it is so: that the connection is being made again, and a note the room shows, as a
+ * snack, with the word that answers it when it asks something.
+ */
 @Composable
 private fun RoomBanner(
     reconnecting: Boolean,
     note: RoomNote?,
+    topics: List<Topic>,
+    onStay: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val words = LocalStrings.current.game
     val space = KvizicTheme.space
-    val text = if (reconnecting) words.reconnecting else note?.let { words.noteText(it) }
-    if (text != null) {
-        Box(Modifier.fillMaxWidth().padding(horizontal = space.screen, vertical = space.xs), Alignment.Center) {
-            Chip(text, tone = if (reconnecting) ChipTone.NEUTRAL else ChipTone.ACCENT)
+    val snack =
+        Modifier
+            .widthIn(max = space.contentWidth)
+            .fillMaxWidth()
+            .padding(horizontal = space.screen, vertical = space.xs)
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        when {
+            reconnecting -> {
+                Snack(words.reconnecting, snack, icon = KvizicIcons.Hourglass)
+            }
+
+            note != null -> {
+                // A new note comes down anew, and a name is shown in the script the player reads.
+                val named = if (note is RoomNote.HostChanged) note.copy(name = shown(note.name)) else note
+                val changed = (note as? RoomNote.SettingsChanged)?.let { changedChips(it, topics) }.orEmpty()
+                key(named) {
+                    Snack(
+                        words.noteText(named, changed),
+                        snack,
+                        icon = note.icon(),
+                        action = words.actionText(note),
+                        onAction = tapped("room.stay", onClick = onStay),
+                    )
+                }
+            }
         }
     }
+}
+
+/** What a host's change moved among the settings' chips, each in the few words the chip has. */
+@Composable
+private fun changedChips(
+    note: RoomNote.SettingsChanged,
+    topics: List<Topic>,
+): List<String> {
+    val before = settingsChips(note.before, topics).map { it.text }
+    return settingsChips(note.after, topics).map { it.text }.filter { it !in before }
 }
 
 @Composable

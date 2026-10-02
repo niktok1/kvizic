@@ -3,6 +3,7 @@ package io.ntole.kvizic.room
 import androidx.compose.ui.ImageComposeScene
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
+import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.everyText
@@ -130,6 +131,53 @@ class RoomLobbyDrawTest : RoomStills() {
             val seat = scene.nodes().first { "Бојан" in it.texts }
             assertFalse(androidx.compose.ui.semantics.SemanticsActions.OnClick in seat.config, "a seat to vote from")
             assertFalse(words.voteKick in scene.texts())
+        }
+    }
+
+    @Test
+    fun `a snack comes down over the lobby and says what changed and one that asks has the word that answers it`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            var stayed = 0
+            val state = inLobby(GamePhase.Waiting(null), lobby = lobby(host = YOU))
+            var calm = androidx.compose.ui.geometry.Rect.Zero
+            draw(skin, "lobby-snack-none", state) { scene ->
+                calm = scene.nodes().first { "Нина" in it.texts }.boundsInRoot
+            }
+            draw(skin, "lobby-snack-asks", state, RoomActions(stay = { stayed++ }), note = RoomNote.HostIdle) { scene ->
+                val shown = scene.everyText()
+                listOf(words.hostIdle, words.stillWaiting, words.start).forEach {
+                    assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown")
+                }
+                // Over the room, moving nothing: the seats stand where they stand without it.
+                val seat = scene.nodes().first { "Нина" in it.texts }.boundsInRoot
+                assertEquals(calm, seat, "${skin.id}: the snack moved the seats")
+                val snack = scene.nodes().first { words.stillWaiting in it.texts }.boundsInRoot
+                assertTrue(snack.top >= 0f && snack.bottom <= HEIGHT, "${skin.id}: the snack's button is at $snack")
+                scene.tap(words.stillWaiting)
+            }
+            assertEquals(1, stayed, skin.id)
+
+            val before = LobbySettings(secondsPerQuestion = 15)
+            val after = before.copy(questionCount = 15, secondsPerQuestion = 20)
+            draw(
+                skin,
+                "lobby-snack-settings",
+                inLobby(GamePhase.Waiting(null)),
+                note = RoomNote.SettingsChanged(before, after),
+            ) { scene ->
+                val shown = scene.everyText()
+                val changed = words.questionCount.of(15, Language.DEFAULT) + ", " + words.seconds.fill(20)
+                assertTrue(words.settingsChanged.fill(changed) in shown, "${skin.id}: $shown")
+            }
+            draw(
+                skin,
+                "lobby-snack-host",
+                inLobby(GamePhase.Waiting(null)),
+                note = RoomNote.HostChanged("Нина", you = false),
+            ) { scene ->
+                assertTrue(words.hostChanged.fill("Нина") in scene.everyText(), "${skin.id}: ${scene.everyText()}")
+            }
         }
     }
 

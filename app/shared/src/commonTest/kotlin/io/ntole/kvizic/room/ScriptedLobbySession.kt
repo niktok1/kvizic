@@ -93,6 +93,10 @@ class ScriptedLobbySession : LobbySession {
         commands += "react $reaction"
     }
 
+    override fun stay() {
+        commands += "stay"
+    }
+
     override fun leave() {
         commands += "leave"
         state.value = LobbySessionState.Idle

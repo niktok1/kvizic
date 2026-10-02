@@ -51,18 +51,82 @@ internal fun Strings.entryFailureText(
         else -> failureText(error, retryAfter)
     }
 
-/** A note the room shows a moment. */
-internal fun GameStrings.noteText(note: RoomNote): String =
+/** A note the room shows, in words: [changed] are the chips a host's change moved, in a few words each. */
+internal fun GameStrings.noteText(
+    note: RoomNote,
+    changed: List<String> = emptyList(),
+): String =
     when (note) {
-        RoomNote.ONLY_HOST -> onlyHost
-        RoomNote.REFUSED -> refused
-        RoomNote.TOPICS_TOPPED_UP -> topicsToppedUp
-        RoomNote.GAME_SHORTENED -> gameShortened
-        RoomNote.SERVER_RESTARTING -> exitRestarting
-        RoomNote.REPORTED -> reported
-        RoomNote.REPORT_FAILED -> refused
-        RoomNote.VOTE_TOO_SOON -> voteTooSoon
-        RoomNote.CODE_COPIED -> codeCopied
+        RoomNote.OnlyHost -> {
+            onlyHost
+        }
+
+        RoomNote.Refused -> {
+            refused
+        }
+
+        RoomNote.TopicsToppedUp -> {
+            topicsToppedUp
+        }
+
+        RoomNote.GameShortened -> {
+            gameShortened
+        }
+
+        RoomNote.ServerRestarting -> {
+            exitRestarting
+        }
+
+        RoomNote.Reported -> {
+            reported
+        }
+
+        RoomNote.ReportFailed -> {
+            refused
+        }
+
+        RoomNote.VoteTooSoon -> {
+            voteTooSoon
+        }
+
+        RoomNote.CodeCopied -> {
+            codeCopied
+        }
+
+        is RoomNote.HostChanged -> {
+            if (note.you) youAreHost else hostChanged.fill(note.name)
+        }
+
+        is RoomNote.SettingsChanged -> {
+            if (changed.isEmpty()) settingsChangedPlain else settingsChanged.fill(changed.joinToString(", "))
+        }
+
+        RoomNote.HostIdle -> {
+            hostIdle
+        }
+
+        RoomNote.RoomIdle -> {
+            roomIdle
+        }
+    }
+
+/** The icon that names a note's kind, before its words. */
+internal fun RoomNote.icon(): ImageVector =
+    when (this) {
+        RoomNote.OnlyHost, is RoomNote.HostChanged -> KvizicIcons.Mic
+        RoomNote.Refused, RoomNote.ReportFailed -> KvizicIcons.Cross
+        RoomNote.Reported, RoomNote.CodeCopied -> KvizicIcons.Check
+        RoomNote.VoteTooSoon -> KvizicIcons.Clock
+        RoomNote.TopicsToppedUp, RoomNote.GameShortened, is RoomNote.SettingsChanged -> KvizicIcons.Sliders
+        RoomNote.ServerRestarting, RoomNote.HostIdle, RoomNote.RoomIdle -> KvizicIcons.Hourglass
+    }
+
+/** The word on the button of a note that asks something, or none for a note that does not. */
+internal fun GameStrings.actionText(note: RoomNote): String? =
+    when (note) {
+        RoomNote.HostIdle -> stillWaiting
+        RoomNote.RoomIdle -> stayInRoom
+        else -> null
     }
 
 /** A reason to report a question, as the report's dialog says it. */

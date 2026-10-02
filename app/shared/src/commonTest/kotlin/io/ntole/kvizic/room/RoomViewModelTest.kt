@@ -165,14 +165,82 @@ class RoomViewModelTest {
             session.events.emit(LobbyEvent.Refused(LobbyCommandKind.START, RefusalReason.NOT_HOST))
             session.events.emit(LobbyEvent.Presence(online = 128, searching = 7))
             testScheduler.runCurrent()
-            assertEquals(RoomNote.ONLY_HOST, room.note.value)
+            assertEquals(RoomNote.OnlyHost, room.note.value)
             assertEquals(Presence(128, 7), room.presence.value)
 
             session.events.emit(LobbyEvent.Notice(NoticeKind.GAME_SHORTENED))
             testScheduler.runCurrent()
-            assertEquals(RoomNote.GAME_SHORTENED, room.note.value)
+            assertEquals(RoomNote.GameShortened, room.note.value)
 
             advanceTimeBy(5_000)
+            assertNull(room.note.value)
+        }
+
+    @Test
+    fun `a new host and a change of settings are said to the others but the host's own change is not`() =
+        runTest(main) {
+            val room = room()
+            val before = LobbySettings(secondsPerQuestion = 15)
+            val after = before.copy(secondsPerQuestion = 20)
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(settings = before))
+            testScheduler.advanceUntilIdle()
+            assertNull(room.note.value, "coming into the room says nothing")
+
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = "sova", settings = before))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.HostChanged("Мудра Сова", you = false), room.note.value)
+
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = YOU, settings = before))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.HostChanged("Марко", you = true), room.note.value)
+
+            // The host's own change is on their chips already.
+            advanceTimeBy(5_000)
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = YOU, settings = after))
+            testScheduler.runCurrent()
+            assertNull(room.note.value)
+
+            // Another host's is said, as from what and to what.
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = "nina", settings = after))
+            testScheduler.runCurrent()
+            advanceTimeBy(5_000)
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = "nina", settings = before))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.SettingsChanged(after, before), room.note.value)
+        }
+
+    @Test
+    fun `a note that asks stays up for its time and answers to staying and a lesser line does not take it down`() =
+        runTest(main) {
+            val room = room()
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = YOU))
+            testScheduler.advanceUntilIdle()
+
+            session.events.emit(LobbyEvent.Notice(NoticeKind.ROOM_IDLE, remainingMs = 60_000))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.RoomIdle, room.note.value)
+            session.events.emit(LobbyEvent.Refused(LobbyCommandKind.START, RefusalReason.NOT_HOST))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.RoomIdle, room.note.value, "a refusal does not take it down")
+            advanceTimeBy(30_000)
+            assertEquals(RoomNote.RoomIdle, room.note.value, "it is up for as long as the server counted")
+
+            room.stay()
+            assertNull(room.note.value)
+            assertEquals(listOf("stay"), session.commands)
+
+            // An idle host's note goes when hosting does, and a note about a room waiting when a game starts.
+            session.events.emit(LobbyEvent.Notice(NoticeKind.HOST_IDLE, remainingMs = 30_000))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.HostIdle, room.note.value)
+            session.state.value = inLobby(GamePhase.Waiting(null), lobby(host = "nina"))
+            testScheduler.runCurrent()
+            assertEquals(RoomNote.HostChanged("Нина", you = false), room.note.value)
+            advanceTimeBy(5_000)
+            session.events.emit(LobbyEvent.Notice(NoticeKind.ROOM_IDLE, remainingMs = 60_000))
+            testScheduler.runCurrent()
+            session.state.value = inLobby(GamePhase.Countdown(deadline(5.seconds), null))
+            testScheduler.runCurrent()
             assertNull(room.note.value)
         }
 
@@ -247,12 +315,12 @@ class RoomViewModelTest {
             room.report("q1", QuestionReportReason.WRONG_ANSWER)
             testScheduler.runCurrent()
             assertEquals(listOf("q1" to QuestionReportReason.WRONG_ANSWER), reports.sent)
-            assertEquals(RoomNote.REPORTED, room.note.value)
+            assertEquals(RoomNote.Reported, room.note.value)
 
             reports.refuseWith = KvizicException(GameError.QUESTION_NOT_FOUND)
             room.report("q2", QuestionReportReason.TYPO)
             testScheduler.runCurrent()
-            assertEquals(RoomNote.REPORT_FAILED, room.note.value)
+            assertEquals(RoomNote.ReportFailed, room.note.value)
         }
 
     private fun room() = RoomViewModel(session, ReportQuestion(reports, NoSession), analytics)

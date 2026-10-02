@@ -30,13 +30,14 @@ abstract class RoomStills {
         actions: RoomActions = RoomActions(),
         topics: List<Topic> = TOPICS,
         width: Int = WIDTH,
+        note: RoomNote? = null,
         check: (ImageComposeScene) -> Unit,
     ) {
         val scene =
             ImageComposeScene(width = width, height = HEIGHT, density = Density(1f)) {
                 GameTheme(Language.DEFAULT, skin) {
                     Stage(Modifier.fillMaxSize()) {
-                        RoomScreen(state, topics, note = null, bursts = emptyMap(), actions = actions)
+                        RoomScreen(state, topics, note = note, bursts = emptyMap(), actions = actions)
                     }
                 }
             }

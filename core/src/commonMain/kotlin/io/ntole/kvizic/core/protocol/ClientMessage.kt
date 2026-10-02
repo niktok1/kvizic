@@ -100,6 +100,14 @@ public sealed interface ClientMessage {
         public val id: Int,
     ) : ClientMessage
 
+    /**
+     * The answer to a [ServerMessage.Notice] of an idle host or an idle room: still here, and waiting. It
+     * starts the host's time and the room's over, and says nothing to the rest of the room.
+     */
+    @Serializable
+    @SerialName("stay")
+    public data object Stay : ClientMessage
+
     /** Leaves the lobby for good. The server closes the socket after it. */
     @Serializable
     @SerialName("leave")

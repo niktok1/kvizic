@@ -44,6 +44,7 @@ import io.ntole.kvizic.room.MEMBERS
 import io.ntole.kvizic.room.PublicRoomsScreen
 import io.ntole.kvizic.room.RESULTS
 import io.ntole.kvizic.room.RoomActions
+import io.ntole.kvizic.room.RoomNote
 import io.ntole.kvizic.room.RoomScreen
 import io.ntole.kvizic.room.SettingsScreen
 import io.ntole.kvizic.room.TOPICS
@@ -184,6 +185,13 @@ class TapsTest {
                 "room.leave_confirm",
             ),
             elementsTapped { RoomScreen(host, TOPICS, note = null, bursts = emptyMap(), actions = RoomActions()) },
+        )
+        // A snack that asks has its one tap, counted like any other.
+        assertTrue(
+            "room.stay" in
+                elementsTapped {
+                    RoomScreen(host, TOPICS, note = RoomNote.HostIdle, bursts = emptyMap(), actions = RoomActions())
+                },
         )
         val alone = MEMBERS.filter { it.playerId == YOU }
         val solo = inLobby(GamePhase.Waiting(null), lobby = lobby(alone, host = YOU, kind = LobbyKind.SOLO))

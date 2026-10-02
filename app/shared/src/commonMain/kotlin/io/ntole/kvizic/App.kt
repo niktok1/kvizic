@@ -376,6 +376,7 @@ private fun Room(
                 start = room::start,
                 openSettings = onSettings,
                 chooseDifficulty = { level -> room.updateSettings(state.lobby.settings.copy(difficulty = level)) },
+                stay = room::stay,
                 kick = room::kick,
                 voteKick = room::voteKick,
                 transferHost = room::transferHost,

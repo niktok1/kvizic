@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
@@ -56,18 +57,50 @@ sealed interface Entry {
     ) : Entry
 }
 
-/** A line the room shows for a moment: a notice of the server's, or a command it refused. */
-enum class RoomNote {
-    ONLY_HOST,
-    REFUSED,
-    TOPICS_TOPPED_UP,
-    GAME_SHORTENED,
-    SERVER_RESTARTING,
-    REPORTED,
-    REPORT_FAILED,
-    VOTE_TOO_SOON,
-    CODE_COPIED,
+/**
+ * A line the room shows: a notice of the server's, a command it refused, or a change in the room. Most show a
+ * moment; a note that [asks] stays up until the player answers it, or its time is over.
+ */
+sealed interface RoomNote {
+    data object OnlyHost : RoomNote
+
+    data object Refused : RoomNote
+
+    data object TopicsToppedUp : RoomNote
+
+    data object GameShortened : RoomNote
+
+    data object ServerRestarting : RoomNote
+
+    data object Reported : RoomNote
+
+    data object ReportFailed : RoomNote
+
+    data object VoteTooSoon : RoomNote
+
+    data object CodeCopied : RoomNote
+
+    /** [name] is the host now: the player themselves when it is [you]. */
+    data class HostChanged(
+        val name: String,
+        val you: Boolean,
+    ) : RoomNote
+
+    /** The host changed the room's settings, from [before] to [after]. */
+    data class SettingsChanged(
+        val before: LobbySettings,
+        val after: LobbySettings,
+    ) : RoomNote
+
+    /** The player's hosting passes to another soon, for lack of anything done, unless they say they still wait. */
+    data object HostIdle : RoomNote
+
+    /** The room closes soon, for lack of anything done, unless a member says they stay. */
+    data object RoomIdle : RoomNote
 }
+
+/** Whether the note asks the player something, and so stays up until they answer or its time is over. */
+val RoomNote.asks: Boolean get() = this is RoomNote.HostIdle || this is RoomNote.RoomIdle
 
 /**
  * A reaction one member sent, a key that tells it from the one before, so the same reaction bursts again,
@@ -123,11 +156,14 @@ class RoomViewModel(
         viewModelScope.launch { session.events.collect(::heard) }
         viewModelScope.launch {
             var inRoom = false
+            var before: LobbySessionState.InLobby? = null
             session.state.collect { state ->
                 when (state) {
                     is LobbySessionState.InLobby -> {
                         inRoom = true
                         reportFinished(state)
+                        announce(before, state)
+                        before = state
                     }
 
                     is LobbySessionState.Ended -> {
@@ -138,16 +174,18 @@ class RoomViewModel(
                             )
                         }
                         inRoom = false
+                        before = null
                         mutableBursts.value = emptyMap()
                     }
 
                     LobbySessionState.Idle -> {
                         inRoom = false
+                        before = null
                         mutableBursts.value = emptyMap()
                     }
 
                     is LobbySessionState.Joining -> {
-                        Unit
+                        before = null
                     }
                 }
             }
@@ -184,6 +222,12 @@ class RoomViewModel(
 
     fun react(reaction: String) = session.react(reaction)
 
+    /** The player says they still wait, to the note that asked: the host's time and the room's start over. */
+    fun stay() {
+        session.stay()
+        if (mutableNote.value?.asks == true) clearNote()
+    }
+
     /** Leaves the room for good, or takes down how the last one ended. */
     fun leave() {
         taking?.cancel()
@@ -192,7 +236,7 @@ class RoomViewModel(
     }
 
     /** The room's code was copied: the room says so a moment. */
-    fun codeCopied() = show(RoomNote.CODE_COPIED)
+    fun codeCopied() = show(RoomNote.CodeCopied)
 
     /** The app came back to the foreground: a connection being made again is tried now. */
     fun wake() = session.wake()
@@ -205,13 +249,13 @@ class RoomViewModel(
         viewModelScope.launch {
             try {
                 reportQuestion(questionId, reason)
-                show(RoomNote.REPORTED)
+                show(RoomNote.Reported)
             } catch (failure: KvizicException) {
                 analytics.track(
                     AnalyticsEvent.ERROR_SHOWN,
                     mapOf(AnalyticsProperty.CODE to failure.error.name, AnalyticsProperty.ACTION to "report"),
                 )
-                show(RoomNote.REPORT_FAILED)
+                show(RoomNote.ReportFailed)
             }
         }
     }
@@ -255,15 +299,18 @@ class RoomViewModel(
             }
 
             is LobbyEvent.Notice -> {
-                noteOf(event.kind)?.let(::show)
+                noteOf(event.kind)?.let { note ->
+                    // What is about to happen is shown for as long as it takes to, as the server counted it.
+                    show(note, if (note.asks) event.remainingMs?.milliseconds ?: ASKED_SHOWN else NOTE_SHOWN)
+                }
             }
 
             is LobbyEvent.Refused -> {
                 show(
                     when (event.reason) {
-                        RefusalReason.NOT_HOST -> RoomNote.ONLY_HOST
-                        RefusalReason.TOO_SOON -> RoomNote.VOTE_TOO_SOON
-                        else -> RoomNote.REFUSED
+                        RefusalReason.NOT_HOST -> RoomNote.OnlyHost
+                        RefusalReason.TOO_SOON -> RoomNote.VoteTooSoon
+                        else -> RoomNote.Refused
                     },
                 )
             }
@@ -272,20 +319,55 @@ class RoomViewModel(
 
     private fun noteOf(kind: NoticeKind): RoomNote? =
         when (kind) {
-            NoticeKind.SERVER_RESTARTING -> RoomNote.SERVER_RESTARTING
-            NoticeKind.TOPICS_TOPPED_UP -> RoomNote.TOPICS_TOPPED_UP
-            NoticeKind.GAME_SHORTENED -> RoomNote.GAME_SHORTENED
+            NoticeKind.SERVER_RESTARTING -> RoomNote.ServerRestarting
+            NoticeKind.TOPICS_TOPPED_UP -> RoomNote.TopicsToppedUp
+            NoticeKind.GAME_SHORTENED -> RoomNote.GameShortened
+            NoticeKind.HOST_IDLE -> RoomNote.HostIdle
+            NoticeKind.ROOM_IDLE -> RoomNote.RoomIdle
             NoticeKind.UNKNOWN -> null
         }
 
-    private fun show(note: RoomNote) {
+    private fun show(
+        note: RoomNote,
+        shownFor: Duration = NOTE_SHOWN,
+    ) {
+        // A question put to the player stays up for its time: a line that matters less does not take it down.
+        if (mutableNote.value?.asks == true && !note.asks) return
         mutableNote.value = note
         noteShown?.cancel()
         noteShown =
             viewModelScope.launch {
-                delay(NOTE_SHOWN)
+                delay(shownFor)
                 mutableNote.value = null
             }
+    }
+
+    private fun clearNote() {
+        noteShown?.cancel()
+        mutableNote.value = null
+    }
+
+    /**
+     * Says what changed in the room since [before], for the others in it: who the host is now, or what the
+     * host did to the settings, and takes down a question to the player that no longer holds.
+     */
+    private fun announce(
+        before: LobbySessionState.InLobby?,
+        after: LobbySessionState.InLobby,
+    ) {
+        val asking = mutableNote.value
+        if (asking != null && asking.asks) {
+            val waiting = after.phase is GamePhase.Waiting
+            val hosting = after.lobby.host == after.you
+            if (!waiting || (asking is RoomNote.HostIdle && !hosting)) clearNote()
+        }
+        if (before == null || before.lobby.id != after.lobby.id) return
+        val host = after.lobby.host
+        if (host != null && host != before.lobby.host) {
+            after.lobby.member(host)?.let { show(RoomNote.HostChanged(it.name, you = host == after.you)) }
+        } else if (after.lobby.settings != before.lobby.settings && host != after.you) {
+            show(RoomNote.SettingsChanged(before.lobby.settings, after.lobby.settings))
+        }
     }
 
     /** Reports the end of a game this player played, once, as its results come. */
@@ -315,6 +397,9 @@ class RoomViewModel(
     private companion object {
         /** How long a note shows. */
         val NOTE_SHOWN = 4.seconds
+
+        /** How long a question to the player stays up, when the server does not say how long it has. */
+        val ASKED_SHOWN = 30.seconds
 
         /** The longest a seat taken waits for its room to open before its screen takes taps again. */
         val OPENING_WAIT = 10.seconds

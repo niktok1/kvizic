@@ -201,6 +201,11 @@ public class DefaultLobbySession(
             membership?.live?.outbox?.trySend(ClientMessage.React(reaction))
         }
 
+    override fun stay(): Unit =
+        onConfined {
+            membership?.live?.outbox?.trySend(ClientMessage.Stay)
+        }
+
     override fun leave(): Unit =
         onConfined {
             val stay = membership
@@ -425,7 +430,7 @@ public class DefaultLobbySession(
                         }
 
                         is ServerMessage.Notice -> {
-                            mutableEvents.tryEmit(LobbyEvent.Notice(message.kind.toDomain()))
+                            mutableEvents.tryEmit(LobbyEvent.Notice(message.kind.toDomain(), message.remainingMs))
                         }
 
                         is ServerMessage.Closing -> {

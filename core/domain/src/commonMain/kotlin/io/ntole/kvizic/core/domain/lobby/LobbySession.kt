@@ -76,6 +76,8 @@ public sealed interface LobbyEvent {
 
     public data class Notice(
         val kind: NoticeKind,
+        /** For a notice of something about to happen, how long until it does, in milliseconds. */
+        val remainingMs: Long? = null,
     ) : LobbyEvent
 
     /** A command of this player's the lobby refused, and why. */
@@ -91,7 +93,18 @@ public sealed interface LobbyEvent {
     ) : LobbyEvent
 }
 
-public enum class NoticeKind { SERVER_RESTARTING, TOPICS_TOPPED_UP, GAME_SHORTENED, UNKNOWN }
+public enum class NoticeKind {
+    SERVER_RESTARTING,
+    TOPICS_TOPPED_UP,
+    GAME_SHORTENED,
+
+    /** To a host who does nothing: hosting passes on soon. */
+    HOST_IDLE,
+
+    /** To a room nobody does anything in: it closes soon. */
+    ROOM_IDLE,
+    UNKNOWN,
+}
 
 public enum class LobbyCommandKind { ANSWER, SETTINGS, START, KICK, VOTE_KICK, TRANSFER_HOST, BACK_TO_LOBBY }
 
@@ -148,6 +161,9 @@ public interface LobbySession {
     public fun backToLobby()
 
     public fun react(reaction: String)
+
+    /** Answers a notice of an idle host or room: still here, waiting. Starts the time over. */
+    public fun stay()
 
     /** Leaves the lobby for good, gives up joining one, or clears how the last one ended. */
     public fun leave()

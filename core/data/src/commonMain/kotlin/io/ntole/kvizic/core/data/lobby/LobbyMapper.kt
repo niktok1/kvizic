@@ -230,6 +230,8 @@ internal fun WireNoticeKind.toDomain(): NoticeKind =
         WireNoticeKind.SERVER_RESTARTING -> NoticeKind.SERVER_RESTARTING
         WireNoticeKind.TOPICS_TOPPED_UP -> NoticeKind.TOPICS_TOPPED_UP
         WireNoticeKind.GAME_SHORTENED -> NoticeKind.GAME_SHORTENED
+        WireNoticeKind.HOST_IDLE -> NoticeKind.HOST_IDLE
+        WireNoticeKind.ROOM_IDLE -> NoticeKind.ROOM_IDLE
         WireNoticeKind.UNKNOWN -> NoticeKind.UNKNOWN
     }
 

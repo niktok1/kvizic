@@ -79,6 +79,8 @@ Play Games Services v2. **No Material**: the design system draws everything.
 - Close codes are a contract: 4400 protocol, 4401 ticket, 4403 kicked (by the host, or voted out, which the
   `closing` message tells apart), 4404 gone, 4408 silent, 4409 replaced, 4410 session ended, 4426 update,
   4429 slow, 4503 restarting.
+- The server tells an idle public host and an idle waiting room before it acts on them (`notice`, `HOST_IDLE`,
+  `ROOM_IDLE`), and a member's `stay` frame answers: it counts as activity and restarts the room's idle time.
 - A disconnect is not a leave: grace 2 min in the lobby, the rest of the game in a game. A player dropped
   less than `dropGrace` ago (3 s) is still waited for before an early reveal.
 - Deploys drain: Render waits `maxShutdownDelaySeconds` (300, prod) and the server drains lobbies for
@@ -232,6 +234,12 @@ Play Games Services v2. **No Material**: the design system draws everything.
   "Твоја победа!" for the player's own win) right over the podium, not pinned to the top, popping in once; the
   podium, the board and the chips stand centred in a region that scrolls when eight players leave no room, the
   way back fixed at the foot (`RoomRevealDrawTest`).
+- **Snacks** (the owner, 2026-10-02): a line said over the room, never moving it (`Snack`, `RoomNote`): who the host
+  is now, what the host changed on the chips (the others only), and two the server warns with, both answered by a
+  button: a public host who does nothing is told their hosting passes on (`HOST_IDLE`, `afkHostWarning` 30 s before
+  the 3 min), and a waiting room nobody does anything in that it closes (`ROOM_IDLE`, `idleWarning` 1 min before
+  the 30). **`Stay`** ("Још чекам" / "Остани": maybe they wait for someone) starts both times over; a snack that
+  asks stays for the time the server counted, and no lesser line takes it down.
 - **Kick is a boot** (`KvizicIcons.Boot`: the host's remove, a vote to put out, the votes on a seat); the door
   stays for leaving. The lobby's emotes are the regular round buttons, not the small ones.
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,

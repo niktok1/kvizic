@@ -125,6 +125,9 @@ class Lobby(
     private var closed = false
     private val openedAt = now()
     private var waitingSince = openedAt
+
+    /** The [waitingSince] the room was last told it would close for, so it hears of it once. */
+    private var idleWarnedFor: ComparableTimeMark? = null
     private var lastPresence: ServerMessage.Presence? = null
 
     /** Members whose socket refused a message during the current command: dropped once it is done. */
@@ -360,16 +363,30 @@ class Lobby(
         }
         when (message) {
             is ClientMessage.Answer -> answer(member, message, command.receivedAt, command.rtt)
+
             is ClientMessage.React -> react(member, message.reaction)
+
             is ClientMessage.UpdateSettings -> updateSettings(member, message.id, message.settings)
+
             is ClientMessage.Start -> startGame(member, message.id)
+
             is ClientMessage.Kick -> kick(member, message.id, message.player)
+
             is ClientMessage.VoteKick -> voteKick(member, message.id, message.player)
+
             is ClientMessage.TransferHost -> transferHost(member, message.id, message.player)
+
             is ClientMessage.BackToLobby -> backToLobby(member, message.id)
+
+            // Still here, waiting: the member's activity above restarts a host's time, this the room's.
+            ClientMessage.Stay -> if (phase is Phase.Waiting) waitingSince = now()
+
             ClientMessage.Leave -> remove(member, LeaveReason.LEFT)
+
             ClientMessage.Resync -> send(member, snapshotFor(member))
+
             is ClientMessage.Hello -> command.connection.close(CloseCodes.PROTOCOL_ERROR)
+
             is ClientMessage.Pong, ClientMessage.Unknown -> Unit
         }
     }
@@ -527,6 +544,7 @@ class Lobby(
             .forEach { remove(it, LeaveReason.TIMED_OUT) }
         if (closed) return
         handOverAbsentHost(at)
+        warnIdle(at)
         // A drop's grace may have run out with everyone else answered.
         revealIfEveryoneAnswered()
         when {
@@ -567,6 +585,38 @@ class Lobby(
         next.activeAt = at
         host = next.playerId
         changed { v, _ -> ServerMessage.HostChanged(v, next.playerId) }
+    }
+
+    /**
+     * Says what is about to happen to a host and a room that do nothing, so no one is surprised by it: to a
+     * public lobby's host, that hosting passes to another, [GameTimings.afkHostWarning] before it does, and to
+     * the whole waiting lobby, that it closes, [GameTimings.idleWarning] before. Each is said once for a stretch
+     * of nothing: the host doing something, or any member sending [ClientMessage.Stay], starts it over.
+     */
+    private fun warnIdle(at: ComparableTimeMark) {
+        if (phase !is Phase.Waiting) return
+        val current = host?.let { members[it] }
+        if (kind == LobbyKind.PUBLIC && current != null && current.connection != null) {
+            val others = members.values.any { it.announced && it.connection != null && it !== current }
+            val left = timings.afkHost - (at - current.activeAt)
+            if (others && left <= timings.afkHostWarning && current.warnedIdleFor != current.activeAt) {
+                current.warnedIdleFor = current.activeAt
+                send(
+                    current,
+                    ServerMessage.Notice(NoticeKind.HOST_IDLE, left.coerceAtLeast(Duration.ZERO).inWholeMilliseconds),
+                )
+            }
+        }
+        val closesIn = timings.idle - (at - waitingSince)
+        if (closesIn <= timings.idleWarning && idleWarnedFor != waitingSince) {
+            idleWarnedFor = waitingSince
+            val notice =
+                ServerMessage.Notice(
+                    NoticeKind.ROOM_IDLE,
+                    closesIn.coerceAtLeast(Duration.ZERO).inWholeMilliseconds,
+                )
+            members.values.filter { it.announced }.forEach { send(it, notice) }
+        }
     }
 
     // --- The game ---
@@ -1401,6 +1451,9 @@ class Lobby(
 
         /** The votes against them as the room was last told, so only a change is sent. */
         var toldTally: KickTally = KickTally.NONE
+
+        /** The [activeAt] a host was last told their hosting would pass on for, so they hear of it once. */
+        var warnedIdleFor: ComparableTimeMark? = null
 
         /** While they have no socket: when their seat goes. */
         var holdUntil: ComparableTimeMark? = null

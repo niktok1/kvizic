@@ -7,6 +7,7 @@ import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.CloseCodes
 import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.LeaveReason
+import io.ntole.kvizic.core.protocol.NoticeKind
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ServerMessage
 import kotlinx.coroutines.test.runTest
@@ -253,6 +254,63 @@ class LobbyMembershipTest {
             assertTrue(goran.all<ServerMessage.HostChanged>().isEmpty(), "friends wait for each other")
             private.wait(private.timings.lobbyGrace)
             assertEquals("goran", goran.last<ServerMessage.HostChanged>().host, "until the grace is over")
+        }
+
+    @Test
+    fun `a public host about to be passed over is told and staying starts their time over`() =
+        runTest {
+            val lobby =
+                LobbyScenario(
+                    this,
+                    LobbySettingsDto(questionCount = 3, visibility = Visibility.PUBLIC),
+                    kind = LobbyKind.PUBLIC,
+                )
+            val dora = lobby.player("dora").join()
+            val ema = lobby.player("ema").join()
+
+            fun told(player: TestPlayer) = player.all<ServerMessage.Notice>().filter { it.kind == NoticeKind.HOST_IDLE }
+
+            lobby.wait(lobby.timings.afkHost - lobby.timings.afkHostWarning - 1.seconds)
+            assertTrue(told(dora).isEmpty(), "not before its time")
+            lobby.wait(2.seconds)
+            val first = told(dora).single()
+            assertTrue(checkNotNull(first.remainingMs) in 1..lobby.timings.afkHostWarning.inWholeMilliseconds)
+            assertTrue(told(ema).isEmpty(), "the rest of the room is told nothing")
+
+            // Waiting for someone: the host says so, and someone else does something meanwhile.
+            dora.say(ClientMessage.Stay)
+            lobby.wait(1.seconds)
+            ema.say(ClientMessage.React("bravo"))
+            lobby.wait(lobby.timings.afkHost - 10.seconds)
+            assertTrue(ema.all<ServerMessage.HostChanged>().isEmpty(), "hosting stays where it is")
+            assertEquals(2, told(dora).size, "and the next stretch of nothing is told again")
+            lobby.wait(11.seconds)
+            assertEquals("ema", ema.last<ServerMessage.HostChanged>().host)
+        }
+
+    @Test
+    fun `a waiting room about to close says so to everyone and one member staying keeps it`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+
+            fun told(player: TestPlayer) = player.all<ServerMessage.Notice>().filter { it.kind == NoticeKind.ROOM_IDLE }
+
+            lobby.wait(lobby.timings.idle - lobby.timings.idleWarning - 1.seconds)
+            assertTrue(told(ana).isEmpty() && told(boris).isEmpty(), "not before its time")
+            lobby.wait(2.seconds)
+            assertEquals(1, told(ana).size)
+            assertEquals(1, told(boris).size)
+            assertTrue(checkNotNull(told(ana).single().remainingMs) in 1..lobby.timings.idleWarning.inWholeMilliseconds)
+
+            boris.say(ClientMessage.Stay)
+            lobby.wait(lobby.timings.idleWarning + 1.minutes)
+            assertFalse(lobby.closed, "past the time it would have closed")
+            lobby.wait(lobby.timings.idle - lobby.timings.idleWarning)
+            assertEquals(2, told(ana).size, "told again when the new time runs out")
+            lobby.wait(2.minutes)
+            assertTrue(lobby.closed)
         }
 
     @Test

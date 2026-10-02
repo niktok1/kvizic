@@ -92,6 +92,18 @@ public enum class NoticeKind {
 
     /** Too few questions for the game's length, so it is shorter. */
     GAME_SHORTENED,
+
+    /**
+     * To a public lobby's host alone, who has done nothing for a while with others waiting: hosting passes to
+     * another in `remainingMs`, unless they send [ClientMessage.Stay].
+     */
+    HOST_IDLE,
+
+    /**
+     * To everyone in a waiting lobby nobody has done anything in for long: it closes in `remainingMs`, unless
+     * a member sends [ClientMessage.Stay].
+     */
+    ROOM_IDLE,
     UNKNOWN,
 }
 
