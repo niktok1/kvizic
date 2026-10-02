@@ -157,7 +157,7 @@ class RoomViewModelTest {
         }
 
     @Test
-    fun `a notice or a refusal shows a moment and the room's counts stay`() =
+    fun `a notice or a refusal shows a moment and a room's counts are nothing to keep`() =
         runTest(main) {
             val room = room()
             testScheduler.advanceUntilIdle()
@@ -166,7 +166,6 @@ class RoomViewModelTest {
             session.events.emit(LobbyEvent.Presence(online = 128, searching = 7))
             testScheduler.runCurrent()
             assertEquals(RoomNote.OnlyHost, room.note.value)
-            assertEquals(Presence(128, 7), room.presence.value)
 
             session.events.emit(LobbyEvent.Notice(NoticeKind.GAME_SHORTENED))
             testScheduler.runCurrent()

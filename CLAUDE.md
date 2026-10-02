@@ -234,7 +234,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
 - **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page
   (`PresenceStrip`): a lit bulb, a person and the players online, a magnifier and those searching, each count on
-  flaps; it stays line-sized, being only nice to know, and a screen reader is told the sentence.
+  flaps; it stays line-sized, being only nice to know, and a screen reader is told the sentence. On Home it stands
+  on Quick play's foot, inside the button (`StageButton.footer`), its place held before the first read. The counts
+  are the poll's alone (`GET /v1/lobbies`, every 10 s): the socket's `presence` frames are not kept, since a count
+  kept from the last room showed a phone one number and a tablet another.
 - **The results** (the owner, 2026-10-02): the winner stands on a plate of the first step's colour (`WinnerBanner`,
   "Твоја победа!" for the player's own win) right over the podium, not pinned to the top, popping in once; the
   podium, the board and the chips stand centred in a region that scrolls when eight players leave no room, the

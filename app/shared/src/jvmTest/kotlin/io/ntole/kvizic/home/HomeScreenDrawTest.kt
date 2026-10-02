@@ -65,6 +65,33 @@ class HomeScreenDrawTest {
     }
 
     @Test
+    fun `the count of players is on Quick play's foot and the button keeps its size without it`() {
+        val words = stringsOf(Language.DEFAULT).game
+        val with = scene(HomeState(profile = PROFILE), Language.DEFAULT, counts = HomeCounts(128, 7, 12))
+        val without = scene(HomeState(profile = PROFILE), Language.DEFAULT)
+        try {
+            val said = words.presence.fill(128, 7)
+            assertTrue(said in with.descriptions(), "${with.descriptions()}")
+            assertFalse(said in without.descriptions(), "the count is said before it is known")
+            // Said by the button, the one thing to tap, and the count is no row of its own between the buttons.
+            val quick = with.nodes().single { words.quickPlay in it.texts }
+            assertTrue(said in quick.descriptions, "Quick play does not carry the count: ${quick.descriptions}")
+
+            // Before the first read its place is held, so nothing on Home moves as the counts come.
+            fun top(
+                scene: ImageComposeScene,
+                text: String,
+            ) = scene.nodes().single { text in it.texts }.boundsInRoot
+            listOf(words.quickPlay, words.createRoom, words.publicRooms, words.solo).forEach {
+                assertEquals(top(without, it), top(with, it), "\"$it\" moved as the counts came")
+            }
+        } finally {
+            with.close()
+            without.close()
+        }
+    }
+
+    @Test
     fun `each button does what it says`() {
         val words = stringsOf(Language.DEFAULT).game
         val tapped = mutableListOf<String>()

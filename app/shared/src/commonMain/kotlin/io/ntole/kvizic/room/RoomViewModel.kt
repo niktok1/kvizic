@@ -112,17 +112,11 @@ data class Burst(
     val at: TimeMark = TimeSource.Monotonic.markNow(),
 )
 
-/** How many play now, and how many look for a game, as the server last said. */
-data class Presence(
-    val online: Int,
-    val searching: Int,
-)
-
 /**
  * The room this device is in, for the app's life, as one [LobbySession] keeps it: taking a seat, which
  * may fail ([entry]), everything said in the room meanwhile, and the commands a member sends. [state] is the
  * session's own. A notice or a refusal shows a moment as [note]; each member's last reaction is in
- * [bursts]; how many play and look for a game, once the server says, is [presence].
+ * [bursts].
  *
  * Reports to [analytics] each room entered and left and each game played to its end, by none of its words.
  */
@@ -141,9 +135,6 @@ class RoomViewModel(
 
     private val mutableBursts = MutableStateFlow<Map<String, Burst>>(emptyMap())
     val bursts: StateFlow<Map<String, Burst>> = mutableBursts.asStateFlow()
-
-    private val mutablePresence = MutableStateFlow<Presence?>(null)
-    val presence: StateFlow<Presence?> = mutablePresence.asStateFlow()
 
     private var taking: Job? = null
     private var noteShown: Job? = null
@@ -295,7 +286,8 @@ class RoomViewModel(
             }
 
             is LobbyEvent.Presence -> {
-                mutablePresence.value = Presence(event.online, event.searching)
+                // How many play is Home's, read afresh by its poll: a room's own count, kept when the player
+                // left it, showed a phone one number and a tablet another.
             }
 
             is LobbyEvent.Notice -> {

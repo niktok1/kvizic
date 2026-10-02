@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
@@ -166,17 +168,18 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 size = ButtonSize.HERO,
                 enabled = !taking,
+                footer = {
+                    // Its place is held before the first read, so the button never changes as the counts come.
+                    val said = counts?.let { words.presence.fill(it.online, it.searching) }
+                    Box(
+                        Modifier
+                            .graphicsLayer { alpha = if (said == null) 0f else 1f }
+                            .then(if (said == null) Modifier.clearAndSetSemantics { } else Modifier),
+                    ) {
+                        PresenceStrip(counts?.online ?: 0, counts?.searching ?: 0, said.orEmpty())
+                    }
+                },
             )
-            Spacer(Modifier.height(space.sm))
-            Row(
-                modifier = Modifier.fillMaxWidth().height(space.touchTarget),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (counts != null) {
-                    PresenceStrip(counts.online, counts.searching, words.presence.fill(counts.online, counts.searching))
-                }
-            }
             Spacer(Modifier.height(space.md))
             Row(horizontalArrangement = Arrangement.spacedBy(space.md)) {
                 StageButton(

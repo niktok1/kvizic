@@ -30,7 +30,8 @@ import io.ntole.kvizic.design.sound.cued
  * A button on the stage: [text], and under it [supportingText] if given, on the skin's surface for
  * [kind], [size] high at the least and never under a touch target. It sinks under the finger and
  * springs back, in the draw alone. [icon] stands before the text, or over it when [iconAbove], a
- * console's key; [trailing] stands after it, in a row: a count, a chevron. A tap plays [cue], by default the
+ * console's key; [trailing] stands after it, in a row: a count, a chevron; [footer] stands under the whole row,
+ * still on the button's face: a small sign it carries, as the hero button carries how many play. A tap plays [cue], by default the
  * sound of its [kind] and [size]: the hero's and the primary's heavy, a plate's a click, a quiet word's a tick.
  */
 @Composable
@@ -46,6 +47,7 @@ fun StageButton(
     iconAbove: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
     trailing: (@Composable () -> Unit)? = null,
+    footer: (@Composable () -> Unit)? = null,
     cue: Cue? = null,
 ) {
     val skin = KvizicTheme.skin
@@ -127,14 +129,29 @@ fun StageButton(
                     words()
                 }
             } else {
-                Row(
-                    modifier = Modifier.padding(horizontal = space.button.paddingHorizontal),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(space.sm),
-                ) {
-                    if (icon != null) KvizicIcon(icon, contentDescription = null, size = iconSize, tintInDraw = content)
-                    words()
-                    trailing?.invoke()
+                val row: @Composable () -> Unit = {
+                    Row(
+                        modifier = Modifier.padding(horizontal = space.button.paddingHorizontal),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(space.sm),
+                    ) {
+                        if (icon != null) {
+                            KvizicIcon(icon, contentDescription = null, size = iconSize, tintInDraw = content)
+                        }
+                        words()
+                        trailing?.invoke()
+                    }
+                }
+                if (footer == null) {
+                    row()
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(space.xs),
+                    ) {
+                        row()
+                        footer()
+                    }
                 }
             }
         }

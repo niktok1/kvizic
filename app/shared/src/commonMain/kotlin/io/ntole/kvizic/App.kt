@@ -229,7 +229,6 @@ private fun Home(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val rooms = koinViewModel<PublicRoomsViewModel>()
     val lobbies by rooms.lobbies.collectAsStateWithLifecycle()
-    val presence by room.presence.collectAsStateWithLifecycle()
     val entry by room.entry.collectAsStateWithLifecycle()
     val roomState by room.state.collectAsStateWithLifecycle()
 
@@ -254,8 +253,8 @@ private fun Home(
         counts =
             lobbies?.let {
                 HomeCounts(
-                    online = presence?.online ?: it.online,
-                    searching = presence?.searching ?: it.searching,
+                    online = it.online,
+                    searching = it.searching,
                     publicRooms = it.lobbies.size,
                 )
             },
