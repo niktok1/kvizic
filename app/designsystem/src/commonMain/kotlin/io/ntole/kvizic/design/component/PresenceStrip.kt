@@ -18,8 +18,10 @@ import io.ntole.kvizic.design.skin.KvizicTheme
 
 /**
  * How many play and how many look for a game, in no words and no bigger than a line of text: a lit bulb, a
- * person and the players online, a magnifying glass and those searching, on a small board sunk into the page,
- * each count on flaps that turn as it moves. A screen reader is told [contentDescription] whole.
+ * person and the players online, a magnifying glass and those searching, each count on flaps that turn as it
+ * moves. On a small board sunk into the page while [framed]; without it, bare and in plain figures of the colour
+ * of what it stands on, for where something carries it already, as the hero button's face does. A screen reader
+ * is told [contentDescription] whole.
  */
 @Composable
 fun PresenceStrip(
@@ -27,14 +29,11 @@ fun PresenceStrip(
     searching: Int,
     contentDescription: String,
     modifier: Modifier = Modifier,
+    framed: Boolean = true,
 ) {
     val space = KvizicTheme.space
     val colors = KvizicTheme.colors
-    Panel(
-        modifier.clearAndSetSemantics { this.contentDescription = contentDescription },
-        kind = PanelKind.WELL,
-        padding = space.xs,
-    ) {
+    val counts: @Composable () -> Unit = {
         Row(
             modifier = Modifier.padding(horizontal = space.xs),
             verticalAlignment = Alignment.CenterVertically,
@@ -49,11 +48,30 @@ fun PresenceStrip(
             )
             Spacer(Modifier.width(space.xxs))
             KvizicIcon(KvizicIcons.Person, contentDescription = null, size = space.icon.small)
-            FlipNumber(online, size = FlapSize.SMALL)
+            Count(online, flaps = framed)
             Spacer(Modifier.width(space.sm))
             KvizicIcon(KvizicIcons.Search, contentDescription = null, size = space.icon.small)
-            FlipNumber(searching, size = FlapSize.SMALL)
+            Count(searching, flaps = framed)
         }
+    }
+    val said = modifier.clearAndSetSemantics { this.contentDescription = contentDescription }
+    if (framed) {
+        Panel(said, kind = PanelKind.WELL, padding = space.xs) { counts() }
+    } else {
+        Box(said) { counts() }
+    }
+}
+
+/** A count on flaps, or, [flaps] off, as plain figures in the colour of what they stand on. */
+@Composable
+private fun Count(
+    value: Int,
+    flaps: Boolean,
+) {
+    if (flaps) {
+        FlipNumber(value, size = FlapSize.SMALL)
+    } else {
+        KvizicText(value.toString(), style = KvizicTheme.type.bodyStrong, maxLines = 1)
     }
 }
 

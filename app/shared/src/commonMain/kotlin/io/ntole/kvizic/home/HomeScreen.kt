@@ -176,7 +176,7 @@ fun HomeScreen(
                             .graphicsLayer { alpha = if (said == null) 0f else 1f }
                             .then(if (said == null) Modifier.clearAndSetSemantics { } else Modifier),
                     ) {
-                        PresenceStrip(counts?.online ?: 0, counts?.searching ?: 0, said.orEmpty())
+                        PresenceStrip(counts?.online ?: 0, counts?.searching ?: 0, said.orEmpty(), framed = false)
                     }
                 },
             )

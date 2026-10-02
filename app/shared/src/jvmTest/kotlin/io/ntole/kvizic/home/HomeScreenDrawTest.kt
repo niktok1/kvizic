@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
+import io.ntole.kvizic.everyNode
 import io.ntole.kvizic.everyText
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.fill
@@ -82,6 +83,14 @@ class HomeScreenDrawTest {
                 scene: ImageComposeScene,
                 text: String,
             ) = scene.nodes().single { text in it.texts }.boundsInRoot
+
+            // Its words stay in the middle of the button, as they were without the count.
+            fun middle(scene: ImageComposeScene) =
+                scene
+                    .everyNode()
+                    .single { words.quickPlay in it.texts }
+                    .boundsInRoot.center.y
+            assertEquals(middle(without), middle(with), "the count pushed Quick play's words from the middle")
             listOf(words.quickPlay, words.createRoom, words.publicRooms, words.solo).forEach {
                 assertEquals(top(without, it), top(with, it), "\"$it\" moved as the counts came")
             }

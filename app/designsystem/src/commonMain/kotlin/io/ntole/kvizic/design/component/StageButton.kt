@@ -30,8 +30,9 @@ import io.ntole.kvizic.design.sound.cued
  * A button on the stage: [text], and under it [supportingText] if given, on the skin's surface for
  * [kind], [size] high at the least and never under a touch target. It sinks under the finger and
  * springs back, in the draw alone. [icon] stands before the text, or over it when [iconAbove], a
- * console's key; [trailing] stands after it, in a row: a count, a chevron; [footer] stands under the whole row,
- * still on the button's face: a small sign it carries, as the hero button carries how many play. A tap plays [cue], by default the
+ * console's key; [trailing] stands after it, in a row: a count, a chevron; [footer] stands at the foot of the
+ * button's face, over it and never moving the words from its middle: a small sign it carries, as the hero button
+ * carries how many play. A tap plays [cue], by default the
  * sound of its [kind] and [size]: the hero's and the primary's heavy, a plate's a click, a quiet word's a tick.
  */
 @Composable
@@ -142,16 +143,10 @@ fun StageButton(
                         trailing?.invoke()
                     }
                 }
-                if (footer == null) {
-                    row()
-                } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(space.xs),
-                    ) {
-                        row()
-                        footer()
-                    }
+                row()
+                // On the face's foot, over it: the words stay in the middle of the button, as without it.
+                if (footer != null) {
+                    Box(Modifier.align(Alignment.BottomCenter).padding(bottom = space.sm)) { footer() }
                 }
             }
         }
