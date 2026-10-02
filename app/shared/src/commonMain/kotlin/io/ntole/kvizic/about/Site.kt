@@ -4,12 +4,13 @@ import io.ntole.kvizic.language.Language
 
 /**
  * The game's website, where its legal pages are: the privacy policy, the terms, deleting an account, and
- * contact, in Serbian at the game's root and in English under `/en/`. The game's pages are under `/kvizic`
- * of the developer's own domain, which every app of theirs shares.
+ * contact, in Serbian at the site's root and in English under `/en/`. The site is the game's own, on a
+ * subdomain of the developer's domain (`kvizic-site`, published from `site/`), since the domain's root is
+ * published from WYR's repository, which this one never changes.
  */
 object Site {
     /** The one base the game's every link to the site is made from. */
-    const val BASE_URL: String = "https://ntole.com/kvizic"
+    const val BASE_URL: String = "https://kvizic.ntole.com"
 
     /** Where [page] is, in the language the game is shown in: Serbian in either script is the Serbian page. */
     fun url(

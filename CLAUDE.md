@@ -303,6 +303,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 `render.yaml`: `kvizic-server-dev` (free, H2, deploys every green `main`), `kvizic-server` (Starter, on
 `kvizic-postgres`, deployed **by hand** with Manual Deploy, a commit already green and live on dev), API at
 `kvizic-api.ntole.com`. Secrets are Render environment variables, never committed.
+`kvizic-site` (free, static, a green `main` that changes `site/`) is the legal pages the app and Play link to
+(`Site`), at `kvizic.ntole.com`, Serbian at the root and English under `en/`: its own subdomain (2026-10-02),
+since `ntole.com` itself is published from WYR's repository. A page states only what the code does.
 
 ## 12. Verifying
 

@@ -114,6 +114,22 @@ services:
       # file fails the boot. Once the file is uploaded, add this variable in the dashboard:
       #   QUESTION_SEED_FILE=/etc/secrets/dev-seed.questions.json
 
+  # The game's public site, the legal pages the app and Google Play link to (Site.kt): plain HTML and one
+  # stylesheet in site/, nothing to build, free. Its own subdomain, since ntole.com itself is published from
+  # WYR's repository. Deploys a green commit on main that changes site/.
+  - type: web
+    name: kvizic-site
+    runtime: static
+    domains:
+      - kvizic.ntole.com
+    branch: main
+    buildCommand: echo "site/ is plain HTML and CSS, nothing to build"
+    staticPublishPath: ./site
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - site/**
+
 databases:
   - name: kvizic-postgres
     plan: basic-256mb

@@ -8,10 +8,10 @@ import kotlin.test.assertEquals
 class SiteTest {
     @Test
     fun `each page is under the one base in Serbian and under en in English`() {
-        assertEquals("https://ntole.com/kvizic/privacy.html", Site.url(SitePage.PRIVACY, Language.SERBIAN_CYRILLIC))
-        assertEquals("https://ntole.com/kvizic/terms.html", Site.url(SitePage.TERMS, Language.SERBIAN_LATIN))
-        assertEquals("https://ntole.com/kvizic/en/delete.html", Site.url(SitePage.DELETE_ACCOUNT, Language.ENGLISH))
-        assertEquals("https://ntole.com/kvizic/en/contact.html", Site.url(SitePage.CONTACT, Language.ENGLISH))
+        assertEquals("https://kvizic.ntole.com/privacy.html", Site.url(SitePage.PRIVACY, Language.SERBIAN_CYRILLIC))
+        assertEquals("https://kvizic.ntole.com/terms.html", Site.url(SitePage.TERMS, Language.SERBIAN_LATIN))
+        assertEquals("https://kvizic.ntole.com/en/delete.html", Site.url(SitePage.DELETE_ACCOUNT, Language.ENGLISH))
+        assertEquals("https://kvizic.ntole.com/en/contact.html", Site.url(SitePage.CONTACT, Language.ENGLISH))
     }
 
     @Test

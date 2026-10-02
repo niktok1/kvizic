@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Kvizić's privacy policy: what data we process, why, for how long, and your rights.">
+  <title>Privacy policy — Kvizić</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site">
+    <div class="wrap bar">
+      <a class="brand" href="index.html"><span class="mark" aria-hidden="true">К</span>Kvizić</a>
+      <a class="lang" href="../privacy.html" hreflang="sr-Cyrl" lang="sr-Cyrl">Српски</a>
+    </div>
+    <nav class="wrap links" aria-label="Pages">
+      <a href="privacy.html" aria-current="page">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="delete.html">Account deletion</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main id="main" class="wrap">
+    <h1>Privacy policy</h1>
+    <p class="meta">Kvizić · Last updated: 2 October 2026</p>
+    <p>This is a translation; if it differs from the <a href="../privacy.html" hreflang="sr-Cyrl">Serbian version</a>, the Serbian version applies.</p>
+
+    <section class="card" aria-labelledby="summary">
+      <h2 id="summary">In short</h2>
+      <ul>
+        <li>You play right away, with no sign-up: the server gives you a random identifier and a nickname. We never ask for your name, email or phone number.</li>
+        <li>Signing in with Google Play Games is optional. Once you do, your Play Games profile name stands in your seat instead of the nickname.</li>
+        <li>Players in your room see your name, animal, level, answers and points. Nobody outside the room sees them.</li>
+        <li>No ads. We never sell your data or give it to advertisers, or to anyone for advertising or marketing.</li>
+        <li>You turn analytics off with the <strong>Statistics</strong> switch on the <strong>About</strong> screen.</li>
+        <li>You delete your account yourself, in the app, or by email (<a href="delete.html">Account deletion</a>).</li>
+      </ul>
+    </section>
+
+    <nav class="toc" aria-labelledby="toc">
+      <h2 id="toc">Contents</h2>
+      <ol>
+        <li><a href="#controller">Who the controller is</a></li>
+        <li><a href="#data">What we process and why</a></li>
+        <li><a href="#legal-basis">Legal basis</a></li>
+        <li><a href="#recipients">Who else sees the data</a></li>
+        <li><a href="#transfers">Transfers to other countries</a></li>
+        <li><a href="#retention">How long we keep data</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#rights">Your rights</a></li>
+        <li><a href="#age">Age</a></li>
+        <li><a href="#changes">Changes to this policy</a></li>
+      </ol>
+    </nav>
+
+    <section id="controller">
+      <h2>1. Who the controller is</h2>
+      <p>The controller of the data processed in Kvizić, under Serbia's Law on Personal Data Protection, is:</p>
+      <p class="card address">Nikola Tokić (toleapps)<br>Slavka Rodića 11, 11000 Belgrade, Serbia<br>Email: <a href="mailto:application.eili@gmail.com">application.eili@gmail.com</a></p>
+      <p>Here "we" is the controller and "you" the player. The game is available in Serbia, Bosnia and Herzegovina, Montenegro and North Macedonia, on Android through Google Play; versions for iPhone and the browser come later. This policy covers every version of the game and this site.</p>
+    </section>
+
+    <section id="data">
+      <h2>2. What we process and why</h2>
+
+      <h3>Playing as a guest</h3>
+      <p>The first time you open the game, the server creates a player with a random identifier, a nickname (an adjective and an animal, such as "Брзи јеж", the quick hedgehog) and an animal for a picture. The device gets two session tokens: an access token valid for 15 minutes and a refresh token valid for 30 days, replaced every time it is used. The tokens are kept in the app's storage on the device (in a browser, its <code>localStorage</code>).</p>
+      <p>For each session the server keeps a hash of the current and the previous refresh token (never the tokens themselves), when the session was opened and when the tokens expire. It keeps nothing else about the device, neither its model nor its operating system.</p>
+      <p>Only on the device, never on the server, we keep the game's language, whether sound is on and your analytics choice.</p>
+      <p>With every request the app sends its platform (Android, iOS, web or desktop) and its version number, so the server can ask an outdated version to update. The server does not keep them.</p>
+      <p><strong>Why:</strong> so the game knows it is you without a sign-up, and keeps your statistics.</p>
+
+      <h3>Signing in with Google Play Games (optional)</h3>
+      <p>Google Play Games (Google Play Games Services) is Google's service for games on Android. If you are signed in to Play Games on your phone, the game signs you in through it by itself. The app gets a one-time code from Play Games, and the server exchanges it with Google for your Play Games player identifier and your profile name. We keep that identifier, with when it was linked to your player, and the profile name, which replaces your nickname in the game and is refreshed at every sign-in. We do not keep the tokens Google issues in the process.</p>
+      <p>Signing in links the profile to the guest you are playing as, so you keep everything you did as a guest. If the profile is already linked to another player in the game, signing in switches you to that player and the guest stays behind (see <a href="#retention">how long we keep data</a>). The link is permanent and for now can only be undone by deleting the account.</p>
+      <p><strong>Why:</strong> so you can carry on with the same statistics on another device, and players know you by name.</p>
+
+      <h3>Rooms and games</h3>
+      <p>While you are in a room, the server holds in memory what the room needs: who is in it, who hosts, its settings and its name if the host gave one, your answers to the current question, when you answered and your points, kick votes and who was kicked. All of it is gone when the room closes; none of it is written to the database.</p>
+      <p>When a game ends, the server writes to the database:</p>
+      <ul>
+        <li><strong>the game:</strong> when it started and ended, how many questions it had, the time to answer, its topics and how many players; no player is in it;</li>
+        <li><strong>your result in it:</strong> your points, how many answers you gave and how many were right, your place and whether you played it to the end;</li>
+        <li><strong>your statistics:</strong> games played and won, answers given and right, overall and per topic, experience (level), solo games and your best solo score at each difficulty, with its date;</li>
+        <li><strong>the questions you have seen:</strong> which, when last and how many times.</li>
+      </ul>
+      <p>How players answered a question is counted only in total, never who answered what, to tell how hard the question is.</p>
+      <p><strong>Why:</strong> so the game works. The server picks questions you have not seen yet, counts points and places, and shows you your statistics and level.</p>
+
+      <h3>What other players see</h3>
+      <p>Players in the same room see your name (the nickname or your Play Games profile name), your animal, level, whether you host, which answer you picked once answers are locked in, your points, your place and the reactions you send. The other players' apps also receive your player's random identifier, to tell players apart; it is not shown on screen.</p>
+      <p>In the list of public rooms, anyone playing sees a room's name if it has one, its host's name and animal, and its settings. A private room is not listed; anyone who knows its six-digit code sees the same before joining. The server cleans a room's name and refuses offensive ones, as it does players' names.</p>
+
+      <h3>Question reports</h3>
+      <p>When you report a question, we keep which question and which revision, the reason from the list (wrong answer, typo, ambiguous, offensive, other), when and by whom it was reported, and when and how a moderator resolved it. No free text is sent. The moderator sees reports in total, by reason, never who sent them.</p>
+      <p><strong>Why:</strong> to fix or remove wrong questions.</p>
+
+      <h3>IP address and server logs</h3>
+      <p>The game's server runs at Render, in Frankfurt. Render puts Cloudflare's network in front of its services, so every request from the game passes through it: Render and Cloudflare see your device's IP address and the request's technical details (time, address requested, app or browser version). Cloudflare was engaged by Render, as its provider, not by us.</p>
+      <p>We use the IP address only in the server's memory: to limit how many requests and connections one address may make, and to stop room codes being guessed. Those counters vanish when they expire and at every server restart. We never write the IP address to the database or to our logs.</p>
+      <p>Server logs record each request's method, address (which may contain a room code), response and duration, and technical errors. Where an event needs tracking they name identifiers only, such as a player's when we refuse a request over a limit or when they delete their account. We never log tokens, names or question text.</p>
+      <p><strong>Why:</strong> security and the game working properly.</p>
+
+      <h3>Analytics (PostHog, EU)</h3>
+      <p>To see what works in the game and what confuses, the app sends usage events to PostHog, to its servers in the European Union: when you open and leave the app, screens opened and left and how long you spent on them, taps on buttons (with what you chose on them, such as the number of questions, the time, the difficulty, a topic or a reaction), errors shown, entering and leaving a room and how, games finished (your place, the number of players and questions, whether solo), changes of language and sound, signing in with Play Games and deleting the account. With them go the app's version, the platform, the operating system and its version, the device type and the game's language.</p>
+      <p>Events are tied to a random identifier made on the device and, once you sign in with Play Games, to your player's identifier in the game, which is random too. They never contain your name, a room code, a room name, a question's text or anything you type. Requests reach PostHog from your device's IP address: PostHog derives an approximate location from it (country and city), so we can see where players come from.</p>
+      <p>Analytics is on by default. You turn it off with the <strong>Statistics</strong> switch on the <strong>About</strong> screen, under <strong>Data</strong> (Home, the settings icon, then <strong>About</strong>): while it is off the app sends no event at all, and your choice is kept on the device.</p>
+      <p><strong>Why:</strong> to fix bugs and make the game better.</p>
+
+      <h3>When you write to us</h3>
+      <p>If you email us, we use your address and message only to answer you and settle your request. We receive email through Google's Gmail.</p>
+
+      <h3>This site</h3>
+      <p>This site uses no cookies or analytics and loads nothing from other services. It is hosted by Render, which may record visitors' IP addresses in its technical logs.</p>
+
+      <h3>What we do not collect</h3>
+      <p>We never ask for your full name, email, phone number, contacts or photos. There is no chat in the game: players cannot write to each other, and reactions are fixed. We do not determine your precise location or use GPS; only analytics (PostHog) derives an approximate location from the IP address, as described above. The game has no ads, no advertising identifiers and no purchases: nothing is paid for and we process no payment data.</p>
+    </section>
+
+    <section id="legal-basis">
+      <h2>3. Legal basis</h2>
+      <ul>
+        <li><strong>Performance of a contract</strong> (Article 12(1)(2) of the Law on Personal Data Protection; Article 6(1)(b) GDPR): playing as a guest, sessions, signing in with Play Games, rooms, results and statistics. Without them the game cannot work the way you use it.</li>
+        <li><strong>Legitimate interest</strong> (Article 12(1)(6); Article 6(1)(f) GDPR): security and rate limits, server logs, question reports, and analytics to improve the game. You may object to this processing, and you can turn analytics off yourself with the <strong>Statistics</strong> switch.</li>
+        <li><strong>Legal obligation</strong> (Article 12(1)(3); Article 6(1)(c) GDPR): when the law requires us to keep data or hand it to an authority.</li>
+      </ul>
+    </section>
+
+    <section id="recipients">
+      <h2>4. Who else sees the data</h2>
+      <p>We never sell or rent data, give it to advertisers, or share it for advertising or marketing. Apart from the players in your room (above), only these providers have access:</p>
+      <dl class="providers">
+        <dt>Render</dt>
+        <dd>hosting of the server, the database and this site; the server and database are in Frankfurt, Germany. Render puts Cloudflare's network in front of its services, which therefore sees IP addresses and requests. <a href="https://render.com/privacy">Render's privacy policy</a> · <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's</a></dd>
+        <dt>PostHog</dt>
+        <dd>analytics, on servers in the European Union. <a href="https://posthog.com/privacy">Privacy policy</a></dd>
+        <dt>Google</dt>
+        <dd>Google Play, where you get the game, Google Play Games, for signing in, and Gmail, through which we receive email. <a href="https://policies.google.com/privacy">Privacy policy</a></dd>
+      </dl>
+      <p>Render, with the Cloudflare it engages, and PostHog process data on our behalf, as processors. Google Play and Google Play Games are Google's own services: the data they process, Google processes under its own terms and privacy policy. When the iPhone version comes out, Apple's services will be listed here too.</p>
+      <p>The moderator sees questions and reports in total, never who sent them. We give data to public authorities only when the law requires it.</p>
+    </section>
+
+    <section id="transfers">
+      <h2>5. Transfers to other countries</h2>
+      <p>The server and database are in the European Union. Render, PostHog and Google are based outside Serbia and the EU, and some of their networks, as well as Cloudflare's, run worldwide, so data may be transferred to other countries, above all the United States. We base such transfers on the safeguards the law provides, such as standard contractual clauses or an adequacy decision.</p>
+    </section>
+
+    <section id="retention">
+      <h2>6. How long we keep data</h2>
+      <ul>
+        <li><strong>A player linked to Google Play Games:</strong> until you delete it.</li>
+        <li><strong>A guest:</strong> until you delete it. A guest no device has used for 90 days (the app was removed, has not been opened for long, or you signed in to another player on that device) is deleted by itself, with all its data.</li>
+        <li><strong>Sessions:</strong> while the player exists. A refresh token stops working after 30 days unused.</li>
+        <li><strong>Results, statistics and questions seen:</strong> while the player exists.</li>
+        <li><strong>Games:</strong> for good, but no player is in them; once you delete your account, no record links a game to you.</li>
+        <li><strong>Question reports:</strong> for good, as a question's history; once you delete your account, a report stays without its reporter.</li>
+        <li><strong>A room's state</strong> (who is in it, answers to the current question, its name, votes and kicks): in the server's memory, until the room closes.</li>
+        <li><strong>Rate-limit counters:</strong> in the server's memory, until they expire.</li>
+        <li><strong>Server logs:</strong> as long as Render keeps them, at most 30 days.</li>
+        <li><strong>Analytics:</strong> at most two years from when an event was sent, then deleted.</li>
+        <li><strong>Email correspondence:</strong> until the request is settled, then at most three years, the limitation period for damage claims.</li>
+      </ul>
+      <p>Removing the app from a device does not by itself delete the account.</p>
+    </section>
+
+    <section id="security">
+      <h2>7. Security</h2>
+      <p>The connection to the server is HTTPS, and during a game an encrypted socket (WSS); to enter a room the app gets a one-time pass valid for 30 seconds, so nothing secret is in the connection's address. We keep refresh tokens only as SHA-256 hashes, so even someone who reached the database could not use them. On the device the tokens are kept in the app's ordinary storage, not in the operating system's vault, because the game keeps nothing sensitive: whoever has your unlocked device can play as you. No measure is perfect, so if you notice anything suspicious, write to us.</p>
+    </section>
+
+    <section id="rights">
+      <h2>8. Your rights</h2>
+      <p>Under the Law on Personal Data Protection (Official Gazette of the Republic of Serbia, No. 87/2018) and, if you live in Bosnia and Herzegovina, Montenegro, North Macedonia or the European Union, under your country's law, you have the right:</p>
+      <ul>
+        <li>of access: to learn what data about you we process and get a copy;</li>
+        <li>to have inaccurate data corrected;</li>
+        <li>to erasure: you delete your account yourself, in the app, or by email (<a href="delete.html">how</a>);</li>
+        <li>to restrict processing;</li>
+        <li>to portability: to get your game's data in a machine-readable form;</li>
+        <li>to object to processing based on legitimate interest, analytics included;</li>
+        <li>to withdraw consent, where any processing rests on it;</li>
+        <li>to complain to the Commissioner for Information of Public Importance and Personal Data Protection (<a href="https://www.poverenik.rs">www.poverenik.rs</a>) and, if you live in another country, to its supervisory authority.</li>
+      </ul>
+      <p>Send your request to <a href="mailto:application.eili@gmail.com">application.eili@gmail.com</a> with your account ID: in the game it is on the <strong>About</strong> screen, under <strong>Data</strong>, where one tap copies it. We answer without delay, within 30 days at most.</p>
+    </section>
+
+    <section id="age">
+      <h2>9. Age</h2>
+      <p>The game is meant for people aged 13 and over. If you are under 13, please do not use it. If we learn an account belongs to someone younger, we may delete it. A parent or guardian can write to us at <a href="mailto:application.eili@gmail.com">application.eili@gmail.com</a>.</p>
+    </section>
+
+    <section id="changes">
+      <h2>10. Changes to this policy</h2>
+      <p>If we change this policy, we publish the new version on this page and change the date at the top. We may also tell you about important changes in the game.</p>
+      <p>Questions? <a href="contact.html">Write to us</a>.</p>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <p>© 2026 Nikola Tokić · No ads, no sale of data.</p>
+      <p><a href="../privacy.html" hreflang="sr-Cyrl" lang="sr-Cyrl">Прочитај на српском</a></p>
+    </div>
+  </footer>
+</body>
+</html>
