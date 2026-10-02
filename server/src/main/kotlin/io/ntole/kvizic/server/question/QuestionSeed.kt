@@ -6,13 +6,30 @@ import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.plugins.ServerJson
 import org.slf4j.Logger
 import java.io.File
+import java.util.Base64
+import java.util.zip.GZIPInputStream
 
 /**
  * The development server's questions, from the seed file `QUESTION_SEED_FILE` names: a draft file of the
  * private content repo, imported as approved at boot. Only ever on H2, which a boot of each discards
  * (`ServerConfig`), so it is read in whole each time. A file that cannot be read fails the boot, naming it.
+ *
+ * The file is the drafts' JSON, or that JSON gzipped and written in base64 ([text]): a Render secret file
+ * holds at most 500 KiB, which 1.536 questions' JSON passes and their gzip in base64 keeps to 315.
  */
 object QuestionSeed {
+    /** What a gzip file's first three bytes (1f 8b 08) read as in base64. */
+    private const val GZIP_BASE64 = "H4sI"
+
+    /** The seed's JSON from a file's [contents]: as they are, or unpacked when they are gzip in base64. */
+    internal fun text(contents: String): String {
+        val trimmed = contents.trim()
+        if (!trimmed.startsWith(GZIP_BASE64)) return contents
+        // The MIME decoder skips line breaks, which a pasted secret may gain.
+        val packed = Base64.getMimeDecoder().decode(trimmed)
+        return GZIPInputStream(packed.inputStream()).use { it.readBytes().decodeToString() }
+    }
+
     suspend fun load(
         db: Db,
         path: String,
@@ -24,7 +41,7 @@ object QuestionSeed {
         require(file.isFile) { "QUESTION_SEED_FILE names no file: $path" }
         val seed =
             try {
-                ServerJson.decodeFromString(ImportQuestionsRequest.serializer(), file.readText())
+                ServerJson.decodeFromString(ImportQuestionsRequest.serializer(), text(file.readText()))
             } catch (malformed: Exception) {
                 throw IllegalArgumentException("QUESTION_SEED_FILE is no question file: ${malformed.message}")
             }

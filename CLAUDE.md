@@ -141,7 +141,9 @@ Play Games Services v2. **No Material**: the design system draws everything.
   counted as not knowing, above what a guess among its answers gets. Read when a game is picked and by the
   moderation app ("plays hard"), never stored; a game runs from easy to hard by it.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
-  Dev loads the seed from a Render secret file (`QUESTION_SEED_FILE`), H2 only.
+  Dev loads the seed from a Render secret file (`QUESTION_SEED_FILE`), H2 only: JSON, or the JSON gzipped in
+  base64 (`QuestionSeed`), since a secret file holds at most 500 KiB and Render refuses every deploy while one
+  is over; the content repo's `pack_seed.py` writes it (1.536 questions in 319 KiB).
 - **Publishing drafts**: `KVIZIC_ADMIN_TOKEN=… ./publish.py dev drafts/*.json` in the content repo checks them,
   imports them (25 a request, a known key a duplicate) and approves the drafts it brought; `--import-only`
   leaves them to review in the moderation app.
