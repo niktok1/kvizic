@@ -270,6 +270,17 @@ object KvizicIcons {
         }
     }
 
+    /** A magnifying glass: those looking for a game. */
+    val Search: ImageVector by lazy {
+        icon("Search") {
+            outline {
+                circle(x = 10.5f, y = 10.5f, radius = 6f)
+                moveTo(15f, 15f)
+                lineTo(20.5f, 20.5f)
+            }
+        }
+    }
+
     /** A boot, its toe to the right, two laces on its shaft: kick a player out of the room. */
     val Boot: ImageVector by lazy {
         icon("Boot") {

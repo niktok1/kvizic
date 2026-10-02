@@ -21,6 +21,8 @@ import io.ntole.kvizic.room.EntryWay
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
+import org.jetbrains.skia.Image
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -39,11 +41,11 @@ class HomeScreenDrawTest {
             val words = strings.game
             val scene = scene(HomeState(profile = PROFILE), language, counts = HomeCounts(128, 7, 12))
             try {
+                write("home-${language.name.lowercase()}", scene.renderSettled())
                 val shown = scene.everyText()
                 listOf(
                     words.games.of(12, language) + " · " + words.wins.of(3, language),
                     words.quickPlay,
-                    words.presence.fill(128, 7),
                     words.createRoom,
                     words.joinByCode,
                     words.publicRooms,
@@ -51,6 +53,8 @@ class HomeScreenDrawTest {
                     words.solo,
                 ).forEach { text -> assertTrue(text in shown, "$language: \"$text\" is not in $shown") }
                 assertTrue(strings.aboutScreen.title in scene.descriptions(), "$language: ${scene.descriptions()}")
+                // The counts are said whole and shown in no words.
+                assertTrue(words.presence.fill(128, 7) in scene.descriptions(), "$language: ${scene.descriptions()}")
                 // Everything stands on the phone's screen, Solo, the last, too.
                 val solo = scene.nodes().single { words.solo in it.texts }
                 assertTrue(solo.boundsInRoot.bottom <= SHORT_PHONE_HEIGHT, "$language: Solo runs off the screen")
@@ -167,6 +171,16 @@ class HomeScreenDrawTest {
             }
             assertEquals(1, retries, "$language")
         }
+    }
+
+    /** With `KVIZIC_DESIGN_DIR` set, a still of Home is written there as a PNG for the owner to see. */
+    private fun write(
+        name: String,
+        image: Image,
+    ) {
+        val directory = System.getenv("KVIZIC_DESIGN_DIR")?.takeIf { it.isNotBlank() }?.let(::File) ?: return
+        directory.mkdirs()
+        File(directory, "$name.png").writeBytes(checkNotNull(image.encodeToData()).bytes)
     }
 
     private fun scene(

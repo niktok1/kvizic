@@ -27,6 +27,7 @@ import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Panel
+import io.ntole.kvizic.design.component.PresenceStrip
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.home.Notice
@@ -105,12 +106,11 @@ fun PublicRoomsScreen(
             }
 
             else -> {
-                KvizicText(
+                PresenceStrip(
+                    lobbies.online,
+                    lobbies.searching,
                     words.presence.fill(lobbies.online, lobbies.searching),
-                    Modifier.fillMaxWidth(),
-                    style = type.caption,
-                    color = colors.onPageMuted,
-                    textAlign = TextAlign.Center,
+                    Modifier.align(Alignment.CenterHorizontally),
                 )
                 Spacer(Modifier.height(space.md))
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.sm)) {

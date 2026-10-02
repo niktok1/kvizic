@@ -10,14 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
@@ -30,6 +27,7 @@ import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Panel
+import io.ntole.kvizic.design.component.PresenceStrip
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.Wordmark
@@ -171,13 +169,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (counts != null) {
-                    Box(Modifier.size(space.sm).drawBehind { drawCircle(colors.gain) })
-                    Spacer(Modifier.width(space.sm))
-                    KvizicText(
-                        words.presence.fill(counts.online, counts.searching),
-                        style = type.caption,
-                        color = colors.onPageMuted,
-                    )
+                    PresenceStrip(counts.online, counts.searching, words.presence.fill(counts.online, counts.searching))
                 }
             }
             Spacer(Modifier.height(space.md))

@@ -39,6 +39,7 @@ import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.component.Podium
 import io.ntole.kvizic.design.component.PodiumPlace
+import io.ntole.kvizic.design.component.PresenceStrip
 import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ReactionBurst
 import io.ntole.kvizic.design.component.Spinner
@@ -68,12 +69,16 @@ class ComponentsDrawTest {
             val scene = stageScene(skin, WIDTH, HEIGHT, DENSITY) { Sheet() }
             try {
                 val image = scene.renderUpTo(BURST_MID * MILLI)
+                writeDesign("components-${skin.id}", image)
                 // Lower-cased, as a skin may set a word in capitals.
                 val shown = scene.everyNode().flatMap { it.texts + it.descriptions }.map { it.lowercase() }
                 EXPECTED.forEach { text ->
                     assertTrue(text.lowercase() in shown, "${skin.id}'s sheet shows no \"$text\"")
                 }
-                writeDesign("components-${skin.id}", image)
+                // The presence strip says its one sentence and hides its flaps from a screen reader, so it is
+                // found in the merged tree, where what a clearing node covers is already gone.
+                val said = scene.nodes().flatMap { it.descriptions }
+                assertTrue("presence" in said, "${skin.id}'s presence strip says nothing: $said")
             } finally {
                 scene.close()
             }
@@ -168,6 +173,7 @@ class ComponentsDrawTest {
                 ChipTone.entries.forEach { tone -> Chip(tone.name.lowercase(), tone = tone) }
                 Chip("selected", selected = true, onClick = {})
                 Chip("icon", icon = KvizicIcons.Clock)
+                PresenceStrip(128, 6, contentDescription = "presence")
             }
             Section("FlipNumber · CodeDisplay")
             Row(
@@ -274,6 +280,7 @@ class ComponentsDrawTest {
                 "Flag" to KvizicIcons.Flag,
                 "Leave" to KvizicIcons.Leave,
                 "Boot" to KvizicIcons.Boot,
+                "Search" to KvizicIcons.Search,
                 "Clock" to KvizicIcons.Clock,
                 "Hourglass" to KvizicIcons.Hourglass,
                 "Laugh" to KvizicIcons.Laugh,
