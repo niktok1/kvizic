@@ -43,14 +43,20 @@ import io.ntole.kvizic.language.fill
 /**
  * The About screen: the game's name, its [version] and build number, the age it is for, links that open in
  * the browser to the site's privacy policy, terms, deleting an account and contact ([Site], in the language
- * shown), and the libraries the game ships with, each with its licence ([OPEN_SOURCE_LIBRARIES]). It
- * scrolls, its content held to a readable column on a wide window. The player's own settings, their account
- * among them, are the Settings screen's.
+ * shown), the libraries the game ships with, each with its licence ([OPEN_SOURCE_LIBRARIES]), and last,
+ * together, what the game keeps of the player: the Statistics switch, [statisticsOn] whether the player lets
+ * the game send analytics, which [onStatisticsChange] changes, the account's id, [accountId], to copy and send
+ * when asking by email for the account to be deleted, none while no session is stored, and [deletion], the
+ * quiet way to delete it. It scrolls, its content held to a readable column on a wide window.
  */
 @Composable
 fun AboutScreen(
     version: AppVersion,
+    accountId: String?,
     modifier: Modifier = Modifier,
+    statisticsOn: Boolean = true,
+    onStatisticsChange: (Boolean) -> Unit = {},
+    deletion: @Composable () -> Unit = {},
 ) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -87,6 +93,12 @@ fun AboutScreen(
             Divider()
             KvizicText(text = strings.licences, style = type.bodyStrong)
             OPEN_SOURCE_LIBRARIES.forEach { library -> Library(library) }
+
+            Divider()
+            KvizicText(text = strings.data, style = type.bodyStrong)
+            StatisticsSwitch(on = statisticsOn, onChange = onStatisticsChange)
+            accountId?.let { id -> AccountId(id) }
+            deletion()
         }
     }
 }
@@ -126,7 +138,7 @@ private fun Link(
  * to have their account deleted by email: a guest has no other name the server knows them by.
  */
 @Composable
-internal fun AccountId(accountId: String) {
+private fun AccountId(accountId: String) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors

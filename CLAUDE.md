@@ -161,8 +161,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
-  by `GamePhase`), Settings (the app's: Sound, a way to About, then what is kept of the player, together at
-  the end: Statistics, the account's id and its deletion; `AppSettingsScreen`, apart from a room's), About (version, legal pages, licences), Update. Home's
+  by `GamePhase`), Settings (the app's: the Sound switch and a way to About; `AppSettingsScreen`, apart from a room's), About
+  (version, legal pages, licences, and last what is kept of the player, under „Подаци“: Statistics, the account's
+  id and its deletion), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,
   which says why (`Navigator.followRoom`).
 - Words: `Strings` (Serbian Cyrillic written by hand, Latin made from it, English), `GameStrings` for the
@@ -171,8 +172,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   places it), which tells it from код (at).
 - Analytics: PostHog over HTTP, never a name, a code or a question's text; every tap through `tapped`
   (`TapsTest` taps every screen). Game events: `room_entered`, `room_exited`, `game_finished`; settings: `language_changed`,
-  `sound_changed`. A name once sent never changes, so the controls that moved from About to Settings keep
-  their `about.*` names.
+  `sound_changed`. A name once sent never changes.
 - **Play Games** (signed in on a phone against dev, 2026-10-01): a launch signs in by itself, with no button
   yet (`LinkPlayGames`), and so does coming back to the foreground, for a session replaced in the background,
   where Play Games cannot be asked; a sign-in that links the guest playing keeps their id and gives them

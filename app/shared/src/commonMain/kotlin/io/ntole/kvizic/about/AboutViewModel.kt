@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
 /**
- * The Settings screen's one action, deleting the account ([DeleteAccount]): one at a time, and what became
+ * The About screen's one action, deleting the account ([DeleteAccount]): one at a time, and what became
  * of it in [deletion]. A failure is reported to [analytics] as shown; nothing is forgotten until the
  * server has said the account is gone.
  */

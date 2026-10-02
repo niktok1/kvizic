@@ -17,6 +17,8 @@ data class AboutStrings(
     val contact: String,
     /** The heading of the libraries the game ships with, each with its licence. */
     val licences: String,
+    /** The heading over what the game keeps of the player: the statistics sent, the account's id, deleting it. */
+    val data: String,
     /** The label over the player's account id, which they send to have their account deleted by email. */
     val accountId: String,
     /** The copy button beside the account id. */
@@ -46,6 +48,7 @@ data class AboutStrings(
             deleteAccountPage = transform(deleteAccountPage),
             contact = transform(contact),
             licences = transform(licences),
+            data = transform(data),
             accountId = transform(accountId),
             copy = transform(copy),
             copyAccountId = transform(copyAccountId),
@@ -60,7 +63,7 @@ data class AboutStrings(
 
 /** The words of deleting an account, as [AboutStrings.deleteAccount]. */
 data class DeleteAccountStrings(
-    /** The quiet button at the bottom of the Settings screen. */
+    /** The quiet button at the bottom of the About screen. */
     val button: String,
     /** The confirm dialog's one line: everything goes, for good. */
     val warning: String,
@@ -86,6 +89,7 @@ internal val SerbianCyrillicAboutStrings: AboutStrings =
         deleteAccountPage = "Брисање налога",
         contact = "Контакт",
         licences = "Лиценце отвореног кода",
+        data = "Подаци",
         accountId = "ИД налога",
         copy = "Копирај",
         copyAccountId = "Копирај ИД налога",
@@ -112,6 +116,7 @@ internal val EnglishAboutStrings: AboutStrings =
         deleteAccountPage = "Deleting an account",
         contact = "Contact",
         licences = "Open-source licences",
+        data = "Data",
         accountId = "Account ID",
         copy = "Copy",
         copyAccountId = "Copy account ID",

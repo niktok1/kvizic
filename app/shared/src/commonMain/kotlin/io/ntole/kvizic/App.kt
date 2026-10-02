@@ -167,12 +167,12 @@ private fun Screens(usage: UsageTracker) {
 
             Screen.About -> {
                 BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.aboutScreen.title)
-                Below { About() }
+                Below { About(onDeleted = { navigator.open(Screen.Home) }) }
             }
 
             Screen.Settings -> {
                 BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.settingsScreen.title)
-                Below { Settings(onAbout = { navigator.open(Screen.About) }, onDeleted = { navigator.back() }) }
+                Below { Settings(onAbout = { navigator.open(Screen.About) }) }
             }
 
             Screen.Profile -> {
@@ -492,31 +492,19 @@ private val LobbySettingsSaver: Saver<LobbySettings, Any> =
         },
     )
 
-/** The About screen: the game's version, its legal pages and the libraries it ships with. */
-@Composable
-private fun About() {
-    AboutScreen(version = koinInject())
-}
-
 /**
- * The Settings screen, with the account id of the session stored on the device, which it copies to send by
+ * The About screen, with the account id of the session stored on the device, which it copies to send by
  * email for the account's deletion: read from the device and never from the server, so it shows offline
  * and mints no session. None while none is stored; and the new one should the device become another player
  * while it is shown. The Statistics switch is the player's choice, kept on the device, which the analytics
- * hold, and the Sound switch is the one [SoundViewModel] keeps. [onAbout] opens the About screen. Once the
- * account is deleted, [onDeleted] goes back, to a Home that reads the fresh guest.
+ * hold. Once the account is deleted, [onDeleted] goes back, to a Home that reads the fresh guest.
  */
 @Composable
-private fun Settings(
-    onAbout: () -> Unit,
-    onDeleted: () -> Unit,
-) {
+private fun About(onDeleted: () -> Unit) {
     val session = koinInject<CurrentSession>()
     val accountId by remember(session) { session.sessions }.collectAsStateWithLifecycle(session.current())
     val viewModel = koinViewModel<AboutViewModel>()
     val deletion by viewModel.deletion.collectAsStateWithLifecycle()
-    val sounds = koinViewModel<SoundViewModel>()
-    val soundOn by sounds.enabled.collectAsStateWithLifecycle()
 
     val analytics = LocalAnalytics.current
     val statisticsOn by analytics.enabled.collectAsStateWithLifecycle()
@@ -528,15 +516,24 @@ private fun Settings(
         }
     }
 
-    AppSettingsScreen(
+    AboutScreen(
+        version = koinInject(),
         accountId = accountId,
-        soundOn = soundOn,
-        onSoundChange = sounds::setEnabled,
         statisticsOn = statisticsOn,
         onStatisticsChange = analytics::setEnabled,
-        onAbout = onAbout,
         deletion = { DeleteAccountButton(deletion = deletion, onDelete = viewModel::delete) },
     )
+}
+
+/**
+ * The Settings screen: the Sound switch, the one [SoundViewModel] keeps, and a way to the About screen,
+ * [onAbout].
+ */
+@Composable
+private fun Settings(onAbout: () -> Unit) {
+    val sounds = koinViewModel<SoundViewModel>()
+    val soundOn by sounds.enabled.collectAsStateWithLifecycle()
+    AppSettingsScreen(soundOn = soundOn, onSoundChange = sounds::setEnabled, onAbout = onAbout)
 }
 
 /**

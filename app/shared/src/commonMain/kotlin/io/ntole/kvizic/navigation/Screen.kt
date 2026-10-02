@@ -12,10 +12,10 @@ sealed class Screen(
     /** Where the app opens, and the bottom of every back stack. */
     data object Home : Screen("home")
 
-    /** The game's version, its legal pages and the libraries it ships with. */
+    /** The game's version, its legal pages and licences, and what it keeps of the player: statistics, the account's id, deleting it. */
     data object About : Screen("about")
 
-    /** What the player sets: the game's sound and statistics, their account's id, and deleting the account. */
+    /** What the player sets: the game's sound, and a way to About. */
     data object Settings : Screen("settings")
 
     /** The player's profile: their stats, and their avatar picked. */
