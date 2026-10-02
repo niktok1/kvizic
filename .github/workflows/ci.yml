@@ -76,15 +76,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Past ten minutes the test JVMs' threads go into the log: a draw test that hangs says where.
       - name: Design system draw tests
-        run: ./gradlew --no-daemon :app:designsystem:jvmTest
+        run: bash .github/scripts/run-with-thread-dumps.sh ./gradlew --no-daemon :app:designsystem:jvmTest
 
+      # Every run's, so each test's time on this runner can be read, a stuck one's too.
       - name: Upload test reports
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-design
-          path: '**/build/reports/tests/**'
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
           retention-days: 7
 
   # Every screen of the game drawn off screen in every skin, the room at each step of a game.
@@ -103,15 +107,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # Past ten minutes the test JVMs' threads go into the log: a draw test that hangs says where.
       - name: Screen draw tests
-        run: ./gradlew --no-daemon :app:shared:jvmTest
+        run: bash .github/scripts/run-with-thread-dumps.sh ./gradlew --no-daemon :app:shared:jvmTest
 
+      # Every run's, so each test's time on this runner can be read, a stuck one's too.
       - name: Upload test reports
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-screens
-          path: '**/build/reports/tests/**'
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
           retention-days: 7
 
   # Every in-scope client target but Android's still compiles: the desktop and both web targets, of the game
