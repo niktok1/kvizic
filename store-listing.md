@@ -74,9 +74,10 @@ The questions are in Serbian.
 - **Feature graphic** 1024×500: [store/feature-graphic-1024x500.png](store/feature-graphic-1024x500.png), the
   sign on the stage as the app draws it; `KVIZIC_DESIGN_DIR=… ./gradlew :app:shared:jvmTest --tests
   '*StoreArtTest*'` draws it again.
-- **Phone screenshots**, 2–8, 9:16, at least 1080×1920: real-device captures, in this order:
-  Home · a question being answered with picks on the tiles · the reveal's board · the results' podium ·
-  the lobby with seats filled · the room's settings.
+- **Phone screenshots**, 1080×1920, in this order: `store/store-shot-1-home.png` · `2-lobby` · `3-question`
+  (the picks on the tiles) · `4-reveal` (the board) · `5-results` (the podium). Drawn by the game's own screens
+  from the screen tests' room (`StoreShotsTest`; `KVIZIC_DESIGN_DIR=… ./gradlew :app:shared:jvmTest --tests
+  '*StoreShotsTest*'` draws them again). Real-device captures may replace any of them.
 
 ## Categories and contact
 
