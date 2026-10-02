@@ -240,9 +240,9 @@ CI (`.github/workflows/ci.yml`) is the definition of green, its jobs side by sid
 test but the draw tests, `:e2e:test` among them), `design-tests` and `screen-tests` (`:app:designsystem` and
 `:app:shared`'s JVM tests, the slowest, bound by the processor: a still is drawn at 60 frames a second for its
 first half second and at 10 after, which every animation, run on frame time, settles the same from;
-`:app:shared`'s classes share out among up to four test JVMs, so a class that grows long is split, and
-`:app:designsystem`'s run in one for now, §13; on CI each test is logged as it starts and ends, a task
-stops after 15 min, a job past ten writes its test JVMs' threads, and the reports are kept every run),
+the classes share out among up to four test JVMs, so a class that grows long is split (`DesignShots*`,
+`Room*DrawTest`); on CI each test is logged as it starts and ends, a task stops after 15 min, a job past
+ten writes its test JVMs' threads, and the reports are kept every run),
 `clients` (the desktop and web targets), `android` (a debug flavor, the release build through R8, release
 signing), `server-postgres`, `docker-smoke`, `ios`. Locally:
 `./gradlew ktlintCheck` and the module tests; iOS needs full Xcode, so compile with
@@ -270,4 +270,5 @@ makes the draw tests write PNGs to look at.
   it wants a privacy policy page first), then its configuration, with its final art.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.
 - `design-tests` hung on CI with four test JVMs (2026-10-02: no output for 29 min, cancelled at the job's
-  limit; it passes locally in 42 s). One JVM until the thread dumps say where.
+  limit; it passes locally in 42 s), and passed in one. Four again, with `DesignShotsTest` split: if it
+  hangs again, the job's thread dumps say where.

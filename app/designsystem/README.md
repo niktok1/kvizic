@@ -72,7 +72,7 @@ declare none, but a modified font under its original name misleads anyway).
 
 ```
 KVIZIC_DESIGN_DIR=/Users/nikolatokic/Projects/kvizic/design-review \
-  ./gradlew :app:designsystem:jvmTest --tests '*DesignShotsTest*' --rerun
+  ./gradlew :app:designsystem:jvmTest --tests '*DesignShots*' --rerun
 ```
 
 writes the screens, at 375 by 667 and twice a pixel a dp: `buzzers-01-home` to `buzzers-09-results`,

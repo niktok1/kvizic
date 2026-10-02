@@ -71,9 +71,11 @@ compose.resources {
     packageOfResClass = "io.ntole.kvizic.design.resources"
 }
 
-// The draw tests render every skin a frame at a time in software, bound by the processor. One test JVM for
-// now: with four, CI's runner hung in them (2026-10-02), and its thread dumps are to say where (CLAUDE.md §13).
+// The draw tests render every skin a frame at a time in software, bound by the processor: their classes are
+// shared out among test JVMs, one a core, up to four (CI's runner has four). The tests of a class share one.
+// With four, CI's runner once hung in them (2026-10-02, CLAUDE.md §13): its thread dumps are to say where.
 tasks.named<Test>("jvmTest") {
+    maxParallelForks = Runtime.getRuntime().availableProcessors().coerceIn(1, 4)
     // A draw test that hangs fails its task, with its reports, instead of holding CI's runner to the job's limit.
     timeout.set(Duration.ofMinutes(15))
     // On CI each test says when it starts and ends, so one that is slow or stuck shows in the log.
