@@ -212,6 +212,22 @@ class DefaultLobbySessionTest {
         }
 
     @Test
+    fun `a transport that throws as its socket breaks is a connection lost, not a crash`() =
+        runTest {
+            val harness = Harness(this)
+            val first = harness.inLobby(answering(index = 0))
+            first.breakWith(IllegalStateException("socket closed"))
+            harness.settle()
+            assertTrue(harness.inLobbyState().reconnecting)
+
+            harness.wait(1.seconds)
+            val second = harness.transport.last()
+            second.push(welcome(), snapshot(v = 5, phase = answering(index = 0, remainingMs = 9_000)))
+            harness.settle()
+            assertEquals(false, harness.inLobbyState().reconnecting)
+        }
+
+    @Test
     fun `an answer the server got before the drop is not sent twice`() =
         runTest {
             val harness = Harness(this)

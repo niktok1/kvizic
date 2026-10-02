@@ -311,7 +311,10 @@ makes the draw tests write PNGs to look at.
   1 ms, heap 120 MB and 1.9 cores for server and clients together. The share the server alone would take of
   Render's 0.5 CPU is unmeasured: it needs the server in a process of its own.
 - **Realtime engines differ**: the socket client sets no frame limit, which Ktor's browser and OkHttp engines
-  refuse; `:e2e` plays a player over OkHttp beside one over CIO to hold that.
+  refuse; `:e2e` plays a player over OkHttp beside one over CIO to hold that. OkHttp also fails a socket's
+  `closeReason` when the network drops with no close frame (CIO ends it quietly), which killed the app on a
+  tablet (2026-10-02): `closed()` answers null for it, and `DefaultLobbySession` takes any throw from a socket
+  as a lost connection; a test of each holds it.
 
 ## 13. Open
 

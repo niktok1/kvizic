@@ -267,7 +267,16 @@ public class DefaultLobbySession(
                         null
                     }
                 if (connection != null) {
-                    val outcome = connect(stay, connection)
+                    val outcome =
+                        try {
+                            connect(stay, connection)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (failed: Exception) {
+                            // Whatever a transport throws mid-socket is a connection lost, never the app's
+                            // end: this coroutine has no handler above it.
+                            Outcome(exit = null, welcomed = false)
+                        }
                     if (outcome.exit != null) return end(stay, outcome.exit)
                     if (outcome.welcomed) failures = 0
                 }

@@ -122,7 +122,15 @@ internal class KtorPlayConnection(
 
     override suspend fun closed(): Short? {
         reader.join()
-        return withTimeoutOrNull(CLOSE_REASON_WAIT) { session.closeReason.await() }?.code
+        return try {
+            withTimeoutOrNull(CLOSE_REASON_WAIT) { session.closeReason.await() }?.code
+        } catch (cancelled: CancellationException) {
+            if (currentCoroutineContext().isActive) null else throw cancelled
+        } catch (broken: Exception) {
+            // OkHttp fails the reason with the cause when the network drops with no close frame, where
+            // CIO ends it quietly: a socket with no code, which is a lost connection.
+            null
+        }
     }
 
     override fun close() {

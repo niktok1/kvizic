@@ -77,6 +77,12 @@ internal class FakeConnection(
     /** The connection is lost, with no close frame. */
     fun drop() = finish(null)
 
+    /** The connection breaks with [cause] and no close frame, as OkHttp's does when the network drops. */
+    fun breakWith(cause: Throwable) {
+        inbox.close()
+        closedWith.completeExceptionally(cause)
+    }
+
     inline fun <reified T : ClientMessage> sentOf(): List<T> = sent.filterIsInstance<T>()
 
     private fun finish(code: Short?) {

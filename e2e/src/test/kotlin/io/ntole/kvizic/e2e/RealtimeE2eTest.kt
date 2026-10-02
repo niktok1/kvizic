@@ -160,8 +160,35 @@ class RealtimeE2eTest {
             assertEquals(2, reveal.results.count { it.option != null })
         }
 
+    /**
+     * OkHttp fails a socket the network drops with no close frame, and Ktor's session then fails its
+     * `closeReason` with the cause, where CIO ends it quietly: on a tablet that escaped the session and
+     * killed the app. The player reconnects as with any other engine.
+     */
+    @Test
+    fun `a player over Android's engine whose network drops reconnects instead of crashing`(): Unit =
+        runBlocking {
+            val server = server()
+            val ana = player("ana", server)
+            val boris = player("boris", server, socketEngine = { OkHttp.create() })
+            lobbyOf(ana, boris)
+
+            boris.proxy.cutAll()
+
+            ana.awaitState(what = "boris shown gone") { state ->
+                state is LobbySessionState.InLobby && state.lobby.members.any { it.playerId != ana.id && !it.connected }
+            }
+            ana.awaitState(what = "boris shown back") { state ->
+                state is LobbySessionState.InLobby && state.lobby.members.all { it.connected }
+            }
+            boris.awaitState(what = "boris seated again") { state ->
+                state is LobbySessionState.InLobby && !state.reconnecting
+            }
+        }
+
     @Test
     fun `a player cut off for a while keeps their seat and finds the game where it is`(): Unit =
+
         runBlocking {
             val server = server()
             val ana = player("ana", server)
