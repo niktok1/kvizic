@@ -69,10 +69,11 @@ import io.ntole.kvizic.room.RoomActions
 import io.ntole.kvizic.room.RoomPreviewViewModel
 import io.ntole.kvizic.room.RoomScreen
 import io.ntole.kvizic.room.RoomViewModel
+import io.ntole.kvizic.room.SessionSounds
 import io.ntole.kvizic.room.SettingsScreen
 import io.ntole.kvizic.room.entryFailureText
 import io.ntole.kvizic.services.AppServices
-import io.ntole.kvizic.settings.SettingsScreen
+import io.ntole.kvizic.settings.AppSettingsScreen
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
 import io.ntole.kvizic.sound.ProvideCues
@@ -146,7 +147,9 @@ private fun Screens(usage: UsageTracker) {
     val navigator = rememberSaveable(saver = Navigator.Saver) { Navigator() }
     val room = koinViewModel<RoomViewModel>()
     val roomState by room.state.collectAsStateWithLifecycle()
+    val entry by room.entry.collectAsStateWithLifecycle()
     val inRoom = roomState is LobbySessionState.InLobby
+    SessionSounds(roomState, entry)
     SystemBack(enabled = navigator.canGoBack, onBack = { navigator.back() })
     LaunchedEffect(navigator.current) { usage.show(navigator.current.key) }
     LaunchedEffect(inRoom) { navigator.followRoom(inRoom) }
@@ -525,7 +528,7 @@ private fun Settings(
         }
     }
 
-    SettingsScreen(
+    AppSettingsScreen(
         accountId = accountId,
         soundOn = soundOn,
         onSoundChange = sounds::setEnabled,

@@ -33,6 +33,8 @@ import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
@@ -126,7 +128,7 @@ fun ProfileScreen(
                                 .semantics(mergeDescendants = true) {
                                     contentDescription = words.avatarNames.getOrElse(index) { id }
                                     selected = chosen
-                                }.clickable(role = Role.Button) { pick(index) },
+                                }.clickable(role = Role.Button, onClick = cued(Cue.TAP_SOFT) { pick(index) }),
                             kind = if (chosen) PanelKind.PLAIN else PanelKind.EMPTY,
                             padding = space.xs,
                         ) {

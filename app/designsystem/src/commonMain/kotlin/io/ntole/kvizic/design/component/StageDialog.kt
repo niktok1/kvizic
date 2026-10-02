@@ -9,10 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.LocalCues
+import io.ntole.kvizic.design.sound.cued
 
 /**
  * A question put to the player over the screen, on a panel: its [title], a line of [text] under it, and its
@@ -27,7 +31,9 @@ fun StageDialog(
 ) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
-    Dialog(onDismissRequest = onDismiss) {
+    val cues = LocalCues.current
+    LaunchedEffect(Unit) { cues.play(Cue.DIALOG_OPEN) }
+    Dialog(onDismissRequest = cued(Cue.DIALOG_CLOSE, onDismiss)) {
         Panel(Modifier.widthIn(max = space.dialogWidth), padding = space.lg) {
             Column(verticalArrangement = Arrangement.spacedBy(space.md)) {
                 KvizicText(title, style = type.bodyStrong)

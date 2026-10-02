@@ -30,6 +30,9 @@ import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.topic.TopicGroup
 import io.ntole.kvizic.descriptions
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.Cues
+import io.ntole.kvizic.design.sound.LocalCues
 import io.ntole.kvizic.home.HomeActions
 import io.ntole.kvizic.home.HomeFailure
 import io.ntole.kvizic.home.HomeScreen
@@ -54,7 +57,7 @@ import io.ntole.kvizic.room.answering
 import io.ntole.kvizic.room.inLobby
 import io.ntole.kvizic.room.lobby
 import io.ntole.kvizic.room.revealing
-import io.ntole.kvizic.settings.SettingsScreen
+import io.ntole.kvizic.settings.AppSettingsScreen
 import io.ntole.kvizic.settle
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
@@ -79,6 +82,9 @@ class TapsTest {
 
     /** Every URL a tap asked to open: nothing here reaches a browser. */
     private val uris = RecordingUris()
+
+    /** Every cue a tap played: a tap that makes no sound fails here unless it is one of [SILENT_TAPS]. */
+    private val cues = RecordingCues()
 
     @Test
     fun `every tap on Home and the top bar is reported`() {
@@ -146,7 +152,7 @@ class TapsTest {
             elementsTapped {
                 @Suppress("DEPRECATION")
                 CompositionLocalProvider(LocalClipboardManager provides RecordingClipboard()) {
-                    SettingsScreen(accountId = "p1") {
+                    AppSettingsScreen(accountId = "p1") {
                         DeleteAccountButton(deletion = Deletion.Idle, onDelete = {})
                     }
                 }
@@ -331,11 +337,16 @@ class TapsTest {
     private fun elementsTapped(content: @Composable () -> Unit): Set<String> {
         val scene =
             ImageComposeScene(width = WIDTH, height = HEIGHT, density = Density(1f)) {
-                CompositionLocalProvider(LocalAnalytics provides analytics, LocalUriHandler provides uris) {
+                CompositionLocalProvider(
+                    LocalAnalytics provides analytics,
+                    LocalUriHandler provides uris,
+                    LocalCues provides cues,
+                ) {
                     GameTheme(Language.DEFAULT) { content() }
                 }
             }
         val reported = mutableSetOf<String>()
+        val silent = mutableSetOf<String>()
         val done = mutableSetOf<String>()
         try {
             scene.settle()
@@ -350,6 +361,7 @@ class TapsTest {
                         )
                     actions.forEach { tap ->
                         val before = analytics.named(AnalyticsEvent.TAP).size
+                        val heardBefore = cues.played.size
                         tap()
                         scene.settle()
                         val taps = analytics.named(AnalyticsEvent.TAP).drop(before)
@@ -360,12 +372,14 @@ class TapsTest {
                             "\"$element\" is no element's name",
                         )
                         reported += element
+                        if (cues.played.size == heardBefore) silent += element
                     }
                 }
             }
         } finally {
             scene.close()
         }
+        assertEquals(emptySet(), silent - SILENT_TAPS, "taps that make no sound")
         return reported
     }
 
@@ -382,7 +396,21 @@ class TapsTest {
 
     private fun signatureOf(node: SemanticsNode): String = "${node.texts}${node.descriptions}@${node.positionInRoot}"
 
+    private class RecordingCues : Cues {
+        val played = mutableListOf<Cue>()
+
+        override fun play(
+            cue: Cue,
+            volume: Float,
+        ) {
+            played += cue
+        }
+    }
+
     private companion object {
+        /** The taps that make no sound of their own, each for a reason. */
+        val SILENT_TAPS = emptySet<String>()
+
         const val WIDTH = 400
         const val HEIGHT = 900
 

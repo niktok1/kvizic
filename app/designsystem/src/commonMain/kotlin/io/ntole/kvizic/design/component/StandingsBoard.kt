@@ -38,6 +38,8 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.LocalCues
 import kotlin.math.roundToInt
 
 /**
@@ -69,6 +71,7 @@ fun StandingsBoard(
     val scroll = rememberScrollState()
     val metrics = remember { BoardMetrics() }
     val own = rows.indexOfFirst { it.own }
+    val cues = LocalCues.current
     LaunchedEffect(reorderKey) {
         if (!moved) {
             // Where the player stood before, in sight first, then the slide to where they stand now.
@@ -77,6 +80,13 @@ fun StandingsBoard(
             // A beat on the frame clock, so the result is seen before the lines move.
             Animatable(0f).animateTo(1f, tween(REORDER_DELAY_MS, easing = LinearEasing))
             moved = true
+            // The player's own place, as the lines start to slide: up, or down.
+            val places = if (own >= 0) rows[own].moved else 0
+            if (places > 0) {
+                cues.play(Cue.RANK_UP)
+            } else if (places < 0) {
+                cues.play(Cue.RANK_DOWN)
+            }
             slide.animateTo(1f, tween(REORDER_MILLIS, easing = FastOutSlowInEasing))
         }
         if (own >= 0) scroll.animateScrollTo(metrics.centring(own, scroll.viewportSize))

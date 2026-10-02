@@ -34,6 +34,8 @@ import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.LocalCues
 import io.ntole.kvizic.home.Notice
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.loading.LoadingSpinner
@@ -71,6 +73,7 @@ fun JoinScreen(
         withFrameNanos {}
         runCatching { focus.requestFocus() }
     }
+    val cues = LocalCues.current
     val typeDigit = { digit: Char -> if (!taking && code.length < CODE_LENGTH) onCode(code + digit) }
     val delete = { if (!taking && code.isNotEmpty()) onCode(code.dropLast(1)) }
     val join = { if (!taking && code.length == CODE_LENGTH) onJoin() }
@@ -83,8 +86,8 @@ fun JoinScreen(
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 val digit = DIGIT_KEYS[event.key]
                 when {
-                    digit != null -> typeDigit(digit).let { true }
-                    event.key == Key.Backspace -> delete().let { true }
+                    digit != null -> typeDigit(digit).also { cues.play(Cue.KEY) }.let { true }
+                    event.key == Key.Backspace -> delete().also { cues.play(Cue.KEY_DELETE) }.let { true }
                     event.key == Key.Enter || event.key == Key.NumPadEnter -> join().let { true }
                     else -> false
                 }
@@ -159,6 +162,7 @@ fun JoinScreen(
                                     kind = ButtonKind.DARK,
                                     icon = KvizicIcons.Back,
                                     enabled = !taking && code.isNotEmpty(),
+                                    cue = Cue.KEY_DELETE,
                                 )
                             }
 
@@ -178,6 +182,7 @@ fun JoinScreen(
                                     modifier = Modifier.weight(1f),
                                     kind = ButtonKind.SECONDARY,
                                     enabled = !taking && code.length < CODE_LENGTH,
+                                    cue = Cue.KEY,
                                 )
                             }
                         }

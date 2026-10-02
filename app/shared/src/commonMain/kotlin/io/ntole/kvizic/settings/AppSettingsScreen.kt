@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.ntole.kvizic.about.AccountId
@@ -21,10 +26,12 @@ import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.Toggle
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.LocalCues
 import io.ntole.kvizic.language.LocalStrings
 
 /**
- * The Settings screen: what the player sets, in one place. The Sound switch, [soundOn] whether the game
+ * The app's Settings screen, not a room's: what the player sets, in one place. The Sound switch, [soundOn] whether the game
  * makes sound, which [onSoundChange] changes; the Statistics switch, [statisticsOn] whether the player lets
  * the game send analytics, which [onStatisticsChange] changes; a way to the About screen, [onAbout]; and
  * last the player's account: its id, [accountId], to copy and send when asking by email for the account to
@@ -32,7 +39,7 @@ import io.ntole.kvizic.language.LocalStrings
  * content held to a readable column on a wide window.
  */
 @Composable
-fun SettingsScreen(
+fun AppSettingsScreen(
     accountId: String?,
     modifier: Modifier = Modifier,
     soundOn: Boolean = true,
@@ -46,6 +53,13 @@ fun SettingsScreen(
     val type = KvizicTheme.type
     val strings = LocalStrings.current
     val words = strings.settingsScreen
+    val cues = LocalCues.current
+    // The switch's own sound is the old setting's: turned on, it is heard once it is on.
+    var wasOn by remember { mutableStateOf(soundOn) }
+    LaunchedEffect(soundOn) {
+        if (soundOn && !wasOn) cues.play(Cue.TOGGLE_ON)
+        wasOn = soundOn
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -34,6 +34,8 @@ import io.ntole.kvizic.design.component.Divider
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
@@ -109,8 +111,10 @@ private fun Link(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(role = Role.Button, onClick = tapped(element) { uriHandler.openIfAble(url) })
-                .defaultMinSize(minHeight = KvizicTheme.space.touchTarget),
+                .clickable(
+                    role = Role.Button,
+                    onClick = cued(Cue.TAP_SOFT, tapped(element) { uriHandler.openIfAble(url) }),
+                ).defaultMinSize(minHeight = KvizicTheme.space.touchTarget),
     ) {
         KvizicText(text = label, color = KvizicTheme.colors.onPageAccent, textDecoration = TextDecoration.Underline)
     }
@@ -153,6 +157,7 @@ internal fun AccountId(accountId: String) {
                 modifier = Modifier.semantics { contentDescription = strings.copyAccountId },
                 kind = ButtonKind.QUIET,
                 size = ButtonSize.SMALL,
+                cue = Cue.COPIED,
             )
         }
     }
@@ -174,7 +179,7 @@ private fun Library(library: Licensed) {
                 .fillMaxWidth()
                 .clickable(
                     role = Role.Button,
-                    onClick = tapped("about.licence") { uriHandler.openIfAble(library.licenceUrl) },
+                    onClick = cued(Cue.TAP_SOFT, tapped("about.licence") { uriHandler.openIfAble(library.licenceUrl) }),
                 ).defaultMinSize(minHeight = KvizicTheme.space.touchTarget),
     ) {
         KvizicText(text = library.name)

@@ -35,6 +35,8 @@ import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.TextInput
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
@@ -178,7 +180,7 @@ private fun GroupHeader(
             Modifier
                 .weight(1f)
                 .heightIn(min = space.touchTarget)
-                .clickable(role = Role.Button, onClick = onOpen)
+                .clickable(role = Role.Button, onClick = cued(Cue.TAP_SOFT, onOpen))
                 .semantics { stateDescription = "$picked / ${section.topics.size}" },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(space.sm),
@@ -215,11 +217,12 @@ private fun TopicLine(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
+    val toggle = cued(if (picked) Cue.TOGGLE_OFF else Cue.TOGGLE_ON) { onToggle() }
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = space.touchTarget)
-            .toggleable(value = picked, role = Role.Checkbox, onValueChange = { onToggle() })
+            .toggleable(value = picked, role = Role.Checkbox, onValueChange = { toggle() })
             .then(if (indent) Modifier.padding(start = space.lg) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space.sm),

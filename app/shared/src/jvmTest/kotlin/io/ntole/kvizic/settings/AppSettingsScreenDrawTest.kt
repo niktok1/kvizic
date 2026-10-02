@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
  * The Settings screen drawn off screen in each language: the Sound switch, the Statistics switch, the way to
  * About, and the player's account, its id and the deletion last.
  */
-class SettingsScreenDrawTest {
+class AppSettingsScreenDrawTest {
     @Test
     fun `the screen shows its switches the way to About and the account in that order`() {
         Language.entries.forEach { language ->
@@ -221,7 +221,7 @@ class SettingsScreenDrawTest {
         ImageComposeScene(width = SHORT_PHONE_WIDTH, height = TALL_ENOUGH, density = Density(1f)) {
             CompositionLocalProvider(LocalClipboardManager provides clipboard) {
                 GameTheme(language) {
-                    SettingsScreen(
+                    AppSettingsScreen(
                         accountId = accountId,
                         soundOn = soundOn,
                         onSoundChange = onSoundChange,

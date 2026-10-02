@@ -91,20 +91,18 @@ enum class Cue(
 
     /** A question coming on, and each of its answers' tiles after it. */
     QUESTION,
-    TILE(minGapMillis = 60, varied = true),
+    TILE(minGapMillis = 30, varied = true),
 
-    /** The player's answer locked in, and everyone's. */
+    /** The player's answer locked in. */
     LOCK,
-    ALL_IN,
 
     /** One of the last seconds of a question, and the time being up. */
     TICK(minGapMillis = 400),
     TIME_UP,
 
-    /** How the player's answer went: right, wrong, or none given. */
+    /** How the player's answer went: right, or wrong. */
     RIGHT,
     WRONG,
-    MISSED,
 
     /** One of the first three right answers, with its bonus. */
     BONUS,

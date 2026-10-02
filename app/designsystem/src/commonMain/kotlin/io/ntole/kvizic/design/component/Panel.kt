@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.isSpecified
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.LocalContentColor
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 
 /**
  * A surface to group things on, of [kind]: a seat, a scoreboard, the question's screen, the board a
@@ -71,7 +73,12 @@ fun Chip(
         if (onClick != null) {
             Modifier
                 .defaultMinSize(minHeight = space.touchTarget)
-                .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
+                .clickable(
+                    interactionSource = source,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = cued(Cue.TAP_SOFT, onClick),
+                )
         } else {
             Modifier
         }

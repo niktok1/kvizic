@@ -33,6 +33,8 @@ import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.Wordmark
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
@@ -105,7 +107,10 @@ fun HomeScreen(
                     Row(
                         Modifier
                             .weight(1f)
-                            .clickable(role = Role.Button, onClick = tapped("home.profile", onClick = actions.profile)),
+                            .clickable(
+                                role = Role.Button,
+                                onClick = cued(Cue.TAP_SOFT, tapped("home.profile", onClick = actions.profile)),
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(space.md),
                     ) {

@@ -31,6 +31,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -84,6 +85,9 @@ import io.ntole.kvizic.design.component.rememberTilePlaces
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.SkinMotion
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.LocalCues
+import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
@@ -129,6 +133,8 @@ fun RoomScreen(
     actions: RoomActions,
     modifier: Modifier = Modifier,
 ) {
+    // What the room sounds like, however it is shown.
+    RoomSounds(state, note, bursts)
     var leaving by rememberSaveable { mutableStateOf(false) }
     // Held here, not on the reveal, so the dialog stays as the next question comes.
     var reporting by rememberSaveable { mutableStateOf<String?>(null) }
@@ -420,6 +426,7 @@ private fun Waiting(
                         StageIconButton(
                             reaction.icon,
                             contentDescription = reaction.name(words),
+                            cue = reactionCue(reaction.id) ?: Cue.TAP_SOFT,
                             onClick =
                                 tapped(
                                     "room.reaction",
@@ -454,6 +461,7 @@ private fun Waiting(
                         modifier = Modifier.fillMaxWidth(),
                         kind = ButtonKind.SECONDARY,
                         icon = KvizicIcons.Bell,
+                        cue = Cue.NUDGE,
                     )
                 }
 
@@ -514,7 +522,7 @@ private fun RoomCode(
     val space = KvizicTheme.space
     val colors = KvizicTheme.colors
     val haptics = LocalHapticFeedback.current
-    val copy = tapped("room.copy_code", onClick = onCopy)
+    val copy = cued(Cue.COPIED, tapped("room.copy_code", onClick = onCopy))
     val public = lobby.kind == LobbyKind.PUBLIC
     val said =
         (if (public) words.publicRoom else words.privateRoom) + ", " + words.roomCode + ": " +
@@ -711,6 +719,9 @@ private fun Countdown(deadline: Deadline) {
     val words = LocalStrings.current.game
     val space = KvizicTheme.space
     val seconds by secondsLeft(deadline)
+    val cues = LocalCues.current
+    // A tick for each of the last seconds; the go is the first question's, as it comes.
+    LaunchedEffect(seconds) { if (seconds in 1..TICKS_FROM) cues.play(Cue.COUNT) }
     Row(
         Modifier.fillMaxWidth().height(space.button.regular),
         horizontalArrangement = Arrangement.spacedBy(space.md, Alignment.CenterHorizontally),
@@ -735,6 +746,9 @@ private fun secondsOf(deadline: Deadline): Int =
     ceil(deadline.remaining().inWholeMilliseconds / MILLIS_PER_SECOND).toInt()
 
 private const val MILLIS_PER_SECOND = 1_000.0
+
+/** The countdown ticks from this many seconds, whatever longer it lasts. */
+private const val TICKS_FROM = 5
 private val TICK = 200.milliseconds
 
 /**

@@ -20,6 +20,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 
 /** Who sits in a lobby's seat, as the seat shows them. */
 @Immutable
@@ -67,7 +69,14 @@ fun Seat(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
-    val tap = if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier
+    val tap =
+        if (onClick !=
+            null
+        ) {
+            Modifier.clickable(role = Role.Button, onClick = cued(Cue.TAP_SOFT, onClick))
+        } else {
+            Modifier
+        }
     val said =
         when (occupant) {
             null -> emptyDescription

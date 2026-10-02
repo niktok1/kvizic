@@ -23,12 +23,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.max
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.LocalContentColor
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 
 /**
  * A button on the stage: [text], and under it [supportingText] if given, on the skin's surface for
  * [kind], [size] high at the least and never under a touch target. It sinks under the finger and
  * springs back, in the draw alone. [icon] stands before the text, or over it when [iconAbove], a
- * console's key; [trailing] stands after it, in a row: a count, a chevron.
+ * console's key; [trailing] stands after it, in a row: a count, a chevron. A tap plays [cue], by default the
+ * sound of its [kind] and [size]: the hero's and the primary's heavy, a plate's a click, a quiet word's a tick.
  */
 @Composable
 fun StageButton(
@@ -43,12 +46,14 @@ fun StageButton(
     iconAbove: Boolean = false,
     interactionSource: MutableInteractionSource? = null,
     trailing: (@Composable () -> Unit)? = null,
+    cue: Cue? = null,
 ) {
     val skin = KvizicTheme.skin
     val space = skin.space
     val type = KvizicTheme.type
     val part = skin.parts.button
     val source = interactionSource ?: remember { MutableInteractionSource() }
+    val tap = cued(cue ?: cueOf(kind, size), onClick)
     // Its words turn with its face as it is turned on or off, never ahead of it.
     val content = rememberSettlingColor(part.content(kind, enabled))
     val supporting = rememberSettlingColor(part.supporting(kind, enabled))
@@ -73,7 +78,7 @@ fun StageButton(
                     indication = null,
                     enabled = enabled,
                     role = Role.Button,
-                    onClick = onClick,
+                    onClick = tap,
                 ).raised(
                     look = part.surface(kind, size, enabled),
                     depth = skin.depth,
@@ -138,7 +143,7 @@ fun StageButton(
 
 /**
  * A round button of one [icon], named [contentDescription] for a screen reader: back, share, a
- * reaction. Raised and pressed as a [StageButton] is.
+ * reaction. Raised and pressed as a [StageButton] is; a tap plays [cue].
  */
 @Composable
 fun StageIconButton(
@@ -150,11 +155,13 @@ fun StageIconButton(
     small: Boolean = false,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
+    cue: Cue = Cue.TAP_SOFT,
 ) {
     val skin = KvizicTheme.skin
     val space = skin.space
     val part = skin.parts.button
     val source = interactionSource ?: remember { MutableInteractionSource() }
+    val tap = cued(cue, onClick)
     val look = part.surface(kind, ButtonSize.SMALL, enabled).copy(shape = skin.shapes.roundButton)
     val tint = rememberSettlingColor(part.content(kind, enabled))
     val whole = if (small) space.button.roundSmall else space.button.round
@@ -168,7 +175,7 @@ fun StageIconButton(
                     indication = null,
                     enabled = enabled,
                     role = Role.Button,
-                    onClick = onClick,
+                    onClick = tap,
                 ),
         contentAlignment = Alignment.Center,
     ) {
@@ -188,3 +195,14 @@ fun StageIconButton(
         }
     }
 }
+
+/** The sound of a tap on a button of [kind] and [size]: the hero's and the primary's heavy, a plate's a click, a quiet word's a tick. */
+internal fun cueOf(
+    kind: ButtonKind,
+    size: ButtonSize,
+): Cue =
+    when {
+        size == ButtonSize.HERO || kind == ButtonKind.PRIMARY -> Cue.TAP_PRIMARY
+        kind == ButtonKind.QUIET -> Cue.TAP_SOFT
+        else -> Cue.TAP
+    }

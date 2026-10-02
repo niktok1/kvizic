@@ -119,7 +119,7 @@ internal fun QuestionScreen(
     val myPick = answering?.myPick
     val picks: Map<String, Int> =
         answering?.let { if (myPick != null) it.picks + (state.you to myPick) else it.picks }.orEmpty()
-    val answer = tappedAt("question.answer", withLockInHaptic(actions.answer))
+    val answer = tappedAt("question.answer", withLockInFeedback(actions.answer))
     Page {
         RoundBar(
             question.index,
@@ -226,7 +226,11 @@ internal fun RevealScreen(
     val lobby = state.lobby
     val mine = reveal.results.firstOrNull { it.playerId == state.you }
     val seconds by secondsLeft(phase.next)
-    RevealHaptic(reveal.questionId, right = mine?.option?.let { it == reveal.correct })
+    RevealFeedback(
+        reveal.questionId,
+        right = mine?.option?.let { it == reveal.correct },
+        bonus = mine?.order != null,
+    )
     // The tiles stand a frame as they were answered, then light up and stamp: the reveal's moment, once a
     // question, and not again after a rotation.
     var revealed by rememberSaveable(reveal.questionId) { mutableStateOf(false) }

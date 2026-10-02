@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.DpSize
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.LocalCues
 
 /**
  * A switch for one setting, [checked] or not, which [onCheckedChange] flips: a key in a well, as on a game
@@ -45,6 +47,7 @@ fun Toggle(
     val skin = KvizicTheme.skin
     val space = skin.space
     val colors = skin.colors
+    val cues = LocalCues.current
     val on by animateFloatAsState(if (checked) 1f else 0f, tween(skin.motion.settle), label = "toggle")
     val presses = remember { MutableInteractionSource() }
     val wellHeight = space.chip.height + space.sm
@@ -69,7 +72,10 @@ fun Toggle(
                     indication = null,
                     enabled = enabled,
                     role = Role.Switch,
-                    onValueChange = onCheckedChange,
+                    onValueChange = { value ->
+                        cues.play(if (value) Cue.TOGGLE_ON else Cue.TOGGLE_OFF)
+                        onCheckedChange(value)
+                    },
                 ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space.md),

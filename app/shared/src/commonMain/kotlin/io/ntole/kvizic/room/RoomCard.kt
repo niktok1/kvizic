@@ -22,6 +22,8 @@ import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
+import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
@@ -48,7 +50,8 @@ internal fun RoomCard(
     val full = lobby.players >= lobby.maxPlayers
     val named = lobby.settings.name
     val title = shownIn(named ?: lobby.hostName, language)
-    val tap = onJoin?.let { join -> tapped("public_rooms.room") { join(lobby.code) } }
+    val join = onJoin?.let { join -> tapped("public_rooms.room") { join(lobby.code) } }
+    val tap = join?.let { cued(Cue.TAP, it) }
     Panel(
         modifier
             .fillMaxWidth()

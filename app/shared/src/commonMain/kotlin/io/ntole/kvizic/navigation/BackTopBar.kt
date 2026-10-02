@@ -18,6 +18,7 @@ import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.language.LocalStrings
 
 /**
@@ -44,6 +45,7 @@ fun BackTopBar(
             contentDescription = LocalStrings.current.back,
             onClick = tapped("top_bar.back", onClick = onBack),
             small = true,
+            cue = Cue.BACK,
         )
         if (titleContent != null) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { titleContent() }
