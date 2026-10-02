@@ -181,6 +181,40 @@ class HomeScreenDrawTest {
     }
 
     @Test
+    fun `a guest is offered Play Games under their name and the buttons stay where they were`() {
+        Language.entries.forEach { language ->
+            val words = stringsOf(language).game
+            var taps = 0
+            val guest = HomeState(profile = PROFILE, playGamesAvailable = true)
+            val offered = scene(guest, language, actions = HomeActions(playGames = { taps++ }))
+            val plain = scene(HomeState(profile = PROFILE), language)
+            val linked = scene(guest.copy(profile = PROFILE.copy(playGamesLinked = true)), language)
+            try {
+                write("home-guest-${language.name.lowercase()}", offered.renderSettled())
+                val offer = offered.nodes().single { words.signInPlayGames in it.texts }.boundsInRoot
+                val name = offered.nodes().single { words.level.fill(7) in it.texts }.boundsInRoot
+                assertTrue(offer.top >= name.bottom, "$language: the offer is not under the name")
+                assertTrue(offer.right <= SHORT_PHONE_WIDTH, "$language: the offer runs off the screen")
+                listOf(words.quickPlay, words.solo).forEach { text ->
+                    fun top(scene: ImageComposeScene) =
+                        scene
+                            .nodes()
+                            .single { text in it.texts }
+                            .boundsInRoot.top
+                    assertEquals(top(plain), top(offered), "$language: \"$text\" moved for the offer")
+                }
+                assertFalse(words.signInPlayGames in linked.everyText(), "$language: a linked player is offered it")
+                offered.tap(words.signInPlayGames)
+            } finally {
+                offered.close()
+                plain.close()
+                linked.close()
+            }
+            assertEquals(1, taps, "$language")
+        }
+    }
+
+    @Test
     fun `leaving a room by hand says nothing`() {
         val strings = stringsOf(Language.DEFAULT)
         val scene = scene(HomeState(profile = PROFILE), Language.DEFAULT, exit = LobbyExit.LEFT)

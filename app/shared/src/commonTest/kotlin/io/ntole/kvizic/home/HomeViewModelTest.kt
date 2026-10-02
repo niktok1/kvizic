@@ -32,6 +32,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -43,7 +44,8 @@ class HomeViewModelTest {
     private val session = FakeSession()
     private val players = FakePlayers(session)
     private val analytics = RecordingAnalytics()
-    private val linking = LinkPlayGames(SignedInPlayGames, LinksPlayerPlaying(session), session, Analytics.None)
+    private val links = LinksPlayerPlaying(session, players)
+    private val linking = LinkPlayGames(SignedInPlayGames, links, session, Analytics.None)
 
     /** Less than the wait an avatar picked stands before it is sent. */
     private val halfASettle = 1.5.seconds
@@ -295,6 +297,50 @@ class HomeViewModelTest {
             )
         }
 
+    @Test
+    fun `a guest signs in with Play Games from Home and is shown linked`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+            assertTrue(home.state.value.offersPlayGames, "a guest is offered Play Games")
+
+            home.linkPlayGames()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                true,
+                home.state.value.profile
+                    ?.playGamesLinked,
+            )
+            assertFalse(home.state.value.offersPlayGames, "a linked player is offered it no more")
+            assertFalse(home.state.value.linkingPlayGames)
+        }
+
+    @Test
+    fun `a Play Games sign-in the server refuses says why until taken down`() =
+        runTest(main) {
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+            links.failWith = KvizicException(CoreError.NETWORK)
+
+            home.linkPlayGames()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                CoreError.NETWORK,
+                home.state.value.playGamesFailure
+                    ?.error,
+            )
+            assertTrue(home.state.value.offersPlayGames, "still a guest, so offered it again")
+            assertFalse(home.state.value.linkingPlayGames)
+            assertEquals("play_games", analytics.recorded.last().properties[AnalyticsProperty.ACTION])
+
+            home.dismissPlayGamesFailure()
+            assertNull(home.state.value.playGamesFailure)
+        }
+
     private fun viewModel(): HomeViewModel =
         HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, linking, analytics)
 
@@ -325,14 +371,22 @@ class HomeViewModelTest {
 
     /**
      * The server linking the player playing to Play Games: who plays stays, so [FakeSession] tells nobody,
-     * and only the name the server reads changes ([FakePlayers.name]).
+     * and only what the server reads of them changes ([FakePlayers.name], [FakePlayers.linked]); or it
+     * refuses, with [failWith].
      */
     private class LinksPlayerPlaying(
         private val session: FakeSession,
+        private val players: FakePlayers,
     ) : PlayGamesRepository {
+        var failWith: KvizicException? = null
+
         override fun isSettled(): Boolean = false
 
-        override suspend fun signIn(serverAuthCode: String): String? = session.player.value
+        override suspend fun signIn(serverAuthCode: String): String? {
+            failWith?.let { throw it }
+            players.linked = true
+            return session.player.value
+        }
     }
 
     /** The server's profile of whoever the session names, by its [name] when asked, held while [hold] is incomplete. */
@@ -343,6 +397,7 @@ class HomeViewModelTest {
         var failWith: KvizicException? = null
         var hold: CompletableDeferred<Unit>? = null
         var name = "Брзи Јеж"
+        var linked = false
 
         override suspend fun profile(): Profile {
             reads++
@@ -374,7 +429,7 @@ class HomeViewModelTest {
                 displayName = name,
                 nameSource = NameSource.GENERATED,
                 avatarId = avatar,
-                playGamesLinked = false,
+                playGamesLinked = linked,
                 stats = PlayerStats(),
             )
     }

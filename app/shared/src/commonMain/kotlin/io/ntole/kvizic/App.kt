@@ -246,6 +246,8 @@ private fun Home(
                 solo = room::solo,
                 settings = { open(Screen.Settings) },
                 profile = { open(Screen.Profile) },
+                playGames = viewModel::linkPlayGames,
+                dismissPlayGamesFailure = viewModel::dismissPlayGamesFailure,
                 retry = viewModel::retry,
                 dismissExit = room::leave,
                 dismissFailure = room::dismissEntryFailure,

@@ -65,13 +65,16 @@ class HomeActions(
     val solo: () -> Unit = {},
     val settings: () -> Unit = {},
     val profile: () -> Unit = {},
+    val playGames: () -> Unit = {},
+    val dismissPlayGamesFailure: () -> Unit = {},
     val retry: () -> Unit = {},
     val dismissExit: () -> Unit = {},
     val dismissFailure: () -> Unit = {},
 )
 
 /**
- * Home, multiplayer first: the player, read from the server ([state]), the game's sign, Quick play the
+ * Home, multiplayer first: the player, read from the server ([state]), with a guest's way to sign in with
+ * Play Games under them, the game's sign, Quick play the
  * largest, with how many play and look for a game ([counts]), a room of the player's own and a code under
  * it, the public rooms, and a small solo last. [entry] is a seat being taken from here, which turns the
  * buttons off, or why it could not be; [exit] why the last room let the player go, until it is taken down.
@@ -151,6 +154,22 @@ fun HomeScreen(
                     contentDescription = strings.settingsScreen.title,
                     onClick = tapped("home.settings", onClick = actions.settings),
                     small = true,
+                )
+            }
+            if (state.offersPlayGames) {
+                StageButton(
+                    words.signInPlayGames,
+                    onClick = tapped("home.play_games", onClick = actions.playGames),
+                    kind = ButtonKind.QUIET,
+                    size = ButtonSize.SMALL,
+                    enabled = !state.linkingPlayGames && !taking,
+                )
+            }
+            state.playGamesFailure?.let { failure ->
+                Spacer(Modifier.height(space.md))
+                Notice(
+                    strings.failureText(failure.error, failure.retryAfter),
+                    onDismiss = tapped("home.play_games_failure_ok", onClick = actions.dismissPlayGamesFailure),
                 )
             }
             exit?.let { words.exitText(it) }?.let { text ->

@@ -29,16 +29,17 @@ import kotlin.time.Duration.Companion.seconds
  * device becoming another player, a launch's Play Games sign-in as someone else or a dead session replaced
  * by a fresh guest ([CurrentSession.sessions]), and any Play Games sign-in ([LinkPlayGames.signedIn]),
  * which renames a player it links without changing who they are. A failed read is reported to [analytics]
- * as shown.
+ * as shown. A guest may sign in with Play Games from here ([linkPlayGames]), which the sign-in's read then
+ * shows as linked.
  */
 class HomeViewModel(
     private val getProfile: GetProfile,
     private val setAvatar: SetAvatar,
     private val session: CurrentSession,
-    linkPlayGames: LinkPlayGames,
+    private val linkPlayGames: LinkPlayGames,
     private val analytics: Analytics,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(HomeState())
+    private val mutableState = MutableStateFlow(HomeState(playGamesAvailable = linkPlayGames.available))
 
     val state: StateFlow<HomeState> = mutableState.asStateFlow()
 
@@ -81,6 +82,32 @@ class HomeViewModel(
 
     /** The failure's Try again. */
     fun retry() = refresh()
+
+    /**
+     * The guest's Sign in with Play Games: asks Play Games, then the server, one at a time. Backing out of
+     * Play Games shows nothing; a sign-in that worked is read through [LinkPlayGames.signedIn], and one the
+     * server refused is shown until [dismissPlayGamesFailure].
+     */
+    fun linkPlayGames() {
+        if (mutableState.value.linkingPlayGames) return
+        mutableState.update { it.copy(linkingPlayGames = true, playGamesFailure = null) }
+        viewModelScope.launch {
+            try {
+                linkPlayGames.manually()
+            } catch (failure: KvizicException) {
+                analytics.track(
+                    AnalyticsEvent.ERROR_SHOWN,
+                    mapOf(AnalyticsProperty.CODE to failure.error.name, AnalyticsProperty.ACTION to PLAY_GAMES_ACTION),
+                )
+                mutableState.update { it.copy(playGamesFailure = HomeFailure(failure.error, failure.retryAfter)) }
+            } finally {
+                mutableState.update { it.copy(linkingPlayGames = false) }
+            }
+        }
+    }
+
+    /** The Play Games failure is taken down. */
+    fun dismissPlayGamesFailure() = mutableState.update { it.copy(playGamesFailure = null) }
 
     /**
      * Shows [avatarId] as the player's at once, and asks the server for it once they settle on it: no other
@@ -183,6 +210,7 @@ class HomeViewModel(
         /** What failed, as analytics name it. */
         const val ACTION = "profile"
         const val AVATAR_ACTION = "avatar"
+        const val PLAY_GAMES_ACTION = "play_games"
 
         /** The most reads one refresh makes: the player changing under each is not worth chasing further. */
         const val MAX_READS = 3

@@ -16,7 +16,16 @@ data class HomeState(
     val changingAvatar: String? = null,
     /** Why the last change of avatar failed. */
     val avatarFailure: HomeFailure? = null,
-)
+    /** Whether this build has Play Games, so a guest may be offered it. */
+    val playGamesAvailable: Boolean = false,
+    /** Whether a Play Games sign-in the player asked for is in flight. */
+    val linkingPlayGames: Boolean = false,
+    /** Why the last Play Games sign-in the player asked for failed, until it is taken down. */
+    val playGamesFailure: HomeFailure? = null,
+) {
+    /** Whether Home offers the player to sign in with Play Games: a guest's profile read, in a build that has it. */
+    val offersPlayGames: Boolean get() = playGamesAvailable && profile?.playGamesLinked == false
+}
 
 /** Why the profile could not be read, [error], with the wait a rate limit named, [retryAfter]. */
 data class HomeFailure(

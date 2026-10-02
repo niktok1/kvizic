@@ -243,7 +243,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
 - **Home** (the owner, 2026-10-02): the player's name over „Ниво 7“ and a thin bar of how far through the level they
-  are (`LevelBar`); the game's sign stands in the middle of the room the buttons leave, with no art (the owner chose
+  are (`LevelBar`), and under them, for a guest in a build with Play Games, a quiet „Пријави се преко Плеј игара“
+  (`HomeState.offersPlayGames`, `LinkPlayGames.manually`): Play Games offers its own sign-in once for an account,
+  so a player who backed out of it would stay a guest for good. Clearing the app's data never changes the account
+  Play Games hands it; the game's sign stands in the middle of the room the buttons leave, with no art (the owner chose
   it over the icon's bulb ring, an animal cast and a question card). Where a level is shown on an avatar it is a
   badge at the bottom start, where the host's microphone is at the end; a line of a board is too small for it.
 - **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page
@@ -345,10 +348,6 @@ makes the draw tests write PNGs to look at.
   in Settings, and a way for a skin to be chosen at all.
 - Play Games before launch: its variables on `kvizic-server`; its consent screen published (in Testing now,
   it wants a privacy policy page first), then its configuration, with its final art.
-- **A Play Games button** for a guest to sign in by hand (`LinkPlayGames.manually` is there, with no screen
-  calling it): Play Games offers its own sign-in once for an account, so a player who backs out of it stays a
-  guest for good (2026-10-02, the tablet). Clearing the app's data never changes the account Play Games
-  hands it: a device keeps the one the game was first signed in with, while that account is on the device.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.
 - **Phones on their side**: phones are portrait-locked (§9) until the game has a landscape layout: the
   question screen in two panes, the bar and the question beside the answers' grid (a phone on its side is

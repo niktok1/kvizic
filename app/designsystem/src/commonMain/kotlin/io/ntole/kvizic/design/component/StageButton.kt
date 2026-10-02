@@ -121,8 +121,9 @@ fun StageButton(
             }
             val iconSize = if (size == ButtonSize.HERO || iconAbove) space.icon.large else space.icon.medium
             if (iconAbove) {
+                // A tile's words stand under its icon with less room to the sides: two of them share a row.
                 Column(
-                    modifier = Modifier.padding(horizontal = space.button.paddingHorizontal, vertical = space.sm),
+                    modifier = Modifier.padding(horizontal = space.sm, vertical = space.sm),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(space.xs),
                 ) {

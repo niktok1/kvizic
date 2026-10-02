@@ -117,6 +117,20 @@ class TapsTest {
                 )
             },
         )
+        // A guest is offered Play Games under their name, and told why a sign-in failed.
+        assertEquals(
+            buttons + "home.profile" + "home.play_games" + "home.play_games_failure_ok",
+            elementsTapped {
+                HomeScreen(
+                    HomeState(
+                        profile = PROFILE,
+                        playGamesAvailable = true,
+                        playGamesFailure = HomeFailure(CoreError.NETWORK),
+                    ),
+                    HomeActions(),
+                )
+            },
+        )
         assertEquals(setOf("top_bar.back"), elementsTapped { BackTopBar(onBack = {}) })
     }
 
