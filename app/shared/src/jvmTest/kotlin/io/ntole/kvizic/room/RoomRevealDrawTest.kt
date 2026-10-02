@@ -92,6 +92,23 @@ class RoomRevealDrawTest : RoomStills() {
     }
 
     @Test
+    fun `the podium wears the level of each of its three`() {
+        eachSkin { skin ->
+            // The player is on the results, so the screen is the results', not the lobby's seats.
+            val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
+            val state = inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members))
+            draw(skin, "results-levels", state) { scene ->
+                val shown = scene.everyText()
+                assertTrue(
+                    stringsOf(Language.DEFAULT).game.backToRoom in shown,
+                    "${skin.id}: these are not the results",
+                )
+                listOf("12", "7", "24").forEach { assertTrue(it in shown, "${skin.id}: no badge shows $it: $shown") }
+            }
+        }
+    }
+
+    @Test
     fun `the results fit eight players and the longest name, and say so when the player won`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game

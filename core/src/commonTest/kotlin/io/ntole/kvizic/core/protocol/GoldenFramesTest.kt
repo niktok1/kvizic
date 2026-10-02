@@ -36,6 +36,9 @@ class GoldenFramesTest {
             """{"t":"rejected","id":7,"code":"TOO_SOON"}""",
             """{"t":"closing","reason":"VOTED_OUT"}""",
             """{"t":"closing","reason":"NOT_BACK"}""",
+            // Since 2026-10-02: a member's level, and a final standing's.
+            """{"t":"member","v":14,"member":{"player":"p3","name":"Нина","avatar":"owl","seat":2,"connected":true,"onResults":false,"playing":false,"kickVotes":0,"kickVotesNeeded":0,"kickVoted":false,"level":7}}""",
+            """{"t":"over","v":15,"results":{"gameId":"g1","questionCount":10,"standings":[{"player":"p1","name":"Ана","avatar":"fox","score":900,"correct":8,"rank":1,"finished":true,"level":12}]}}""",
         )
 
     private val v1ClientFrames =
@@ -88,5 +91,25 @@ class GoldenFramesTest {
         val answer = ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames[3])
         assertIs<ClientMessage.Answer>(answer)
         assertEquals(ClientMessage.Answer(id = 1, question = 2, option = 3), answer)
+    }
+
+    @Test
+    fun aMemberFromBeforeLevelsHasNoLevelAndOneSinceHasIt() {
+        fun member(frame: String) =
+            (ProtocolJson.decodeFromString(ServerMessage.serializer(), frame) as ServerMessage.MemberUpdated).member
+
+        val before = v1ServerFrames.first { """"t":"member"""" in it && "kickVotes" in it }
+        val since = v1ServerFrames.last { """"t":"member"""" in it }
+        assertEquals(0, member(before).level, "a server that sends no level has none")
+        assertEquals(7, member(since).level)
+        val over = v1ServerFrames.last { """"t":"over"""" in it }
+        val results =
+            (
+                ProtocolJson.decodeFromString(
+                    ServerMessage.serializer(),
+                    over,
+                ) as ServerMessage.GameOver
+            ).results
+        assertEquals(12, results.standings.single().level)
     }
 }

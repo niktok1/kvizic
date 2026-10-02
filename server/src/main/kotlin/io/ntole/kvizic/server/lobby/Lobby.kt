@@ -23,6 +23,7 @@ import io.ntole.kvizic.core.protocol.ResultsView
 import io.ntole.kvizic.core.protocol.RevealView
 import io.ntole.kvizic.core.protocol.ServerMessage
 import io.ntole.kvizic.core.protocol.StandingView
+import io.ntole.kvizic.server.player.Levels
 import io.ntole.kvizic.server.rules.ScoringRules
 import io.ntole.kvizic.server.rules.Tally
 import io.ntole.kvizic.server.rules.answerTime
@@ -274,7 +275,7 @@ class Lobby(
 
                 existing != null -> {
                     existing.sessionId = seat.sessionId
-                    updateIdentity(existing, seat.name, seat.avatar)
+                    updateIdentity(existing, seat.name, seat.avatar, seat.xp)
                     if (existing.connection ==
                         null
                     ) {
@@ -294,6 +295,7 @@ class Lobby(
                             sessionId = seat.sessionId,
                             name = seat.name,
                             avatar = seat.avatar,
+                            xp = seat.xp,
                             order = nextOrder++,
                             seat = freeSeat(),
                             activeAt = now(),
@@ -747,7 +749,7 @@ class Lobby(
             )
         players.forEach { player ->
             game.tallies[player] = Tally(player)
-            members[player]?.let { game.shown[player] = it.name to it.avatar }
+            members[player]?.let { game.shown[player] = Shown(it.name, it.avatar, it.xp) }
         }
         phase = Phase.Playing(game)
         log.info("lobby $code started game ${game.id}: ${players.size} players, ${asked.size} questions")
@@ -968,17 +970,32 @@ class Lobby(
         val endedEarly = game.index < game.questions.lastIndex || game.step != Step.REVEALING
         val ranked = rank(game.players.map { game.tallies.getValue(it) })
         val finishers = game.players.count { it !in game.left }
+
+        fun won(
+            tally: Tally,
+            rank: Int,
+        ) = rank == 1 && tally.playerId !in game.left && finishers >= 2
+        // Only a game in a room earns experience, and only for those who stayed to its end.
+        val earned =
+            if (kind == LobbyKind.SOLO) {
+                emptyMap()
+            } else {
+                ranked
+                    .filter { (tally, _) -> tally.playerId !in game.left }
+                    .associate { (tally, rank) -> tally.playerId to Levels.award(tally.correct, won(tally, rank)) }
+            }
         val standings =
             ranked.map { (tally, rank) ->
-                val (name, avatar) = game.shown[tally.playerId] ?: (tally.playerId to "")
+                val shown = game.shown[tally.playerId]
                 FinalStandingView(
                     player = tally.playerId,
-                    name = name,
-                    avatar = avatar,
+                    name = shown?.name ?: tally.playerId,
+                    avatar = shown?.avatar.orEmpty(),
                     score = tally.score,
                     correct = tally.correct,
                     rank = rank,
                     finished = tally.playerId !in game.left,
+                    level = shown?.let { Levels.of(it.xp + (earned[tally.playerId] ?: 0)).number } ?: 0,
                 )
             }
         val personalBest =
@@ -1009,7 +1026,7 @@ class Lobby(
                             answered = tally.answered,
                             rank = rank,
                             finished = finished,
-                            won = rank == 1 && finished && finishers >= 2,
+                            won = won(tally, rank),
                         )
                     },
                 questions = game.records.toList(),
@@ -1029,6 +1046,15 @@ class Lobby(
         waitingSince = now()
         game.players.forEach { player -> members[player]?.onResults = true }
         changed { v, _ -> ServerMessage.GameOver(v, results) }
+        // The record adds the same to their profiles; here it is what their seats show, until they sit down again.
+        earned.forEach { (player, gain) ->
+            val member = members[player] ?: return@forEach
+            val before = Levels.of(member.xp).number
+            member.xp += gain
+            if (member.announced && Levels.of(member.xp).number != before) {
+                changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
+            }
+        }
 
         if (draining && !closing) close(CloseReason.SERVER_RESTARTING, CloseCodes.SERVER_RESTARTING)
     }
@@ -1101,8 +1127,11 @@ class Lobby(
         member: Member,
         name: String,
         avatar: String,
+        xp: Int,
     ) {
-        if (member.name == name && member.avatar == avatar) return
+        val levelChanged = Levels.of(member.xp).number != Levels.of(xp).number
+        member.xp = xp
+        if (member.name == name && member.avatar == avatar && !levelChanged) return
         member.name = name
         member.avatar = avatar
         if (member.announced) changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
@@ -1265,6 +1294,7 @@ class Lobby(
             name = member.name,
             avatar = member.avatar,
             seat = member.seat,
+            level = Levels.of(member.xp).number,
             connected = member.connection != null,
             onResults = member.onResults,
             playing = game != null && member.playerId in game.players && member.playerId !in game.left,
@@ -1433,6 +1463,8 @@ class Lobby(
         var sessionId: String,
         var name: String,
         var avatar: String,
+        /** What they have earned in games: their level is worked out from it, and a game finished adds to it here. */
+        var xp: Int,
         val order: Long,
         val seat: Int,
         var activeAt: ComparableTimeMark,
@@ -1515,6 +1547,13 @@ class Lobby(
         val order: Int,
     )
 
+    /** A player as the game began: what its results show of them if they have left by then. */
+    private class Shown(
+        val name: String,
+        val avatar: String,
+        val xp: Int,
+    )
+
     private class Game(
         val id: String,
         val settings: LobbySettingsDto,
@@ -1525,8 +1564,8 @@ class Lobby(
     ) {
         val tallies = LinkedHashMap<String, Tally>()
 
-        /** Each player's name and avatar as the game began, for results shown after they left. */
-        val shown = HashMap<String, Pair<String, String>>()
+        /** Each player's name, avatar and experience as the game began, for results shown after they left. */
+        val shown = HashMap<String, Shown>()
         val left = mutableSetOf<String>()
         var index = 0
         var step = Step.READING

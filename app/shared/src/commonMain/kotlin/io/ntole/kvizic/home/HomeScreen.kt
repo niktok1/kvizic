@@ -28,6 +28,7 @@ import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.LevelBar
 import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PresenceStrip
 import io.ntole.kvizic.design.component.StageButton
@@ -37,7 +38,6 @@ import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.cued
-import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
@@ -87,7 +87,6 @@ fun HomeScreen(
 ) {
     val strings = LocalStrings.current
     val words = strings.game
-    val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
@@ -120,11 +119,17 @@ fun HomeScreen(
                         Column(Modifier.weight(1f)) {
                             KvizicText(shown(profile.displayName), style = type.name, maxLines = 1)
                             KvizicText(
-                                words.games.of(profile.stats.gamesPlayed, language) + " · " +
-                                    words.wins.of(profile.stats.gamesWon, language),
+                                words.level.fill(profile.level.number),
                                 style = type.caption,
                                 color = colors.onPageMuted,
                                 maxLines = 1,
+                            )
+                            Spacer(Modifier.height(space.xxs))
+                            LevelBar(
+                                profile.level.progress,
+                                Modifier.fillMaxWidth(LEVEL_BAR_SHARE),
+                                contentDescription =
+                                    words.xpProgress.fill(profile.level.xpIntoLevel, profile.level.xpForLevel),
                             )
                         }
                     }
@@ -152,7 +157,8 @@ fun HomeScreen(
                 Spacer(Modifier.height(space.md))
                 Notice(text, onDismiss = tapped("home.exit_ok", onClick = actions.dismissExit))
             }
-            Spacer(Modifier.height(space.xl))
+            // The name of the game stands in the middle of what the buttons leave free.
+            Spacer(Modifier.weight(1f))
             Wordmark(strings.gameName, Modifier.fillMaxWidth())
             Spacer(Modifier.weight(1f))
             if (entry is Entry.Failed) {
@@ -233,6 +239,9 @@ fun HomeScreen(
         }
     }
 }
+
+/** How much of the name's width the level's bar spans. */
+private const val LEVEL_BAR_SHARE = 0.4f
 
 /** A line to read and take down: why the last room ended, or why a seat could not be taken. */
 @Composable

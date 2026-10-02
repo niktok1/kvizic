@@ -147,6 +147,8 @@ internal class TestPlayer(
     private val scenario: LobbyScenario,
     val sessionId: String = "session-$id",
     var avatar: String = "fox",
+    /** What they have earned in games: the seat they hold shows the level it is. */
+    var xp: Int = 0,
 ) {
     var connection: TestConnection? = null
         private set
@@ -168,7 +170,7 @@ internal class TestPlayer(
     /** Holds a seat, as REST does before issuing a ticket. */
     fun reserve(): ReserveResult {
         val reply = CompletableDeferred<ReserveResult>()
-        check(scenario.lobby.send(LobbyCommand.Reserve(Seat(id, sessionId, "Играч $id", avatar), reply)))
+        check(scenario.lobby.send(LobbyCommand.Reserve(Seat(id, sessionId, "Играч $id", avatar, xp), reply)))
         scenario.settle()
         return reply.getCompleted()
     }

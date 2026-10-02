@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
+import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
@@ -19,6 +20,8 @@ import io.ntole.kvizic.renderSettled
 import io.ntole.kvizic.room.TOPICS
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.theme.GameTheme
+import org.jetbrains.skia.Image
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -32,16 +35,20 @@ class ProfileScreenDrawTest {
             assertEquals(AvatarArt.DRAWN.size, words.avatarNames.size, "$language: an animal's name for each avatar")
             val scene = scene(language)
             try {
+                write("profile-${language.name.lowercase()}", scene.renderSettled())
                 val shown = scene.everyText()
                 listOf(
                     words.games.of(12, language),
                     words.wins.of(3, language),
+                    words.level.fill(7),
+                    "40 / 130",
                     words.correctShare.fill(66),
                     words.soloBest.fill("${words.medium} 940 · ${words.hard} 410"),
                     words.bestTopic.fill(if (language == Language.ENGLISH) "Geography" else stringsTopic(language)),
                     words.pickAvatar,
                 ).forEach { assertTrue(it in shown, "$language: \"$it\" is not in $shown") }
                 words.avatarNames.forEach { assertTrue(it in scene.descriptions(), "$language: $it") }
+                assertTrue(words.xpProgress.fill(40, 130) in scene.descriptions(), "$language: the level's bar is said")
             } finally {
                 scene.close()
             }
@@ -70,6 +77,16 @@ class ProfileScreenDrawTest {
             "Географија"
         }
 
+    /** With `KVIZIC_DESIGN_DIR` set, a still of the profile is written there as a PNG for the owner to see. */
+    private fun write(
+        name: String,
+        image: Image,
+    ) {
+        val directory = System.getenv("KVIZIC_DESIGN_DIR")?.takeIf { it.isNotBlank() }?.let(::File) ?: return
+        directory.mkdirs()
+        File(directory, "$name.png").writeBytes(checkNotNull(image.encodeToData()).bytes)
+    }
+
     private fun scene(
         language: Language,
         onPick: (String) -> Unit = {},
@@ -88,6 +105,7 @@ class ProfileScreenDrawTest {
                 nameSource = NameSource.GENERATED,
                 avatarId = "hedgehog",
                 playGamesLinked = false,
+                level = PlayerLevel(number = 7, xpIntoLevel = 40, xpForLevel = 130),
                 stats =
                     PlayerStats(
                         gamesPlayed = 12,

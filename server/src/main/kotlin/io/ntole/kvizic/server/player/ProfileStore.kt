@@ -1,5 +1,6 @@
 package io.ntole.kvizic.server.player
 
+import io.ntole.kvizic.core.player.PlayerLevelDto
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
 import io.ntole.kvizic.server.auth.IdentityStore
@@ -36,12 +37,14 @@ object ProfileStore {
                         .thenByDescending { it[PlayerTopicStats.topicId] },
                 )?.get(PlayerTopicStats.topicId)
 
+        val level = Levels.of(row[Profiles.xp])
         return ProfileDto(
             playerId = playerId,
             displayName = row[Players.displayName],
             nameSource = row[Players.nameSource],
             avatarId = row[Profiles.avatarId],
             playGamesLinked = IdentityStore.isLinked(playerId),
+            level = PlayerLevelDto(number = level.number, xpIntoLevel = level.into, xpForLevel = level.span),
             stats =
                 PlayerStatsDto(
                     gamesPlayed = row[Profiles.gamesPlayed],
@@ -62,6 +65,7 @@ object ProfileStore {
             Players.displayName,
             Players.nameSource,
             Profiles.avatarId,
+            Profiles.xp,
             Profiles.gamesPlayed,
             Profiles.gamesWon,
             Profiles.answersGiven,

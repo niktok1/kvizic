@@ -14,7 +14,20 @@ public data class ProfileDto(
     public val nameSource: NameSource = NameSource.UNKNOWN,
     public val avatarId: String,
     public val playGamesLinked: Boolean = false,
+    public val level: PlayerLevelDto = PlayerLevelDto(),
     public val stats: PlayerStatsDto = PlayerStatsDto(),
+)
+
+/**
+ * Where a player stands in the levels, as the server works it out: [number] is their level, [xpIntoLevel] the
+ * experience they have earned in it and [xpForLevel] what it takes to finish it, so the next level is one
+ * `xpIntoLevel / xpForLevel` of the way. Every level is for experience from finished games in a room.
+ */
+@Serializable
+public data class PlayerLevelDto(
+    public val number: Int = 1,
+    public val xpIntoLevel: Int = 0,
+    public val xpForLevel: Int = 10,
 )
 
 /** Where a player's shown name comes from. */

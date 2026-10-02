@@ -30,6 +30,8 @@ data class SeatOccupant(
     val avatarId: String,
     /** Their seat, which gives their colour. */
     val seat: Int,
+    /** Their level, on their avatar's badge, or none to show. */
+    val level: Int? = null,
     /**
      * What the seat says of them in a word, to a screen reader alone, since the seat shows it otherwise:
      * the host's title (the microphone on the avatar), that the seat is the player's own (lit), or that
@@ -111,6 +113,7 @@ fun Seat(
                     occupant.seat,
                     size = AvatarSize.MD,
                     host = occupant.host,
+                    level = occupant.level,
                     dimmed = occupant.away,
                 )
                 Spacer(Modifier.height(space.xs))

@@ -51,6 +51,10 @@ data class GameStrings(
     val solo: String,
     val games: Plural,
     val wins: Plural,
+    /** A player's level, `{0}`. */
+    val level: String,
+    /** How far through its level a player is, said to a screen reader: experience earned `{0}` of what it takes `{1}`. */
+    val xpProgress: String,
     /** Why the last room let the player go, shown on Home until it is taken down. */
     val exitKicked: String,
     val exitVotedOut: String,
@@ -226,6 +230,8 @@ data class GameStrings(
             solo = transform(solo),
             games = games.map(transform),
             wins = wins.map(transform),
+            level = transform(level),
+            xpProgress = transform(xpProgress),
             exitKicked = transform(exitKicked),
             exitVotedOut = transform(exitVotedOut),
             exitNotBack = transform(exitNotBack),
@@ -372,6 +378,8 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         solo = "Соло",
         games = Plural("{0} игра", "{0} игре", "{0} игара"),
         wins = Plural("{0} победа", "{0} победе", "{0} победа"),
+        level = "Ниво {0}",
+        xpProgress = "{0} од {1} бодова искуства",
         exitKicked = "Водитељ те је избацио из собе.",
         exitVotedOut = "Играчи су гласали да изађеш из собе.",
         exitNotBack = "Нова игра је почела без тебе.",
@@ -533,6 +541,8 @@ internal val EnglishGameStrings: GameStrings =
         solo = "Solo",
         games = Plural("{0} game", "{0} games", "{0} games"),
         wins = Plural("{0} win", "{0} wins", "{0} wins"),
+        level = "Level {0}",
+        xpProgress = "{0} of {1} experience points",
         exitKicked = "The host removed you from the room.",
         exitVotedOut = "The players voted you out of the room.",
         exitNotBack = "A new game started without you.",

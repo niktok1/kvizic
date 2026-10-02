@@ -2,8 +2,10 @@ package io.ntole.kvizic.core.data.mapper
 
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
+import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.player.PlayerLevelDto
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
 import io.ntole.kvizic.core.player.NameSource as WireNameSource
@@ -17,7 +19,11 @@ internal fun ProfileDto.toDomain(): Profile =
         avatarId = avatarId,
         playGamesLinked = playGamesLinked,
         stats = stats.toDomain(),
+        level = level.toDomain(),
     )
+
+internal fun PlayerLevelDto.toDomain(): PlayerLevel =
+    PlayerLevel(number = number, xpIntoLevel = xpIntoLevel, xpForLevel = xpForLevel)
 
 internal fun WireNameSource.toDomain(): NameSource =
     when (this) {

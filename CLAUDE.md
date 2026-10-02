@@ -112,6 +112,16 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - **Scoring**, max 100: right `50 + 40·f` plus +10/+5/+2 for the first three right; wrong `−(5 + 35·f²)`
   (−5 to −40), scaled for fewer answers; none 0; the minus can be turned off per room. `f` is the time
   left when the answer lands, less min(RTT, 300 ms).
+- **Levels** (the owner, 2026-10-02): a player's level is worked out on the server from `profiles.xp` (V8), earned
+  by a finished game in a room, **never in a solo run**, and only by those who stayed to its end: 20 for the game,
+  1 for each right answer, 20 for a win (`Levels`). Level `n` begins at `10·(n−1)²` experience, so the first levels
+  come with the first games (the second after one, the fifth after five) and each later one takes more than the
+  one before (the tenth about 25 games, the twentieth about 120, the fiftieth about 800). The client never works
+  it out: the profile carries `PlayerLevelDto` (the number, the experience in it, what it takes), a room's
+  `MemberView` and `FinalStandingView` the number alone, 0 from a server that says none. The lobby counts a game's
+  experience into its members as it ends, so a seat's level moves at once; sitting down again reads it afresh.
+  Levels are for nothing yet but to show: Home's caption and bar, the account's, a seat's and the podium's badge.
+  Games and wins stay in the account's statistics only.
 - Settings: questions 5/10/15/20, time 10/15/20/30 s, topics (none = Све), difficulty Лако/Средње/Тешко,
   seats 2–8, private or public, minus on/off. Codes are 6 digits, not reused for 30 min; a per-address guard
   stops guessing. The host changes them in the lobby alone, from its chips: never during a game, nor from
@@ -232,6 +242,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
+- **Home** (the owner, 2026-10-02): the player's name over „Ниво 7“ and a thin bar of how far through the level they
+  are (`LevelBar`); the game's sign stands in the middle of the room the buttons leave, with no art (the owner chose
+  it over the icon's bulb ring, an animal cast and a question card). Where a level is shown on an avatar it is a
+  badge at the bottom start, where the host's microphone is at the end; a line of a board is too small for it.
 - **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page
   (`PresenceStrip`): a person and the players online, a magnifier and those searching, each count on
   flaps; it stays line-sized, being only nice to know, and a screen reader is told the sentence. On Home it stands

@@ -91,6 +91,9 @@ object Profiles : Table("profiles") {
     val answersCorrect = integer("answers_correct").default(0)
     val soloRuns = integer("solo_runs").default(0)
 
+    /** Experience earned in finished games in a room, none in solo (`Levels`). */
+    val xp = integer("xp").default(0)
+
     /** The best solo run at medium, and when: every run was medium before V5, so V1's columns hold it. */
     val soloBestScore = integer("solo_best_score").nullable()
     val soloBestAt = long("solo_best_at").nullable()

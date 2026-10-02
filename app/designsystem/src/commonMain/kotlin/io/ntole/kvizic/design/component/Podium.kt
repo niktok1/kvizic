@@ -25,6 +25,8 @@ data class PodiumPlace(
     val avatarId: String,
     val seat: Int,
     val score: Int,
+    /** Their level, on their avatar's badge, or none to show. */
+    val level: Int? = null,
 )
 
 /**
@@ -60,6 +62,7 @@ fun Podium(
                     Avatar(
                         avatarId = standing.avatarId,
                         seat = standing.seat,
+                        level = standing.level,
                         size = if (place == 1) AvatarSize.XL else AvatarSize.LG,
                     )
                     Spacer(Modifier.height(space.xs))

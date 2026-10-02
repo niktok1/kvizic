@@ -220,6 +220,70 @@ class ResultWriterTest {
     }
 
     @Test
+    fun `a game in a room earns experience for those who stayed to its end, and a solo run none`() {
+        fun xpOf(id: String) =
+            read { Profiles.select(Profiles.xp).where { Profiles.playerId eq id }.single()[Profiles.xp] }
+
+        write(
+            game(
+                players =
+                    listOf(
+                        PlayerRecord(
+                            "ana",
+                            score = 170,
+                            correct = 2,
+                            answered = 2,
+                            rank = 1,
+                            finished = true,
+                            won = true,
+                        ),
+                        PlayerRecord(
+                            "boris",
+                            score = -12,
+                            correct = 0,
+                            answered = 1,
+                            rank = 2,
+                            finished = true,
+                            won = false,
+                        ),
+                        PlayerRecord(
+                            "ceca",
+                            score = 50,
+                            correct = 1,
+                            answered = 1,
+                            rank = 3,
+                            finished = false,
+                            won = false,
+                        ),
+                    ),
+                spectators = emptyList(),
+            ),
+        )
+        // Twenty for the game, one for each right answer, twenty more for the win; none for leaving.
+        assertEquals(listOf(42, 20, 0), listOf(xpOf("ana"), xpOf("boris"), xpOf("ceca")))
+
+        write(
+            game(
+                kind = LobbyKind.SOLO,
+                players =
+                    listOf(
+                        PlayerRecord(
+                            "ana",
+                            score = 600,
+                            correct = 2,
+                            answered = 2,
+                            rank = 1,
+                            finished = true,
+                            won = false,
+                        ),
+                    ),
+                spectators = emptyList(),
+            ),
+        )
+        assertEquals(42, xpOf("ana"), "a solo run earns nothing")
+    }
+
+    @Test
     fun `a solo run keeps its best, and only a better one replaces it`() {
         fun solo(score: Int) =
             game(

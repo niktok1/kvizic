@@ -74,12 +74,13 @@ sealed interface LobbyCommand {
     ) : LobbyCommand
 }
 
-/** Who a reservation is for, and the name and avatar the lobby shows for them. */
+/** Who a reservation is for, the name and avatar the lobby shows for them, and the experience their level is. */
 data class Seat(
     val playerId: String,
     val sessionId: String,
     val name: String,
     val avatar: String,
+    val xp: Int = 0,
 )
 
 sealed interface ReserveResult {

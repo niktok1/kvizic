@@ -31,15 +31,16 @@ internal fun member(
     connected: Boolean = true,
     onResults: Boolean = false,
     playing: Boolean = false,
-) = LobbyMember(id, name, avatar, seat, connected, onResults, playing)
+    level: Int = 0,
+) = LobbyMember(id, name, avatar, seat, connected, onResults, playing, level = level)
 
 internal val MEMBERS =
     listOf(
-        member("nina", "Нина", "fox", 0),
-        member("sova", "Мудра Сова", "owl", 1),
-        member(YOU, "Марко", "hedgehog", 2),
-        member("bojan", "Бојан", "bear", 3),
-        member("roda", "Тиха Рода", "stork", 4, connected = false),
+        member("nina", "Нина", "fox", 0, level = 12),
+        member("sova", "Мудра Сова", "owl", 1, level = 3),
+        member(YOU, "Марко", "hedgehog", 2, level = 7),
+        member("bojan", "Бојан", "bear", 3, level = 24),
+        member("roda", "Тиха Рода", "stork", 4, connected = false, level = 1),
     )
 
 internal val TOPICS =
@@ -134,9 +135,9 @@ internal val RESULTS =
         questionCount = 10,
         standings =
             listOf(
-                FinalStanding("nina", "Нина", "fox", 1612, 8, 1, true),
-                FinalStanding(YOU, "Марко", "hedgehog", 1488, 7, 2, true),
-                FinalStanding("bojan", "Бојан", "bear", 1210, 6, 3, true),
+                FinalStanding("nina", "Нина", "fox", 1612, 8, 1, true, 12),
+                FinalStanding(YOU, "Марко", "hedgehog", 1488, 7, 2, true, 7),
+                FinalStanding("bojan", "Бојан", "bear", 1210, 6, 3, true, 24),
                 FinalStanding("sova", "Мудра Сова", "owl", 980, 5, 4, true),
                 FinalStanding("roda", "Тиха Рода", "stork", 655, 3, 5, false),
             ),

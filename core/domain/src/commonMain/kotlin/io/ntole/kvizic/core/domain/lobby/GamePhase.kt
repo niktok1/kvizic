@@ -56,6 +56,8 @@ public data class FinalStanding(
     val rank: Int,
     /** False for one who left before the end. */
     val finished: Boolean,
+    /** Their level with this game counted, or 0 where the server did not say. */
+    val level: Int = 0,
 )
 
 /** A solo run's score against the player's best before it. */

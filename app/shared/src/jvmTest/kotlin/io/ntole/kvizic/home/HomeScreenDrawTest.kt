@@ -7,6 +7,7 @@ import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.player.NameSource
+import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
@@ -30,7 +31,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Home drawn off screen in each language, on a small phone: the player and their games, the game's sign,
+ * Home drawn off screen in each language, on a small phone: the player and their level, the game's sign,
  * Quick play first with how many play, the other ways into a room under it, and solo last; why the last
  * room ended, and why a seat could not be taken, each until taken down.
  */
@@ -45,7 +46,7 @@ class HomeScreenDrawTest {
                 write("home-${language.name.lowercase()}", scene.renderSettled())
                 val shown = scene.everyText()
                 listOf(
-                    words.games.of(12, language) + " · " + words.wins.of(3, language),
+                    words.level.fill(7),
                     words.quickPlay,
                     words.createRoom,
                     words.joinByCode,
@@ -54,6 +55,10 @@ class HomeScreenDrawTest {
                     words.solo,
                 ).forEach { text -> assertTrue(text in shown, "$language: \"$text\" is not in $shown") }
                 assertTrue(strings.settingsScreen.title in scene.descriptions(), "$language: ${scene.descriptions()}")
+                // The games and wins are the account's, not Home's; the level's bar is said whole.
+                assertFalse(words.games.of(12, language) in shown, "$language: games are on Home")
+                assertFalse(words.wins.of(3, language) in shown, "$language: wins are on Home")
+                assertTrue(words.xpProgress.fill(40, 130) in scene.descriptions(), "$language: ${scene.descriptions()}")
                 // The counts are said whole and shown in no words.
                 assertTrue(words.presence.fill(128, 7) in scene.descriptions(), "$language: ${scene.descriptions()}")
                 // Everything stands on the phone's screen, Solo, the last, too.
@@ -62,6 +67,25 @@ class HomeScreenDrawTest {
             } finally {
                 scene.close()
             }
+        }
+    }
+
+    @Test
+    fun `the game's name stands in the middle of the room between the player and the buttons`() {
+        val strings = stringsOf(Language.DEFAULT)
+        val scene = scene(HomeState(profile = PROFILE), Language.DEFAULT, counts = HomeCounts(128, 7, 12))
+        try {
+            val nodes = scene.nodes()
+            // The player's block and the settings button share a row; the row ends with the lower of the two.
+            val above =
+                listOf(strings.game.xpProgress.fill(40, 130), strings.settingsScreen.title)
+                    .maxOf { said -> nodes.last { said in it.descriptions }.boundsInRoot.bottom }
+            val logo = nodes.single { strings.gameName in it.texts }.boundsInRoot
+            val below = nodes.single { strings.game.quickPlay in it.texts }.boundsInRoot.top
+            assertTrue(logo.top - above > 0 && below - logo.bottom > 0, "the name is between the two")
+            assertEquals(logo.top - above, below - logo.bottom, 1f, "as far from the player as from the buttons")
+        } finally {
+            scene.close()
         }
     }
 
@@ -244,6 +268,7 @@ class HomeScreenDrawTest {
                 avatarId = "hedgehog",
                 playGamesLinked = false,
                 stats = PlayerStats(gamesPlayed = 12, gamesWon = 3, answersGiven = 120, answersCorrect = 80),
+                level = PlayerLevel(number = 7, xpIntoLevel = 40, xpForLevel = 130),
             )
     }
 }

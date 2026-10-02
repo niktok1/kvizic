@@ -2,8 +2,10 @@ package io.ntole.kvizic.core.data.mapper
 
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
+import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.player.PlayerLevelDto
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
 import kotlin.test.Test
@@ -20,6 +22,7 @@ class ProfileMapperTest {
                 nameSource = WireNameSource.PLAY_GAMES,
                 avatarId = "owl",
                 playGamesLinked = true,
+                level = PlayerLevelDto(number = 7, xpIntoLevel = 30, xpForLevel = 130),
                 stats =
                     PlayerStatsDto(
                         gamesPlayed = 10,
@@ -40,6 +43,7 @@ class ProfileMapperTest {
                 nameSource = NameSource.PLAY_GAMES,
                 avatarId = "owl",
                 playGamesLinked = true,
+                level = PlayerLevel(number = 7, xpIntoLevel = 30, xpForLevel = 130),
                 stats =
                     PlayerStats(
                         gamesPlayed = 10,

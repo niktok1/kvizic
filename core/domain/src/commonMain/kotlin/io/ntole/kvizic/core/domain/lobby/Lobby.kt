@@ -41,6 +41,8 @@ public data class LobbyMember(
     val kickVotesNeeded: Int = 0,
     /** Whether this device's player is one who votes them out. */
     val kickVotedByYou: Boolean = false,
+    /** Their level in the game, or 0 where the server did not say. */
+    val level: Int = 0,
 )
 
 /** A lobby as it stands. */

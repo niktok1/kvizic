@@ -118,6 +118,7 @@ internal fun MemberView.toDomain(): LobbyMember =
         kickVotes = kickVotes,
         kickVotesNeeded = kickVotesNeeded,
         kickVotedByYou = kickVoted,
+        level = level,
     )
 
 internal fun LobbyView.toDomain(): Lobby {
@@ -166,7 +167,7 @@ internal fun RevealView.toDomain(): Reveal =
     )
 
 internal fun FinalStandingView.toDomain(): FinalStanding =
-    FinalStanding(player, name, avatar, score, correct, rank, finished)
+    FinalStanding(player, name, avatar, score, correct, rank, finished, level)
 
 internal fun ResultsView.toDomain(): GameResults =
     GameResults(

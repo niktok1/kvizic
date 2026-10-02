@@ -614,9 +614,11 @@ private fun occupantOf(
         name = shown(member.name),
         avatarId = member.avatar,
         seat = member.seat,
+        level = member.level.takeIf { it > 0 },
         // Shown otherwise, so said only: the host's microphone, the player's own seat lit, an hourglass.
         badge =
             listOfNotNull(
+                words.level.fill(member.level).takeIf { member.level > 0 },
                 words.host.takeIf { host },
                 words.you.takeIf { own },
                 words.onResults.takeIf { member.onResults },
@@ -794,7 +796,13 @@ private fun Results(
                 }
                 Podium(
                     ranked.take(PODIUM).mapIndexed { i, standing ->
-                        PodiumPlace(shown(standing.name), standing.avatar, seatOf(standing.playerId, i), standing.score)
+                        PodiumPlace(
+                            shown(standing.name),
+                            standing.avatar,
+                            seatOf(standing.playerId, i),
+                            standing.score,
+                            standing.level.takeIf { it > 0 },
+                        )
                     },
                     Modifier.fillMaxWidth(),
                 )

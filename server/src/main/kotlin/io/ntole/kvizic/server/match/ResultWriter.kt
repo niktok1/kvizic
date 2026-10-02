@@ -13,6 +13,7 @@ import io.ntole.kvizic.server.db.Questions
 import io.ntole.kvizic.server.db.SeenQuestions
 import io.ntole.kvizic.server.lobby.GameRecord
 import io.ntole.kvizic.server.lobby.ResultSink
+import io.ntole.kvizic.server.player.Levels
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -116,7 +117,11 @@ class ResultWriter(
                 if (player.won) row[gamesWon] = gamesWon + 1
                 row[answersGiven] = answersGiven + player.answered
                 row[answersCorrect] = answersCorrect + player.correct
-                if (record.kind == LobbyKind.SOLO) row[soloRuns] = soloRuns + 1
+                if (record.kind == LobbyKind.SOLO) {
+                    row[soloRuns] = soloRuns + 1
+                } else if (player.finished) {
+                    row[xp] = xp + Levels.award(player.correct, player.won)
+                }
             }
             if (record.kind == LobbyKind.SOLO && player.finished) {
                 // A compare-and-set: only a better run at the same level replaces its best.

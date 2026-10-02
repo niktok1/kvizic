@@ -19,6 +19,8 @@ object PlayerStore {
         val displayName: String,
         val nameSource: NameSource,
         val avatarId: String,
+        /** What they have earned in games, which their level is worked out from. */
+        val xp: Int = 0,
     )
 
     /**
@@ -51,7 +53,7 @@ object PlayerStore {
     fun find(id: String): Player? =
         Players
             .join(Profiles, JoinType.INNER, Players.id, Profiles.playerId)
-            .select(Players.id, Players.displayName, Players.nameSource, Profiles.avatarId)
+            .select(Players.id, Players.displayName, Players.nameSource, Profiles.avatarId, Profiles.xp)
             .where { Players.id eq id }
             .limit(1)
             .firstOrNull()
@@ -61,6 +63,7 @@ object PlayerStore {
                     displayName = row[Players.displayName],
                     nameSource = row[Players.nameSource],
                     avatarId = row[Profiles.avatarId],
+                    xp = row[Profiles.xp],
                 )
             }
 

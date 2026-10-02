@@ -30,6 +30,7 @@ import io.ntole.kvizic.design.component.AvatarSize
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.LevelBar
 import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -80,6 +81,25 @@ fun ProfileScreen(
         ) {
             Avatar(state.changingAvatar ?: profile.avatarId, seat = 0, size = AvatarSize.XL)
             KvizicText(shown(profile.displayName), style = type.headline, textAlign = TextAlign.Center)
+            val xpLevel = profile.level
+            Column(
+                Modifier.fillMaxWidth(LEVEL_COLUMN_SHARE),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(space.xs),
+            ) {
+                KvizicText(words.level.fill(xpLevel.number), style = type.bodyStrong, color = colors.onPageAccent)
+                LevelBar(
+                    xpLevel.progress,
+                    Modifier.fillMaxWidth(),
+                    contentDescription = words.xpProgress.fill(xpLevel.xpIntoLevel, xpLevel.xpForLevel),
+                )
+                // Two counts are the same in every language, so they are no string of theirs.
+                KvizicText(
+                    "${xpLevel.xpIntoLevel} / ${xpLevel.xpForLevel}",
+                    style = type.caption,
+                    color = colors.onPageMuted,
+                )
+            }
             val stats = profile.stats
             Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
                 Chip(words.games.of(stats.gamesPlayed, language))
@@ -142,4 +162,7 @@ fun ProfileScreen(
 }
 
 private const val PERCENT = 100
+
+/** How much of the screen's width the level and its bar span. */
+private const val LEVEL_COLUMN_SHARE = 0.5f
 private const val AVATARS_A_ROW = 4

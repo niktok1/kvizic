@@ -39,8 +39,9 @@ class RoomLobbyDrawTest : RoomStills() {
                     assertFalse(it in shown, "${skin.id}: \"$it\" is written in $shown")
                 }
                 assertEquals(3, said.count { it == words.freeSeat }, "${skin.id}: $said")
+                // A seat says its level first, then what else it shows: "Ниво 12, водитељ".
                 listOf(words.host, words.you).forEach { word ->
-                    assertTrue(word in said, "${skin.id}: no seat says \"$word\": $said")
+                    assertTrue(said.any { word in it }, "${skin.id}: no seat says \"$word\": $said")
                 }
                 EMOTES.forEach { assertTrue(it.name(words) in said, "${skin.id}: ${it.id}") }
                 // The code stands in the top bar, over the seats, never on them.
@@ -53,6 +54,33 @@ class RoomLobbyDrawTest : RoomStills() {
                 bar.config[androidx.compose.ui.semantics.SemanticsActions.OnLongClick].action?.invoke()
             }
             assertEquals(listOf("482915"), copied, skin.id)
+        }
+    }
+
+    @Test
+    fun `a seat wears its member's level and says it, and a member the server gave none wears none`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            draw(skin, "lobby-levels", inLobby(GamePhase.Waiting(null))) { scene ->
+                val said = scene.descriptions()
+                MEMBERS.forEach { member ->
+                    val level = words.level.fill(member.level)
+                    assertTrue(said.any { level in it }, "${skin.id}: no seat says \"$level\": $said")
+                }
+                val shown = scene.everyText()
+                listOf(
+                    "12",
+                    "3",
+                    "7",
+                    "24",
+                    "1",
+                ).forEach { assertTrue(it in shown, "${skin.id}: no badge shows $it: $shown") }
+            }
+            val unknown = lobby(members = MEMBERS.map { it.copy(level = 0) })
+            draw(skin, "lobby-no-levels", inLobby(GamePhase.Waiting(null), lobby = unknown)) { scene ->
+                val said = scene.descriptions()
+                assertFalse(said.any { "Ниво" in it }, "${skin.id}: a seat says a level it has none of: $said")
+            }
         }
     }
 

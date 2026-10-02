@@ -28,8 +28,10 @@ import io.ntole.kvizic.design.skin.SkinSpace
 /**
  * A member's avatar: the animal of [avatarId] (a silhouette for one this build has not drawn), framed in
  * the colour of their [seat], and, for the room's [host], the host's microphone on a badge. [order] marks
- * the member's place among the first to answer right, on a badge of its own. [dimmed] greys it out: a
- * member who has not answered yet. [contentDescription] names the member to a screen reader.
+ * the member's place among the first to answer right, on a badge of its own. [level] is the member's level,
+ * on a badge at the bottom start, where the host's is at the end; the room's seats and the podium show it, a
+ * line of a board is too small to. [dimmed] greys it out: a member who has not answered yet.
+ * [contentDescription] names the member to a screen reader.
  */
 @Composable
 fun Avatar(
@@ -39,6 +41,7 @@ fun Avatar(
     size: AvatarSize = AvatarSize.MD,
     host: Boolean = false,
     order: Int? = null,
+    level: Int? = null,
     dimmed: Boolean = false,
     contentDescription: String? = null,
 ) {
@@ -76,6 +79,26 @@ fun Avatar(
                 contentAlignment = Alignment.Center,
             ) {
                 KvizicIcon(KvizicIcons.Mic, contentDescription = null, tint = part.hostIcon, size = badge * BADGE_ICON)
+            }
+        }
+        if (level != null) {
+            // The same badge as the host's, wider for two digits, with a number on it.
+            val badge = max(whole * skin.space.avatar.badgeFraction, skin.space.icon.small)
+            val across = if (level >= TWO_DIGITS) badge * TWO_DIGIT_BADGE else badge
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .size(across)
+                        .drawBehind { with(part) { drawHostBadge() } },
+                contentAlignment = Alignment.Center,
+            ) {
+                KvizicText(
+                    minOf(level, LEVEL_SHOWN_LEAST).toString(),
+                    style = KvizicTheme.type.badge,
+                    color = part.hostIcon,
+                    maxLines = 1,
+                )
             }
         }
         if (order != null) {
@@ -182,6 +205,11 @@ private const val DIMMED_ALPHA = 0.55f
 
 /** The microphone's share of its badge. */
 private const val BADGE_ICON = 0.68f
+
+/** A level's badge is wider from this number, and shows no more than [LEVEL_SHOWN_LEAST]: two digits are all it holds. */
+private const val TWO_DIGITS = 10
+private const val TWO_DIGIT_BADGE = 1.2f
+private const val LEVEL_SHOWN_LEAST = 99
 
 /** How far an order's badge hangs past the avatar's corner, as a share of its own size. */
 private const val BADGE_OUT = 4

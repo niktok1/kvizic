@@ -20,6 +20,7 @@ public data class Profile(
     public val avatarId: String,
     public val playGamesLinked: Boolean,
     public val stats: PlayerStats,
+    public val level: PlayerLevel = PlayerLevel(),
 )
 
 /** Where a player's shown name comes from. */
@@ -32,6 +33,21 @@ public enum class NameSource {
 
     /** A source this build cannot name, which a newer server may send. */
     OTHER,
+}
+
+/**
+ * Where a player stands in the levels, as the server works it out: their [number], the experience they have
+ * earned in it ([xpIntoLevel]) and what it takes to finish it ([xpForLevel]). Only finished games in a room earn
+ * any; the levels are for nothing yet but to show.
+ */
+public data class PlayerLevel(
+    public val number: Int = 1,
+    public val xpIntoLevel: Int = 0,
+    public val xpForLevel: Int = 10,
+) {
+    /** How far through the level the player is, from 0 to 1. */
+    public val progress: Float
+        get() = if (xpForLevel <= 0) 0f else (xpIntoLevel.toFloat() / xpForLevel).coerceIn(0f, 1f)
 }
 
 /** What a player's finished games add up to, as the server counts them. */
