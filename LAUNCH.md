@@ -1,85 +1,164 @@
 # Launch checklist — Квизић on Google Play (Android first)
 
-Checked 2026-10-02. ✅ done, ⚠️ found broken or missing, ☐ not yet known/done.
+Updated 2026-10-02. ✅ done, ⚠️ found broken or missing, ☐ to do. **You** marks a step only the owner can
+take (a console, a secret, a device); the rest is done in the repository.
 
-## 1. Blockers (Play won't accept the app, or the app breaks for real players)
+Decided 2026-10-02: launch in **RS, BA, ME, MK, AT, DE, CH, SE, NO, DK**, more countries later, so the
+legal pages name no country; the contact block stays WYR's (toleapps, application.eili@gmail.com); a guest
+signs in with Play Games from Home, under their name; Quick play with nobody online stays as it is (alone in
+a room is as good as solo).
 
-- ◐ **Legal pages** written (`site/`, Serbian + English: privacy, terms, account deletion, contact, home),
-  to be served at `https://kvizic.ntole.com` by `kvizic-site` (render.yaml). Still to do:
-  - ☐ review the pages: contact details and countries are WYR's; PostHog's 2-year and Render's 30-day
-    retention are WYR's claims, so check them in PostHog's project settings and on the Render plan;
-  - ☐ commit and push; then in Render, sync the blueprint so `kvizic-site` is created;
-  - ☐ Cloudflare DNS: a `kvizic` CNAME to the site's `onrender.com` name, proxy off (as the API's), then
-    verify the domain in Render;
-  - ☐ check all 10 URLs return 200, and that the About screen's links open them.
-- ⚠️ **No upload key configured.** `local.properties` has no `kvizic.upload.*`, so `bundleProdRelease`
-  refuses to sign. Create the upload keystore, store it and its passwords outside the repo (and back them
-  up), enrol in Play App Signing.
-- ✅ No forced closed test: the Play account predates the rule (12 testers for 14 days applies to personal
-  accounts made after 2023-11-13). A short internal or closed test is still worth it to get the Play Games
-  testers onto the store build.
-- ☐ **Production question bank.** Prod runs on Postgres, which has no seed. Publish and approve the bank with
-  `./publish.py prod …` and check that every topic and difficulty has enough questions for 20-question games
-  (thin topics are greyed out). Dev has 1,536 questions.
-- ☐ **Prod env vars on Render**: `ALLOWED_WEB_ORIGINS`, `PLAY_GAMES_CLIENT_ID`, `PLAY_GAMES_CLIENT_SECRET`
-  (or leave both unset to launch without Play Games). Confirm `JWT_SECRET` and `ADMIN_TOKEN` were generated,
-  and keep the admin token somewhere safe.
-- ☐ **Analytics at launch, as in WYR**: set the PostHog key (`kvizic.posthog.key`) for prod builds and check
-  the events reach PostHog EU from a prod build. Then the **Статистика** switch (About → Подаци) turns them
-  off, and the privacy policy describes them.
+## Done in the repository
 
-## 2. Play Console
+- ✅ Legal pages in `site/` (sr + en): privacy, terms, account deletion, contact, home. They name no country
+  now: „available on Android through Google Play“, a player outside Serbia pointed to their own authority.
+- ✅ Production bank checked: all 1,536 questions are in `kvizic-content/drafts/`, every topic has at least 52
+  (Митологија 52: 18 easy, 21 medium, 13 hard), so a 20-question game fills at every level.
+- ✅ Play Games sign-in for a guest on Home (`LinkPlayGames.manually` had no caller).
+- ✅ Home at 360 dp: „Направи собу“ showed as „Направи“ since Nunito (wider than the old face); tiles with
+  the icon above their words have less side padding now, and English says „Join by code“.
+- ✅ Version **1.0.0** (build 10000), Android and iOS.
+- ✅ Release signing reads `kvizic.upload.*` from `local.properties`; `bundleProdRelease` refuses the debug key.
+- ✅ Store listing drafted in sr + en: [store-listing.md](store-listing.md).
+- ✅ targetSdk 36, `/health` 200 on Starter in Frankfurt, deploys drain.
 
-- ☐ Store listing (sr + en): name, short and full description, icon 512², feature graphic 1024×500, phone
-  screenshots (the `design-review/` stills are a starting point, but use real-device captures).
-- ☐ Data safety form. Collected: guest id, display name, game results, PostHog events, Play Games id.
-  Shared: none. Deletion: in the app (About → Подаци) and via the web URL.
-- ☐ Content rating (IARC questionnaire). Target audience: pick 13+ to stay out of the Families policy.
-- ☐ Ads: none. App access: no login needed (guest).
-- ☐ Countries: Serbia, plus the region (BA, ME, HR, MK?) and the diaspora (AT, DE, CH?).
-- ☐ Play Games Services: consent screen published (it needs the privacy policy page first), configuration
-  published, achievements/leaderboards (if any) and the final art. Otherwise only testers can sign in (§13).
+## Your steps, in order
 
-## 3. Build and release
+### 1. The legal pages go live (15 min)
 
-- ☐ Bump `kvizic.app.version` (now `0.1.0`), e.g. `1.0.0`, which makes versionCode 10000.
-- ☐ `bundleProdRelease` signed with the upload key; R8 build smoke-tested on a real phone (prod flavor
-  against prod).
-- ☐ targetSdk 36 ✅. Test on min API 24 (Nunito regular-only before Android 8) and on a small 360×640 phone.
-- ☐ Decide on `MIN_CLIENT_VERSION_ANDROID`: leave it unset at launch, and know how to raise it (4426 update)
-  for a bad build.
+1. Render → **Blueprints** → the kvizic blueprint → **Manual sync**. It creates `kvizic-site`, a free static site.
+2. Render → `kvizic-site` → **Settings → Custom Domains**: `kvizic.ntole.com` is listed with the
+   `….onrender.com` name to point at.
+3. Cloudflare → `ntole.com` → **DNS → Add record**: type `CNAME`, name `kvizic`, target that
+   `….onrender.com` name, **Proxy status: DNS only** (grey cloud, as `kvizic-api` is).
+4. Render → **Verify** beside the domain, and wait for the certificate (a few minutes).
+5. Tell Claude: it checks all 10 URLs and the About screen's links.
 
-## 4. Server and operations
+Check two claims the privacy page makes (§ „Колико чувамо“): PostHog → **Project settings → Data retention**
+should keep events **2 years or less**; Render's log retention on the workspace's plan **30 days or less**. If
+either is longer, tell Claude the real numbers.
 
-- ✅ `kvizic-api.ntole.com/health` is 200, Starter plan, Frankfurt, drains on deploy.
-- ☐ Promote a green, dev-verified commit with Manual Deploy, and smoke-test a full game on prod with 2+ phones.
-- ☐ Postgres backups: check what `basic-256mb` keeps and how long, and do one test restore.
-- ☐ Uptime alert on `/health` (UptimeRobot or Render notifications), so you hear about an outage before players do.
-- ☐ **Crash reporting**: there is none in the app. Rely on Play Console's Android vitals, or add a
-  multiplatform crash reporter before launch. Recommendation: vitals is enough for v1.
-- ☐ Capacity: the server's share of 0.5 CPU is unmeasured (§12). Run `:e2e:loadTest` against a separate
-  server process once, or watch Render's CPU closely during launch week.
-- ☐ Cloudflare in front of the API: `CF-Connecting-IP` is trusted; confirm the origin can't be reached any
-  other way.
-- ☐ Moderation: the report queue is checked daily during launch week; the admin app works against prod.
+> To weigh: AT, DE, SE and DK are EU, NO is EEA, CH has its own law. A controller outside the EU that serves
+> players there may need a representative in the EU (GDPR Art. 27) and in Switzerland (FADP Art. 14), unless
+> the processing is occasional and low-risk. WYR is in the same position; decide once for both. Not legal advice.
 
-## 5. Product gaps listed as open (CLAUDE.md §13). Decide: before launch or after
+### 2. The upload key (10 min, once, never lost)
 
-- ☐ **A Play Games button for a guest** (`LinkPlayGames.manually` has no caller). Without it, a player
-  who backs out of the first prompt stays a guest for good. **Recommend before launch.**
-- ☐ The sound mix heard on a real phone speaker (never listened to on a device yet). **Recommend before launch.**
-- ☐ The design gate: font, tile scheme, host badge, timer, Latin letters, spotlight, clap icon.
-- ☐ Share links (invite to a room). They help growth, but can come after launch.
-- ☐ Language and skin picker in Settings (language follows the system for now?).
-- ☐ The `design-tests` CI hang with 4 JVMs. Watch for it; if it hangs again, `main` stops deploying.
-- After launch: **the player id other clients see** is the account ID used for deletion by email, so a
-  room member could ask to delete someone else's account; send a per-room seat id instead (the owner,
-  2026-10-02: after release). Also the landscape layout for phones, iOS, web, desktop packaging and icons, and the admin web
-  page's first-key bug.
+```bash
+mkdir -p ~/keys && keytool -genkeypair -v -keystore ~/keys/kvizic-upload.jks -alias kvizic-upload -keyalg RSA -keysize 4096 -validity 10000
+```
 
-## 6. Launch day
+Pick a strong password at the prompt (the same one for the key when asked). Then add to `local.properties`:
 
-- ☐ Staged rollout (20% → 50% → 100%), watching vitals and the server log.
-- ☐ Enough players online at the same time: Quick play with an empty server is the first impression. Plan
-  a launch hour, invite friends and groups, or make solo the path when no room is open.
-- ☐ A contact address on `contact.html` that someone actually reads.
+```
+kvizic.upload.storeFile=/Users/nikolatokic/keys/kvizic-upload.jks
+kvizic.upload.storePassword=…
+kvizic.upload.keyAlias=kvizic-upload
+kvizic.upload.keyPassword=…
+```
+
+Back up `kvizic-upload.jks` and both passwords in your password manager. Play App Signing (Google holds the
+real signing key) is offered at the first upload: accept it.
+
+### 3. Analytics key (2 min)
+
+PostHog EU → the Kvizić project → **Project settings → Project API key** (`phc_…`). Add to `local.properties`:
+
+```
+kvizic.posthog.key=phc_…
+```
+
+The host defaults to PostHog's EU cloud. After the first prod build is on a phone, open PostHog → **Activity**
+and check `app_opened` and `room_entered` arrive, named as prod's.
+
+### 4. Production server (15 min)
+
+Render → `kvizic-server` → **Environment**:
+
+- `PLAY_GAMES_CLIENT_ID`, `PLAY_GAMES_CLIENT_SECRET`: the same two values as `kvizic-server-dev`.
+- `ALLOWED_WEB_ORIGINS`: leave empty (no web client at launch).
+- `JWT_SECRET`, `ADMIN_TOKEN`: both should have values (generated). Copy `ADMIN_TOKEN` to your password manager.
+- `MIN_CLIENT_VERSION_ANDROID`: leave unset. For a bad build later, set it to the first good build number
+  (1.0.1 is `10001`) and restart: older apps are asked to update (4426).
+
+Then, once this commit's CI is green and dev works: **Manual Deploy → Deploy latest commit**.
+
+### 5. The production bank (5 min)
+
+```bash
+cd ~/Projects/kvizic-content && KVIZIC_ADMIN_TOKEN=… ./publish.py prod drafts/*.json
+```
+
+It imports 25 a request and approves what it brought. Then the moderation app against prod
+(`KVIZIC_ENV=prod ./gradlew :app:adminApp:run`) → **Overview** should count 1,536 approved.
+
+### 6. Operations (20 min)
+
+- **Uptime**: UptimeRobot (free) → HTTP monitor `https://kvizic-api.ntole.com/health`, every 5 min, email alert.
+- **Backups**: Render → `kvizic-postgres` → **Recovery**: note the point-in-time window; do one restore to a
+  new database, check it has the questions, delete it.
+- **Origin**: Render serves `kvizic-server.onrender.com` too, which skips Cloudflare. The server trusts
+  `CF-Connecting-IP`, so someone calling the `onrender.com` name directly could spoof their address and
+  get past the per-address limits. Tell Claude whether to make the server refuse requests that don't come
+  through Cloudflare.
+
+### 7. The build and a real phone (30 min)
+
+```bash
+./gradlew :app:androidApp:bundleProdRelease
+```
+
+The bundle is `app/androidApp/build/outputs/bundle/prodRelease/androidApp-prod-release.aab`. Upload it to
+**Testing → Internal testing**, add yourself and the Play Games testers, install from Play, and check: a full
+game on two phones against prod, Play Games sign-in (the Home button too), sound on the speaker, a small
+phone (360×640) and Android 7 (API 24) if you have one.
+
+### 8. Play Console (1–2 h)
+
+- **Create app**: name „Квизић“, default language Serbian (`sr`), Game, Free.
+- **Store listing**: paste from [store-listing.md](store-listing.md); screenshots from step 7's phones; Claude
+  renders the 512² icon and the 1024×500 feature graphic on request.
+- **App content**:
+  - Privacy policy: `https://kvizic.ntole.com/privacy.html`.
+  - Ads: **No**. App access: **All functionality is available without special access**.
+  - Target audience: **13–15, 16–17, 18+** (not under 13: keeps it out of the Families policy).
+  - Content rating (IARC): a trivia game; no violence, sex, drugs, gambling or swearing; **users interact**
+    (multiplayer rooms, names shown, preset reactions only, no chat); no location shared; no purchases.
+  - Data safety: see the table below.
+  - Account deletion: in the app (About → Подаци) and `https://kvizic.ntole.com/delete.html`.
+- **Countries**: Serbia, Bosnia and Herzegovina, Montenegro, North Macedonia, Austria, Germany, Switzerland,
+  Sweden, Norway, Denmark.
+- **Play Games Services**: Google Cloud → the OAuth consent screen → **Publish app** (the privacy URL from
+  step 1 is required); Play Console → Play Games Services → **Review and publish**. After the first upload,
+  check that **Setup → App signing**'s SHA-1 is among the Android credentials for `io.ntole.kvizic`.
+
+**Data safety**: encrypted in transit: yes. Deletion: yes, users can ask. Shared with third parties: none
+(PostHog and Render process data for us, as service providers).
+
+| Data type | Collected | Why | Optional |
+|---|---|---|---|
+| Personal info → Name (Play Games name) | yes | App functionality | yes (sign-in) |
+| Personal info → User IDs (player id, Play Games id) | yes | App functionality, Analytics | no |
+| Location → Approximate (PostHog, from the IP) | yes | Analytics | yes (Статистика off) |
+| App activity → App interactions | yes | Analytics, App functionality | yes (analytics part) |
+| App info and performance → Diagnostics (errors shown) | yes | Analytics | yes |
+| Device or other IDs (PostHog's random device id) | yes | Analytics | yes |
+
+### 9. Launch
+
+- Production release from the internal build, **staged rollout 20%**, then 50% and 100% over a few days,
+  watching Android vitals (crashes, ANRs) and the server's log.
+- Pick a launch hour and bring friends and groups online at once: Quick play with nobody else is the first
+  impression.
+- Moderation: check the report queue daily for the first week.
+
+## Open, decide later
+
+- The design gate: font, tile scheme, host badge, timer, Latin letters, spotlight, clap icon.
+- Share links (invite to a room): growth, after launch.
+- Language and skin picker in Settings (the language follows the system now).
+- Crash reporting: Android vitals is enough for 1.0.
+- Capacity: the server's share of 0.5 CPU is unmeasured; watch Render's CPU in launch week.
+- The `design-tests` CI hang with 4 JVMs: if it hangs again, `main` stops deploying.
+- After launch: send other clients a per-room seat id instead of the account id (the owner, 2026-10-02),
+  the phone landscape layout, iOS, web, desktop packaging and icons, the admin web page's first-key bug.
