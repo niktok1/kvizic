@@ -233,7 +233,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
 - **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page
-  (`PresenceStrip`): a lit bulb, a person and the players online, a magnifier and those searching, each count on
+  (`PresenceStrip`): a person and the players online, a magnifier and those searching, each count on
   flaps; it stays line-sized, being only nice to know, and a screen reader is told the sentence. On Home it stands
   on Quick play's foot, inside the button (`StageButton.footer`, over the face so the words stay in its middle), bare
   and in plain figures of the button's text colour, its place held before the first read. The counts
