@@ -44,7 +44,7 @@ signs with it. Its certificate's SHA-1 is `7E:7E:42:7E:05:74:0F:B9:13:46:5A:B5:7
 (public, for Play Games' Android credentials if a build signed with it, not by Play, should sign in). Keep
 the file and its password backed up together. Play App Signing is offered at the first upload: accept it.
 
-### 3. Analytics key (2 min)
+### 3. Analytics key ✅ (2026-10-02, the Kvizić project on PostHog EU; the prod bundle carries it)
 
 PostHog EU → the Kvizić project → **Project settings → Project API key** (`phc_…`). Add to `local.properties`:
 
