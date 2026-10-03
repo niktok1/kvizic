@@ -177,7 +177,8 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
-  by `GamePhase`), Settings (the app's: the Sound switch and a way to About; `AppSettingsScreen`, apart from a room's), About
+  by `GamePhase`), Settings (the app's: the Sound switch, Ћирилица or Latinica on two chips with no heading, it being a script
+  more than a language (the owner, 2026-10-03; `Language.OFFERED`), and a way to About; `AppSettingsScreen`, apart from a room's), About
   (version, legal pages, licences and the fonts' OFL, each text a tap away, and last what is kept of the player, under „Подаци“: Statistics, the account's
   id and its deletion), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,
@@ -372,8 +373,9 @@ box, its lines or an ellipsis, capitals included.
 
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
-- Share links. Sound's mix on a phone's speaker (the levels, the cues' character), a language and a skin picker
-  in Settings, and a way for a skin to be chosen at all.
+- Share links that open the room (a share says the code and Play's page, `StoreLink`, for now). Sound's mix on a
+  phone's speaker (the levels, the cues' character), a skin picker in Settings, and a way for a skin to be
+  chosen at all.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.
 - **Phones on their side**: phones are portrait-locked (§9) until the game has a landscape layout: the
   question screen in two panes, the bar and the question beside the answers' grid (a phone on its side is

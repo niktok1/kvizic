@@ -75,11 +75,13 @@ Found only, nothing fixed. Tick an item off (or delete it) as it is handled.
     — ✅ fixed (e708e5b): a list read in the last 30 s counts too.
 13. **No language picker.** The app is always Cyrillic, whatever the device; Latinica can't be reached. That
     matters for BA, ME and the diaspora (already in §13 Open).
+    — ✅ fixed: Settings picks Ћирилица or Latinica.
 14. **The fonts' OFL licences aren't shown.** `FontLicences` (designsystem) says it is "for the About screen
     to show", but nothing calls it, and About → Licences lists libraries only.
     — ✅ fixed (UI commits e7eda07…c633ec4): under About → Licences.
 15. **Share text** is only „Играј Квизић са мном! Уђи у собу кодом N.“, with no Play link, so someone without
     the app can't act on it (share links are in §13).
+    — ✅ fixed: the share says Play's page on a line of its own (`StoreLink`); a link that opens the room stays in §13.
 
 ## Unconfirmed: watch
 

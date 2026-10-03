@@ -2,6 +2,7 @@ package io.ntole.kvizic.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,25 +20,31 @@ import androidx.compose.ui.Modifier
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.design.component.ButtonKind
 import io.ntole.kvizic.design.component.ButtonSize
+import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.Divider
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.Toggle
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.LocalCues
+import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LocalStrings
 
 /**
- * The app's Settings screen, not a room's: what the player sets, in one place, which for now is the Sound
- * switch, [soundOn] whether the game makes sound, which [onSoundChange] changes, and a way to the About screen,
- * [onAbout], where what the game keeps of the player is. It scrolls, its content held to a readable column on a
- * wide window.
+ * The app's Settings screen, not a room's: what the player sets, in one place: the Sound switch, [soundOn]
+ * whether the game makes sound, which [onSoundChange] changes; the script the game is written in, [language],
+ * one of those offered (`Language.OFFERED`), two chips with no heading, each named in itself, which
+ * [onLanguageChange] changes; and a way
+ * to the About screen, [onAbout], where what the game keeps of the player is. It scrolls, its content held to
+ * a readable column on a wide window.
  */
 @Composable
 fun AppSettingsScreen(
     modifier: Modifier = Modifier,
     soundOn: Boolean = true,
     onSoundChange: (Boolean) -> Unit = {},
+    language: Language = Language.DEFAULT,
+    onLanguageChange: (Language) -> Unit = {},
     onAbout: () -> Unit = {},
 ) {
     val space = KvizicTheme.space
@@ -66,6 +73,23 @@ fun AppSettingsScreen(
                 label = words.sound,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            Divider()
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(space.xs),
+                verticalArrangement = Arrangement.spacedBy(space.xs),
+            ) {
+                Language.OFFERED.forEach { offered ->
+                    Chip(
+                        offered.ownName,
+                        selected = offered == language,
+                        onClick =
+                            tapped("settings.language", mapOf("language" to offered.tag)) {
+                                onLanguageChange(offered)
+                            },
+                    )
+                }
+            }
 
             Divider()
             StageButton(

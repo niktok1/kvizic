@@ -94,6 +94,7 @@ import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.navigation.SystemBack
+import io.ntole.kvizic.share.StoreLink
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.time.Duration.Companion.milliseconds
@@ -360,7 +361,10 @@ private fun Waiting(
                     StageIconButton(
                         KvizicIcons.Share,
                         contentDescription = words.shareRoom,
-                        onClick = tapped("room.share") { actions.share(words.shareText.fill(lobby.code)) },
+                        onClick =
+                            tapped(
+                                "room.share",
+                            ) { actions.share(words.shareText.fill(lobby.code, StoreLink.PLAY)) },
                         small = true,
                     )
                 },

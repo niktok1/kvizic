@@ -133,7 +133,7 @@ data class GameStrings(
     val copyCode: String,
     val codeCopied: String,
     val shareRoom: String,
-    /** What a share of the room says, its code, `{0}`. */
+    /** What a share of the room says: its code, `{0}`, and where to get the game, `{1}`, on a line of its own. */
     val shareText: String,
     val freeSeat: String,
     val host: String,
@@ -458,7 +458,7 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         copyCode = "Копирај к\u043E\u0302д",
         codeCopied = "К\u043E\u0302д је копиран",
         shareRoom = "Подели собу",
-        shareText = "Играј Квизић са мном! Уђи у собу кодом {0}.",
+        shareText = "Играј Квизић са мном! Уђи у собу кодом {0}.\n{1}",
         freeSeat = "слободно",
         host = "водитељ",
         you = "ти",
@@ -625,7 +625,7 @@ internal val EnglishGameStrings: GameStrings =
         copyCode = "Copy the code",
         codeCopied = "Code copied",
         shareRoom = "Share the room",
-        shareText = "Play Kvizić with me! Join my room with the code {0}.",
+        shareText = "Play Kvizić with me! Join my room with the code {0}.\n{1}",
         freeSeat = "free",
         host = "host",
         you = "you",

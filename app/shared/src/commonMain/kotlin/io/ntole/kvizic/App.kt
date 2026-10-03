@@ -533,14 +533,22 @@ private fun About(onDeleted: () -> Unit) {
 }
 
 /**
- * The Settings screen: the Sound switch, the one [SoundViewModel] keeps, and a way to the About screen,
- * [onAbout].
+ * The Settings screen: the Sound switch, the one [SoundViewModel] keeps, the game's language, the one the app's
+ * [LanguageViewModel] keeps and shows the game in, and a way to the About screen, [onAbout].
  */
 @Composable
 private fun Settings(onAbout: () -> Unit) {
     val sounds = koinViewModel<SoundViewModel>()
     val soundOn by sounds.enabled.collectAsStateWithLifecycle()
-    AppSettingsScreen(soundOn = soundOn, onSoundChange = sounds::setEnabled, onAbout = onAbout)
+    val languages = koinViewModel<LanguageViewModel>()
+    val language by languages.language.collectAsStateWithLifecycle()
+    AppSettingsScreen(
+        soundOn = soundOn,
+        onSoundChange = sounds::setEnabled,
+        language = language,
+        onLanguageChange = languages::select,
+        onAbout = onAbout,
+    )
 }
 
 /**

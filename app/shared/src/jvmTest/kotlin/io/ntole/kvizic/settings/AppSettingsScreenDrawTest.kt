@@ -17,16 +17,21 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** The Settings screen drawn off screen in each language: the Sound switch and the way to About. */
+/** The Settings screen drawn off screen in each language: the Sound switch, the languages and the way to About. */
 class AppSettingsScreenDrawTest {
     @Test
-    fun `the screen shows the sound switch and the way to About`() {
+    fun `the screen shows the sound switch, the languages and the way to About`() {
         Language.entries.forEach { language ->
             val strings = stringsOf(language)
             val scene = scene(language)
             try {
                 val shown = scene.everyText()
-                assertEquals(listOf(strings.settingsScreen.sound, strings.aboutScreen.title), shown, "$language")
+                assertEquals(
+                    listOf(strings.settingsScreen.sound) + Language.OFFERED.map { it.ownName } +
+                        strings.aboutScreen.title,
+                    shown,
+                    "$language",
+                )
             } finally {
                 scene.close()
             }
@@ -57,6 +62,29 @@ class AppSettingsScreenDrawTest {
         }
     }
 
+    /** Each language is named in itself whatever the screen is in, the one shown is picked, and a tap picks another. */
+    @Test
+    fun `a language tapped is the one the game is shown in`() {
+        Language.entries.forEach { shownIn ->
+            val picked = mutableListOf<Language>()
+            val scene = scene(shownIn, onLanguageChange = { picked += it })
+            try {
+                Language.OFFERED.forEach { offered ->
+                    val chip = scene.nodes().single { offered.ownName in it.texts }
+                    assertEquals(
+                        offered == shownIn,
+                        chip.config.getOrNull(SemanticsProperties.Selected) == true,
+                        "$shownIn: ${offered.ownName}",
+                    )
+                    scene.tap(offered.ownName)
+                }
+            } finally {
+                scene.close()
+            }
+            assertEquals(Language.OFFERED, picked, "$shownIn")
+        }
+    }
+
     @Test
     fun `the way to About does what it says`() {
         var opened = 0
@@ -73,11 +101,18 @@ class AppSettingsScreenDrawTest {
         language: Language,
         soundOn: Boolean = true,
         onSoundChange: (Boolean) -> Unit = {},
+        onLanguageChange: (Language) -> Unit = {},
         onAbout: () -> Unit = {},
     ): ImageComposeScene =
         ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f)) {
             GameTheme(language) {
-                AppSettingsScreen(soundOn = soundOn, onSoundChange = onSoundChange, onAbout = onAbout)
+                AppSettingsScreen(
+                    soundOn = soundOn,
+                    onSoundChange = onSoundChange,
+                    language = language,
+                    onLanguageChange = onLanguageChange,
+                    onAbout = onAbout,
+                )
             }
         }.also { it.render() }
 

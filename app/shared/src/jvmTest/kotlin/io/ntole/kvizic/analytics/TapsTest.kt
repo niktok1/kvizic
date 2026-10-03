@@ -168,7 +168,10 @@ class TapsTest {
 
     @Test
     fun `every tap on the Settings screen is reported`() {
-        assertEquals(setOf("settings.sound", "settings.about"), elementsTapped { AppSettingsScreen() })
+        assertEquals(
+            setOf("settings.sound", "settings.language", "settings.about"),
+            elementsTapped { AppSettingsScreen() },
+        )
     }
 
     @Test

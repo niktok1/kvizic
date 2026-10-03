@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.isSpecified
 import io.ntole.kvizic.design.skin.KvizicTheme
@@ -52,7 +54,8 @@ fun Panel(
 
 /**
  * A small label on a pill, of [tone], with an [icon] before it: a setting, a topic, points won. With an
- * [onClick] it is a button, of a touch target's height at the least, and [selected] marks it chosen.
+ * [onClick] it is a button, of a touch target's height at the least, and [selected] marks it chosen, which a
+ * screen reader is told.
  */
 @Composable
 fun Chip(
@@ -78,7 +81,7 @@ fun Chip(
                     indication = null,
                     role = Role.Button,
                     onClick = cued(Cue.TAP_SOFT, onClick),
-                )
+                ).semantics { this.selected = selected }
         } else {
             Modifier
         }
