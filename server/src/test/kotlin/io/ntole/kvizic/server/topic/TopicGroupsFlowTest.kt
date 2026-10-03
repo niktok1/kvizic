@@ -36,9 +36,19 @@ class TopicGroupsFlowTest {
                     "VEHICLES" to "KNOWLEDGE",
                     "GAMES" to "ENTERTAINMENT",
                     "COMICS" to "ENTERTAINMENT",
+                    // Nine more (V9).
+                    "TECH" to "KNOWLEDGE",
+                    "SPACE" to "KNOWLEDGE",
+                    "MATH" to "KNOWLEDGE",
+                    "CAPITALS" to "KNOWLEDGE",
+                    "LANDMARKS" to "KNOWLEDGE",
+                    "CUSTOMS" to "ENTERTAINMENT",
+                    "CELEBRITIES" to "ENTERTAINMENT",
+                    "FOOTBALL" to "SPORT",
+                    "BASKETBALL" to "SPORT",
                 ),
                 list.topics.map { it.id to it.groupId },
             )
-            assertEquals("Стрипови и цртани", list.topics.last().nameSr)
+            assertEquals("Кошарка", list.topics.last().nameSr)
         }
 }

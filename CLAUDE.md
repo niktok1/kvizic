@@ -145,13 +145,19 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   answers no room). The content repo's house style is stricter for answers (40).
 - Topics: Географија, Историја, Спорт, Музика, Филм и серије, Наука и технологија, Језик и књижевност,
   Храна и пиће, and since V7 (the owner, 2026-10-01, after what the big quiz games ask) Природа и животиње,
-  Уметност, Митологија, Тело и здравље, Возила, Игре, Стрипови и цртани; all feed Све. A topic is a
+  Уметност, Митологија, Тело и здравље, Возила, Игре, Стрипови и цртани, and since V9 (the owner, 2026-10-03)
+  Технологија и интернет, Свемир, Математика и логика, Престонице, Знаменитости, Празници и обичаји (the
+  region's, as customs, never faith), Познате личности, Фудбал and Кошарка; all feed Све. **A question takes
+  every topic a player would look for it under**, 1 to 3 (the owner, 2026-10-03; Фудбал and Кошарка always
+  with Спорт, Престонице with Географија, Свемир and Математика with Наука), so a narrow topic is no split:
+  its questions stay in the broad one too. The content repo's `STYLE.md` holds the rule. A topic is a
   subject, never a place: Наши простори went (the owner, 2026-10-01, V6), its questions to their subjects
   and its dishes to Храна и пиће, the one migration that deletes a topic. Questions are ekavian Serbian
   Cyrillic; Latin is made by transliteration.
 - **Topic groups** (the owner's B, 2026-10-01): server data (`topic_groups`, V3), each topic in one or none:
-  Знање (with V7's nature, art, mythology, body and vehicles), Забава (with Храна и пиће, Игре and Стрипови и
-  цртани), Спорт. Written by migrations for now; moderator routes come with a topics tab.
+  Знање (with V7's nature, art, mythology, body and vehicles, and V9's technology, space, maths, capitals and
+  landmarks), Забава (with Храна и пиће, Игре, Стрипови и цртани, and V9's customs and famous people), Спорт
+  (with Фудбал and Кошарка). Written by migrations for now; moderator routes come with a topics tab.
   The settings show the topics picked in a few words („Спорт, Музика +3“), which open the picker: a search by
   any part of a name in either script with no accents needed, the groups opened and closed by their names,
   each with a chip for the whole group, counts, and thin topics greyed.
