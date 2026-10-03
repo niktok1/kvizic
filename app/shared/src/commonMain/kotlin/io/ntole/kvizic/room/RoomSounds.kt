@@ -160,10 +160,10 @@ internal fun resultsCue(
     you: String,
 ): Cue {
     val own = results.standings.firstOrNull { it.playerId == you } ?: return Cue.END
-    results.personalBest?.let { return if (it.isNew) Cue.BEST else Cue.END }
+    results.personalBest?.let { return if (it.beaten) Cue.BEST else Cue.END }
     return when {
-        own.rank == 1 -> Cue.WIN
-        own.rank <= PODIUM_PLACES -> Cue.PODIUM
+        results.winner?.playerId == you -> Cue.WIN
+        own.finished && own.rank <= PODIUM_PLACES -> Cue.PODIUM
         else -> Cue.END
     }
 }

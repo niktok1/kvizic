@@ -3,6 +3,8 @@ package io.ntole.kvizic.room
 import androidx.compose.ui.semantics.SemanticsProperties
 import io.ntole.kvizic.core.domain.lobby.FinalStanding
 import io.ntole.kvizic.core.domain.lobby.GamePhase
+import io.ntole.kvizic.core.domain.lobby.LobbyKind
+import io.ntole.kvizic.core.domain.lobby.PersonalBest
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.signed
@@ -144,6 +146,50 @@ class RoomRevealDrawTest : RoomStills() {
                 assertTrue(back.height > 0 && back.bottom <= HEIGHT, "${skin.id}: the way back is at $back")
                 val name = scene.nodes().first { longest in it.texts }.boundsInRoot
                 assertTrue(name.width > 0 && name.right <= WIDTH, "${skin.id}: the winner's name is at $name")
+            }
+        }
+    }
+
+    @Test
+    fun `a player who left is never crowned, and stands behind those who stayed`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            // As a server before finishers were ranked first had it: the one who left first of a 0 to 0 tie.
+            val standings =
+                listOf(
+                    FinalStanding("nina", "Нина", "fox", 0, 0, 1, false),
+                    FinalStanding(YOU, "Марко", "hedgehog", 0, 0, 1, true),
+                )
+            val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
+            val state =
+                inLobby(GamePhase.Waiting(RESULTS.copy(standings = standings)), lobby = lobby(members = members))
+            draw(skin, "results-left", state) { scene ->
+                val shown = scene.everyText()
+                assertFalse(words.winner in shown || words.youWon in shown, "${skin.id}: $shown")
+                assertTrue(shown.indexOf("Марко") < shown.indexOf("Нина"), "${skin.id}: $shown")
+            }
+        }
+    }
+
+    @Test
+    fun `a solo run shows its score and its best, with no podium and nobody crowned`() {
+        eachSkin { skin ->
+            val words = stringsOf(Language.DEFAULT).game
+            val results =
+                RESULTS.copy(
+                    standings = listOf(FinalStanding(YOU, "Марко", "hedgehog", -130, 1, 1, true)),
+                    personalBest = PersonalBest(score = -130, previous = null, isNew = true),
+                )
+            val members = MEMBERS.filter { it.playerId == YOU }.map { it.copy(onResults = true) }
+            val state =
+                inLobby(GamePhase.Waiting(results), lobby = lobby(members = members, host = YOU, kind = LobbyKind.SOLO))
+            draw(skin, "results-solo", state) { scene ->
+                val shown = scene.everyText()
+                listOf(words.winner, words.youWon, words.newBest, "Марко").forEach {
+                    assertFalse(it in shown, "${skin.id}: \"$it\" is in $shown")
+                }
+                assertTrue(words.best.fill(-130) in shown, "${skin.id}: $shown")
+                assertTrue(words.rightOf.fill(1, 10) in shown, "${skin.id}: $shown")
             }
         }
     }

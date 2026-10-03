@@ -768,7 +768,9 @@ private fun Results(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
-    val ranked = results.standings.sortedBy { it.rank }
+    // Those who stayed first, whatever an older server ranked them.
+    val ranked = results.standings.sortedWith(compareBy({ !it.finished }, { it.rank }))
+    val solo = lobby.kind == LobbyKind.SOLO
     val seatOf = { playerId: String, fallback: Int -> lobby.member(playerId)?.seat ?: fallback }
     Page {
         Spacer(Modifier.height(space.md))
@@ -786,7 +788,7 @@ private fun Results(
                 Modifier.fillMaxWidth().heightIn(min = maxHeight).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
             ) {
-                ranked.firstOrNull()?.let { winner ->
+                results.winner?.let { winner ->
                     WinnerBanner(
                         caption = if (winner.playerId == you) words.youWon else words.winner,
                         name = shown(winner.name),
@@ -794,19 +796,30 @@ private fun Results(
                     )
                     Spacer(Modifier.height(space.md))
                 }
-                Podium(
-                    ranked.take(PODIUM).mapIndexed { i, standing ->
-                        PodiumPlace(
-                            shown(standing.name),
-                            standing.avatar,
-                            seatOf(standing.playerId, i),
-                            standing.score,
-                            standing.level.takeIf { it > 0 },
+                // A solo run has nobody to stand beside: its score, with no podium.
+                if (solo) {
+                    ranked.firstOrNull { it.playerId == you }?.let { own ->
+                        FlipNumber(
+                            own.score,
+                            Modifier.align(Alignment.CenterHorizontally),
+                            size = FlapSize.LARGE,
                         )
-                    },
-                    Modifier.fillMaxWidth(),
-                )
-                val rest = ranked.drop(PODIUM)
+                    }
+                } else {
+                    Podium(
+                        ranked.take(PODIUM).mapIndexed { i, standing ->
+                            PodiumPlace(
+                                shown(standing.name),
+                                standing.avatar,
+                                seatOf(standing.playerId, i),
+                                standing.score,
+                                standing.level.takeIf { it > 0 },
+                            )
+                        },
+                        Modifier.fillMaxWidth(),
+                    )
+                }
+                val rest = if (solo) emptyList() else ranked.drop(PODIUM)
                 if (rest.isNotEmpty()) {
                     Spacer(Modifier.height(space.lg))
                     Scoreboard(
@@ -832,10 +845,10 @@ private fun Results(
                         Chip(words.rightOf.fill(own.correct, results.questionCount), tone = ChipTone.GAIN)
                     }
                     results.personalBest?.let { best ->
-                        if (best.isNew) {
-                            Chip(words.newBest, icon = KvizicIcons.Crown, tone = ChipTone.ACCENT)
-                        } else {
-                            Chip(words.best.fill(best.previous ?: best.score), icon = KvizicIcons.Crown)
+                        when {
+                            best.beaten -> Chip(words.newBest, icon = KvizicIcons.Crown, tone = ChipTone.ACCENT)
+                            best.isNew -> Chip(words.best.fill(best.score), icon = KvizicIcons.Crown)
+                            else -> Chip(words.best.fill(best.previous ?: best.score), icon = KvizicIcons.Crown)
                         }
                     }
                 }

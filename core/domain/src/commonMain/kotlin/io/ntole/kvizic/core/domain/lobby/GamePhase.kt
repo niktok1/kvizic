@@ -65,7 +65,10 @@ public data class PersonalBest(
     val score: Int,
     val previous: Int?,
     val isNew: Boolean,
-)
+) {
+    /** Whether the run beat a best there was: a first run sets one, beating nothing, whatever its score. */
+    val beaten: Boolean get() = isNew && previous != null
+}
 
 /** How a game ended. */
 public data class GameResults(
@@ -74,7 +77,18 @@ public data class GameResults(
     val standings: List<FinalStanding>,
     val endedEarly: Boolean,
     val personalBest: PersonalBest?,
-)
+) {
+    /**
+     * Who won, as the server counts a win: the one of two or more who stayed to the end who stands alone
+     * at the top. None on a tie, for a player left alone, or in a solo run.
+     */
+    val winner: FinalStanding?
+        get() {
+            val finishers = standings.filter { it.finished }
+            if (finishers.size < 2) return null
+            return finishers.singleOrNull { it.rank == 1 }
+        }
+}
 
 /** What a lobby is doing, as its members see it. */
 public sealed interface GamePhase {
