@@ -8,8 +8,9 @@ review and prod was live.
 `promote-android.yml`, `tools/play/play.py`, `tools/release/`); the owner's one-time steps are LAUNCH.md §10.
 Decided: the prod check is a two-guest game started and left before an answer; question publishing stays
 local; notifications are GitHub Mobile's alone; Phase 3 signs dev builds with the owner's own debug keystore
-as a secret (its SHA-1 is already on `io.ntole.kvizic.dev`'s credential). Phase 3 built (`dev-build.yml`), waiting on
-the owner's Firebase setup (LAUNCH.md §10 F). Phase 4 is left as optional.
+as a secret (its SHA-1 is already on `io.ntole.kvizic.dev`'s credential). Phase 3 built (`dev-build.yml`) and live: builds
+reach the owner's App Tester. Phase 4 declined for now (the owner, 2026-10-03): no force-update workflow, no
+daily report. **Done**, but for the first approved prod deploy and the first Play upload, both waiting on events.
 
 ## Goal
 
