@@ -46,16 +46,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # Where the Android Gradle plugin looks for the debug key, which dev's builds always take.
+      # Where the Android Gradle plugin looks for the debug key, which dev's builds always take: named outright
+      # (ANDROID_USER_HOME), since the runner's own setup sent it elsewhere, to a key made on the spot.
       - name: The debug key
         env:
           KEYSTORE: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
           [ -n "$KEYSTORE" ] || { echo "::error::DEBUG_KEYSTORE_BASE64 is not set"; exit 1; }
-          mkdir -p ~/.android
-          printf '%s' "$KEYSTORE" | base64 -d > ~/.android/debug.keystore
-          keytool -list -v -keystore ~/.android/debug.keystore -storepass android | grep -q 'SHA1: 88:5F:40:75:72:5E:1B:59:40:EE:5C:0E:09:48:CC:3E:34:B2:A3:4A' \
-            || { echo "::error::that is not the owner's debug key, whose SHA-1 Play Games knows"; exit 1; }
+          home="$RUNNER_TEMP/android-user"
+          mkdir -p "$home"
+          printf '%s' "$KEYSTORE" | base64 -d > "$home/debug.keystore"
+          echo "ANDROID_USER_HOME=$home" >> "$GITHUB_ENV"
 
       - name: Build
         env:
@@ -67,6 +68,14 @@ jobs:
             -Pkvizic.posthog.key="$POSTHOG_KEY" \
             -Pkvizic.playgames.appId="$PLAYGAMES_APP_ID" \
             -Pkvizic.playgames.serverClientId="$PLAYGAMES_SERVER_CLIENT_ID"
+
+      # Play Games knows this key's SHA-1 for io.ntole.kvizic.dev and refuses any other (DEVELOPER_ERROR).
+      - name: Signed with the owner's debug key
+        run: |
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$apksigner" verify --print-certs app/androidApp/build/outputs/apk/dev/release/*.apk \
+            | grep -q 'SHA-1 digest: 885f4075725e1b5940ee5c0e0948cc3e34b2a34a' \
+            || { echo "::error::the build is not signed with the owner's debug key; Play Games would refuse it"; exit 1; }
 
       - name: Send it to the phone
         env:
