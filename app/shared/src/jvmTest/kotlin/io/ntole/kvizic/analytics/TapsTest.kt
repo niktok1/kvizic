@@ -148,6 +148,7 @@ class TapsTest {
                 "about.statistics_info",
                 "about.statistics_info_ok",
                 "about.licence",
+                "about.font_licence",
                 // Deleting the account, then its dialog's two buttons.
                 "about.delete_account",
                 "about.delete_account_confirm",

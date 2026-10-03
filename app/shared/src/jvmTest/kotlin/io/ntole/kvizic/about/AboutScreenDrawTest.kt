@@ -17,11 +17,13 @@ import io.ntole.kvizic.RecordingUris
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.font.FontLicences
 import io.ntole.kvizic.everyText
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.language.stringsOf
 import io.ntole.kvizic.nodes
+import io.ntole.kvizic.settle
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
@@ -79,6 +81,53 @@ class AboutScreenDrawTest {
             } finally {
                 scene.close()
             }
+        }
+    }
+
+    /**
+     * Every bundled font is named under its licence, the OFL, with the copyright notice its text begins with;
+     * a tap opens the whole text in place, as the OFL asks it to travel with the fonts, and another closes it.
+     */
+    @Test
+    fun `every font shows its licence and a tap opens its whole text`() {
+        Language.entries.forEach { language ->
+            val about = stringsOf(language).aboutScreen
+            val scene = scene(language)
+            try {
+                // The texts are read from the fonts' bundle as the screen is shown.
+                val nunito = FontLicences.ALL.first()
+                val notice = "Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)"
+                waitFor(scene) { notice in scene.everyText() }
+                val shown = scene.everyText()
+                assertTrue(about.fonts in shown, "$language: no heading over the fonts")
+                FontLicences.ALL.forEach { licence ->
+                    val names = licence.faces.joinToString { it.name }
+                    assertTrue(names in shown, "$language: \"$names\" is not in $shown")
+                }
+                assertEquals(FontLicences.ALL.size, shown.count { it == FONT_LICENCE }, "$language: $shown")
+                assertFalse(shown.any { OFL_PREAMBLE in it }, "$language: a licence's text shows before a tap")
+
+                val name = nunito.faces.joinToString { it.name }
+                scene.tap(name)
+                assertTrue(scene.everyText().any { notice in it && OFL_PREAMBLE in it }, "$language: not opened")
+                scene.tap(name)
+                assertFalse(scene.everyText().any { OFL_PREAMBLE in it }, "$language: not closed")
+            } finally {
+                scene.close()
+            }
+        }
+    }
+
+    /** Draws [scene] until [done], as what is read off the main thread comes back; fails after a few seconds. */
+    private fun waitFor(
+        scene: ImageComposeScene,
+        done: () -> Boolean,
+    ) {
+        val until = System.currentTimeMillis() + WAIT_MILLIS
+        while (!done()) {
+            assertTrue(System.currentTimeMillis() < until, "never came: ${scene.everyText()}")
+            Thread.sleep(POLL_MILLIS)
+            scene.settle()
         }
     }
 
@@ -274,5 +323,10 @@ class AboutScreenDrawTest {
 
         /** What the test puts where the deletion goes. */
         const val DELETION = "the deletion"
+
+        /** The OFL's own heading, in its text's second paragraph: shown once the text is opened. */
+        const val OFL_PREAMBLE = "PREAMBLE"
+        const val WAIT_MILLIS = 5_000L
+        const val POLL_MILLIS = 20L
     }
 }

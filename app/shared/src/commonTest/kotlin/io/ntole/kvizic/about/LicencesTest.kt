@@ -26,4 +26,11 @@ class LicencesTest {
         }
         assertEquals(OPEN_SOURCE_LIBRARIES.size, byName.size, "a library named twice")
     }
+
+    @Test
+    fun `a font licence notice is the first line its text says something on`() {
+        val text = "\nCopyright 2014 The Nunito Project Authors\n\nThis Font Software is licensed under the OFL."
+        assertEquals("Copyright 2014 The Nunito Project Authors", fontNotice(text))
+        assertEquals(null, fontNotice("  \n"))
+    }
 }
