@@ -23,6 +23,7 @@ import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
 /** A seat held, and the ticket its socket presents. */
@@ -55,6 +56,9 @@ class LobbyRegistry(
     private val byCode = ConcurrentHashMap<String, String>()
     private val recentlyClosed = ConcurrentHashMap<String, ComparableTimeMark>()
     private val playerLobby = ConcurrentHashMap<String, String>()
+
+    /** When each player last read the public list: Home and the list read it every few seconds while shown. */
+    private val lookingOn = ConcurrentHashMap<String, ComparableTimeMark>()
     private val lock = Mutex()
     private val opened = AtomicLong()
 
@@ -87,6 +91,7 @@ class LobbyRegistry(
                 tickets.sweep()
                 val now = timeSource.markNow()
                 recentlyClosed.entries.removeIf { now - it.value >= CODE_COOLDOWN }
+                lookingOn.entries.removeIf { now - it.value >= LOOKING_ON }
                 val presence = presence()
                 lobbies.values.forEach { it.send(LobbyCommand.Presence(presence.first, presence.second)) }
             }
@@ -193,10 +198,20 @@ class LobbyRegistry(
                 compareBy<LobbySummary> { it.inGame }.thenByDescending { it.seatsTaken }.thenBy { it.openedOrder },
             ).take(PUBLIC_LIST_SIZE)
 
-    /** Players online, with a socket in any lobby, and searching, waiting in a public lobby. */
+    /** [playerId] read the public list: they have the app open, on Home or the list, and count as online. */
+    fun lookedOn(playerId: String) {
+        lookingOn[playerId] = timeSource.markNow()
+    }
+
+    /**
+     * Players online, with the app open, in a lobby with a socket or on a screen that read the public list
+     * in the last [LOOKING_ON]; and searching, waiting in a public lobby.
+     */
     fun presence(): Pair<Int, Int> {
         val summaries = lobbies.values.map { it.summary.value }
-        val online = summaries.flatMap { it.connected }.toSet().size
+        val now = timeSource.markNow()
+        val looking = lookingOn.filterValues { now - it < LOOKING_ON }.keys
+        val online = (summaries.flatMap { it.connected } + looking).toSet().size
         val searching = summaries.filter { it.kind == LobbyKind.PUBLIC && !it.inGame }.sumOf { it.connected.size }
         return online to searching
     }
@@ -331,6 +346,9 @@ class LobbyRegistry(
         /** How long a closed lobby's code is not reused, so an old link never lands in a stranger's lobby. */
         val CODE_COOLDOWN: Duration = 30.minutes
         const val QUICK_PLAY_TRIES = 3
+
+        /** How long a read of the public list counts its player online: three of Home's polls. */
+        val LOOKING_ON: Duration = 30.seconds
         const val PUBLIC_LIST_SIZE = 50
         val DRAIN_POLL: Duration = 100.milliseconds
     }

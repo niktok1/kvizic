@@ -56,6 +56,7 @@ fun Route.lobbyRoutes(
     authenticate(JWT_AUTH) {
         rateLimit(RouteLimit.LOBBY_LIST) {
             get(KvizicApi.Paths.LOBBIES) {
+                registry.lookedOn(call.authenticatedPlayerId())
                 val (online, searching) = registry.presence()
                 call.respond(LobbyListDto(registry.publicList().map { it.toDto() }, online, searching))
             }

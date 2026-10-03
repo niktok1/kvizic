@@ -110,6 +110,16 @@ class LobbyRoutesTest {
         }
 
     @Test
+    fun `a player on Home, in no room, counts as online`() =
+        runGameServer("lobby-online") { server ->
+            val ana = server.guest()
+            val boris = server.guest()
+            assertEquals(1, server.client.publicLobbies(ana).online, "ana, reading the list")
+            assertEquals(2, server.client.publicLobbies(boris).online, "and boris")
+            assertEquals(2, server.client.publicLobbies(ana).online, "each once")
+        }
+
+    @Test
     fun `quick play opens a public lobby when none waits`() =
         runGameServer("lobby-quick-play-new") { server ->
             val ticket = server.client.quickPlay(server.guest()).bodyOrFail<TicketDto>()
