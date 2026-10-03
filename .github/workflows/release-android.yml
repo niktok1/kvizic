@@ -53,8 +53,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha=$(git rev-parse HEAD)
-          green=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&status=success" --jq .total_count)
-          [ "$green" -gt 0 ] || { echo "::error::CI has no green run of main's $sha yet"; exit 1; }
+          for attempt in 1 2 3 4 5; do
+            green=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&status=success" --jq .total_count) && break
+            sleep 15
+          done
+          [ "${green:-0}" -gt 0 ] || { echo "::error::CI has no green run of main's $sha yet"; exit 1; }
 
       - name: Bump the version
         if: github.event_name == 'workflow_dispatch' && inputs.bump != 'none'

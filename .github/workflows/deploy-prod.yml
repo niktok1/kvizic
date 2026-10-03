@@ -60,13 +60,18 @@ jobs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "Commit: \`$sha\` $(git log -1 --format=%s "$sha")" >> "$GITHUB_STEP_SUMMARY"
 
+      # A push's run comes from CI's green run itself; a commit named by hand is looked up, the API retried.
       - name: CI is green on it
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.which.outputs.sha }}
         run: |
-          green=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&status=success" --jq .total_count)
-          [ "$green" -gt 0 ] || { echo "::error::CI has no green run of $SHA"; exit 1; }
+          for attempt in 1 2 3 4 5; do
+            green=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&status=success" --jq .total_count) && break
+            sleep 15
+          done
+          [ "${green:-0}" -gt 0 ] || { echo "::error::CI has no green run of $SHA"; exit 1; }
 
       # A push asks only when prod would change: what the server is built from differs from what prod runs.
       - name: Prod would change
