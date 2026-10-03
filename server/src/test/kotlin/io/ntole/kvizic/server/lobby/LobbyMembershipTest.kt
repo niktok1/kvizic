@@ -193,7 +193,7 @@ class LobbyMembershipTest {
             assertEquals(CloseCodes.KICKED, boris.closedCode())
             assertEquals(ServerMessage.Closing(CloseReason.KICKED), boris.history.last())
             assertEquals(LeaveReason.KICKED, ceca.last<ServerMessage.MemberLeft>().reason)
-            assertEquals(ReserveResult.Banned, boris.reserve())
+            assertEquals(ReserveResult.Banned(CloseReason.KICKED), boris.reserve())
             lobby.assertInvariants()
         }
 

@@ -111,7 +111,9 @@ class Lobby(
     private var settings: LobbySettingsDto = settings
 
     private val members = LinkedHashMap<String, Member>()
-    private val banned = mutableSetOf<String>()
+
+    /** Who may not come back while the lobby lasts, and why: a join is told a vote from a host's kick. */
+    private val banned = mutableMapOf<String, CloseReason>()
     private var host: String? = null
     private var version = 0L
     private var phase: Phase = Phase.Waiting(lastResults = null)
@@ -270,7 +272,7 @@ class Lobby(
                 }
 
                 seat.playerId in banned -> {
-                    ReserveResult.Banned
+                    ReserveResult.Banned(banned.getValue(seat.playerId))
                 }
 
                 existing != null -> {
@@ -1083,7 +1085,9 @@ class Lobby(
         reason: LeaveReason,
     ) {
         if (members.remove(member.playerId) == null) return
-        if (reason == LeaveReason.KICKED || reason == LeaveReason.VOTED_OUT) banned += member.playerId
+        if (reason == LeaveReason.KICKED || reason == LeaveReason.VOTED_OUT) {
+            banned[member.playerId] = closeReasonFor(reason)
+        }
         // Votes against them have nobody left to count for; a vote that put them out was no spam, so its
         // voters may vote again at once.
         members.values.filter { it.kickVote == member.playerId }.forEach { voter ->

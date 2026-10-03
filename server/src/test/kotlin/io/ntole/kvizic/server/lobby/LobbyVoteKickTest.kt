@@ -55,7 +55,7 @@ class LobbyVoteKickTest {
             assertEquals(CloseCodes.KICKED, dora.closedCode())
             assertEquals(ServerMessage.Closing(CloseReason.VOTED_OUT), dora.history.last())
             assertEquals(LeaveReason.VOTED_OUT, ana.last<ServerMessage.MemberLeft>().reason)
-            assertEquals(ReserveResult.Banned, dora.reserve())
+            assertEquals(ReserveResult.Banned(CloseReason.VOTED_OUT), dora.reserve())
             lobby.assertInvariants()
         }
 

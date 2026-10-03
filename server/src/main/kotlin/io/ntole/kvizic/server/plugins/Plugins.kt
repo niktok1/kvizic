@@ -112,7 +112,10 @@ fun Application.installPlugins(
 
     install(StatusPages) {
         exception<ApiFailure> { call, failure ->
-            call.respond(failure.status, ErrorDto(message = failure.message, code = failure.code))
+            call.respond(
+                failure.status,
+                ErrorDto(message = failure.message, code = failure.code, reason = failure.reason),
+            )
         }
         // Ktor's rate limiter refuses with a bare 429, dressed here as the contract's error. Its
         // Retry-After, already on the response, is kept.

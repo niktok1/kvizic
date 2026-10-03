@@ -61,6 +61,9 @@ public enum class GameError : DomainError {
     /** The lobby's host kicked this player, who may not come back while it lasts. */
     LOBBY_BANNED,
 
+    /** The lobby's players voted this player out, who may not come back while it lasts. */
+    LOBBY_VOTED_OUT,
+
     /** The server holds as many lobbies as it takes: try again shortly. */
     TOO_MANY_LOBBIES,
 

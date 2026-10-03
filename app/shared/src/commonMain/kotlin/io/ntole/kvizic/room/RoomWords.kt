@@ -45,7 +45,7 @@ internal fun Strings.entryFailureText(
     when (error) {
         GameError.LOBBY_NOT_FOUND -> game.roomNotFound
         GameError.LOBBY_FULL -> game.roomFull
-        GameError.LOBBY_BANNED -> game.roomBanned
+        GameError.LOBBY_BANNED, GameError.LOBBY_VOTED_OUT -> game.roomBanned
         GameError.TOO_MANY_LOBBIES -> game.tooManyRooms
         GameError.SERVER_DRAINING -> game.serverDraining
         else -> failureText(error, retryAfter)

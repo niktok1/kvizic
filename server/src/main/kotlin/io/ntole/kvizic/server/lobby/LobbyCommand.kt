@@ -1,6 +1,7 @@
 package io.ntole.kvizic.server.lobby
 
 import io.ntole.kvizic.core.protocol.ClientMessage
+import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.LeaveReason
 import kotlinx.coroutines.CompletableDeferred
 import kotlin.time.ComparableTimeMark
@@ -88,7 +89,10 @@ sealed interface ReserveResult {
 
     data object Full : ReserveResult
 
-    data object Banned : ReserveResult
+    /** Put out while the lobby lasts: [reason] is KICKED by the host or VOTED_OUT by the others. */
+    data class Banned(
+        val reason: CloseReason,
+    ) : ReserveResult
 
     /** The lobby is closing, or has. */
     data object Closed : ReserveResult

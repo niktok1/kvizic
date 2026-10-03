@@ -268,6 +268,7 @@ private suspend fun ResponseException.toApiException(): ApiException {
         message = error?.message ?: message,
         cause = this,
         retryAfter = response.retryAfterOrNull(),
+        reason = error?.reason,
     )
 }
 

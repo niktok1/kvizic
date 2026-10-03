@@ -360,6 +360,17 @@ class DefaultLobbySessionTest {
         }
 
     @Test
+    fun `a player voted out while away is told it was a vote`() =
+        runTest {
+            val harness = Harness(this)
+            harness.inLobby().drop()
+            harness.server.refuseJoinsWith = HttpStatusCode.Forbidden to ErrorCode.LOBBY_BANNED
+            harness.server.refuseJoinsFor = CloseReason.VOTED_OUT
+            harness.wait(1.seconds)
+            assertEquals(LobbySessionState.Ended(LobbyExit.VOTED_OUT, CODE), harness.state())
+        }
+
+    @Test
     fun `a socket that hears nothing for three pings is made again`() =
         runTest {
             val harness = Harness(this)

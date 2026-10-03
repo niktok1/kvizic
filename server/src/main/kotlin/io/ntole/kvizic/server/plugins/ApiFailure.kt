@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.plugins
 
 import io.ktor.http.HttpStatusCode
 import io.ntole.kvizic.core.error.ErrorCode
+import io.ntole.kvizic.core.protocol.CloseReason
 
 /**
  * The only exception route code should throw: an HTTP status with the contract's own [ErrorCode], which
@@ -12,6 +13,8 @@ class ApiFailure(
     val code: ErrorCode,
     override val message: String? = null,
     cause: Throwable? = null,
+    /** What lay behind [code] when it has more than one cause, as `ErrorDto.reason`. */
+    val reason: CloseReason? = null,
 ) : RuntimeException(message, cause) {
     companion object {
         fun validation(
@@ -69,7 +72,9 @@ class ApiFailure(
 
         fun lobbyFull() = ApiFailure(HttpStatusCode.Conflict, ErrorCode.LOBBY_FULL, "the lobby has no free seat")
 
-        fun lobbyBanned() = ApiFailure(HttpStatusCode.Forbidden, ErrorCode.LOBBY_BANNED, "the host removed this player")
+        /** A player put out of the lobby, by the host's kick or the others' vote ([reason]). */
+        fun lobbyBanned(reason: CloseReason) =
+            ApiFailure(HttpStatusCode.Forbidden, ErrorCode.LOBBY_BANNED, "this player was put out", reason = reason)
 
         fun tooManyLobbies() =
             ApiFailure(HttpStatusCode.ServiceUnavailable, ErrorCode.TOO_MANY_LOBBIES, "the server holds all it can")

@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.network.ApiException
+import io.ntole.kvizic.core.protocol.CloseReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerializationException
 
@@ -67,10 +68,17 @@ private fun Throwable.isRequestFailure(): Boolean = this is Exception || this::c
  */
 internal fun ApiException.toDomainError(): DomainError =
     when {
+        // One code, two causes the player is told apart.
+        code == ErrorCode.LOBBY_BANNED && reason == CloseReason.VOTED_OUT -> GameError.LOBBY_VOTED_OUT
+
         code != ErrorCode.UNKNOWN -> code.toDomain()
+
         status == HTTP_TOO_MANY_REQUESTS -> CoreError.RATE_LIMITED
+
         status == HTTP_UPGRADE_REQUIRED -> CoreError.UPGRADE_REQUIRED
+
         status in HTTP_SERVER_ERRORS -> CoreError.SERVER
+
         else -> CoreError.UNKNOWN
     }
 

@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.network.ApiException
+import io.ntole.kvizic.core.protocol.CloseReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -65,6 +66,15 @@ class ErrorMapperTest {
                 val (status, error) = expected
                 assertMapsTo(error, ApiException(code, status = status))
             }
+        }
+
+    @Test
+    fun `a ban the others voted is told from the host's kick`() =
+        runTest {
+            val banned = { reason: CloseReason? -> ApiException(ErrorCode.LOBBY_BANNED, 403, reason = reason) }
+            assertMapsTo(GameError.LOBBY_VOTED_OUT, banned(CloseReason.VOTED_OUT))
+            assertMapsTo(GameError.LOBBY_BANNED, banned(CloseReason.KICKED))
+            assertMapsTo(GameError.LOBBY_BANNED, banned(null))
         }
 
     @Test

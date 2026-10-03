@@ -14,6 +14,7 @@ import io.ntole.kvizic.core.network.InMemoryTokenStorage
 import io.ntole.kvizic.core.network.KvizicJson
 import io.ntole.kvizic.core.network.SessionStore
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
+import io.ntole.kvizic.core.protocol.CloseReason
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.startCoroutine
@@ -48,9 +49,10 @@ internal fun MockRequestHandleScope.respondJson(body: String): HttpResponseData 
 internal fun MockRequestHandleScope.respondErrorDto(
     status: HttpStatusCode,
     code: ErrorCode,
+    reason: CloseReason? = null,
 ): HttpResponseData =
     respond(
-        KvizicJson.encodeToString(ErrorDto(message = "test", code = code)),
+        KvizicJson.encodeToString(ErrorDto(message = "test", code = code, reason = reason)),
         status,
         headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
     )

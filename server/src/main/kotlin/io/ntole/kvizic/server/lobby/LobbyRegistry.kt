@@ -291,7 +291,7 @@ class LobbyRegistry(
             return Refused(
                 when (result) {
                     ReserveResult.Full -> ApiFailure.lobbyFull()
-                    ReserveResult.Banned -> ApiFailure.lobbyBanned()
+                    is ReserveResult.Banned -> ApiFailure.lobbyBanned(result.reason)
                     ReserveResult.Draining -> ApiFailure.draining()
                     else -> ApiFailure.lobbyNotFound()
                 },

@@ -1,6 +1,7 @@
 package io.ntole.kvizic.core.network
 
 import io.ntole.kvizic.core.error.ErrorCode
+import io.ntole.kvizic.core.protocol.CloseReason
 import kotlin.time.Duration
 
 /**
@@ -11,6 +12,8 @@ import kotlin.time.Duration
  *
  * [code] is [ErrorCode.UNKNOWN] when the body was not an `ErrorDto` (a proxy's error page, say), which is
  * when [status] is the only evidence of what went wrong.
+ *
+ * [reason] is the `ErrorDto`'s, telling apart the causes one [code] covers (a ban's kick or vote).
  *
  * [retryAfter] is how long the response's `Retry-After` header asks the caller to wait, which the server
  * sends with every 429, or null when it sent none or named a date instead of whole seconds.
@@ -24,4 +27,5 @@ public class ApiException(
     message: String? = null,
     cause: Throwable? = null,
     public val retryAfter: Duration? = null,
+    public val reason: CloseReason? = null,
 ) : Exception(message ?: code.name, cause)

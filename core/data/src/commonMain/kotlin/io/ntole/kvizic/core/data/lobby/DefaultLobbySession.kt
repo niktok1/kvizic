@@ -317,6 +317,11 @@ public class DefaultLobbySession(
                     Rejoin.Exit(LobbyExit.KICKED)
                 }
 
+                // Voted out while away: the socket that would have said so was gone.
+                GameError.LOBBY_VOTED_OUT -> {
+                    Rejoin.Exit(LobbyExit.VOTED_OUT)
+                }
+
                 GameError.SERVER_DRAINING -> {
                     Rejoin.Exit(LobbyExit.SERVER_RESTARTING)
                 }

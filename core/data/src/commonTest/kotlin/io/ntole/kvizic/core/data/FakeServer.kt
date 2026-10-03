@@ -24,6 +24,7 @@ import io.ntole.kvizic.core.player.NameSource
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
 import io.ntole.kvizic.core.player.SetAvatarRequest
+import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.report.ReportQuestionRequest
 import io.ntole.kvizic.core.topic.TopicDto
 import io.ntole.kvizic.core.topic.TopicListDto
@@ -107,6 +108,9 @@ internal class FakeServer {
 
     /** When set, every lobby join is refused with this status and code. */
     var refuseJoinsWith: Pair<HttpStatusCode, ErrorCode>? = null
+
+    /** The `reason` a refused join carries along with [refuseJoinsWith]'s code. */
+    var refuseJoinsFor: CloseReason? = null
 
     /** What a read of the public lobbies answers. */
     var publicLobbies: LobbyListDto = LobbyListDto()
@@ -223,7 +227,7 @@ internal class FakeServer {
 
             KvizicApi.Paths.LOBBY_JOINS -> {
                 val refusal = refuseJoinsWith
-                if (refusal != null) respondErrorDto(refusal.first, refusal.second) else ticket(request)
+                if (refusal != null) respondErrorDto(refusal.first, refusal.second, refuseJoinsFor) else ticket(request)
             }
 
             else -> {

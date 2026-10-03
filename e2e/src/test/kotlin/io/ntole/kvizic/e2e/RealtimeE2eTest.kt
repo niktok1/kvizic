@@ -229,6 +229,35 @@ class RealtimeE2eTest {
         }
 
     @Test
+    fun `a host voted out while cut off is told it was a vote when they come back`(): Unit =
+        runBlocking {
+            val server = server()
+            val ana = player("ana", server)
+            val boris = player("boris", server)
+            val cara = player("cara", server)
+            lobbyOf(ana, boris, cara)
+
+            ana.proxy.refusing = true
+            ana.proxy.cutAll()
+            ana.awaitState(what = "reconnecting") { it is LobbySessionState.InLobby && it.reconnecting }
+            boris.awaitState(what = "ana shown gone") { state ->
+                state is LobbySessionState.InLobby && state.lobby.members.any { it.playerId == ana.id && !it.connected }
+            }
+            // Ana is in the room still, her seat held: the two others are more than half of the rest.
+            boris.lobby.voteKick(ana.id)
+            cara.lobby.voteKick(ana.id)
+            boris.awaitState(what = "ana voted out") { state ->
+                state is LobbySessionState.InLobby && state.lobby.members.none { it.playerId == ana.id }
+            }
+
+            // No socket heard the vote: the join that would seat her again is what tells her.
+            ana.proxy.refusing = false
+            ana.lobby.wake()
+            val ended = ana.awaitState(what = "ana sent away") { it is LobbySessionState.Ended }
+            assertEquals(LobbyExit.VOTED_OUT, (ended as LobbySessionState.Ended).exit)
+        }
+
+    @Test
     fun `a slow connection does not cost its player the first answer`(): Unit =
         runBlocking {
             val server = server()
