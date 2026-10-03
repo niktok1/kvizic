@@ -191,8 +191,8 @@ private fun Screens(usage: UsageTracker) {
             }
 
             Screen.NewRoom -> {
-                BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.game.newRoom)
-                Below { NewRoom(room) }
+                // Its own bar, which the topic picker takes the place of.
+                Below { NewRoom(room, onBack = { navigator.back() }) }
             }
 
             Screen.Room -> {
@@ -202,9 +202,8 @@ private fun Screens(usage: UsageTracker) {
             }
 
             Screen.RoomSettings -> {
-                BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.game.settings)
                 (roomState as? LobbySessionState.InLobby)?.let { state ->
-                    Below { RoomSettings(room, state, onDone = { navigator.back() }) }
+                    Below { RoomSettings(room, state, onClose = { navigator.back() }) }
                 }
             }
 
@@ -344,37 +343,42 @@ private fun PublicRooms(
 
 /** A new room's settings picked, the topics read as the screen is shown, and the room made with them. */
 @Composable
-private fun NewRoom(room: RoomViewModel) {
+private fun NewRoom(
+    room: RoomViewModel,
+    onBack: () -> Unit,
+) {
     var settings by rememberSaveable(stateSaver = LobbySettingsSaver) { mutableStateOf(LobbySettings()) }
     val topics by rememberTopics()
     val entry by room.entry.collectAsStateWithLifecycle()
-    Column {
-        val failed = entry as? Entry.Failed
-        if (failed != null && failed.way == EntryWay.CREATE) {
-            Notice(
-                LocalStrings.current.entryFailureText(failed.error, failed.retryAfter),
-                onDismiss = room::dismissEntryFailure,
-            )
-        }
-        SettingsScreen(
-            settings = settings,
-            topics = topics,
-            groups = rememberTopicGroups(),
-            onChange = { settings = it },
-            doneLabel =
-                with(LocalStrings.current.game) {
-                    if (entry ==
-                        Entry.Taking(EntryWay.CREATE)
-                    ) {
-                        entering
-                    } else {
-                        create
-                    }
-                },
-            onDone = { room.create(settings) },
-            enabled = entry !is Entry.Taking,
-        )
-    }
+    SettingsScreen(
+        settings = settings,
+        topics = topics,
+        groups = rememberTopicGroups(),
+        onChange = { settings = it },
+        doneLabel =
+            with(LocalStrings.current.game) {
+                if (entry ==
+                    Entry.Taking(EntryWay.CREATE)
+                ) {
+                    entering
+                } else {
+                    create
+                }
+            },
+        onDone = { room.create(settings) },
+        enabled = entry !is Entry.Taking,
+        title = LocalStrings.current.game.newRoom,
+        onBack = onBack,
+        notice = {
+            val failed = entry as? Entry.Failed
+            if (failed != null && failed.way == EntryWay.CREATE) {
+                Notice(
+                    LocalStrings.current.entryFailureText(failed.error, failed.retryAfter),
+                    onDismiss = room::dismissEntryFailure,
+                )
+            }
+        },
+    )
 }
 
 /** The room the player is in, its topics read for their names, and its invitation shared. */
@@ -418,12 +422,12 @@ private fun Room(
     )
 }
 
-/** The host's change of the room's settings, from those it has, saved as the screen goes back. */
+/** The host's change of the room's settings, from those it has, saved as the screen closes; back drops it. */
 @Composable
 private fun RoomSettings(
     room: RoomViewModel,
     state: LobbySessionState.InLobby,
-    onDone: () -> Unit,
+    onClose: () -> Unit,
 ) {
     var settings by rememberSaveable(stateSaver = LobbySettingsSaver) { mutableStateOf(state.lobby.settings) }
     val topics by rememberTopics()
@@ -435,9 +439,11 @@ private fun RoomSettings(
         doneLabel = LocalStrings.current.game.save,
         onDone = {
             room.updateSettings(settings)
-            onDone()
+            onClose()
         },
         minPlayers = state.lobby.members.size,
+        title = LocalStrings.current.game.settings,
+        onBack = onClose,
     )
 }
 

@@ -78,9 +78,7 @@ internal fun TopicPicker(
     val sections = sectionsOf(topics, groups, words.otherTopics, language)
     val key = searchKey(query)
     val found = sections.mapNotNull { section -> section.matching(key, language) }
-    Page {
-        BackTopBar(onBack = onDone, title = words.topics)
-        Spacer(Modifier.height(space.sm))
+    PageUnderBar(title = words.topics, onBack = onDone) {
         TextInput(
             value = query,
             onValueChange = { query = it },
