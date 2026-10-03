@@ -79,7 +79,9 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$GOOGLE_APPLICATION_CREDENTIALS"
           notes="$(git log -1 --format='%h %s') ($(date -u +%Y-%m-%d))"
           apk=$(ls app/androidApp/build/outputs/apk/dev/release/*.apk | head -1)
+          # The log is public: the tool's line with a download link (a token, good for an hour) stays out of it.
           npx --yes firebase-tools@15.32.1 appdistribution:distribute "$apk" \
-            --app "$APP_ID" --groups owner --release-notes "$notes"
+            --app "$APP_ID" --groups owner --release-notes "$notes" 2>&1 | grep -v -i 'download'
+          [ "${PIPESTATUS[0]}" -eq 0 ] || { echo "::error::Firebase did not take the build"; exit 1; }
           rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
           echo "Sent: $notes" >> "$GITHUB_STEP_SUMMARY"
