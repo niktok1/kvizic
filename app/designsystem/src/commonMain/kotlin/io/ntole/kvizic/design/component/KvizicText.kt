@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.getTextLayoutResult
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,8 +44,16 @@ fun KvizicText(
 ) {
     val tint = if (color.isSpecified) color else LocalContentColor.current
     if (style.caps) {
-        // Drawn in capitals, read as written: a screen reader may spell out a word in capitals.
-        Box(modifier.semantics { this.text = AnnotatedString(text) }, propagateMinConstraints = true) {
+        // Drawn in capitals, read as written: a screen reader may spell out a word in capitals. How the capitals
+        // are laid out is still asked of the words read, as of any text: where they stand, and whether they fit.
+        val laid = remember { LaidOut() }
+        Box(
+            modifier.semantics {
+                this.text = AnnotatedString(text)
+                getTextLayoutResult { results -> laid.result?.let { results += it } != null }
+            },
+            propagateMinConstraints = true,
+        ) {
             SetText(
                 style.apply(text),
                 Modifier.clearAndSetSemantics {
@@ -56,6 +67,7 @@ fun KvizicText(
                 autoSize,
                 textDecoration,
                 colorInDraw,
+                onTextLayout = { laid.result = it },
             )
         }
     } else {
@@ -88,6 +100,7 @@ private fun SetText(
     autoSize: TextAutoSize?,
     textDecoration: TextDecoration?,
     colorInDraw: ColorProducer?,
+    onTextLayout: ((TextLayoutResult) -> Unit)? = null,
 ) {
     BasicText(
         text = text,
@@ -104,5 +117,11 @@ private fun SetText(
         minLines = minLines,
         color = colorInDraw,
         autoSize = autoSize,
+        onTextLayout = onTextLayout,
     )
+}
+
+/** The last layout of a text set in capitals, kept for what asks how it is laid out; no state, never drawn from. */
+private class LaidOut {
+    var result: TextLayoutResult? = null
 }

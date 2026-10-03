@@ -10,7 +10,10 @@ import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.cutTexts
 import io.ntole.kvizic.descriptions
+import io.ntole.kvizic.design.skin.Skin
+import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.everyNode
 import io.ntole.kvizic.everyText
 import io.ntole.kvizic.language.Language
@@ -66,6 +69,36 @@ class HomeScreenDrawTest {
                 assertTrue(solo.boundsInRoot.bottom <= SHORT_PHONE_HEIGHT, "$language: Solo runs off the screen")
             } finally {
                 scene.close()
+            }
+        }
+    }
+
+    /**
+     * Every word on Home whole, in every skin, on a small phone at the usual font and at a phone's large one
+     * (130%, a common setting): „Направи собу“ wraps on its tile rather than losing „собу“.
+     */
+    @Test
+    fun `Home keeps every word whole at a large font`() {
+        val words = stringsOf(Language.DEFAULT).game
+        Skins.ALL.forEach { skin ->
+            listOf(1f, LARGE_FONT).forEach { fontScale ->
+                val where = "${skin.id} at $fontScale"
+                val scene =
+                    scene(
+                        HomeState(profile = PROFILE),
+                        Language.DEFAULT,
+                        counts = HomeCounts(128, 7, 12),
+                        skin = skin,
+                        fontScale = fontScale,
+                    )
+                try {
+                    write("home-${skin.id}-$fontScale", scene.renderSettled())
+                    assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
+                    val solo = scene.nodes().single { words.solo in it.texts }
+                    assertTrue(solo.boundsInRoot.bottom <= SHORT_PHONE_HEIGHT, "$where: Solo runs off the screen")
+                } finally {
+                    scene.close()
+                }
             }
         }
     }
@@ -284,15 +317,20 @@ class HomeScreenDrawTest {
         counts: HomeCounts? = null,
         entry: Entry = Entry.None,
         exit: LobbyExit? = null,
+        skin: Skin = Skins.Default,
+        fontScale: Float = 1f,
     ): ImageComposeScene =
-        ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f)) {
-            GameTheme(language) { HomeScreen(state, actions, counts = counts, entry = entry, exit = exit) }
+        ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f, fontScale)) {
+            GameTheme(language, skin) { HomeScreen(state, actions, counts = counts, entry = entry, exit = exit) }
         }.also { it.renderSettled() }
 
     private companion object {
         /** A small phone, 360 by 640, less its status bar. */
         const val SHORT_PHONE_WIDTH = 360
         const val SHORT_PHONE_HEIGHT = 616
+
+        /** A phone's large font, 130%, a common setting. */
+        const val LARGE_FONT = 1.3f
 
         val PROFILE =
             Profile(

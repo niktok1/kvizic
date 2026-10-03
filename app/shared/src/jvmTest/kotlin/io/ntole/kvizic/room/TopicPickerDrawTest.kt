@@ -7,8 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.core.domain.topic.TopicGroup
+import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.everyText
@@ -71,6 +73,48 @@ class TopicPickerDrawTest {
                 assertFalse("Географија" in shown, "${skin.id}: a topic the search does not find is shown")
                 scene.type(0, "zzz")
                 assertTrue(words.noTopicFound in scene.everyText(), skin.id)
+            } finally {
+                scene.close()
+            }
+        }
+    }
+
+    @Test
+    fun `the picker opened from the settings takes their place under one bar, and back closes it`() {
+        Skins.ALL.forEach { skin ->
+            val strings = stringsOf(Language.DEFAULT)
+            var backs = 0
+            val scene =
+                ImageComposeScene(width = 360, height = 720, density = Density(1f)) {
+                    GameTheme(Language.DEFAULT, skin) {
+                        Stage(Modifier.fillMaxSize()) {
+                            SettingsScreen(
+                                LobbySettings(),
+                                PICKED_FROM,
+                                onChange = {},
+                                doneLabel = "OK",
+                                onDone = {},
+                                groups = GROUPS,
+                                title = words.newRoom,
+                                onBack = { backs++ },
+                            )
+                        }
+                    }
+                }
+            try {
+                scene.renderSettled()
+
+                fun bars() = scene.nodes().count { strings.back in it.descriptions }
+                assertEquals(1, bars(), "${skin.id}: the settings have no bar of their own")
+                scene.tap(words.allTopics)
+                assertEquals(1, bars(), "${skin.id}: the picker's bar stands under another")
+                assertTrue(words.topics in scene.texts(), "${skin.id}: ${scene.texts()}")
+                assertFalse(words.newRoom in scene.texts(), "${skin.id}: the settings' title over the picker")
+                scene.tap(strings.back)
+                assertTrue(words.newRoom in scene.texts(), "${skin.id}: back did not close the picker")
+                assertEquals(0, backs, "${skin.id}: back from the picker left the settings")
+                scene.tap(strings.back)
+                assertEquals(1, backs, "${skin.id}")
             } finally {
                 scene.close()
             }

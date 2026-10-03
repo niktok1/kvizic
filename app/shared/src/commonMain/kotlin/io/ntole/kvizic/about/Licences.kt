@@ -63,5 +63,11 @@ val OPEN_SOURCE_LIBRARIES: List<Licensed> =
             ),
         )
 
+/** The licence every font the game bundles is under, whose text must travel with the fonts. */
+const val FONT_LICENCE: String = "SIL Open Font License 1.1"
+
+/** A font licence's copyright notice: the first line of its [text] that says something, as the OFL's files begin. */
+internal fun fontNotice(text: String): String? = text.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
+
 /** The age the game is for, as the store listing and the terms say it. */
 const val AGE_RATING: String = "13+"

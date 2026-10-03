@@ -17,6 +17,8 @@ data class AboutStrings(
     val contact: String,
     /** The heading of the libraries the game ships with, each with its licence. */
     val licences: String,
+    /** The heading of the fonts the game ships with, under the libraries, each with its licence's whole text. */
+    val fonts: String,
     /** The heading over what the game keeps of the player: the statistics sent, the account's id, deleting it. */
     val data: String,
     /** The label over the player's account id, which they send to have their account deleted by email. */
@@ -48,6 +50,7 @@ data class AboutStrings(
             deleteAccountPage = transform(deleteAccountPage),
             contact = transform(contact),
             licences = transform(licences),
+            fonts = transform(fonts),
             data = transform(data),
             accountId = transform(accountId),
             copy = transform(copy),
@@ -89,6 +92,7 @@ internal val SerbianCyrillicAboutStrings: AboutStrings =
         deleteAccountPage = "Брисање налога",
         contact = "Контакт",
         licences = "Лиценце отвореног кода",
+        fonts = "Фонтови",
         data = "Подаци",
         accountId = "ИД налога",
         copy = "Копирај",
@@ -116,6 +120,7 @@ internal val EnglishAboutStrings: AboutStrings =
         deleteAccountPage = "Deleting an account",
         contact = "Contact",
         licences = "Open-source licences",
+        fonts = "Fonts",
         data = "Data",
         accountId = "Account ID",
         copy = "Copy",

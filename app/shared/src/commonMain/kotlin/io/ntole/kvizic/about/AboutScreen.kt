@@ -14,7 +14,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.Divider
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.font.FontLicences
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.cued
@@ -43,7 +46,8 @@ import io.ntole.kvizic.language.fill
 /**
  * The About screen: the game's name, its [version] and build number, the age it is for, links that open in
  * the browser to the site's privacy policy, terms, deleting an account and contact ([Site], in the language
- * shown), the libraries the game ships with, each with its licence ([OPEN_SOURCE_LIBRARIES]), and last,
+ * shown), the libraries the game ships with, each with its licence ([OPEN_SOURCE_LIBRARIES]), the fonts with
+ * theirs ([FontLicences], its whole text a tap away, as the OFL asks it to travel with the fonts), and last,
  * together, what the game keeps of the player: the Statistics switch, [statisticsOn] whether the player lets
  * the game send analytics, which [onStatisticsChange] changes, the account's id, [accountId], to copy and send
  * when asking by email for the account to be deleted, none while no session is stored, and [deletion], the
@@ -93,6 +97,8 @@ fun AboutScreen(
             Divider()
             KvizicText(text = strings.licences, style = type.bodyStrong)
             OPEN_SOURCE_LIBRARIES.forEach { library -> Library(library) }
+            KvizicText(text = strings.fonts, style = type.label, color = colors.onPageMuted)
+            FontLicences.ALL.forEach { licence -> FontLicence(licence) }
 
             Divider()
             KvizicText(text = strings.data, style = type.bodyStrong)
@@ -197,5 +203,41 @@ private fun Library(library: Licensed) {
         KvizicText(text = library.name)
         KvizicText(text = library.licence, color = colors.onPageMuted, style = type.caption)
         library.notice?.let { notice -> KvizicText(text = notice, color = colors.onPageMuted, style = type.caption) }
+    }
+}
+
+/**
+ * The fonts under one licence, [licence]: the faces' names, the licence's name and the copyright notice its
+ * text begins with; a tap opens its whole text in place, as the OFL asks to travel with the fonts, and another
+ * closes it. The text is read from the fonts' own bundle as the line is shown.
+ */
+@Composable
+private fun FontLicence(licence: FontLicences.Licence) {
+    val colors = KvizicTheme.colors
+    val type = KvizicTheme.type
+    val text by produceState<String?>(initialValue = null, licence) { value = FontLicences.text(licence) }
+    var open by rememberSaveable(licence.faces.joinToString { it.id }) { mutableStateOf(false) }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(
+                    role = Role.Button,
+                    onClick = cued(Cue.TAP_SOFT, tapped("about.font_licence") { open = !open }),
+                ).defaultMinSize(minHeight = KvizicTheme.space.touchTarget),
+    ) {
+        KvizicText(text = licence.faces.joinToString { it.name })
+        KvizicText(text = FONT_LICENCE, color = colors.onPageMuted, style = type.caption)
+        val whole = text
+        if (whole != null) {
+            if (open) {
+                KvizicText(text = whole.trim(), color = colors.onPageMuted, style = type.caption)
+            } else {
+                fontNotice(whole)?.let { notice ->
+                    KvizicText(text = notice, color = colors.onPageMuted, style = type.caption)
+                }
+            }
+        }
     }
 }

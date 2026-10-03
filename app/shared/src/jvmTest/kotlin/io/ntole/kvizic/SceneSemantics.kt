@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getAllSemanticsNodes
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.toSize
 import java.util.WeakHashMap
@@ -54,6 +55,35 @@ internal fun ImageComposeScene.everyText(): List<String> = everyNode().flatMap {
 
 /** Every name the scene gives a screen reader for what has no text, an icon's, from the top down. */
 internal fun ImageComposeScene.descriptions(): List<String> = nodes().flatMap { it.descriptions }
+
+/**
+ * Every text the scene lays out that does not fit where it stands, cut or ended in an ellipsis, each as
+ * written: what a screen reader would read whole and the screen shows only in part.
+ */
+internal fun ImageComposeScene.cutTexts(): List<String> =
+    everyNode().flatMap { node ->
+        val action = node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action ?: return@flatMap emptyList()
+        val results = mutableListOf<TextLayoutResult>()
+        action(results)
+        if (results.any { it.isCut }) node.texts else emptyList()
+    }
+
+/**
+ * Whether the text is not all shown: lines past its most, its lines more than a pixel taller than its box (a
+ * pixel of a line's leading, rounded, cuts no letter), a line ended in an ellipsis, or a line wider than the
+ * text's box. Not [TextLayoutResult.hasVisualOverflow] alone, which takes a short text in a wide paragraph, laid
+ * out the width of what holds it and shown at its own, for one cut.
+ */
+internal val TextLayoutResult.isCut: Boolean
+    get() =
+        multiParagraph.didExceedMaxLines ||
+            multiParagraph.height > size.height + ONE_PIXEL ||
+            (0 until lineCount).any { line ->
+                isLineEllipsized(line) || getLineRight(line) - getLineLeft(line) > size.width + HALF_PIXEL
+            }
+
+private const val HALF_PIXEL = 0.5f
+private const val ONE_PIXEL = 1f
 
 internal val SemanticsNode.texts: List<String>
     get() = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text }

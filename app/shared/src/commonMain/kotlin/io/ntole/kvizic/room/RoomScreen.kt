@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -237,6 +238,8 @@ private fun ReportDialog(
                     modifier = Modifier.fillMaxWidth(),
                     kind = ButtonKind.SECONDARY,
                     size = ButtonSize.SMALL,
+                    // A reason is read whole before it is sent: it wraps rather than being cut.
+                    maxLines = REASON_LINES,
                 )
             }
             StageButton(
@@ -385,7 +388,11 @@ private fun Waiting(
             }
             Seats(lobby, state.you, bursts, onChoose = if (choosing) ({ chosen = it }) else null)
             Spacer(Modifier.height(space.md))
-            Row(horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+            // The chips wrap onto another line rather than squeeze one another to nothing.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(space.xs),
+                verticalArrangement = Arrangement.spacedBy(space.xs),
+            ) {
                 if (lobby.kind == LobbyKind.SOLO) {
                     // A solo run's one setting is its level, picked here; each level keeps its own best.
                     LobbyDifficulty.entries.forEach { level ->
@@ -658,18 +665,21 @@ private fun MemberDialog(
             onClick = tapped("room.member_cancel", onClick = onDismiss),
             kind = ButtonKind.QUIET,
             size = ButtonSize.SMALL,
+            maxLines = DIALOG_LINES,
         )
         StageButton(
             strings.game.makeHost,
             onClick = tapped("room.make_host", onClick = onMakeHost),
             kind = ButtonKind.SECONDARY,
             size = ButtonSize.SMALL,
+            maxLines = DIALOG_LINES,
         )
         StageButton(
             strings.game.removePlayer,
             onClick = tapped("room.kick", onClick = onKick),
             kind = ButtonKind.DARK,
             size = ButtonSize.SMALL,
+            maxLines = DIALOG_LINES,
             icon = KvizicIcons.Boot,
         )
     }
@@ -693,6 +703,7 @@ private fun VoteDialog(
             onClick = tapped("room.vote_cancel", onClick = onDismiss),
             kind = ButtonKind.QUIET,
             size = ButtonSize.SMALL,
+            maxLines = DIALOG_LINES,
         )
         if (member.kickVotedByYou) {
             StageButton(
@@ -700,6 +711,7 @@ private fun VoteDialog(
                 onClick = tapped("room.withdraw_vote", onClick = onWithdraw),
                 kind = ButtonKind.SECONDARY,
                 size = ButtonSize.SMALL,
+                maxLines = DIALOG_LINES,
             )
         } else {
             StageButton(
@@ -707,6 +719,7 @@ private fun VoteDialog(
                 onClick = tapped("room.vote_kick", onClick = onVote),
                 kind = ButtonKind.DARK,
                 size = ButtonSize.SMALL,
+                maxLines = DIALOG_LINES,
                 icon = KvizicIcons.Boot,
             )
         }
@@ -896,6 +909,12 @@ internal fun Page(content: @Composable ColumnScope.() -> Unit) {
         )
     }
 }
+
+/** The most lines a dialog's button wraps onto, stacked across a narrow phone at a large font. */
+private const val DIALOG_LINES = 2
+
+/** The most lines a reason to report a question wraps onto, at the largest font a phone sets. */
+private const val REASON_LINES = 3
 
 /** How many of a game's best stand on its podium. */
 private const val PODIUM = 3

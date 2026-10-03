@@ -16,8 +16,8 @@ import org.jetbrains.skia.Image
 import java.io.File
 
 /**
- * The room drawn off screen, in a skin, on a small phone; with `KVIZIC_DESIGN_DIR` set, each still is written
- * there as a PNG. One class a stage of the room (the lobby, a question, the reveal and the results): the test
+ * The room drawn off screen, in a skin, on a small phone, at the font's own size or a phone's larger one; with
+ * `KVIZIC_DESIGN_DIR` set, each still is written there as a PNG. One class a stage of the room (the lobby, a question, the reveal and the results): the test
  * JVMs share out classes, never the tests of one, so the stages draw side by side.
  */
 abstract class RoomStills {
@@ -31,10 +31,12 @@ abstract class RoomStills {
         topics: List<Topic> = TOPICS,
         width: Int = WIDTH,
         note: RoomNote? = null,
+        height: Int = HEIGHT,
+        fontScale: Float = 1f,
         check: (ImageComposeScene) -> Unit,
     ) {
         val scene =
-            ImageComposeScene(width = width, height = HEIGHT, density = Density(1f)) {
+            ImageComposeScene(width = width, height = height, density = Density(1f, fontScale)) {
                 GameTheme(Language.DEFAULT, skin) {
                     Stage(Modifier.fillMaxSize()) {
                         RoomScreen(state, topics, note = note, bursts = emptyMap(), actions = actions)
@@ -49,7 +51,8 @@ abstract class RoomStills {
         }
     }
 
-    private fun write(
+    /** Writes [image] as the still [name] of the room, when `KVIZIC_DESIGN_DIR` is set. */
+    protected fun write(
         name: String,
         image: Image,
     ) {
@@ -63,5 +66,8 @@ abstract class RoomStills {
     protected companion object {
         const val WIDTH = 360
         const val HEIGHT = 640
+
+        /** A phone's large font, 130%, a common setting. */
+        const val LARGE_FONT = 1.3f
     }
 }

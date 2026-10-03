@@ -1,9 +1,12 @@
 package io.ntole.kvizic.room
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
@@ -34,6 +37,7 @@ import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
+import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.navigation.SystemBack
 
 /**
@@ -44,6 +48,9 @@ import io.ntole.kvizic.navigation.SystemBack
  *
  * The topics are one line, what is picked in a few words, which opens the [TopicPicker] in the settings'
  * place, searched and grouped by [groups], for the hundreds of topics to come; back closes it.
+ *
+ * The screen draws its own top bar, [title] and the way back, [onBack], so the picker's bar stands in its
+ * place rather than under it; [notice] stands under the bar, over the settings. With no [onBack], no bar.
  */
 @Composable
 fun SettingsScreen(
@@ -56,6 +63,9 @@ fun SettingsScreen(
     minPlayers: Int = LobbyRules.MIN_PLAYERS,
     enabled: Boolean = true,
     groups: List<TopicGroup> = emptyList(),
+    title: String? = null,
+    onBack: (() -> Unit)? = null,
+    notice: @Composable () -> Unit = {},
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     SystemBack(enabled = picking) { picking = false }
@@ -79,7 +89,7 @@ fun SettingsScreen(
         KvizicText(text, style = type.label, color = colors.onPageMuted)
         Spacer(Modifier.height(space.xs))
     }
-    Page {
+    PageUnderBar(title = title, onBack = onBack, above = notice) {
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(space.md),
@@ -209,5 +219,23 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
         )
+    }
+}
+
+/**
+ * A room's [Page] under a screen's top bar, [title] and the way back, [onBack], the bar where every screen's
+ * stands; [above] between the two. With no [onBack], the page alone.
+ */
+@Composable
+internal fun PageUnderBar(
+    title: String?,
+    onBack: (() -> Unit)?,
+    above: @Composable () -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        if (onBack != null) BackTopBar(onBack = onBack, title = title)
+        above()
+        Box(Modifier.weight(1f)) { Page(content) }
     }
 }
