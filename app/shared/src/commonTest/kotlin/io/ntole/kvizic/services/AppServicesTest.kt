@@ -38,7 +38,7 @@ class AppServicesTest {
         }
 
     @Test
-    fun `the launch takes back a seat the server holds, and coming back does not again`() =
+    fun `the launch takes back a seat the server holds and coming back does not again`() =
         runTest {
             val services = services()
             services.foreground()

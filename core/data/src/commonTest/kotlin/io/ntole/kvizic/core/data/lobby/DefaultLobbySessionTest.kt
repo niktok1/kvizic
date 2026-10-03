@@ -124,7 +124,7 @@ class DefaultLobbySessionTest {
         }
 
     @Test
-    fun `a rejoin takes back the seat the server holds, and with none says nothing`() =
+    fun `a rejoin takes back the seat the server holds and with none says nothing`() =
         runTest {
             val harness = Harness(this)
             harness.sessions.ensure()

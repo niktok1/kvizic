@@ -27,7 +27,7 @@ class GameResultsTest {
     }
 
     @Test
-    fun `nobody who left wins, nor one left alone`() {
+    fun `nobody who left wins nor one left alone`() {
         // As a server before finishers were ranked first had it: the one who left first of a tie.
         assertNull(results(standing("ana", 1, finished = false), standing("boris", 1)).winner)
         assertNull(results(standing("solo", 1)).winner)
