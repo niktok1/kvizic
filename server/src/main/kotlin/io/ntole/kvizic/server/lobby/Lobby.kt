@@ -291,6 +291,9 @@ class Lobby(
                 }
 
                 else -> {
+                    // A player of the game in progress who left and sits down again plays on: their answers
+                    // count again, and the questions wait for them as for anyone.
+                    (phase as? Phase.Playing)?.game?.left?.remove(seat.playerId)
                     val member =
                         Member(
                             playerId = seat.playerId,
@@ -970,8 +973,12 @@ class Lobby(
     private fun finishGame(game: Game) {
         timer?.cancel()
         val endedEarly = game.index < game.questions.lastIndex || game.step != Step.REVEALING
-        val ranked = rank(game.players.map { game.tallies.getValue(it) })
-        val finishers = game.players.count { it !in game.left }
+        // Those who stayed to the end stand ahead of those who left, whatever the score: a tie never
+        // favours someone gone, and nobody gone is crowned.
+        val (stayed, gone) = game.players.partition { it !in game.left }
+        val ahead = rank(stayed.map { game.tallies.getValue(it) })
+        val ranked = ahead + rank(gone.map { game.tallies.getValue(it) }).map { it.copy(rank = it.rank + ahead.size) }
+        val finishers = stayed.size
 
         fun won(
             tally: Tally,

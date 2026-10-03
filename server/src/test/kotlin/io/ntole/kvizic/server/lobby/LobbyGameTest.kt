@@ -480,6 +480,77 @@ class LobbyGameTest {
         }
 
     @Test
+    fun `a player who left stands behind those who stayed, a tie or not, and wins nothing`() =
+        runTest {
+            val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 2))
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            lobby.startGame(ana)
+            lobby.openAnswers(0)
+            // Ana, there first and so first of a tie in the order given, leaves 0 to 0.
+            ana.leave()
+            repeat(2) { index ->
+                if (boris.all<ServerMessage.AnswersOpened>().none { it.index == index }) lobby.openAnswers(index)
+                lobby.wait(15.seconds + lobby.timings.answerGrace)
+                lobby.wait(
+                    boris
+                        .last<ServerMessage.Revealed>()
+                        .reveal.nextInMs.milliseconds,
+                )
+            }
+
+            val standings = boris.last<ServerMessage.GameOver>().results.standings
+            assertEquals(
+                listOf(Triple("boris", 1, true), Triple("ana", 2, false)),
+                standings.map { Triple(it.player, it.rank, it.finished) },
+            )
+            assertEquals(
+                listOf(false, false),
+                lobby.records
+                    .single()
+                    .players
+                    .map { it.won },
+                "one finisher wins nothing",
+            )
+        }
+
+    @Test
+    fun `a player who left mid-game and sits down again plays on`() =
+        runTest {
+            val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            lobby.startGame(ana)
+            lobby.openAnswers(0)
+            boris.leave()
+            ana.answerRight()
+            lobby.wait(
+                ana
+                    .last<ServerMessage.Revealed>()
+                    .reveal.nextInMs.milliseconds,
+            )
+
+            boris.join()
+            lobby.openAnswers(1)
+            assertNull(boris.answerTo(boris.answer(boris.rightOption(), question = 1)), "his answer is taken")
+            ana.answerRight()
+            assertEquals(1, ana.last<ServerMessage.Revealed>().reveal.index, "the question waited for him too")
+            lobby.wait(
+                ana
+                    .last<ServerMessage.Revealed>()
+                    .reveal.nextInMs.milliseconds,
+            )
+            playOut(lobby, ana, from = 2, count = 3)
+
+            val boris1 =
+                ana
+                    .last<ServerMessage.GameOver>()
+                    .results.standings
+                    .first { it.player == "boris" }
+            assertEquals(true to 1, boris1.finished to boris1.correct)
+        }
+
+    @Test
     fun `players go back to the lobby by hand, a start waits a little for them, and whoever is not back leaves`() =
         runTest {
             val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3))
