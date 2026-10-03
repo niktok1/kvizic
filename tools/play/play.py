@@ -138,8 +138,13 @@ def status(_):
     """Reads every track, and changes nothing: the edit it reads through is thrown away."""
     edit = Edit(publisher())
     try:
-        for track in edit.edits.tracks().list(packageName=PACKAGE, editId=edit.id).execute().get("tracks", []):
-            for release in track.get("releases", []):
+        tracks = edit.edits.tracks().list(packageName=PACKAGE, editId=edit.id).execute().get("tracks", [])
+        print(f"Play answers for {PACKAGE}: {len(tracks)} tracks")
+        for track in tracks:
+            releases = track.get("releases", [])
+            if not releases:
+                print(f"{track['track']}: no release")
+            for release in releases:
                 print(f"{track['track']}: {release.get('name', '')} {describe(release)}")
     finally:
         edit.edits.delete(packageName=PACKAGE, editId=edit.id).execute()
