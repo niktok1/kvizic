@@ -215,6 +215,29 @@ It sets `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_STORE_PASSWORD`, `UPLOAD_KEY_PASSWORD`
 now; a new key can always be made). The repo is public: secrets never reach a fork's pull request, and no
 workflow here runs a pull request's code with them.
 
+**F. Dev builds on your phone** (Firebase App Distribution, ~15 min, Mac):
+1. console.firebase.google.com → **Create a project** → at the name, pick **Add Firebase to an existing Google
+   Cloud project** and choose `kvizic-510313` (the project of the Play service account) → continue → Google
+   Analytics **off** → **Create project**.
+2. On the project's page: **+ Add app → Android** → package name `io.ntole.kvizic.dev`, nickname `Kvizić dev`
+   → **Register app** → skip the google-services.json and SDK steps (Next, Next, **Continue to console**).
+3. ⚙ (next to Project overview) → **Project settings** → **Your apps** → copy the **App ID** (`1:…:android:…`).
+4. Left menu → **Run** (or Release & Monitor) → **App Distribution** → **Get started** → **Testers & Groups**
+   → **Add group** `owner` (its id must be `owner`) → **Add testers** → your Gmail → Save.
+5. console.cloud.google.com, project `kvizic-510313` → **IAM & Admin → Service accounts → Create service
+   account** `kvizic-app-distribution` → **Create and continue** → role **Firebase App Distribution Admin** →
+   Done → open it → **Keys → Add key → JSON**.
+6. On the Mac:
+
+```bash
+FIREBASE_KEY=~/Downloads/<new-key>.json FIREBASE_APP_ID=<app-id> tools/release/set-dev-build-secrets.sh
+```
+
+   then delete the JSON. Actions → **Dev build** → Run workflow sends the first build.
+7. On the phone: open the invitation email from Firebase → accept → it offers the **App Tester** app; install
+   it (allow installs from it), and every green `main` arrives as a notification with Install. The dev app
+   („Kvizic Dev“) sits beside the Play one.
+
 ### Using it from the phone
 
 - **Prod**: a notification „Review deployments“ → **Approve and deploy**. To roll back: Actions → **Deploy

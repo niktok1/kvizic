@@ -357,6 +357,10 @@ raised, halted or resumed. Both run `tools/play/play.py`, Google's own API clien
 the service account's key. Store listing, data safety, content rating and Google's review stay in the Play
 Console. The secrets are the `production` environment's (`tools/release/set-github-secrets.sh` sets them from
 the Mac); LAUNCH.md §10 has the owner's one-time steps.
+**Dev builds on the owner's phone** (2026-10-03): `dev-build.yml`, after every green push to `main`, builds
+`assembleDevRelease` (`io.ntole.kvizic.dev`, against dev) signed with the owner's own debug keystore (a secret;
+its SHA-1 `88:5F:…:A3:4A` is on the Play Games credential for `.dev`, so Play Games signs in), and sends it
+through Firebase App Distribution to the group `owner`; off until `FIREBASE_APP_ID_DEV` is set.
 
 ## 12. Verifying
 
