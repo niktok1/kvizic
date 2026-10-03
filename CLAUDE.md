@@ -73,6 +73,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - REST takes a seat (create, join by code, Quick play, solo) and answers a one-time ticket (30 s). A room may be read first by its code (preview). The
   socket `wss://…/v1/play` takes `hello(ticket, protocol, platform, build)` as its first frame within 5 s;
   nothing secret is in the URL.
+- **The launch takes back a held seat** (the owner, 2026-10-03): the system ends an app in the background
+  mid-game and the code dies with it, so a launch with a session stored asks `POST /v1/lobby-rejoins`, which
+  answers a ticket for the seat the player holds wherever it is, never a fresh one (LOBBY_NOT_FOUND), and the
+  room opens over Home; nothing is said when there is none (`AppServices`, `LobbySession.rejoin`).
 - One coroutine actor per lobby owns its state; outgoing queues are bounded (a slow socket is closed 4429).
 - One client address holds at most `MAX_SOCKETS_PER_ADDRESS` sockets (200): a mobile carrier's CGNAT puts
   many phones behind one address, and guest minting's per-address budget already bounds an abuser.
@@ -102,7 +106,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   member out**, the host included, from the member's seat, while the room waits (never mid-game or in the
   countdown). It takes more than half of the other members in the room (connected and back from the
   results), and at least two (`kickVotesNeeded`), so of two players neither can; the tally moves with who is
-  in. Voted out is a kick: 4403, banned for the room's life, hosting passing on as when a host leaves. No
+  in. Voted out is a kick: 4403, banned for the room's life, hosting passing on as when a host leaves; one
+  voted out while away hears it from the rejoin's 403 `LOBBY_BANNED`, whose `ErrorDto.reason` (`VOTED_OUT`)
+  tells it from the host's kick (a code of its own would read UNKNOWN on 1.0.0, which retries). No
   spam: one vote each at a time, a new one at most every 30 s (`kickVoteEvery`; `TOO_SOON`), taking one back
   never held up, a vote that worked freeing its voters at once; votes are anonymous, the seat showing only the
   count („2/3“) to everyone, the one voted on too; a game's countdown wipes them. `LobbyVoteKickTest`.
@@ -172,7 +178,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
   by `GamePhase`), Settings (the app's: the Sound switch and a way to About; `AppSettingsScreen`, apart from a room's), About
-  (version, legal pages, licences, and last what is kept of the player, under „Подаци“: Statistics, the account's
+  (version, legal pages, licences and the fonts' OFL, each text a tap away, and last what is kept of the player, under „Подаци“: Statistics, the account's
   id and its deletion), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,
   which says why (`Navigator.followRoom`).
@@ -220,7 +226,14 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   from their places before the question, and a line draining along its foot to the next question. The
   question is recalled small, in two lines beside an explanation; the report flag stands in its corner. The
   answers keep the least room that sets them whole and 45% of the rest; at the content style's limits the
-  player's line stays on the board (`RevealFitTest`), at the wire's it may give way.
+  player's line stays on the board (`RevealFitTest`), at the wire's it may give way. The board's least is its
+  own line, measured, and a reveal with less room leaves the board out whole, never half off the screen; the
+  explanation takes 4 lines at most, giving back at a large font what it must of its size (2026-10-03).
+- **Words are never cut on a button or in a dialog** (2026-10-03, after a test at 130% font): a `StageButton`
+  keeps its label on one line, smaller where it must, and only past its least size wraps onto `maxLines` (two
+  for a tile with its icon above), no word broken (`OneLineFirst`). A `StageDialog`'s buttons stand in a row
+  while they fit at their own width, else stacked across it, the main action on top. The lobby's chips wrap
+  (`FlowRow`). `WrapFitTest`, `RoomFitDrawTest`.
 - **Picks stand on the card, or on its edge** (the owner, 2026-10-02): those who picked an answer stand on
   its tile's face, past the answer's longest line in a column or beside the letter in the grid, where a crowd
   of the question's players fits so on every tile, the answers laid out as without them; otherwise on every
@@ -256,11 +269,16 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   on Quick play's foot, inside the button (`StageButton.footer`, over the face so the words stay in its middle), bare
   and in plain figures of the button's text colour, its place held before the first read. The counts
   are the poll's alone (`GET /v1/lobbies`, every 10 s): the socket's `presence` frames are not kept, since a count
-  kept from the last room showed a phone one number and a tablet another.
+  kept from the last room showed a phone one number and a tablet another. Online is everyone with the app open:
+  a socket in a room, or a read of the list in the last 30 s (`LobbyRegistry.LOOKING_ON`, 2026-10-03).
 - **The results** (the owner, 2026-10-02): the winner stands on a plate of the first step's colour (`WinnerBanner`,
   "Твоја победа!" for the player's own win) right over the podium, not pinned to the top, popping in once; the
   podium, the board and the chips stand centred in a region that scrolls when eight players leave no room, the
-  way back fixed at the foot (`RoomRevealDrawTest`).
+  way back fixed at the foot (`RoomRevealDrawTest`). Those who stayed to the end rank ahead of those who left,
+  and the plate goes only to the one of two or more who stayed standing alone at the top (`GameResults.winner`,
+  as the server's `won()`): no plate on a tie, for a player left alone, or in solo (2026-10-03). A solo run shows
+  its score on flaps with no podium, and a first run sets a best („Рекорд: X“) but beats none
+  (`PersonalBest.beaten`), so never „Нови рекорд!“.
 - **A room is seen before it is joined** (the owner, 2026-10-02): the public list's card (`RoomCard`) shows the room's
   name, or its host's when it has none, and every setting on its chips; the join screen reads the room a code names
   once its six digits are in (`GET /v1/lobbies/{code}`, `RoomPreviewViewModel`) and shows the same card over the
@@ -327,7 +345,9 @@ signing), `server-postgres`, `docker-smoke`, `ios`. Locally:
 `./gradlew ktlintCheck` and the module tests; iOS needs full Xcode, so compile with
 `:app:shared:compileKotlinIosSimulatorArm64` and let CI link; Kotlin/Native refuses a comma in a common
 test's name, so compile `compileTestKotlinIosSimulatorArm64` before pushing one. `KVIZIC_DESIGN_DIR=<dir>`
-makes the draw tests write PNGs to look at.
+makes the draw tests write PNGs to look at. The draw tests also draw at a phone's large font, 130%
+(`Density(1f, 1.3f)`): Home, the lobby, the room's dialogs and the reveal; `cutTexts()` finds a text past its
+box, its lines or an ellipsis, capitals included.
 - **A smoke test of the real UI**: run `:server:run` with `QUESTION_SEED_FILE` (the content repo's dev seed)
   and `ALLOWED_WEB_ORIGINS=localhost:8081,127.0.0.1:8081`, serve `:app:webApp:wasmJsBrowserDistribution`'s
   output on 8081, and open both origins (each its own player). The Browser pane stops painting while hidden,
@@ -354,6 +374,10 @@ makes the draw tests write PNGs to look at.
   question screen in two panes, the bar and the question beside the answers' grid (a phone on its side is
   wide, so its answers already stand two by two), the reveal's board beside them; the lobby's seats, the join
   keypad, the settings and the results checked at a phone's height of ~360 dp. Then the lock comes off.
+- **The reveal's board at 130% font on 360×640**: it does not fit there with a usual question in Buzzers
+  (about 26 px short) and is left out whole; it shows on 375×667 and 360×760. To show it: the tiles' letter
+  mark and least answer size stop growing with the font, or the recap gives some back, or the explanation
+  drops to 3 lines at a large font. Answers at the wire's 60 characters are not whole at 130% either.
 - `design-tests` hung on CI with four test JVMs (2026-10-02: no output for 29 min, cancelled at the job's
   limit; it passes locally in 42 s), and passed in one. Four again, with `DesignShotsTest` split: if it
   hangs again, the job's thread dumps say where.

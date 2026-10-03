@@ -27,44 +27,57 @@ Found only, nothing fixed. Tick an item off (or delete it) as it is handled.
    (common on Xiaomi and Samsung) relaunches onto Home, with no notice and no way back. The seat is still held
    (§6: the rest of the game), and joining by code worked, but only if they remember the code. Home could
    offer „Врати се у игру“ for a room the session still holds.
+    — ✅ fixed (8f15835): the launch asks `POST /v1/lobby-rejoins` and the room opens.
 2. **A voted-out player is told the host kicked them.** The host voted out by the two others saw „Водитељ те
    је избацио из собе.“, not `exitVotedOut` („Играчи су гласали…“). So the client never got
    `CloseReason.VOTED_OUT`: either the 4403 close came before the `closing` frame, or the server sent KICKED
    (`LobbyMapper.kt` ~265, `Lobby.kt` ~1094).
+    — ✅ fixed (af18ed2): voted out with no live socket, the rejoin's 403 was read as a kick; `ErrorDto.reason` now tells them apart. E2E test.
 3. **A player who left mid-game can win.** In a room where one of two players left at question 4, the one
    who stayed saw the departed player on the winner's plate („ПОБЕДНИК Паметни Медвед“), ahead of themselves
    on a 0–0 tie. A tie should not favour someone who left, and someone who left perhaps should not be
    crowned at all.
+    — ✅ fixed (c0eaabd server; b78a649 results): those who stayed rank first; the plate only for a lone winner of two or more who stayed.
 4. **Lobby chips are crushed to „..“.** On the 393 dp phone, with „Географија, Историја +1“ as topics, the
    4th chip („Минус“), and with difficulty set the 3rd and 4th („Тешко“, „Минус“), are drawn as „..“, 13 px
    wide. Nobody can see the difficulty or the minus. The row should wrap or scroll.
+    — ✅ fixed (UI commits e7eda07…c633ec4): the chips wrap.
 5. **The host's seat dialog squeezes Kick.** On the tablet: „Откажи · Нека води · 👢 И“. The „Избаци“ label
    is 13 px wide, since three buttons don't fit the dialog's row. The host's main action can't be read.
+    — ✅ fixed (UI commits e7eda07…c633ec4): a dialog's buttons stack when the row can't hold them.
 6. **130% font (a common phone setting) on 360 dp:**
    - Home: „Направи собу“ shows as „Направи“; „Пријави се преко Плеј игара“ loses „игара“.
    - The lobby's 4th chip is „..“.
    - The reveal cuts the recalled question to one line („…прве мо…“) and the standings board falls off the
      bottom.
    - New room's settings are fine (they scroll).
+    — ✅ mostly fixed (UI commits e7eda07…c633ec4): buttons wrap, the reveal's board is whole or left out. Still open: the board doesn't fit at 130% on 360×640 (CLAUDE.md §13).
 7. **Vote to remove is cut.** On 360 dp, the button reads „Гласај за“ (of „Гласај за избацивање“).
+    — ✅ fixed (UI commits e7eda07…c633ec4).
 8. **Report reasons are cut.** On the phone: „Означени одговор није…“, „Нејасно је, или је више…“. The
    whole reason should wrap.
+    — ✅ fixed (UI commits e7eda07…c633ec4): reasons wrap to 3 lines.
 9. **Play Games' failure is silent.** A sign-in that failed with DEVELOPER_ERROR returns to Home with no
    notice, and the button stays. A player taps it again and nothing happens.
+    — ✅ fixed by the sign-in session (`PLAY_GAMES_NOT_SIGNED_IN`).
 10. **Topic picker header.** Opening topics from New room showed two headers, with two back arrows, stacked.
+    — ✅ fixed (UI commits e7eda07…c633ec4): one bar; Room settings had it too.
 
 ## Questions and polish
 
 11. **Solo results** say „ТВОЈА ПОБЕДА!“ over an empty podium (the bare 2 and 3 plates), and „Нови
     рекорд!“ for −130 points and 1 of 10 right (the first medium run). Maybe solo needs its own results:
     the score, the record, and no podium.
+    — ✅ fixed (b78a649): the score on flaps, no podium or plate; a first run is „Рекорд: X“.
 12. **The online count** (`LobbyRegistry.presence`) counts only players seated in a room, so a player on
     Home is not counted. With two people in the app, Home said „1“. If it should mean "people in the app", it
     needs the session count.
+    — ✅ fixed (e708e5b): a list read in the last 30 s counts too.
 13. **No language picker.** The app is always Cyrillic, whatever the device; Latinica can't be reached. That
     matters for BA, ME and the diaspora (already in §13 Open).
 14. **The fonts' OFL licences aren't shown.** `FontLicences` (designsystem) says it is "for the About screen
     to show", but nothing calls it, and About → Licences lists libraries only.
+    — ✅ fixed (UI commits e7eda07…c633ec4): under About → Licences.
 15. **Share text** is only „Играј Квизић са мном! Уђи у собу кодом N.“, with no Play link, so someone without
     the app can't act on it (share links are in §13).
 
@@ -73,6 +86,7 @@ Found only, nothing fixed. Tick an item off (or delete it) as it is handled.
 16. **Two correct answers scored 0.** In one 3-player game (after a vote-out, and with one player's network
     dropped at question 2), two players answered question 1 right (Бразилија), yet both ended with 0 points
     („Тачно 0 од 10“). A fresh room right after scored normally (−17 each for a wrong answer).
+    — ⚠️ one cause fixed (c0eaabd): a player who left mid-game and sat down again had every answer refused `NOT_PLAYING`. Unconfirmed it was this; check that game's `match_players` (`answered`, `finished`) on prod.
 17. **Join keypad digits.** Typing a code quickly with key events dropped or misplaced digits twice. Not seen
     with the on-screen keypad.
 
