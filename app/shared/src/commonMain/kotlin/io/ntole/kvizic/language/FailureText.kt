@@ -21,6 +21,19 @@ fun Strings.failureText(
         else -> somethingWrong
     }
 
+/** Why a Play Games sign-in the player asked for failed: Play Games' own refusal named, the rest as any failure. */
+fun Strings.playGamesFailureText(
+    error: DomainError,
+    retryAfter: Duration? = null,
+): String =
+    if (error ==
+        CoreError.PLAY_GAMES_NOT_SIGNED_IN
+    ) {
+        game.playGamesNotSignedIn
+    } else {
+        failureText(error, retryAfter)
+    }
+
 /**
  * Too many tries, and how long to wait when the server named it: in seconds under a minute, and in minutes
  * rounded up from one, so an hour's budget spent never reads as thousands of seconds.

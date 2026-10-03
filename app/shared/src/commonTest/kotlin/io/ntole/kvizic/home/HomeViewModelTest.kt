@@ -341,8 +341,29 @@ class HomeViewModelTest {
             assertNull(home.state.value.playGamesFailure)
         }
 
-    private fun viewModel(): HomeViewModel =
-        HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, linking, analytics)
+    /** Play Games refusing the build's key answers as a player backing out does: either way the tap is answered. */
+    @Test
+    fun `a tap Play Games signs nobody in for says so`() =
+        runTest(main) {
+            val refusing = LinkPlayGames(NotSignedInPlayGames, links, session, Analytics.None)
+            val home = viewModel(refusing)
+            home.shown()
+            testScheduler.advanceUntilIdle()
+
+            home.linkPlayGames()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                CoreError.PLAY_GAMES_NOT_SIGNED_IN,
+                home.state.value.playGamesFailure
+                    ?.error,
+            )
+            assertTrue(home.state.value.offersPlayGames, "still a guest, so offered it again")
+            assertFalse(home.state.value.linkingPlayGames)
+        }
+
+    private fun viewModel(link: LinkPlayGames = linking): HomeViewModel =
+        HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, link, analytics)
 
     /** The device's session: none until [ensure] mints guests one after the other. */
     private class FakeSession :
@@ -367,6 +388,17 @@ class HomeViewModelTest {
         override suspend fun signIn(): Boolean = true
 
         override suspend fun serverAuthCode(): String = "code"
+    }
+
+    /** Play Games with nobody signed in, and nobody signing in when asked. */
+    private object NotSignedInPlayGames : PlayGames {
+        override val available: Boolean = true
+
+        override suspend fun isAuthenticated(): Boolean = false
+
+        override suspend fun signIn(): Boolean = false
+
+        override suspend fun serverAuthCode(): String? = null
     }
 
     /**

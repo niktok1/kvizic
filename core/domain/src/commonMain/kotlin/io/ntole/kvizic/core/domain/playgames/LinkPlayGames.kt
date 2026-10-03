@@ -96,16 +96,19 @@ public class LinkPlayGames(
         }
 
     /**
-     * A button's: asks the player to sign in to Play Games unless they are, then signs in to the server
-     * with it. Returns false, with nothing sent, when they did not sign in to Play Games, and with nothing
+     * A button's, the fallback for a player [automatically] could not sign in: asks the player to sign in
+     * to Play Games unless they are, then signs in to the server with it. Returns false, with nothing
      * stored, when the device became another player while it was in flight.
      *
-     * @throws KvizicException when the server could not sign them in, the stored session left as it was.
+     * @throws KvizicException when Play Games signed nobody in (`PLAY_GAMES_NOT_SIGNED_IN`), so a tap is
+     *   never silent, or the server could not sign them in, the stored session left as it was either way.
      */
     public suspend fun manually(): Boolean {
         if (!playGames.available) return false
         return mutex.withLock {
-            if (!playGames.isAuthenticated() && !playGames.signIn()) return@withLock false
+            if (!playGames.isAuthenticated() && !playGames.signIn()) {
+                throw KvizicException(CoreError.PLAY_GAMES_NOT_SIGNED_IN, "Play Games signed nobody in")
+            }
             signIn(automatic = false)
         }
     }

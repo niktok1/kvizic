@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerLevel
@@ -24,6 +25,7 @@ import org.jetbrains.skia.Image
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** The profile drawn off screen in each language: the player's stats, and every avatar to pick by its animal's name. */
@@ -68,6 +70,35 @@ class ProfileScreenDrawTest {
         assertEquals(listOf(AvatarArt.FROG), picked)
     }
 
+    @Test
+    fun `a guest's card connects Play Games and says why it could not`() {
+        Language.entries.forEach { language ->
+            val strings = stringsOf(language)
+            val words = strings.game
+            var taps = 0
+            val guest =
+                HomeState(
+                    profile = PROFILE,
+                    playGamesAvailable = true,
+                    playGamesFailure = HomeFailure(CoreError.PLAY_GAMES_NOT_SIGNED_IN),
+                )
+            val offered = scene(language, state = guest, onPlayGames = { taps++ })
+            val linked = scene(language, state = guest.copy(profile = PROFILE.copy(playGamesLinked = true)))
+            try {
+                write("profile-guest-${language.name.lowercase()}", offered.renderSettled())
+                listOf(words.guest, words.guestKeepsLevel, words.playGamesNotSignedIn).forEach {
+                    assertTrue(it in offered.everyText(), "$language: \"$it\" is not shown")
+                }
+                assertFalse(words.guest in linked.everyText(), "$language: a linked player is offered it")
+                offered.tap(words.connectPlayGames)
+            } finally {
+                offered.close()
+                linked.close()
+            }
+            assertEquals(1, taps, "$language")
+        }
+    }
+
     private fun stringsTopic(language: Language): String =
         if (language ==
             Language.SERBIAN_LATIN
@@ -90,11 +121,13 @@ class ProfileScreenDrawTest {
     private fun scene(
         language: Language,
         onPick: (String) -> Unit = {},
+        state: HomeState = HomeState(profile = PROFILE),
+        onPlayGames: () -> Unit = {},
     ): ImageComposeScene =
         ImageComposeScene(width = 360, height = 1200, density = Density(1f)) {
-            GameTheme(
-                language,
-            ) { Stage(Modifier.fillMaxSize()) { ProfileScreen(HomeState(profile = PROFILE), TOPICS, onPick) } }
+            GameTheme(language) {
+                Stage(Modifier.fillMaxSize()) { ProfileScreen(state, TOPICS, onPick, onPlayGames = onPlayGames) }
+            }
         }.also { it.renderSettled() }
 
     private companion object {

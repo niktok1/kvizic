@@ -44,6 +44,12 @@ public enum class CoreError : DomainError {
     /** A Play Games sign-in could not be made: the server could not ask Google, or Play Games gave no code. */
     PLAY_GAMES_UNAVAILABLE,
 
+    /**
+     * Play Games signed nobody in when the player asked it to: they backed out, or it refused this build
+     * (a signing key its project does not know answers so, with nothing to tell the two apart).
+     */
+    PLAY_GAMES_NOT_SIGNED_IN,
+
     /** A moderator named an account no player has. */
     PLAYER_NOT_FOUND,
 
