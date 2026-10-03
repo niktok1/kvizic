@@ -162,6 +162,68 @@ Internal testing first (no review) for the two-phone smoke test, then the same b
   impression.
 - Moderation: check the report queue daily for the first week.
 
+## 10. Automation: deploys and releases from a phone (2026-10-03)
+
+What it does (CLAUDE.md §11): a green push to `main` that changes the server asks GitHub Mobile for approval,
+then prod deploys that commit and two guests check a game starts; the site deploys itself when `site/`
+changes; "Release Android" bumps, tags and (approved) uploads a signed bundle to internal testing; "Promote
+Android" moves it to early access or production, at 20%, 50% or 100%, or halts it. Every step that touches
+prod or Play waits for **your tap**. A rollback is "Deploy prod" → Run workflow with an older commit.
+
+### Your one-time steps
+
+**A. GitHub Mobile** (phone, 2 min): install it, sign in as `niktok1`, and allow its notifications (Profile →
+Settings → Notifications: **Deployments** / Actions on).
+
+**B. The `production` environment** (phone browser or Mac, 3 min): github.com/niktok1/kvizic → **Settings** →
+**Environments** → `production` (it may exist already, made by the first run; else **New environment**,
+`production`) → tick **Required reviewers**, add `niktok1`, leave **Prevent self-review** off → **Save
+protection rules**. Deployment branches and tags: **No restriction**.
+
+**C. Render's deploy hooks** (phone browser, 5 min; never paste them anywhere else, they deploy on their own):
+1. dashboard.render.com → `kvizic-server` → **Settings** → **Deploy Hook** → copy.
+2. GitHub → Settings → Environments → `production` → **Environment secrets → Add secret**:
+   `RENDER_DEPLOY_HOOK_PROD`, paste.
+3. Render → `kvizic-site` → Settings → Deploy Hook → copy.
+4. GitHub → Settings → **Secrets and variables → Actions → New repository secret**: `RENDER_DEPLOY_HOOK_SITE`,
+   paste.
+5. Render → `kvizic-site` → Settings → **Build Command**: `echo "$RENDER_GIT_COMMIT" > site/commit.txt` and
+   **Auto-Deploy: Off**, if the blueprint did not set them (render.yaml says so).
+
+**D. Play's service account** (Mac, 15 min):
+1. console.cloud.google.com → the project Play Games uses (top bar) → **APIs & Services → Library** → „Google
+   Play Android Developer API“ → **Enable**.
+2. **IAM & Admin → Service accounts → Create service account**: name `kvizic-play-release` → **Create and
+   continue** → no roles → **Done**.
+3. Open it → **Keys → Add key → Create new key → JSON** → it downloads (`~/Downloads/<project>-….json`).
+4. Copy the account's email (`kvizic-play-release@….iam.gserviceaccount.com`).
+5. play.google.com/console → **Users and permissions** → **Invite new users** → paste the email → **App
+   permissions → Add app** → Квизић → tick **Release apps to testing tracks** and **Release to production,
+   exclude devices, and use Play App Signing** (nothing else; no account permissions) → **Invite user** → Send.
+   It can take up to a day before the API accepts it.
+
+**E. The secrets from the Mac** (2 min): `gh` needs the repository's Secrets, Variables and Environments
+permissions (`gh auth login` → GitHub.com → HTTPS → browser). Then:
+
+```bash
+PLAY_KEY=~/Downloads/<the-json-file>.json tools/release/set-github-secrets.sh
+```
+
+It sets `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_STORE_PASSWORD`, `UPLOAD_KEY_PASSWORD` and
+`PLAY_SERVICE_ACCOUNT_JSON` on `production`, and the variables `KVIZIC_POSTHOG_KEY`, `KVIZIC_PLAYGAMES_APP_ID`,
+`KVIZIC_PLAYGAMES_SERVER_CLIENT_ID`, printing no value. Then delete the JSON from Downloads (it lives in GitHub
+now; a new key can always be made). The repo is public: secrets never reach a fork's pull request, and no
+workflow here runs a pull request's code with them.
+
+### Using it from the phone
+
+- **Prod**: a notification „Review deployments“ → **Approve and deploy**. To roll back: Actions → **Deploy
+  prod** → Run workflow → `sha` = the older commit → approve.
+- **A release**: Actions → **Release Android** → Run workflow (patch, notes in Serbian) → approve → internal
+  testing in ~15 min. Then **Promote Android** → `internal → early access` (or `early access → production`
+  at 0.2) → approve; raise with `production rollout share`, stop with `production halt`.
+- Bump, tag and promote never touch the store listing, data safety, the content rating or Google's review.
+
 ## Open, decide later
 
 - The design gate: font, tile scheme, host badge, timer, Latin letters, spotlight, clap icon.

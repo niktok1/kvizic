@@ -1,0 +1,56 @@
+# Takes a release on through Google Play's tracks, from a phone: internal testing → early access (open testing,
+# Play's `beta` track) → production, staged at a share of players, that share raised, halted or resumed. Every
+# action waits for the owner's approval in the `production` environment (GitHub Mobile) and runs
+# tools/play/play.py with PLAY_SERVICE_ACCOUNT_JSON. Google's review of a release still happens on Play's side.
+name: Promote Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do
+        type: choice
+        options:
+          - internal → early access
+          - early access → production
+          - production rollout share
+          - production halt
+          - production resume
+          - status
+      fraction:
+        description: Share of players (for a promotion or a rollout share; 1.0 is everyone)
+        type: choice
+        options: ['0.2', '0.5', '1.0']
+        default: '0.2'
+
+concurrency:
+  group: promote-android
+
+permissions:
+  contents: read
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Play
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          ACTION: ${{ inputs.action }}
+          FRACTION: ${{ inputs.fraction }}
+        run: |
+          pip install -q -r tools/play/requirements.txt
+          play() { python3 tools/play/play.py "$@" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          case "$ACTION" in
+            'internal → early access') play promote --from internal --to beta --fraction "$FRACTION" ;;
+            'early access → production') play promote --from beta --to production --fraction "$FRACTION" ;;
+            'production rollout share') play rollout --track production --fraction "$FRACTION" ;;
+            'production halt') play halt --track production ;;
+            'production resume') play resume --track production ;;
+            status) play status ;;
+            *) echo "::error::no such action: $ACTION"; exit 1 ;;
+          esac

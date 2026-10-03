@@ -349,6 +349,14 @@ Serbian at the root and English under `en/`: its own subdomain (2026-10-02), sin
 published from WYR's repository. A page states only what the code does. `deploy-site.yml` deploys it through
 its hook after a green push whose `site/` differs from the live `commit.txt`'s commit (its build writes it):
 Render's build filter once left a site change behind (2026-10-02).
+**Android releases** (2026-10-03): `release-android.yml` ("Run workflow", from a phone) bumps the version on
+`main` (`tools/release/bump.py`, both files), tags it, and on the owner's approval builds the signed bundle,
+checks it is the upload key's, and uploads it to Play's internal track; a tag `v1.2.3` pushed by hand releases
+that commit. `promote-android.yml` takes it to early access (Play's `beta` track) and production, staged,
+raised, halted or resumed. Both run `tools/play/play.py`, Google's own API client, never a third party with
+the service account's key. Store listing, data safety, content rating and Google's review stay in the Play
+Console. The secrets are the `production` environment's (`tools/release/set-github-secrets.sh` sets them from
+the Mac); LAUNCH.md §10 has the owner's one-time steps.
 
 ## 12. Verifying
 

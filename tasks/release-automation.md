@@ -4,6 +4,12 @@ A brief for a fresh session. Read `CLAUDE.md` and `LAUNCH.md` first; this file i
 rules and the state of the world. Written 2026-10-03, when 1.0.0 (build 10000) was in Play's early-access
 review and prod was live.
 
+**Status (2026-10-03):** phases 1 and 2 built (`deploy-prod.yml`, `deploy-site.yml`, `release-android.yml`,
+`promote-android.yml`, `tools/play/play.py`, `tools/release/`); the owner's one-time steps are LAUNCH.md §10.
+Decided: the prod check is a two-guest game started and left before an answer; question publishing stays
+local; notifications are GitHub Mobile's alone; Phase 3 signs dev builds with the owner's own debug keystore
+as a secret (its SHA-1 is already on `io.ntole.kvizic.dev`'s credential). Phase 3 is next.
+
 ## Goal
 
 The owner wants as little manual work as possible, and most of what remains doable **from a phone**. Today

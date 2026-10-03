@@ -1,0 +1,3 @@
+# Google's own clients for the Play Developer API, pinned; installed by the Android release workflows.
+google-api-python-client==2.151.0
+google-auth==2.36.0
