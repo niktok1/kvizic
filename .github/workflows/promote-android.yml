@@ -42,7 +42,9 @@ jobs:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           ACTION: ${{ inputs.action }}
           FRACTION: ${{ inputs.fraction }}
+        # pipefail: play.py's failure must fail the step, through its tee.
         run: |
+          set -o pipefail
           pip install -q -r tools/play/requirements.txt
           play() { python3 tools/play/play.py "$@" | tee -a "$GITHUB_STEP_SUMMARY"; }
           case "$ACTION" in

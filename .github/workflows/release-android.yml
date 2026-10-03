@@ -154,7 +154,9 @@ jobs:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           NOTES_SR: ${{ inputs.notes_sr || 'Исправке и побољшања.' }}
           NOTES_EN: ${{ inputs.notes_en }}
+        # pipefail: play.py's failure must fail the step, through its tee.
         run: |
+          set -o pipefail
           pip install -q -r tools/play/requirements.txt
           python3 tools/play/play.py upload app/androidApp/build/outputs/bundle/prodRelease/androidApp-prod-release.aab \
             --track internal --notes-sr "$NOTES_SR" --notes-en "$NOTES_EN" | tee -a "$GITHUB_STEP_SUMMARY"
