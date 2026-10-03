@@ -66,14 +66,39 @@ class QuestionSeedTest {
         assertSeeded(packed, "bank-seed-packed")
     }
 
+    /** A bank past one secret file's 500 KiB is cut into parts, named separated by commas. */
+    @Test
+    fun `a seed in several files seeds them all`() {
+        val request = ServerJson.decodeFromString(ImportQuestionsRequest.serializer(), json)
+        val parts =
+            request.questions.chunked(2).map { part ->
+                ServerJson.encodeToString(ImportQuestionsRequest.serializer(), request.copy(questions = part))
+            }
+        assertEquals(listOf("a", "b"), QuestionSeed.paths(" a , b ,"))
+        assertSeeded(parts, "bank-seed-parts")
+    }
+
     private fun assertSeeded(
         contents: String,
         database: String,
-    ) {
-        val file = File.createTempFile("kvizic-seed", ".json").apply { deleteOnExit() }
-        file.writeText(contents)
+    ) = assertSeeded(listOf(contents), database)
 
-        runTestServer(database, configure = { it.copy(questionSeedFile = file.path) }) { client, _ ->
+    private fun assertSeeded(
+        contents: List<String>,
+        database: String,
+    ) {
+        val files =
+            contents.map { text ->
+                File.createTempFile("kvizic-seed", ".json").apply {
+                    deleteOnExit()
+                    writeText(text)
+                }
+            }
+
+        runTestServer(
+            database,
+            configure = { it.copy(questionSeedFile = files.joinToString(",") { it.path }) },
+        ) { client, _ ->
             val bank =
                 client
                     .get(KvizicApi.Paths.ADMIN_QUESTIONS) { header(KvizicApi.Headers.ADMIN_TOKEN, FLOW_ADMIN_TOKEN) }

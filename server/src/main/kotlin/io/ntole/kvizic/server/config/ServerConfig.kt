@@ -82,10 +82,10 @@ data class ServerConfig(
      */
     val guestRetentionDays: Int? = DEFAULT_GUEST_RETENTION_DAYS,
     /**
-     * A file of drafts in the import format, from `QUESTION_SEED_FILE`, loaded at boot as approved
-     * questions: how the dev service and a laptop get questions to play, since the bank never lives in
-     * the public repository. Only on the in-memory database: set beside `DATABASE_URL`, the boot fails,
-     * so production can never be seeded from a file.
+     * A file of drafts in the import format, or several separated by commas, from `QUESTION_SEED_FILE`,
+     * loaded at boot as approved questions: how the dev service and a laptop get questions to play, since
+     * the bank never lives in the public repository. Only on the in-memory database: set beside
+     * `DATABASE_URL`, the boot fails, so production can never be seeded from a file.
      */
     val questionSeedFile: String? = null,
     /**

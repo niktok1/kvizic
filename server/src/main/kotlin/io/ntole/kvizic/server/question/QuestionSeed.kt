@@ -15,7 +15,9 @@ import java.util.zip.GZIPInputStream
  * (`ServerConfig`), so it is read in whole each time. A file that cannot be read fails the boot, naming it.
  *
  * The file is the drafts' JSON, or that JSON gzipped and written in base64 ([text]): a Render secret file
- * holds at most 500 KiB, which 1.536 questions' JSON passes and their gzip in base64 keeps to 315.
+ * holds at most 500 KiB, which 1.536 questions' JSON passes and their gzip in base64 keeps to 315. A bank that
+ * outgrows one file is cut into several, which `QUESTION_SEED_FILE` names separated by commas ([paths]), each
+ * imported in turn.
  */
 object QuestionSeed {
     /** What a gzip file's first three bytes (1f 8b 08) read as in base64. */
@@ -30,12 +32,25 @@ object QuestionSeed {
         return GZIPInputStream(packed.inputStream()).use { it.readBytes().decodeToString() }
     }
 
+    /** The files [setting] names: one path, or several separated by commas, each trimmed. */
+    internal fun paths(setting: String): List<String> = setting.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
     suspend fun load(
+        db: Db,
+        setting: String,
+        topics: Set<String>,
+        log: Logger,
+        now: Long = System.currentTimeMillis(),
+    ) {
+        paths(setting).forEach { loadFile(db, it, topics, log, now) }
+    }
+
+    private suspend fun loadFile(
         db: Db,
         path: String,
         topics: Set<String>,
         log: Logger,
-        now: Long = System.currentTimeMillis(),
+        now: Long,
     ) {
         val file = File(path)
         require(file.isFile) { "QUESTION_SEED_FILE names no file: $path" }

@@ -113,6 +113,8 @@ services:
       # Not declared here: a blueprint cannot upload the file, and a QUESTION_SEED_FILE naming a missing
       # file fails the boot. Once the file is uploaded, add this variable in the dashboard:
       #   QUESTION_SEED_FILE=/etc/secrets/dev-seed.questions.json
+      # A seed past one secret file's 500 KiB is cut into parts (pack_seed.py), named separated by commas:
+      #   QUESTION_SEED_FILE=/etc/secrets/dev-seed-1.gz.b64,/etc/secrets/dev-seed-2.gz.b64
 
   # The game's public site, the legal pages the app and Google Play link to (Site.kt): plain HTML and one
   # stylesheet in site/, nothing to build, free. Its own subdomain, since ntole.com itself is published from
