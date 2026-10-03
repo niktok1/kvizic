@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,12 +28,15 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.GamePhase
@@ -64,6 +68,7 @@ import io.ntole.kvizic.design.component.rememberAnswersFit
 import io.ntole.kvizic.design.component.signed
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
+import io.ntole.kvizic.design.skin.SkinTextStyle
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
@@ -256,11 +261,19 @@ internal fun RevealScreen(
             onLeave = onLeave,
         )
         Spacer(Modifier.height(space.md))
+        val rows =
+            boardRows(
+                lobby,
+                reveal.standings,
+                reveal.results.associate { it.playerId to it.points },
+                state.you,
+                language,
+            )
         RevealBody(
             fits = rememberAnswersFit(reveal.options.map { shown(it) }),
             headroom = space.tile.rowGap,
             gap = space.md,
-            boardLeast = space.avatar.xs * BOARD_LEAST_LINES + space.md * 2 + space.sm + space.xs,
+            sliver = space.xs,
             modifier = Modifier.weight(1f),
             panel = {
                 Panel(Modifier.fillMaxWidth().then(afterTheAnswers), kind = PanelKind.SCREEN, padding = space.lg) {
@@ -290,11 +303,20 @@ internal fun RevealScreen(
                                 )
                             }
                             reveal.explanation?.let { explanation ->
+                                // In a few lines at most: a large font gives back what it must of its size, down to
+                                // the caption's at the usual font, for the answers and the board to keep their room.
+                                val caption = type.caption.style.fontSize
                                 KvizicText(
                                     shown(explanation),
-                                    style = type.caption,
+                                    style = setSmallerTogether(type.caption),
                                     color = colors.onRaisedMuted,
                                     textAlign = TextAlign.Center,
+                                    maxLines = EXPLANATION_LINES,
+                                    autoSize =
+                                        TextAutoSize.StepBased(
+                                            minFontSize = (caption.value / LocalDensity.current.fontScale).sp,
+                                            maxFontSize = caption,
+                                        ),
                                 )
                             }
                         }
@@ -374,14 +396,7 @@ internal fun RevealScreen(
             },
             board = {
                 StandingsBoard(
-                    rows =
-                        boardRows(
-                            lobby,
-                            reveal.standings,
-                            reveal.results.associate { it.playerId to it.points },
-                            state.you,
-                            language,
-                        ),
+                    rows = rows,
                     modifier = Modifier.fillMaxWidth().then(afterTheAnswers),
                     reorderKey = reveal.questionId,
                     timeLeft = phase.next::fractionLeft,
@@ -527,10 +542,18 @@ private const val MILLIS_PER_SECOND = 1_000
 private const val RECAP_LINES = 2
 
 /**
- * The fewest of the board's lines a reveal keeps in sight, when it has room for a board at all: the
- * player's own, which the board scrolls to, and the rest a scroll away.
+ * [style] with its lines as far apart for its size as it sets them, so a text set smaller to fit takes lines
+ * smaller with it, not the full size's.
  */
-private const val BOARD_LEAST_LINES = 1
+private fun setSmallerTogether(style: SkinTextStyle): SkinTextStyle {
+    val size = style.style.fontSize
+    val line = style.style.lineHeight
+    if (!size.isSp || !line.isSp) return style
+    return style.copy(style = style.style.copy(lineHeight = (line.value / size.value).em))
+}
+
+/** The most lines an explanation takes on the reveal, set smaller within them at a large font. */
+private const val EXPLANATION_LINES = 4
 
 /** The least share of the room the answers keep beside the board, however long the board. */
 private const val GRID_SHARE = 0.45f
@@ -538,17 +561,18 @@ private const val GRID_SHARE = 0.45f
 /**
  * The reveal under its bar: the question over the answers, and the standings' board under them. The answers
  * come first: they keep the least room that sets them whole ([fits]) and at least [GRID_SHARE] of what is
- * left, and the board takes the rest up to its own height, scrolling past it. Where not even [boardLeast]
- * is left, on a phone too small for both, the board gives way and the player's points stay in the bar.
+ * left, and the board takes the rest up to its own height, scrolling past it. Where not even the board's least
+ * is left, its one line, the player's own, which it scrolls to, the rest a scroll away, as tall as the font makes
+ * it, on a phone too small for both, the board gives way and the player's points stay in the bar.
  * [headroom] stands over the answers, for those who picked one of the first row to stand on its edge, and
- * [gap] under them.
+ * [gap] under them. The board's line may lose a [sliver] at its foot, no more, where that keeps it on screen.
  */
 @Composable
 private fun RevealBody(
     fits: (Constraints) -> Boolean,
     headroom: Dp,
     gap: Dp,
-    boardLeast: Dp,
+    sliver: Dp,
     modifier: Modifier = Modifier,
     panel: @Composable () -> Unit,
     grid: @Composable (Modifier) -> Unit,
@@ -565,12 +589,12 @@ private fun RevealBody(
         val gridLeast = leastFitting(room) { height -> fits(Constraints.fixed(width, height)) } + space
         val gridKept = maxOf(gridLeast, (room * GRID_SHARE).roundToInt()).coerceAtMost(room)
         val boardRoom = room - gridKept - space
+        // The board's least, its own line alone (its least intrinsic height), the rest a scroll away.
+        val standings = if (boardRoom > 0) subcompose(RevealSlot.STANDINGS, board) else emptyList()
+        val least = standings.maxOfOrNull { it.minIntrinsicHeight(width) } ?: 0
         val below =
-            if (boardRoom >= boardLeast.roundToPx()) {
-                subcompose(
-                    RevealSlot.STANDINGS,
-                    board,
-                ).map { it.measure(Constraints(maxWidth = width, maxHeight = boardRoom)) }
+            if (standings.isNotEmpty() && boardRoom + sliver.roundToPx() >= least) {
+                standings.map { it.measure(Constraints(maxWidth = width, maxHeight = boardRoom)) }
             } else {
                 emptyList()
             }

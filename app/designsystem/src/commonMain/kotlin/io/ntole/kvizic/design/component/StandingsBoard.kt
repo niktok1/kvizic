@@ -34,9 +34,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasurePolicy
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.LocalCues
@@ -94,26 +103,16 @@ fun StandingsBoard(
     Panel(modifier, padding = space.md) {
         Column {
             Box(Modifier.weight(1f, fill = false).verticalScroll(scroll)) {
+                val gap = space.sm
                 Layout(
                     content = {
                         rows.forEach { row -> key(row.id) { ScoreLine(row, showMove = moved, slide = slide) } }
                     },
-                ) { measurables, constraints ->
-                    val lines = measurables.map { it.measure(constraints.copy(minHeight = 0)) }
-                    val gap = space.sm.roundToPx()
-                    val pitch = (lines.maxOfOrNull { it.height } ?: 0) + gap
-                    metrics.pitch = pitch
-                    val height = if (lines.isEmpty()) 0 else pitch * lines.size - gap
-                    layout(constraints.maxWidth, height) {
-                        val p = slide.value
-                        lines.forEachIndexed { i, line ->
-                            val from = (i + rows[i].moved).coerceIn(0, lines.lastIndex)
-                            val y = ((from + (i - from) * p) * pitch).roundToInt()
-                            // The player's own line slides over the others.
-                            line.place(0, y, zIndex = if (rows[i].own) 1f else 0f)
-                        }
-                    }
-                }
+                    measurePolicy =
+                        remember(rows, metrics, slide, gap) {
+                            LinesPolicy(gap, metrics) { i -> rows[i] to slide.value }
+                        },
+                )
             }
             if (timeLeft != null) {
                 Spacer(Modifier.height(space.sm))
@@ -121,6 +120,60 @@ fun StandingsBoard(
             }
         }
     }
+}
+
+/**
+ * The board's lines one under another, [gap] apart, each placed between where it stood and where it stands by
+ * the slide [at] gives, read in the placement alone. Its least height is one line, the most a board needs to
+ * show the player's own, the rest a scroll away, so what holds the board can ask how little it may have; its
+ * most, every line.
+ */
+private class LinesPolicy(
+    private val gap: Dp,
+    private val metrics: BoardMetrics,
+    private val at: (Int) -> Pair<ScoreRow, Float>,
+) : MeasurePolicy {
+    override fun MeasureScope.measure(
+        measurables: List<Measurable>,
+        constraints: Constraints,
+    ): MeasureResult {
+        val lines = measurables.map { it.measure(constraints.copy(minHeight = 0)) }
+        val pitch = (lines.maxOfOrNull { it.height } ?: 0) + gap.roundToPx()
+        metrics.pitch = pitch
+        val height = if (lines.isEmpty()) 0 else pitch * lines.size - gap.roundToPx()
+        return layout(constraints.maxWidth, height) {
+            lines.forEachIndexed { i, line ->
+                val (row, p) = at(i)
+                val from = (i + row.moved).coerceIn(0, lines.lastIndex)
+                val y = ((from + (i - from) * p) * pitch).roundToInt()
+                // The player's own line slides over the others.
+                line.place(0, y, zIndex = if (row.own) 1f else 0f)
+            }
+        }
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicHeight(
+        measurables: List<IntrinsicMeasurable>,
+        width: Int,
+    ): Int = measurables.maxOfOrNull { it.minIntrinsicHeight(width) } ?: 0
+
+    override fun IntrinsicMeasureScope.maxIntrinsicHeight(
+        measurables: List<IntrinsicMeasurable>,
+        width: Int,
+    ): Int {
+        val line = measurables.maxOfOrNull { it.maxIntrinsicHeight(width) } ?: return 0
+        return line * measurables.size + gap.roundToPx() * (measurables.size - 1)
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(
+        measurables: List<IntrinsicMeasurable>,
+        height: Int,
+    ): Int = measurables.maxOfOrNull { it.minIntrinsicWidth(height) } ?: 0
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(
+        measurables: List<IntrinsicMeasurable>,
+        height: Int,
+    ): Int = measurables.maxOfOrNull { it.maxIntrinsicWidth(height) } ?: 0
 }
 
 /** What the board's slide needs of its layout between frames: how far apart two lines stand. */
@@ -144,6 +197,8 @@ internal fun ScoreLine(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
+    // The place's and the move's columns hold words, so they widen with the font a phone sets.
+    val column = space.lg * LocalDensity.current.fontScale
     Row(
         modifier =
             Modifier
@@ -168,12 +223,12 @@ internal fun ScoreLine(
     ) {
         KvizicText(
             "${row.place}.",
-            Modifier.width(space.lg),
+            Modifier.width(column),
             style = type.name,
             color = colors.onRaisedMuted,
             maxLines = 1,
         )
-        Move(if (showMove) row.moved else 0, slide, Modifier.width(space.lg))
+        Move(if (showMove) row.moved else 0, slide, Modifier.width(column))
         Avatar(row.avatarId, row.seat, size = AvatarSize.XS, host = row.host)
         KvizicText(
             row.name,
