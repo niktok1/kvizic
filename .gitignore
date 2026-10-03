@@ -52,3 +52,4 @@ node_modules/
 ### Google: app configs and service account keys never go in the repository.
 google-services.json
 *firebase-adminsdk*.json
+site/commit.txt

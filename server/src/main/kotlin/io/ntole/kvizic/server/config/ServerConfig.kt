@@ -95,6 +95,11 @@ data class ServerConfig(
     val drainSeconds: Int = DEFAULT_DRAIN_SECONDS,
     /** The game's own timings, limits and scoring. */
     val game: GameConfig = GameConfig(),
+    /**
+     * The commit this build is, from Render's `RENDER_GIT_COMMIT`, which `/health` reports so a deploy's
+     * workflow knows when the new instance is serving; null off Render.
+     */
+    val commit: String? = null,
 ) {
     /** True when running against the throwaway in-memory database. */
     val isEphemeralDatabase: Boolean get() = jdbcUrl.startsWith("jdbc:h2:")
@@ -166,6 +171,7 @@ data class ServerConfig(
                 guestRetentionDays = parseGuestRetentionDays(env("GUEST_RETENTION_DAYS")),
                 questionSeedFile = parseQuestionSeedFile(env("QUESTION_SEED_FILE"), databaseUrl),
                 drainSeconds = parseDrainSeconds(env("DRAIN_SECONDS")),
+                commit = env("RENDER_GIT_COMMIT")?.trim()?.takeIf { it.isNotEmpty() },
                 game =
                     GameConfig(
                         limits =

@@ -336,13 +336,19 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 ## 11. Hosting
 
 `render.yaml`: `kvizic-server-dev` (free, H2, deploys every green `main`), `kvizic-server` (Starter, on
-`kvizic-postgres`, deployed **by hand** with Manual Deploy, a commit already green and live on dev), API at
-`kvizic-api.ntole.com`. Secrets are Render environment variables, never committed.
-`kvizic-site` (free, static, a green `main` that changes `site/`) is the legal pages the app and Play link to
-(`Site`), at `kvizic.ntole.com`, Serbian at the root and English under `en/`: its own subdomain (2026-10-02),
-since `ntole.com` itself is published from WYR's repository. A page states only what the code does. A site
-change pushed under later commits that left `site/` alone was not deployed (2026-10-02): check the live page
-after a push, and Manual Deploy if it is behind.
+`kvizic-postgres`), API at `kvizic-api.ntole.com`. Secrets are Render environment variables, never committed.
+**Prod deploys only on the owner's approval** (2026-10-03): `deploy-prod.yml`, after a green CI run of a push
+to `main` that changes what the server is built from (or "Run workflow" with a commit, an older one being the
+rollback), checks the commit is green and dev runs it or a later one, waits in the GitHub environment
+`production` for the owner's tap in GitHub Mobile, calls Render's deploy hook with `ref=<sha>`, waits for
+`/health` to name the commit (Render's `RENDER_GIT_COMMIT`), and runs `:e2e:smokeTest` there: two guests in a
+private room, a game started, the same first question on both, both leaving before an answer, so no check
+ever counts towards a question's difficulty. Manual Deploy still works.
+`kvizic-site` (free, static) is the legal pages the app and Play link to (`Site`), at `kvizic.ntole.com`,
+Serbian at the root and English under `en/`: its own subdomain (2026-10-02), since `ntole.com` itself is
+published from WYR's repository. A page states only what the code does. `deploy-site.yml` deploys it through
+its hook after a green push whose `site/` differs from the live `commit.txt`'s commit (its build writes it):
+Render's build filter once left a site change behind (2026-10-02).
 
 ## 12. Verifying
 

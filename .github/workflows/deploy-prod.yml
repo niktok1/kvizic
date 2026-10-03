@@ -1,0 +1,160 @@
+# Production's deploy, approved from a phone. A green CI run of a push to main that changes what the server is
+# built from asks for it by itself; "Run workflow" with a commit deploys that one, which is also the rollback
+# (an older commit). Either way the deploy waits in the `production` environment for the owner's approval
+# (GitHub Mobile notifies them), then Render's deploy hook builds the commit, the workflow waits until
+# https://kvizic-api.ntole.com/health names it, and two guests check a game starts there (:e2e:smokeTest).
+#
+# Secrets: RENDER_DEPLOY_HOOK_PROD, an environment secret of `production`, so nothing reads it unapproved.
+# Never a pull request's code with it: workflow_run runs this file from main, and only for a push to main.
+name: Deploy prod
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: The commit to deploy (blank for main's latest); an older one rolls back
+        required: false
+        default: ''
+      skip_dev_check:
+        description: Deploy even if dev does not run this commit (dev down)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PROD_URL: https://kvizic-api.ntole.com
+  DEV_URL: https://kvizic-server-dev.onrender.com
+
+jobs:
+  plan:
+    # A pull request's CI run, or one from a fork, never gets here; neither does a red one.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      sha: ${{ steps.which.outputs.sha }}
+      deploy: ${{ steps.changed.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: The commit
+        id: which
+        env:
+          WANTED: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || github.event.workflow_run.head_sha }}
+        run: |
+          sha=$(git rev-parse --verify "${WANTED:-origin/main}^{commit}")
+          git merge-base --is-ancestor "$sha" origin/main || { echo "::error::$sha is not on main"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Commit: \`$sha\` $(git log -1 --format=%s "$sha")" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: CI is green on it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.which.outputs.sha }}
+        run: |
+          green=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&status=success" --jq .total_count)
+          [ "$green" -gt 0 ] || { echo "::error::CI has no green run of $SHA"; exit 1; }
+
+      # A push asks only when prod would change: what the server is built from differs from what prod runs.
+      - name: Prod would change
+        id: changed
+        env:
+          SHA: ${{ steps.which.outputs.sha }}
+        run: |
+          live=$(curl -fsS --max-time 20 "$PROD_URL/health" | jq -r '.commit // empty' || true)
+          echo "Prod runs: \`${live:-unknown}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$live" = "$SHA" ]; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"; echo "Prod already runs it." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ -z "$live" ] || ! git cat-file -e "$live^{commit}" 2>/dev/null; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git diff --quiet "$live" "$SHA" -- server core Dockerfile build.gradle.kts settings.gradle.kts gradle gradle.properties render.yaml; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"; echo "Nothing the server is built from changed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Dev deploys every green main by itself (free, so it may be asleep or still building): it must run this
+      # commit or a later one, so prod only takes what dev has already been running.
+      - name: Dev runs it
+        if: steps.changed.outputs.deploy == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.skip_dev_check)
+        env:
+          SHA: ${{ steps.which.outputs.sha }}
+        run: |
+          for attempt in $(seq 1 50); do
+            dev=$(curl -fsS --max-time 60 "$DEV_URL/health" | jq -r '.commit // empty' || true)
+            if [ -n "$dev" ] && git cat-file -e "$dev^{commit}" 2>/dev/null && git merge-base --is-ancestor "$SHA" "$dev"; then
+              echo "Dev runs \`$dev\`." >> "$GITHUB_STEP_SUMMARY"; exit 0
+            fi
+            echo "dev runs ${dev:-nothing known} ($attempt/50)"; sleep 30
+          done
+          echo "::error::dev does not run $SHA or a later commit after 25 minutes"; exit 1
+
+  deploy:
+    needs: plan
+    if: needs.plan.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # One deploy at a time: a newer one replaces one still waiting for approval, so the owner approves the
+    # latest. One cancelled after its hook was called goes on at Render; only the wait here stops.
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: true
+    environment:
+      name: production
+      url: https://kvizic-api.ntole.com/health
+    steps:
+      - name: Render builds the commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+          SHA: ${{ needs.plan.outputs.sha }}
+        run: |
+          [ -n "$HOOK" ] || { echo "::error::RENDER_DEPLOY_HOOK_PROD is not set on the production environment"; exit 1; }
+          curl -fsS -X POST --max-time 30 "$HOOK&ref=$SHA" > /dev/null
+
+      # Render builds the image, starts it, and switches traffic once /health answers; the old instance then
+      # drains its games for up to 280 s, which nobody waits for here.
+      - name: Prod runs it
+        env:
+          SHA: ${{ needs.plan.outputs.sha }}
+        run: |
+          for attempt in $(seq 1 70); do
+            live=$(curl -fsS --max-time 20 "$PROD_URL/health" | jq -r '.commit // empty' || true)
+            [ "$live" = "$SHA" ] && { echo "Prod runs \`$SHA\`." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            echo "prod runs ${live:-nothing known} ($attempt/70)"; sleep 30
+          done
+          echo "::error::prod does not run $SHA after 35 minutes: see the deploy's log on Render"; exit 1
+
+  check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # The check is main's, whichever commit was deployed: a rollback's commit may predate it.
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Two guests start a game on prod
+        run: ./gradlew --no-daemon :e2e:smokeTest -Pkvizic.smoke.baseUrl="$PROD_URL"

@@ -5,8 +5,8 @@
 #     every deploy, restart and free-tier spin-down. Its questions come from the dev seed, uploaded as a
 #     Render secret file (below), since the question bank never goes in this public repo.
 #   - kvizic-server is production, on kvizic-postgres, reached through https://kvizic-api.ntole.com. It
-#     never deploys by itself: a person promotes a commit with Render's Manual Deploy, choosing one that
-#     is green in CI and already live on dev.
+#     never deploys by itself: .github/workflows/deploy-prod.yml calls its deploy hook with a commit green in
+#     CI and already live on dev, once the owner approves it (Manual Deploy still works).
 #
 # Production is paid: kvizic-server on starter ($7, 0.5 CPU, 512 MB, never sleeps, which a realtime game
 # needs) and kvizic-postgres on basic-256mb ($6). kvizic-server-dev stays free, so it spins down after
@@ -20,8 +20,8 @@ services:
     plan: starter
     region: frankfurt
     branch: main
-    # Production deploys only by hand, with Manual Deploy. Quoted because YAML 1.1 parsers read a bare
-    # off as the boolean false.
+    # Production deploys only once a person approves it: deploy-prod.yml's hook, or Manual Deploy. Quoted
+    # because YAML 1.1 parsers read a bare off as the boolean false.
     autoDeployTrigger: "off"
     healthCheckPath: /health
     # Render stops an instance with SIGTERM and waits this long before killing it; the server drains its
@@ -118,19 +118,18 @@ services:
 
   # The game's public site, the legal pages the app and Google Play link to (Site.kt): plain HTML and one
   # stylesheet in site/, nothing to build, free. Its own subdomain, since ntole.com itself is published from
-  # WYR's repository. Deploys a green commit on main that changes site/.
+  # WYR's repository. Deployed by .github/workflows/deploy-site.yml through a deploy hook, after a green
+  # commit on main whose site/ differs from the live one's: the build writes the commit to commit.txt, which
+  # the workflow compares. Render's own build filter once left a site change behind.
   - type: web
     name: kvizic-site
     runtime: static
     domains:
       - kvizic.ntole.com
     branch: main
-    buildCommand: echo "site/ is plain HTML and CSS, nothing to build"
+    buildCommand: echo "$RENDER_GIT_COMMIT" > site/commit.txt
     staticPublishPath: ./site
-    autoDeployTrigger: checksPass
-    buildFilter:
-      paths:
-        - site/**
+    autoDeployTrigger: "off"
 
 databases:
   - name: kvizic-postgres

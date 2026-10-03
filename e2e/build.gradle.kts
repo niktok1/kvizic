@@ -21,7 +21,29 @@ dependencies {
 // The load test is no check of a commit: it takes minutes and measures this machine. `test` leaves it out,
 // and `./gradlew :e2e:loadTest` runs it alone (`-Pkvizic.load.players=96` for fewer players).
 tasks.test {
-    filter { excludeTestsMatching("*LoadTest") }
+    filter {
+        excludeTestsMatching("*LoadTest")
+        excludeTestsMatching("*ProdSmokeTest")
+    }
+}
+
+// The check after a prod deploy (deploy-prod.yml): two guests on the server -Pkvizic.smoke.baseUrl names.
+val smokeTest by tasks.registering(Test::class) {
+    description = "Seats two guests in a room on a deployed server and starts a game they leave at once."
+    group = "verification"
+    testClassesDirs =
+        sourceSets.test
+            .get()
+            .output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    filter { includeTestsMatching("*ProdSmokeTest") }
+    providers.gradleProperty("kvizic.smoke.baseUrl").orNull?.let { systemProperty("kvizic.smoke.baseUrl", it) }
+    testLogging {
+        showStandardStreams = true
+        events("passed", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+    outputs.upToDateWhen { false }
 }
 
 val loadTest by tasks.registering(Test::class) {

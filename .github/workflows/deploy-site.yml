@@ -1,0 +1,66 @@
+# The site's deploy (kvizic.ntole.com, render.yaml's kvizic-site): after a green CI run of a push to main, the
+# live site's commit.txt (written by its build) is compared with the commit, and if site/ differs between the
+# two, Render's deploy hook builds the commit. So a site change pushed under later commits that left site/
+# alone is never left behind, as it once was with Render's own build filter.
+#
+# Secret: RENDER_DEPLOY_HOOK_SITE, a repository secret. Only for a push to main, never a pull request's code.
+name: Deploy site
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-site
+
+permissions:
+  contents: read
+
+env:
+  SITE_URL: https://kvizic.ntole.com
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: The site would change
+        id: changed
+        env:
+          SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+        run: |
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          live=$(curl -fsS --max-time 20 "$SITE_URL/commit.txt" | tr -d '[:space:]' || true)
+          echo "The site runs \`${live:-unknown}\`; the commit is \`$SHA\`." >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$live" ] && git cat-file -e "$live^{commit}" 2>/dev/null && git diff --quiet "$live" "$SHA" -- site; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Render builds the commit
+        if: steps.changed.outputs.deploy == 'true'
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_SITE }}
+          SHA: ${{ steps.changed.outputs.sha }}
+        run: |
+          [ -n "$HOOK" ] || { echo "::error::RENDER_DEPLOY_HOOK_SITE is not set: deploy the site by hand on Render"; exit 1; }
+          curl -fsS -X POST --max-time 30 "$HOOK&ref=$SHA" > /dev/null
+          for attempt in $(seq 1 30); do
+            live=$(curl -fsS --max-time 20 "$SITE_URL/commit.txt" | tr -d '[:space:]' || true)
+            [ "$live" = "$SHA" ] && { echo "The site runs it." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            sleep 20
+          done
+          echo "::error::the site does not run $SHA after 10 minutes: see its deploy on Render"; exit 1

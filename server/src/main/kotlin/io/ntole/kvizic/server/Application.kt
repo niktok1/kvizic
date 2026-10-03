@@ -134,9 +134,10 @@ fun Application.kvizicModule(
     }
 
     routing {
-        // Render checks this to decide whether the service is live. In no rate-limit group.
+        // Render checks this to decide whether the service is live, and the prod deploy's workflow that the
+        // commit it deployed is the one serving. In no rate-limit group.
         get(KvizicApi.Paths.HEALTH) {
-            call.respond(mapOf("status" to "ok"))
+            call.respond(listOfNotNull("status" to "ok", config.commit?.let { "commit" to it }).toMap())
         }
 
         authRoutes(db, tokens, config, sessionEnded = { playerId, sessionId -> sessionEnded(playerId, sessionId) })

@@ -122,17 +122,30 @@ internal class E2eServer(
 /**
  * One player's app: their own session storage, REST client, and lobby session, whose socket goes
  * through a [FaultProxy] of their own so a test can slow or cut this player alone. REST goes straight
- * to the server.
+ * to the server. Against a server elsewhere ([baseUrl], the prod check) there is no proxy.
  */
-internal class E2ePlayer(
+internal class E2ePlayer private constructor(
     val name: String,
-    server: E2eServer,
-    socketEngine: () -> HttpClientEngine = { CIO.create() },
+    baseUrl: String,
+    private val faults: FaultProxy?,
+    socketEngine: () -> HttpClientEngine,
 ) : AutoCloseable {
-    val proxy = FaultProxy(server.port)
+    constructor(
+        name: String,
+        server: E2eServer,
+        socketEngine: () -> HttpClientEngine = { CIO.create() },
+    ) : this(name, server.baseUrl, FaultProxy(server.port), socketEngine)
+
+    constructor(
+        name: String,
+        baseUrl: String,
+        socketEngine: () -> HttpClientEngine = { CIO.create() },
+    ) : this(name, baseUrl, null, socketEngine)
+
+    val proxy: FaultProxy get() = checkNotNull(faults) { "$name plays a server elsewhere, with no proxy" }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val store = SessionStore(InMemoryTokenStorage(), KvizicEnvironment.LOCAL)
-    private val http = KvizicHttpClient.create(server.baseUrl, store, CIO.create())
+    private val http = KvizicHttpClient.create(baseUrl, store, CIO.create())
     val sessions = DefaultSessionRepository(AuthApi(http), store)
     val upgrade = UpgradeSignal()
     val events = CopyOnWriteArrayList<LobbyEvent>()
@@ -141,7 +154,7 @@ internal class E2ePlayer(
             api = LobbyApi(http),
             transport =
                 KtorPlayTransport(
-                    proxy.baseUrl,
+                    faults?.baseUrl ?: baseUrl,
                     ClientBuild("desktop", 100),
                     KtorPlayTransport.realtimeClient(socketEngine()),
                 ),
@@ -196,7 +209,7 @@ internal class E2ePlayer(
     override fun close() {
         lobby.leave()
         scope.cancel()
-        proxy.close()
+        faults?.close()
     }
 }
 
