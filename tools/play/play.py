@@ -135,10 +135,14 @@ def describe(release):
 
 
 def status(_):
+    """Reads every track, and changes nothing: the edit it reads through is thrown away."""
     edit = Edit(publisher())
-    for track in edit.edits.tracks().list(packageName=PACKAGE, editId=edit.id).execute().get("tracks", []):
-        for release in track.get("releases", []):
-            print(f"{track['track']}: {release.get('name', '')} {describe(release)}")
+    try:
+        for track in edit.edits.tracks().list(packageName=PACKAGE, editId=edit.id).execute().get("tracks", []):
+            for release in track.get("releases", []):
+                print(f"{track['track']}: {release.get('name', '')} {describe(release)}")
+    finally:
+        edit.edits.delete(packageName=PACKAGE, editId=edit.id).execute()
 
 
 def fraction(text):
