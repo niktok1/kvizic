@@ -141,6 +141,13 @@ public interface LobbySession {
 
     public suspend fun solo()
 
+    /**
+     * Takes back the seat the server still holds for this player, as after the app's process ended in the
+     * middle of a game: does nothing while in a lobby or joining one, with no session stored, or when the
+     * server holds none, and never says why not.
+     */
+    public suspend fun rejoin()
+
     /** Locks in [option] for the question asked now; shows at once, and is sent again if the connection drops. */
     public fun answer(option: Int)
 

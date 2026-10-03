@@ -163,9 +163,12 @@ class Lobby(
         }
 
     /** Holds a seat for [seat], answered by the lobby's loop; [ReserveResult.Closed] if it never answers. */
-    suspend fun reserve(seat: Seat): ReserveResult {
+    suspend fun reserve(
+        seat: Seat,
+        heldOnly: Boolean = false,
+    ): ReserveResult {
         val reply = CompletableDeferred<ReserveResult>()
-        if (!send(LobbyCommand.Reserve(seat, reply))) return ReserveResult.Closed
+        if (!send(LobbyCommand.Reserve(seat, reply, heldOnly))) return ReserveResult.Closed
         return withTimeoutOrNull(RESERVE_TIMEOUT) { reply.await() } ?: ReserveResult.Closed
     }
 
@@ -213,7 +216,7 @@ class Lobby(
     private fun handle(command: LobbyCommand) {
         when (command) {
             is LobbyCommand.Reserve -> {
-                reserve(command.seat, command.reply)
+                reserve(command.seat, command.reply, command.heldOnly)
             }
 
             is LobbyCommand.Attach -> {
@@ -259,6 +262,7 @@ class Lobby(
     private fun reserve(
         seat: Seat,
         reply: CompletableDeferred<ReserveResult>,
+        heldOnly: Boolean,
     ) {
         val existing = members[seat.playerId]
         val result =
@@ -284,6 +288,11 @@ class Lobby(
                         existing.holdUntil = latest(existing.holdUntil, now() + ticketHold())
                     }
                     ReserveResult.Reserved
+                }
+
+                // A rejoin for a seat let go meanwhile: gone, as the lobby is to them.
+                heldOnly -> {
+                    ReserveResult.Closed
                 }
 
                 members.size >= settings.maxPlayers -> {

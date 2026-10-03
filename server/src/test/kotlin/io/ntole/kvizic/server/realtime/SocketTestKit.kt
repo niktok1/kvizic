@@ -155,6 +155,9 @@ internal suspend fun HttpClient.quickPlay(who: SessionDto): HttpResponse =
 internal suspend fun HttpClient.soloRun(who: SessionDto): HttpResponse =
     post(KvizicApi.Paths.SOLO_RUNS) { bearerAuth(who.accessToken) }
 
+internal suspend fun HttpClient.rejoinLobby(who: SessionDto): HttpResponse =
+    post(KvizicApi.Paths.LOBBY_REJOINS) { bearerAuth(who.accessToken) }
+
 internal suspend fun HttpClient.publicLobbies(who: SessionDto): LobbyListDto =
     get(KvizicApi.Paths.LOBBIES) { bearerAuth(who.accessToken) }.bodyOrFail()
 

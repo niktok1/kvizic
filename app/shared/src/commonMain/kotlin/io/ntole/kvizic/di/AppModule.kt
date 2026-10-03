@@ -38,7 +38,7 @@ internal val uiModule =
         // One for the app's life, as the analytics are: a rotation's new activity finds it.
         single { UsageTracker(analytics = get(), timeSource = get()) }
         // What the app does by itself, as long as it runs: one for its life too.
-        single { AppServices(linkPlayGames = get()) }
+        single { AppServices(linkPlayGames = get(), lobby = get()) }
     }
 
 /**

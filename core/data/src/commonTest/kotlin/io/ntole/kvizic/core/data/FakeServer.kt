@@ -112,6 +112,9 @@ internal class FakeServer {
     /** The `reason` a refused join carries along with [refuseJoinsWith]'s code. */
     var refuseJoinsFor: CloseReason? = null
 
+    /** Whether a rejoin finds a seat held: none answers LOBBY_NOT_FOUND, as the server does. */
+    var holdsSeat: Boolean = false
+
     /** What a read of the public lobbies answers. */
     var publicLobbies: LobbyListDto = LobbyListDto()
 
@@ -223,6 +226,10 @@ internal class FakeServer {
 
             KvizicApi.Paths.QUICK_PLAY, KvizicApi.Paths.SOLO_RUNS -> {
                 ticket(request)
+            }
+
+            KvizicApi.Paths.LOBBY_REJOINS -> {
+                if (holdsSeat) ticket(request) else respondErrorDto(HttpStatusCode.NotFound, ErrorCode.LOBBY_NOT_FOUND)
             }
 
             KvizicApi.Paths.LOBBY_JOINS -> {

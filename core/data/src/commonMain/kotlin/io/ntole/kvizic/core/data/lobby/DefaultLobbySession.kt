@@ -135,6 +135,22 @@ public class DefaultLobbySession(
 
     override suspend fun solo(): Unit = enter(code = null) { api.solo() }
 
+    override suspend fun rejoin(): Unit =
+        seats.withLock {
+            withContext(confined) {
+                // Never a guest minted for it, nor a seat taken over one the player took meanwhile.
+                if (session.current() == null || membership != null) return@withContext
+                if (mutableState.value !is LobbySessionState.Idle) return@withContext
+                try {
+                    take(code = null) { api.rejoin() }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    // None held, an older server without the route, or no network: Home as it was.
+                }
+            }
+        }
+
     private suspend fun enter(
         code: String?,
         seat: suspend () -> TicketDto,

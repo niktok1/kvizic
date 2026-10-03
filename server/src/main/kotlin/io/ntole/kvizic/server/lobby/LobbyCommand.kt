@@ -11,11 +11,12 @@ import kotlin.time.Duration
 sealed interface LobbyCommand {
     /**
      * Holds a seat for [seat] until their socket comes with a ticket, or keeps a member's while they
-     * rejoin. Answered through [reply].
+     * rejoin. Answered through [reply]. With [heldOnly], only one the player holds already, never a fresh one.
      */
     data class Reserve(
         val seat: Seat,
         val reply: CompletableDeferred<ReserveResult>,
+        val heldOnly: Boolean = false,
     ) : LobbyCommand
 
     /** A socket with a redeemed ticket for this lobby. */

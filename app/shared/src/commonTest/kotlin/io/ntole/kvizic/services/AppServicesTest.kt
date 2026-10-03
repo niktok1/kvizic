@@ -5,6 +5,7 @@ import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
 import io.ntole.kvizic.core.domain.session.CurrentSession
+import io.ntole.kvizic.room.ScriptedLobbySession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -19,6 +20,7 @@ class AppServicesTest {
     private val session = FakeSession()
     private val playGames = FakePlayGames()
     private val link = FakeLink(signIns)
+    private val lobby = ScriptedLobbySession()
 
     @Test
     fun `the launch signs in with Play Games once and coming back does not again`() =
@@ -33,6 +35,16 @@ class AppServicesTest {
             testScheduler.runCurrent()
 
             assertEquals(listOf("code"), signIns)
+        }
+
+    @Test
+    fun `the launch takes back a seat the server holds, and coming back does not again`() =
+        runTest {
+            val services = services()
+            services.foreground()
+            services.foreground()
+            testScheduler.runCurrent()
+            assertEquals(listOf("rejoin"), lobby.commands)
         }
 
     /** A first launch has no session until the player plays, and the sign-in waits for it. */
@@ -76,7 +88,7 @@ class AppServicesTest {
 
     private fun TestScope.services(): AppServices {
         val linking = LinkPlayGames(playGames, link, session, Analytics.None)
-        return AppServices(linking, scope = backgroundScope)
+        return AppServices(linking, lobby, scope = backgroundScope)
     }
 
     /** Play Games with a player signed in, who always has a code, asked only while the app is [onScreen]. */

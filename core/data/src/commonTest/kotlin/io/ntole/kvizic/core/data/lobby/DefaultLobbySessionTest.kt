@@ -124,6 +124,39 @@ class DefaultLobbySessionTest {
         }
 
     @Test
+    fun `a rejoin takes back the seat the server holds, and with none says nothing`() =
+        runTest {
+            val harness = Harness(this)
+            harness.sessions.ensure()
+            harness.lobby.rejoin()
+            harness.settle()
+            assertEquals(LobbySessionState.Idle, harness.state(), "none held: Home as it was")
+            assertTrue(harness.transport.opened.isEmpty())
+
+            harness.server.holdsSeat = true
+            harness.lobby.rejoin()
+            harness.settle()
+            harness.transport.last().push(welcome(), snapshot())
+            harness.settle()
+            assertEquals(CODE, harness.inLobbyState().lobby.code)
+
+            harness.lobby.rejoin()
+            harness.settle()
+            assertEquals(1, harness.transport.opened.size, "in a lobby, a rejoin does nothing")
+        }
+
+    @Test
+    fun `a rejoin with no session stored mints no guest for it`() =
+        runTest {
+            val harness = Harness(this)
+            harness.server.holdsSeat = true
+            harness.lobby.rejoin()
+            harness.settle()
+            assertEquals(0, harness.server.guestsMinted)
+            assertEquals(LobbySessionState.Idle, harness.state())
+        }
+
+    @Test
     fun `a refused seat says why and leaves the device in no lobby`() =
         runTest {
             val harness = Harness(this)

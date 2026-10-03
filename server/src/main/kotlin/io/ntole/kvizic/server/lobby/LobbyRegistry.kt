@@ -122,6 +122,17 @@ class LobbyRegistry(
             seatIn(lobby, seat)
         }
 
+    /**
+     * The seat [seat]'s player holds still, with a new ticket, wherever it is: for a client that lost the
+     * lobby's code. Never a fresh seat: LOBBY_NOT_FOUND when they hold none.
+     */
+    suspend fun rejoin(seat: Seat): Joined =
+        lock.withLock {
+            refuseWhileDraining()
+            val lobby = lobbyOf(seat.playerId) ?: throw ApiFailure.lobbyNotFound()
+            seatIn(lobby, seat, heldOnly = true)
+        }
+
     /** A seat for the player in the lobby they are in, for a rejoin: none when they are in none. */
     fun lobbyOf(playerId: String): Lobby? = playerLobby[playerId]?.let { lobbies[it] }
 
@@ -270,8 +281,9 @@ class LobbyRegistry(
     private suspend fun seatIn(
         lobby: Lobby,
         seat: Seat,
+        heldOnly: Boolean = false,
     ): Joined =
-        when (val result = seatOrRefusal(lobby, seat)) {
+        when (val result = seatOrRefusal(lobby, seat, heldOnly)) {
             is Seated -> result.joined
             is Refused -> throw result.failure
         }
@@ -285,8 +297,9 @@ class LobbyRegistry(
     private suspend fun seatOrRefusal(
         lobby: Lobby,
         seat: Seat,
+        heldOnly: Boolean = false,
     ): SeatOutcome {
-        val result = lobby.reserve(seat)
+        val result = lobby.reserve(seat, heldOnly)
         if (result != ReserveResult.Reserved) {
             return Refused(
                 when (result) {

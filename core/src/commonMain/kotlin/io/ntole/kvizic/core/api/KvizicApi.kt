@@ -57,6 +57,13 @@ public object KvizicApi {
         /** POST a `JoinLobbyRequest`: a seat in the lobby with that code, answered with a `TicketDto`. Also every rejoin. */
         public const val LOBBY_JOINS: String = "/$VERSION/lobby-joins"
 
+        /**
+         * POST, no body: the seat the server holds for the player still, in whatever lobby holds it, answered
+         * with a `TicketDto`; never a fresh seat, and LOBBY_NOT_FOUND when there is none. What a client that
+         * lost the code (its process ended mid-game) comes back with.
+         */
+        public const val LOBBY_REJOINS: String = "/$VERSION/lobby-rejoins"
+
         /** POST, no body: a seat in the best waiting public lobby, or a new public one, answered with a `TicketDto`. */
         public const val QUICK_PLAY: String = "/$VERSION/quick-play"
 

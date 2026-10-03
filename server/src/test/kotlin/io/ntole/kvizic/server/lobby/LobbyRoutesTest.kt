@@ -19,6 +19,7 @@ import io.ntole.kvizic.server.realtime.joinLobby
 import io.ntole.kvizic.server.realtime.previewLobby
 import io.ntole.kvizic.server.realtime.publicLobbies
 import io.ntole.kvizic.server.realtime.quickPlay
+import io.ntole.kvizic.server.realtime.rejoinLobby
 import io.ntole.kvizic.server.realtime.runGameServer
 import io.ntole.kvizic.server.realtime.soloRun
 import kotlin.test.Test
@@ -205,6 +206,27 @@ class LobbyRoutesTest {
         }
 
     @Test
+    fun `a rejoin finds the seat the player holds, private or solo, and never takes one`() =
+        runGameServer("lobby-rejoin") { server ->
+            val ana = server.guest()
+            assertEquals(HttpStatusCode.NotFound, server.client.rejoinLobby(ana).status, "she holds none")
+
+            val room = server.create(ana, LobbySettingsDto())
+            val back = server.client.rejoinLobby(ana).bodyOrFail<TicketDto>()
+            assertEquals(room.lobbyId to room.code, back.lobbyId to back.code)
+
+            val solo = server.client.soloRun(ana).bodyOrFail<TicketDto>()
+            assertEquals(
+                solo.code,
+                server.client
+                    .rejoinLobby(ana)
+                    .bodyOrFail<TicketDto>()
+                    .code,
+                "the seat moved",
+            )
+        }
+
+    @Test
     fun `every lobby route needs a session`() =
         runGameServer("lobby-auth") { server ->
             assertEquals(HttpStatusCode.Unauthorized, server.client.get(KvizicApi.Paths.LOBBIES).status)
@@ -213,6 +235,7 @@ class LobbyRoutesTest {
             assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.LOBBY_JOINS).status)
             assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.QUICK_PLAY).status)
             assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.SOLO_RUNS).status)
+            assertEquals(HttpStatusCode.Unauthorized, server.client.post(KvizicApi.Paths.LOBBY_REJOINS).status)
         }
 
     private object GameTimingsForTests {

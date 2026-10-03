@@ -26,6 +26,8 @@ public class LobbyApi(
     public suspend fun join(code: String): TicketDto =
         client.post(KvizicApi.Paths.LOBBY_JOINS) { setBody(JoinLobbyRequest(code)) }.body()
 
+    public suspend fun rejoin(): TicketDto = client.post(KvizicApi.Paths.LOBBY_REJOINS).body()
+
     public suspend fun quickPlay(): TicketDto = client.post(KvizicApi.Paths.QUICK_PLAY).body()
 
     public suspend fun solo(): TicketDto = client.post(KvizicApi.Paths.SOLO_RUNS).body()

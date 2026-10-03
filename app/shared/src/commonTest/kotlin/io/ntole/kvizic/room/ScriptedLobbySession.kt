@@ -61,6 +61,10 @@ class ScriptedLobbySession : LobbySession {
 
     override suspend fun solo() = take("solo")
 
+    override suspend fun rejoin() {
+        commands += "rejoin"
+    }
+
     override fun answer(option: Int) {
         commands += "answer $option"
     }

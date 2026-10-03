@@ -109,6 +109,11 @@ fun Route.lobbyRoutes(
                     }
                 call.respond(joined.ticket())
             }
+
+            // No code to guess with, so no guard: it seats only where the player sits already.
+            post(KvizicApi.Paths.LOBBY_REJOINS) {
+                call.respond(registry.rejoin(call.seat()).ticket())
+            }
         }
 
         rateLimit(RouteLimit.QUICK_PLAY) {
