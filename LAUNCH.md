@@ -86,7 +86,11 @@ It imports 25 a request and approves what it brought. Then the moderation app ag
   Cloudflare, where a caller could forge `CF-Connecting-IP` and slip the per-address limits. Revisit if abuse
   shows in the log.
 
-### 7. The build and a real phone (30 min)
+### 7. The build and a real phone (30 min) ✅ (2026-10-03)
+
+1.0.1 (10001) is on internal testing, installed from Play on the Poco X3 Pro and the Galaxy Tab S6 Lite, and
+Play Games signs in on both. A tablet that has had a sideloaded build in another user (its Guest) refuses
+Play's as an incompatible version: `adb uninstall io.ntole.kvizic` removes it for every user.
 
 ```bash
 ./gradlew :app:androidApp:bundleProdRelease
@@ -94,7 +98,7 @@ It imports 25 a request and approves what it brought. Then the moderation app ag
 
 The bundle is `app/androidApp/build/outputs/bundle/prodRelease/androidApp-prod-release.aab`. Upload it to
 **Testing → Internal testing**, add yourself and the Play Games testers, install from Play, and check: a full
-game on two phones against prod, Play Games sign-in (the Home button too), sound on the speaker, a small
+game on two phones against prod, Play Games sign-in (Save progress too), sound on the speaker, a small
 phone (360×640) and Android 7 (API 24) if you have one.
 
 ### 8. Play Console (1–2 h)

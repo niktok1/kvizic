@@ -95,12 +95,11 @@ Found only, nothing fixed. Tick an item off (or delete it) as it is handled.
 - **The debug key no longer signs in to Play Games for `io.ntole.kvizic`.** Play Games logged
   DEVELOPER_ERROR for SHA-1 `88:5F:40:75:72:5E:1B:59:40:EE:5C:0E:09:48:CC:3E:34:B2:A3:4A`, while §9 of
   CLAUDE.md says the debug key is on that credential. Either it was replaced by Play's key (then fix §9), or
-  re-add it for local prod testing. **The real Play-signed sign-in is still untested**: install from the
-  internal track and try it.
+  re-add it for local prod testing. The Play-signed sign-in works: 1.0.1 (10001), installed from the internal
+  track on the phone and the tablet, signed in with Play Games (2026-10-03).
 
 ## Not tested
 
-- The Play-installed build and its Play Games sign-in.
 - Sound on the speaker.
 - PostHog events arriving.
 - Account deletion (it is irreversible on prod).
