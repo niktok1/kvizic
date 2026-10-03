@@ -21,18 +21,21 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.avatar.AvatarArt
 import io.ntole.kvizic.design.component.Avatar
 import io.ntole.kvizic.design.component.AvatarSize
+import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.LevelBar
 import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PanelKind
+import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.cued
@@ -40,6 +43,7 @@ import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
+import io.ntole.kvizic.language.playGamesFailureText
 import io.ntole.kvizic.loading.LoadingSpinner
 import io.ntole.kvizic.room.levelName
 import io.ntole.kvizic.room.shown
@@ -47,8 +51,9 @@ import io.ntole.kvizic.room.topicNameOf
 
 /**
  * The player as the server knows them ([state]): their avatar and name, their games, wins, share of answers
- * right, best solo score and best topic, and every avatar to pick from, which [onPick] asks the server for.
- * [topics] name the best topic.
+ * right, best solo score and best topic, for a guest a card that says what Play Games keeps and connects it
+ * ([onPlayGames]), and every avatar to pick from, which [onPick] asks the server for. [topics] name the best
+ * topic.
  */
 @Composable
 fun ProfileScreen(
@@ -56,6 +61,7 @@ fun ProfileScreen(
     topics: List<Topic>,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onPlayGames: () -> Unit = {},
 ) {
     val strings = LocalStrings.current
     val words = strings.game
@@ -130,6 +136,9 @@ fun ProfileScreen(
                     color = colors.onPageMuted,
                 )
             }
+            if (state.offersPlayGames) {
+                GuestCard(state, onConnect = tapped("profile.play_games", onClick = onPlayGames))
+            }
             Spacer(Modifier.height(space.sm))
             KvizicText(words.pickAvatar, Modifier.fillMaxWidth(), style = type.label, color = colors.onPageMuted)
             state.avatarFailure?.let { failure ->
@@ -157,6 +166,40 @@ fun ProfileScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/** A guest's card: they play as a guest, Play Games keeps their level on every device, and Connect, with why the last try failed. */
+@Composable
+private fun GuestCard(
+    state: HomeState,
+    onConnect: () -> Unit,
+) {
+    val strings = LocalStrings.current
+    val words = strings.game
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
+    Panel(Modifier.fillMaxWidth(), padding = space.md) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(space.md)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.xxs)) {
+                KvizicText(words.guest, style = type.bodyStrong)
+                KvizicText(words.guestKeepsLevel, style = type.caption, color = colors.onRaisedMuted)
+                state.playGamesFailure?.let { failure ->
+                    KvizicText(
+                        strings.playGamesFailureText(failure.error, failure.retryAfter),
+                        style = type.caption,
+                        color = colors.loss,
+                    )
+                }
+            }
+            StageButton(
+                words.connectPlayGames,
+                onClick = onConnect,
+                size = ButtonSize.SMALL,
+                enabled = !state.linkingPlayGames,
+            )
         }
     }
 }

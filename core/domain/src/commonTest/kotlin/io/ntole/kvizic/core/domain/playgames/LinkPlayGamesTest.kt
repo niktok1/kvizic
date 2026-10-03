@@ -216,12 +216,15 @@ class LinkPlayGamesTest {
         }
 
     @Test
-    fun `a player who does not sign in to Play Games sends nothing`() =
+    fun `a player Play Games does not sign in sends nothing and is told so`() =
         runTest {
             session.player.value = "p1"
             playGames.authenticated = false
 
-            assertFalse(linking.manually())
+            assertEquals(
+                CoreError.PLAY_GAMES_NOT_SIGNED_IN,
+                assertFailsWith<KvizicException> { linking.manually() }.error,
+            )
             assertEquals(listOf("isAuthenticated", "signIn"), calls)
         }
 

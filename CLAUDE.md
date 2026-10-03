@@ -190,7 +190,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   `local.properties` (`kvizic.playgames.appId`, `kvizic.playgames.serverClientId`; none is Play Games off);
   the server's `PLAY_GAMES_CLIENT_ID` and `PLAY_GAMES_CLIENT_SECRET` are on Render. The Play Console takes
   Android credentials for `io.ntole.kvizic` (Play's signing key and the debug key) and `io.ntole.kvizic.dev`
-  (the debug key). Its consent screen and configuration are published (2026-10-03): every player signs in.
+  (the debug key). Its consent screen and configuration are published (2026-10-03): every player signs in. A
+  prod build signed with the debug key got DEVELOPER_ERROR on 2026-10-03, so that key is no longer, or never was,
+  on `io.ntole.kvizic`'s credential: sign in with a Play-installed build, or add it again.
 - **Phones play upright** (the owner, 2026-10-02): Android's activity is portrait and the iPhone takes
   portrait alone; the game is laid out for a phone's height. iPads, desktop and the web take any shape, and
   Android 16 lets a large screen turn the app anyway, where the content keeps its width (`contentWidth`).
@@ -243,9 +245,12 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
 - **Home** (the owner, 2026-10-02): the player's name over „Ниво 7“ and a thin bar of how far through the level they
-  are (`LevelBar`), and under them, for a guest in a build with Play Games, a quiet „Пријави се преко Плеј игара“
-  (`HomeState.offersPlayGames`, `LinkPlayGames.manually`): Play Games offers its own sign-in once for an account,
-  so a player who backed out of it would stay a guest for good. Clearing the app's data never changes the account
+  are (`LevelBar`). Play Games signs a player in by itself (`LinkPlayGames.automatically`); for a guest it did not, in
+  a build with Play Games (`HomeState.offersPlayGames`), the fallback (the owner, 2026-10-03, after a full-width
+  button that did not fit): „Сачувај напредак“, a link in the accent on the level's line, and on the profile a card,
+  „Играш као гост“, what Play Games keeps and Повежи (`LinkPlayGames.manually`), since Play Games offers its own
+  sign-in once for an account and a player who backed out of it would stay a guest for good. A tap Play Games
+  signs nobody in for says so (`PLAY_GAMES_NOT_SIGNED_IN`): a refused key looks just like backing out. Clearing the app's data never changes the account
   Play Games hands it; the game's sign stands in the middle of the room the buttons leave, its name shrinking to stay inside the
   sign's panel where the sign is narrow (`LogoSizes.wordInset`; Nunito is wide), with no art (the owner chose
   it over the icon's bulb ring, an animal cast and a question card). Where a level is shown on an avatar it is a

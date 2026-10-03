@@ -181,7 +181,7 @@ class HomeScreenDrawTest {
     }
 
     @Test
-    fun `a guest is offered Play Games under their name and the buttons stay where they were`() {
+    fun `a guest is offered Save progress beside their level and the buttons stay where they were`() {
         Language.entries.forEach { language ->
             val words = stringsOf(language).game
             var taps = 0
@@ -189,11 +189,20 @@ class HomeScreenDrawTest {
             val offered = scene(guest, language, actions = HomeActions(playGames = { taps++ }))
             val plain = scene(HomeState(profile = PROFILE), language)
             val linked = scene(guest.copy(profile = PROFILE.copy(playGamesLinked = true)), language)
+            val large = scene(guest, language, fontScale = LARGE_FONT)
             try {
                 write("home-guest-${language.name.lowercase()}", offered.renderSettled())
-                val offer = offered.nodes().single { words.signInPlayGames in it.texts }.boundsInRoot
-                val name = offered.nodes().single { words.level.fill(7) in it.texts }.boundsInRoot
-                assertTrue(offer.top >= name.bottom, "$language: the offer is not under the name")
+                write("home-guest-large-${language.name.lowercase()}", large.renderSettled())
+                val link = offered.everyNode().single { words.saveProgress in it.texts }
+                assertEquals(
+                    words.saveProgressSaid,
+                    link.descriptions.single(),
+                    "$language: what a screen reader hears",
+                )
+                val offer = link.boundsInRoot
+                val level = offered.everyNode().single { words.level.fill(7) in it.texts }.boundsInRoot
+                assertTrue(offer.left >= level.right, "$language: the offer is not after the level")
+                assertTrue(offer.top < level.bottom && offer.bottom > level.top, "$language: the offer is off its line")
                 assertTrue(offer.right <= SHORT_PHONE_WIDTH, "$language: the offer runs off the screen")
                 listOf(words.quickPlay, words.solo).forEach { text ->
                     fun top(scene: ImageComposeScene) =
@@ -203,12 +212,13 @@ class HomeScreenDrawTest {
                             .boundsInRoot.top
                     assertEquals(top(plain), top(offered), "$language: \"$text\" moved for the offer")
                 }
-                assertFalse(words.signInPlayGames in linked.everyText(), "$language: a linked player is offered it")
-                offered.tap(words.signInPlayGames)
+                assertFalse(words.saveProgress in linked.everyText(), "$language: a linked player is offered it")
+                offered.tap(words.saveProgress)
             } finally {
                 offered.close()
                 plain.close()
                 linked.close()
+                large.close()
             }
             assertEquals(1, taps, "$language")
         }
@@ -284,8 +294,9 @@ class HomeScreenDrawTest {
         counts: HomeCounts? = null,
         entry: Entry = Entry.None,
         exit: LobbyExit? = null,
+        fontScale: Float = 1f,
     ): ImageComposeScene =
-        ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f)) {
+        ImageComposeScene(width = SHORT_PHONE_WIDTH, height = SHORT_PHONE_HEIGHT, density = Density(1f, fontScale)) {
             GameTheme(language) { HomeScreen(state, actions, counts = counts, entry = entry, exit = exit) }
         }.also { it.renderSettled() }
 
@@ -293,6 +304,9 @@ class HomeScreenDrawTest {
         /** A small phone, 360 by 640, less its status bar. */
         const val SHORT_PHONE_WIDTH = 360
         const val SHORT_PHONE_HEIGHT = 616
+
+        /** A phone's large text, a common setting. */
+        const val LARGE_FONT = 1.3f
 
         val PROFILE =
             Profile(

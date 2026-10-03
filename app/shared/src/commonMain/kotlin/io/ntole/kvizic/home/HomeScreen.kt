@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
@@ -41,6 +43,7 @@ import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
+import io.ntole.kvizic.language.playGamesFailureText
 import io.ntole.kvizic.room.Entry
 import io.ntole.kvizic.room.EntryWay
 import io.ntole.kvizic.room.entryFailureText
@@ -73,8 +76,8 @@ class HomeActions(
 )
 
 /**
- * Home, multiplayer first: the player, read from the server ([state]), with a guest's way to sign in with
- * Play Games under them, the game's sign, Quick play the
+ * Home, multiplayer first: the player, read from the server ([state]), with a guest's Save progress beside
+ * their level, the fallback when Play Games did not sign them in by itself, the game's sign, Quick play the
  * largest, with how many play and look for a game ([counts]), a room of the player's own and a code under
  * it, the public rooms, and a small solo last. [entry] is a seat being taken from here, which turns the
  * buttons off, or why it could not be; [exit] why the last room let the player go, until it is taken down.
@@ -121,12 +124,25 @@ fun HomeScreen(
                         Avatar(state.changingAvatar ?: profile.avatarId, seat = 0, size = AvatarSize.SM)
                         Column(Modifier.weight(1f)) {
                             KvizicText(shown(profile.displayName), style = type.name, maxLines = 1)
-                            KvizicText(
-                                words.level.fill(profile.level.number),
-                                style = type.caption,
-                                color = colors.onPageMuted,
-                                maxLines = 1,
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(space.xs),
+                            ) {
+                                KvizicText(
+                                    words.level.fill(profile.level.number),
+                                    style = type.caption,
+                                    color = colors.onPageMuted,
+                                    maxLines = 1,
+                                )
+                                if (state.offersPlayGames) {
+                                    KvizicText("·", style = type.caption, color = colors.onPageMuted, maxLines = 1)
+                                    SaveProgress(
+                                        onClick = tapped("home.play_games", onClick = actions.playGames),
+                                        enabled = !state.linkingPlayGames && !taking,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                    )
+                                }
+                            }
                             Spacer(Modifier.height(space.xxs))
                             LevelBar(
                                 profile.level.progress,
@@ -156,19 +172,10 @@ fun HomeScreen(
                     small = true,
                 )
             }
-            if (state.offersPlayGames) {
-                StageButton(
-                    words.signInPlayGames,
-                    onClick = tapped("home.play_games", onClick = actions.playGames),
-                    kind = ButtonKind.QUIET,
-                    size = ButtonSize.SMALL,
-                    enabled = !state.linkingPlayGames && !taking,
-                )
-            }
             state.playGamesFailure?.let { failure ->
                 Spacer(Modifier.height(space.md))
                 Notice(
-                    strings.failureText(failure.error, failure.retryAfter),
+                    strings.playGamesFailureText(failure.error, failure.retryAfter),
                     onDismiss = tapped("home.play_games_failure_ok", onClick = actions.dismissPlayGamesFailure),
                 )
             }
@@ -257,6 +264,31 @@ fun HomeScreen(
             }
         }
     }
+}
+
+/**
+ * A guest's Save progress, a link in the accent on the level's line: it signs in with Play Games, which a
+ * screen reader is told. It takes taps a little above and below its words, a caption being small.
+ */
+@Composable
+private fun SaveProgress(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val words = LocalStrings.current.game
+    val colors = KvizicTheme.colors
+    val heard = cued(Cue.TAP_SOFT, onClick)
+    KvizicText(
+        words.saveProgress,
+        modifier
+            .clickable(enabled = enabled, role = Role.Button, onClick = heard)
+            .semantics { contentDescription = words.saveProgressSaid }
+            .padding(vertical = KvizicTheme.space.xxs),
+        style = KvizicTheme.type.caption,
+        color = if (enabled) colors.onPageAccent else colors.onPageMuted,
+        maxLines = 1,
+    )
 }
 
 /** How much of the name's width the level's bar spans. */

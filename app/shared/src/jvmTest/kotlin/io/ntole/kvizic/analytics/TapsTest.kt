@@ -117,7 +117,7 @@ class TapsTest {
                 )
             },
         )
-        // A guest is offered Play Games under their name, and told why a sign-in failed.
+        // A guest is offered Save progress beside their level, and told why a sign-in failed.
         assertEquals(
             buttons + "home.profile" + "home.play_games" + "home.play_games_failure_ok",
             elementsTapped {
@@ -333,7 +333,14 @@ class TapsTest {
         assertEquals(
             setOf("profile.avatar"),
             elementsTapped {
-                ProfileScreen(HomeState(profile = PROFILE), TOPICS, onPick = {})
+                ProfileScreen(HomeState(profile = PROFILE.copy(playGamesLinked = true)), TOPICS, onPick = {})
+            },
+        )
+        // A guest's card connects Play Games.
+        assertEquals(
+            setOf("profile.avatar", "profile.play_games"),
+            elementsTapped {
+                ProfileScreen(HomeState(profile = PROFILE, playGamesAvailable = true), TOPICS, onPick = {})
             },
         )
     }

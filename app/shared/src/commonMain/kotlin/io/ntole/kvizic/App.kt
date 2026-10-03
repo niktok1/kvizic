@@ -291,7 +291,7 @@ private fun Profile() {
     val topics by rememberTopics()
     LaunchedEffect(viewModel) { viewModel.shown() }
     LifecycleStartEffect(viewModel) { onStopOrDispose { viewModel.keepAvatar() } }
-    ProfileScreen(state, topics, onPick = viewModel::changeAvatar)
+    ProfileScreen(state, topics, onPick = viewModel::changeAvatar, onPlayGames = viewModel::linkPlayGames)
 }
 
 /** A room's code typed, and joined once all six digits are in. */

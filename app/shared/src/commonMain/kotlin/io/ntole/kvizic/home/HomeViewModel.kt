@@ -84,9 +84,9 @@ class HomeViewModel(
     fun retry() = refresh()
 
     /**
-     * The guest's Sign in with Play Games: asks Play Games, then the server, one at a time. Backing out of
-     * Play Games shows nothing; a sign-in that worked is read through [LinkPlayGames.signedIn], and one the
-     * server refused is shown until [dismissPlayGamesFailure].
+     * The guest's Save progress, Home's or the profile's: asks Play Games, then the server, one at a time. A
+     * sign-in that worked is read through [LinkPlayGames.signedIn]; one Play Games or the server did not make
+     * is shown until [dismissPlayGamesFailure] or the next try, so a tap is never silent.
      */
     fun linkPlayGames() {
         if (mutableState.value.linkingPlayGames) return
