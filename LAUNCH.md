@@ -1,7 +1,22 @@
 # Launch checklist — Квизић on Google Play (Android first)
 
-Updated 2026-10-02. ✅ done, ⚠️ found broken or missing, ☐ to do. **You** marks a step only the owner can
+Updated 2026-10-04. ✅ done, ⚠️ found broken or missing, ☐ to do. **You** marks a step only the owner can
 take (a console, a secret, a device); the rest is done in the repository.
+
+## Where we are (2026-10-04)
+
+- ✅ **Prod** runs the latest `main` (`/health` names the commit); the two-guest check passed on it. Deploys
+  now ask for approval in GitHub Mobile after a server change (§10); the first approved one is still to come.
+- ✅ **Internal testing**: 1.0.2 (10002), built, signed and uploaded by Release Android.
+- ⚠️ **Early access** (open testing): sent for review with 1.0.1 on 2026-10-03, but the Play Console's
+  Publishing overview shows nothing in review on 2026-10-04, and Play's API sees the track as not live (it
+  targets no countries). ☐ **You**: Test and release → Testing → **Open testing**: what does the release say
+  (Draft / In review / Available), and are the 10 countries set under **Countries / regions**?
+- ⏳ **1.0.2 → early access** is queued ([issue #1](https://github.com/niktok1/kvizic/issues/1)): retried every
+  3 hours, done and closed once the track is live.
+- ✅ **Dev builds** reach the owner's phone through App Tester after every green `main`, signed with the debug
+  key Play Games knows.
+- ☐ Production, staged (§9), after early access.
 
 Decided 2026-10-02: launch in **RS, BA, ME, MK, AT, DE, CH, SE, NO, DK**, more countries later, so the
 legal pages name no country; the contact block stays WYR's (toleapps, application.eili@gmail.com); a guest
@@ -88,8 +103,8 @@ It imports 25 a request and approves what it brought. Then the moderation app ag
 
 ### 7. The build and a real phone (30 min) ✅ (2026-10-03)
 
-1.0.1 (10001) is on internal testing, installed from Play on the Poco X3 Pro and the Galaxy Tab S6 Lite, and
-Play Games signs in on both. A tablet that has had a sideloaded build in another user (its Guest) refuses
+1.0.1 (10001) was on internal testing (1.0.2 since 2026-10-04), installed from Play on the Poco X3 Pro and the
+Galaxy Tab S6 Lite, and Play Games signs in on both. A tablet that has had a sideloaded build in another user (its Guest) refuses
 Play's as an incompatible version: `adb uninstall io.ntole.kvizic` removes it for every user.
 
 ```bash
