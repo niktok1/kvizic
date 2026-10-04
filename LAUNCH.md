@@ -8,12 +8,11 @@ take (a console, a secret, a device); the rest is done in the repository.
 - ✅ **Prod** runs the latest `main` (`/health` names the commit); the two-guest check passed on it. Deploys
   now ask for approval in GitHub Mobile after a server change (§10); the first approved one is still to come.
 - ✅ **Internal testing**: 1.0.2 (10002), built, signed and uploaded by Release Android.
-- ⚠️ **Early access** (open testing): sent for review with 1.0.1 on 2026-10-03, but the Play Console's
-  Publishing overview shows nothing in review on 2026-10-04, and Play's API sees the track as not live (it
-  targets no countries). ☐ **You**: Test and release → Testing → **Open testing**: what does the release say
-  (Draft / In review / Available), and are the 10 countries set under **Countries / regions**?
-- ⏳ **1.0.2 → early access** is queued ([issue #1](https://github.com/niktok1/kvizic/issues/1)): retried every
-  3 hours, done and closed once the track is live.
+- ✅ **Early access** (the console's own track, not Open testing): 1.0.1 live since 2026-10-03 14:38. ⚠️ In
+  **1 country** only, not the 10. ☐ **You**: Early access → **Countries / regions** → add the rest; then
+  Internal testing → 1.0.2 → **Promote release → Early access** (a draft „Untitled release“ waits there: discard
+  it or put 1.0.2 in it). Play's API has no Early access track, so this stays a console step.
+- Open testing is closed to us until a production release exists (Play: only countries with one).
 - ✅ **Dev builds** reach the owner's phone through App Tester after every green `main`, signed with the debug
   key Play Games knows.
 - ☐ Production, staged (§9), after early access.
@@ -269,8 +268,9 @@ notification, once Play takes it.
 - **Prod**: a notification „Review deployments“ → **Approve and deploy**. To roll back: Actions → **Deploy
   prod** → Run workflow → `sha` = the older commit → approve.
 - **A release**: Actions → **Release Android** → Run workflow (patch, notes in Serbian) → approve → internal
-  testing in ~15 min. Then **Promote Android** → `internal → early access` (or `early access → production`
-  at 0.2) → approve; raise with `production rollout share`, stop with `production halt`.
+  testing in ~15 min. To Early access: the Play Console app → Internal testing → **Promote release → Early
+  access** (not in Play's API). To production: **Promote Android** → `internal → production` at 0.2 (1.0 for the
+  first production release) → approve; raise with `production rollout share`, stop with `production halt`.
 - Bump, tag and promote never touch the store listing, data safety, the content rating or Google's review.
 
 ## Open, decide later

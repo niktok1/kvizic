@@ -352,8 +352,9 @@ Render's build filter once left a site change behind (2026-10-02).
 **Android releases** (2026-10-03): `release-android.yml` ("Run workflow", from a phone) bumps the version on
 `main` (`tools/release/bump.py`, both files), tags it, and on the owner's approval builds the signed bundle,
 checks it is the upload key's, and uploads it to Play's internal track; a tag `v1.2.3` pushed by hand releases
-that commit. `promote-android.yml` takes it to early access (Play's `beta` track) and production, staged,
-raised, halted or resumed; with "when ready", a promotion Play refuses because its track is not live yet (the
+that commit. `promote-android.yml` takes it to open testing (Play's `beta`) or production, staged, raised,
+halted or resumed; the console's **Early access** track is not in Play's API (2026-10-04), so a build goes there
+by the console's Promote release; with "when ready", a promotion Play refuses because its track is not live yet (the
 first release still in review) is queued as an issue labelled `play-queue`, which `play-queue.yml` retries every
 3 hours from the environment `play-queue` (no reviewers, `main` only, a key of its own) and closes once Play
 takes it (the owner, 2026-10-04: only what is queued, never every build). All run `tools/play/play.py`, Google's own API client, never a third party with
