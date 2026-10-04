@@ -177,8 +177,13 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   built with `-Pkvizic.env`): the token is typed and held in memory only, a wrong one forgotten at once (ten
   a minute lock the address out). Review shows one draft at a time, A approves, R rejects with a reason
   (ready ones a tap away), E edits, J/K move; the bank filters and pages, retires and restores; reports are
-  marked fixed, dismissed or retired; Overview counts the bank and the live games; Accounts deletes one by
-  its id. English words, the questions as written. It binds `moderationDataModule` alone: no player session.
+  marked fixed, dismissed or retired; Overview counts the bank and the live games; Accounts lists every player
+  (`GET /v1/admin/accounts`, by offset, searched by a name's part or an id's start, ordered by last seen, newest,
+  level or games) and opens one with its topics and last games (`/accounts/{id}`), and deletes one by its id,
+  opened or typed from an email (the owner, 2026-10-04). A player's **last seen** is `players.last_seen_at` (V10),
+  noted at a guest's mint, a refresh, a Play Games sign-in and a seat taken, at most once in five minutes
+  (`PlayerStore.touch`, one compare-and-set `UPDATE`); null before V10, so the list shows the creation, said so.
+  English words, the questions as written. It binds `moderationDataModule` alone: no player session.
 
 ## 9. The client
 

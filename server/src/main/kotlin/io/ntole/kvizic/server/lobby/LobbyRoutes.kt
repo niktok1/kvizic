@@ -46,7 +46,9 @@ fun Route.lobbyRoutes(
         val playerId = authenticatedPlayerId()
         val sessionId = authenticatedSessionId()
         // A validly signed token can outlive its player.
-        val player = db.query { PlayerStore.find(playerId) } ?: throw ApiFailure.unauthorized("unknown player")
+        val player =
+            db.query { PlayerStore.find(playerId)?.also { PlayerStore.touch(playerId) } }
+                ?: throw ApiFailure.unauthorized("unknown player")
         return Seat(playerId, sessionId, player.displayName, player.avatarId, player.xp)
     }
 

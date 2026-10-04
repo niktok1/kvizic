@@ -1,5 +1,6 @@
 package io.ntole.kvizic.admin
 
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ModeratedQuestion
 import io.ntole.kvizic.core.domain.moderation.QuestionDifficulty
@@ -72,6 +73,16 @@ interface ModerationActions {
     fun pickDifficulty(difficulty: QuestionDifficulty) {}
 
     fun saveEdit() {}
+
+    fun typeAccountSearch(search: String) {}
+
+    fun pickAccountOrder(order: AccountOrder) {}
+
+    fun loadMoreAccounts() {}
+
+    fun openAccount(id: String) {}
+
+    fun closeAccount() {}
 
     fun typeAccountId(id: String) {}
 

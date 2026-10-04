@@ -1,6 +1,13 @@
 package io.ntole.kvizic.admin
 
+import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountGame
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
+import io.ntole.kvizic.core.domain.moderation.AccountPage
+import io.ntole.kvizic.core.domain.moderation.AccountSummary
+import io.ntole.kvizic.core.domain.moderation.AccountTopicStat
 import io.ntole.kvizic.core.domain.moderation.AdminToken
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.BankStatus
@@ -27,6 +34,7 @@ import kotlinx.coroutines.flow.StateFlow
 internal class ScriptedModeration : ModerationRepository {
     val questions = mutableListOf<ModeratedQuestion>()
     val reported = mutableListOf<ReportedQuestion>()
+    val players = mutableListOf<AccountSummary>()
     val calls = mutableListOf<String>()
     val tokens = mutableListOf<String>()
     var failNext: KvizicException? = null
@@ -132,6 +140,44 @@ internal class ScriptedModeration : ModerationRepository {
     ) {
         call(token, "resolve $questionId $outcome")
         reported.removeAll { it.question.id == questionId }
+    }
+
+    override suspend fun accounts(
+        token: AdminToken,
+        order: AccountOrder,
+        search: String,
+        cursor: String?,
+    ): AccountPage {
+        call(token, "accounts $order $search $cursor")
+        val matching =
+            players
+                .filter { search.isBlank() || search.lowercase() in it.name.lowercase() || it.id.startsWith(search) }
+                .sortedByDescending {
+                    when (order) {
+                        AccountOrder.LAST_SEEN -> it.lastActiveAt
+                        AccountOrder.CREATED -> it.createdAt
+                        AccountOrder.LEVEL -> it.xp.toLong()
+                        AccountOrder.GAMES -> it.gamesPlayed.toLong()
+                    }
+                }
+        val from = cursor?.toInt() ?: 0
+        val next = (from + pageSize).takeIf { it < matching.size }?.toString()
+        return AccountPage(matching.drop(from).take(pageSize), next, matching.size)
+    }
+
+    override suspend fun account(
+        token: AdminToken,
+        id: String,
+    ): AccountDetail {
+        call(token, "account $id")
+        val player =
+            players.firstOrNull { it.id == id }
+                ?: throw KvizicException(CoreError.PLAYER_NOT_FOUND)
+        return AccountDetail(
+            account = player,
+            topics = listOf(AccountTopicStat("SPORT", answered = 10, correct = 7)),
+            recentGames = listOf(AccountGame(1_000L, false, 4, 1, 320, 7, 10, true)),
+        )
     }
 
     override suspend fun deleteAccount(

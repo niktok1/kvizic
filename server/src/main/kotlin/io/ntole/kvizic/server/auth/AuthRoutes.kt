@@ -56,12 +56,13 @@ fun Route.authRoutes(
             // answer was lost can be sent again.
             val session =
                 db.query {
-                    SessionStore.rotate(
-                        presentedHash = tokens.hash(body.refreshToken),
-                        newHash = rotated.hash,
-                        expiresAt = expiresAt,
-                        graceMillis = config.refreshGraceSeconds?.let { seconds -> seconds * 1_000L },
-                    ) ?: throw ApiFailure.invalidRefreshToken()
+                    SessionStore
+                        .rotate(
+                            presentedHash = tokens.hash(body.refreshToken),
+                            newHash = rotated.hash,
+                            expiresAt = expiresAt,
+                            graceMillis = config.refreshGraceSeconds?.let { seconds -> seconds * 1_000L },
+                        )?.also { PlayerStore.touch(it.playerId) } ?: throw ApiFailure.invalidRefreshToken()
                 }
 
             call.respond(tokens.answer(session, rotated, config))

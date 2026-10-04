@@ -1,5 +1,8 @@
 package io.ntole.kvizic.admin
 
+import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
+import io.ntole.kvizic.core.domain.moderation.AccountSummary
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ModeratedQuestion
@@ -80,8 +83,19 @@ data class ReportsState(
     val reported: List<ReportedQuestion> = emptyList(),
 )
 
-/** A deletion asked for by [accountId], once [confirming], and what became of the last one ([done]). */
+/**
+ * The players, [players] of the [total] matching [search], at [order], read a page at a time while [next]
+ * says there is more; [selected] is the one opened. A deletion is asked for by [accountId], the opened
+ * player's or one typed from an email, once [confirming], and what became of the last one is [done].
+ */
 data class AccountsState(
+    val loaded: Boolean = false,
+    val order: AccountOrder = AccountOrder.LAST_SEEN,
+    val search: String = "",
+    val players: List<AccountSummary> = emptyList(),
+    val total: Int = 0,
+    val next: String? = null,
+    val selected: AccountDetail? = null,
     val accountId: String = "",
     val confirming: Boolean = false,
     val done: String? = null,

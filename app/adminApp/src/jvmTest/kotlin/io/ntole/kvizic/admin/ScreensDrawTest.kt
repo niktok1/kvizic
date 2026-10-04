@@ -8,9 +8,14 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getAllSemanticsNodes
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.Density
+import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountGame
+import io.ntole.kvizic.core.domain.moderation.AccountSummary
+import io.ntole.kvizic.core.domain.moderation.AccountTopicStat
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ReportedQuestion
+import io.ntole.kvizic.core.domain.moderation.SoloBest
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
@@ -159,6 +164,76 @@ class ScreensDrawTest {
         assertTrue("Delete account p1?" in texts, texts.toString())
         tapIn("accounts", state, "Delete account")
         assertEquals(listOf("delete"), asked)
+    }
+
+    @Test
+    fun `the accounts tab lists the players with their level, stats and when they were seen`() {
+        val fox =
+            AccountSummary(
+                id = "p1",
+                name = "Лукави Лисац",
+                avatarId = "fox",
+                playGamesLinked = true,
+                level = 7,
+                xp = 400,
+                gamesPlayed = 12,
+                gamesWon = 4,
+                answersGiven = 140,
+                answersCorrect = 100,
+                soloRuns = 3,
+                soloBest = SoloBest(medium = 410),
+                createdAt = 1_000L,
+                lastSeenAt = null,
+            )
+        val state =
+            unlocked.copy(
+                tab = AdminTab.ACCOUNTS,
+                accounts = AccountsState(loaded = true, players = listOf(fox), total = 1),
+            )
+        val texts = draw("accounts-list", state)
+        listOf("Level 7", "Play Games", "12 games, 4 won · 71% right of 140 answers").forEach {
+            assertTrue(it in texts, "no \"$it\": $texts")
+        }
+        assertTrue("1 players" in texts, texts.toString())
+        assertTrue("Лукави Лисац" in texts, texts.toString())
+        listOf("Last seen", "Newest", "Level", "Games").forEach { assertTrue(it in texts, "no \"$it\"") }
+    }
+
+    @Test
+    fun `an opened account shows its topics and games and offers its deletion`() {
+        val fox =
+            AccountSummary(
+                id = "p1",
+                name = "Лукави Лисац",
+                avatarId = "fox",
+                playGamesLinked = false,
+                level = 2,
+                xp = 20,
+                gamesPlayed = 1,
+                gamesWon = 0,
+                answersGiven = 10,
+                answersCorrect = 7,
+                soloRuns = 0,
+                soloBest = SoloBest(),
+                createdAt = 1_000L,
+                lastSeenAt = 2_000L,
+            )
+        val detail =
+            AccountDetail(
+                account = fox,
+                topics = listOf(AccountTopicStat("SPORT", answered = 10, correct = 7)),
+                recentGames = listOf(AccountGame(2_000L, false, 4, 2, 320, 7, 10, true)),
+            )
+        val state =
+            unlocked.copy(
+                tab = AdminTab.ACCOUNTS,
+                accounts = AccountsState(loaded = true, players = listOf(fox), total = 1, selected = detail),
+            )
+        val texts = draw("accounts-detail", state)
+        assertTrue("Guest" in texts, texts.toString())
+        assertTrue("Спорт 7/10" in texts, texts.toString())
+        assertTrue(texts.any { it.endsWith("2nd of 4, 320 points, 7/10 right") }, texts.toString())
+        assertTrue(texts.any { it.startsWith("Created 1970-01-01 00:00 UTC") }, texts.toString())
     }
 
     @Test

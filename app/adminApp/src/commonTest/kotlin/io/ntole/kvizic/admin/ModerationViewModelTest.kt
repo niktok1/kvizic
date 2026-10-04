@@ -4,9 +4,12 @@ import androidx.lifecycle.viewModelScope
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
+import io.ntole.kvizic.core.domain.moderation.AccountSummary
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ReportOutcome
 import io.ntole.kvizic.core.domain.moderation.ReportedQuestion
+import io.ntole.kvizic.core.domain.moderation.SoloBest
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.GetTopics
 import kotlinx.coroutines.CompletableDeferred
@@ -396,10 +399,11 @@ class ModerationViewModelTest {
         test {
             unlocked()
             viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
             viewModel.typeAccountId(" p1 ")
             viewModel.askToDelete()
             assertTrue(viewModel.state.value.accounts.confirming)
-            assertEquals(1, bank.calls.size, "asking sent something")
+            assertEquals(2, bank.calls.size, "asking sent something")
 
             viewModel.deleteAccount()
             advanceUntilIdle()
@@ -407,6 +411,121 @@ class ModerationViewModelTest {
             assertEquals("delete p1", bank.calls.last())
             assertEquals("Deleted the account p1.", viewModel.state.value.accounts.done)
             assertEquals("", viewModel.state.value.accounts.accountId)
+        }
+
+    private fun player(
+        id: String,
+        name: String,
+        lastSeenAt: Long? = null,
+        xp: Int = 0,
+        games: Int = 0,
+    ) = AccountSummary(
+        id = id,
+        name = name,
+        avatarId = "fox",
+        playGamesLinked = false,
+        level = 1,
+        xp = xp,
+        gamesPlayed = games,
+        gamesWon = 0,
+        answersGiven = 0,
+        answersCorrect = 0,
+        soloRuns = 0,
+        soloBest = SoloBest(),
+        createdAt = 100L,
+        lastSeenAt = lastSeenAt,
+    )
+
+    @Test
+    fun `the accounts tab lists the players, the last seen first, and says how many there are`() =
+        test {
+            bank.players += listOf(player("p1", "Стари", lastSeenAt = 500), player("p2", "Нови", lastSeenAt = 900))
+            unlocked()
+
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+
+            val accounts = viewModel.state.value.accounts
+            assertEquals(listOf("p2", "p1"), accounts.players.map { it.id })
+            assertEquals(2, accounts.total)
+            assertTrue(accounts.loaded)
+            assertEquals("accounts LAST_SEEN  null", bank.calls.last())
+        }
+
+    @Test
+    fun `an order and a search read the list again from its start, and more pages add to it`() =
+        test {
+            bank.pageSize = 2
+            bank.players += List(5) { player("p$it", "Играч $it", xp = it, games = 10 - it) }
+            unlocked()
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+            assertEquals(2, viewModel.state.value.accounts.players.size)
+
+            viewModel.loadMoreAccounts()
+            advanceUntilIdle()
+            assertEquals(4, viewModel.state.value.accounts.players.size)
+
+            viewModel.pickAccountOrder(AccountOrder.LEVEL)
+            advanceUntilIdle()
+            assertEquals(
+                listOf("p4", "p3"),
+                viewModel.state.value.accounts.players
+                    .map { it.id },
+            )
+            assertEquals("accounts LEVEL  null", bank.calls.last())
+
+            viewModel.typeAccountSearch("играч 2")
+            viewModel.load(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+            assertEquals(
+                listOf("p2"),
+                viewModel.state.value.accounts.players
+                    .map { it.id },
+            )
+            assertEquals(1, viewModel.state.value.accounts.total)
+        }
+
+    @Test
+    fun `opening a player reads them whole and a deletion then names them and takes them out of the list`() =
+        test {
+            bank.players += listOf(player("p1", "Један"), player("p2", "Два"))
+            unlocked()
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+
+            viewModel.openAccount("p1")
+            advanceUntilIdle()
+
+            val opened = viewModel.state.value.accounts
+            assertEquals("p1", opened.selected?.account?.id)
+            assertEquals("p1", opened.accountId)
+            assertEquals(1, opened.selected?.topics?.size)
+
+            viewModel.askToDelete()
+            viewModel.deleteAccount()
+            advanceUntilIdle()
+
+            val after = viewModel.state.value.accounts
+            assertEquals("delete p1", bank.calls.last())
+            assertNull(after.selected)
+            assertEquals(listOf("p2"), after.players.map { it.id })
+            assertEquals(1, after.total)
+            assertEquals("Deleted the account p1.", after.done)
+        }
+
+    @Test
+    fun `a player that is not there is said and nothing is opened`() =
+        test {
+            unlocked()
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+
+            viewModel.openAccount("nobody")
+            advanceUntilIdle()
+
+            assertNull(viewModel.state.value.accounts.selected)
+            assertEquals("No such account: a mistyped id, or one deleted already.", viewModel.state.value.failure)
         }
 
     @Test

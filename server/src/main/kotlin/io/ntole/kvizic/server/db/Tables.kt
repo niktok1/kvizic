@@ -31,6 +31,9 @@ object Players : Table("players") {
     val displayName = varchar("display_name", DISPLAY_NAME_COLUMN)
     val nameSource = enumerationByName<NameSource>("name_source", 16)
 
+    /** When the player last did anything with the server, kept to the minute (`PlayerStore.touch`); V10, null before. */
+    val lastSeenAt = long("last_seen_at").nullable()
+
     override val primaryKey = PrimaryKey(id)
 
     /** Wide enough for [KvizicApi.Limits.MAX_DISPLAY_NAME_LENGTH] code points in UTF-16 units. */

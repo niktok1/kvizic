@@ -10,7 +10,11 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPath
 import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.player.AccountSort
+import io.ntole.kvizic.core.player.AdminAccountDetailDto
+import io.ntole.kvizic.core.player.AdminAccountPageDto
 import io.ntole.kvizic.core.player.DeleteAccountRequest
 import io.ntole.kvizic.core.question.AdminOverviewDto
 import io.ntole.kvizic.core.question.AdminQuestionDto
@@ -93,6 +97,29 @@ public class ModerationApi(
     ) {
         client.post(KvizicApi.Paths.ADMIN_REPORT_RESOLUTIONS) { json(token, request) }
     }
+
+    /** A page of the players, most first at [sort], matching [search] when given. */
+    public suspend fun accounts(
+        token: String,
+        sort: AccountSort,
+        search: String?,
+        cursor: String?,
+        limit: Int,
+    ): AdminAccountPageDto =
+        client
+            .get(KvizicApi.Paths.ADMIN_ACCOUNTS) {
+                admin(token)
+                parameter(KvizicApi.Query.SORT, sort.name)
+                search?.let { parameter(KvizicApi.Query.SEARCH, it) }
+                cursor?.let { parameter(KvizicApi.Query.CURSOR, it) }
+                parameter(KvizicApi.Query.LIMIT, limit)
+            }.body()
+
+    public suspend fun account(
+        token: String,
+        id: String,
+    ): AdminAccountDetailDto =
+        client.get(KvizicApi.Paths.ADMIN_ACCOUNT.replace("{id}", id.encodeURLPath())) { admin(token) }.body()
 
     public suspend fun deleteAccount(
         token: String,

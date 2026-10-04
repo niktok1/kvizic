@@ -1,5 +1,11 @@
 package io.ntole.kvizic.core.data.moderation
 
+import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountGame
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
+import io.ntole.kvizic.core.domain.moderation.AccountPage
+import io.ntole.kvizic.core.domain.moderation.AccountSummary
+import io.ntole.kvizic.core.domain.moderation.AccountTopicStat
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ModeratedQuestion
@@ -8,7 +14,12 @@ import io.ntole.kvizic.core.domain.moderation.QuestionEdit
 import io.ntole.kvizic.core.domain.moderation.QuestionPlay
 import io.ntole.kvizic.core.domain.moderation.ReportOutcome
 import io.ntole.kvizic.core.domain.moderation.ReportedQuestion
+import io.ntole.kvizic.core.domain.moderation.SoloBest
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
+import io.ntole.kvizic.core.player.AccountSort
+import io.ntole.kvizic.core.player.AdminAccountDetailDto
+import io.ntole.kvizic.core.player.AdminAccountDto
+import io.ntole.kvizic.core.player.AdminAccountPageDto
 import io.ntole.kvizic.core.question.AdminOverviewDto
 import io.ntole.kvizic.core.question.AdminQuestionDto
 import io.ntole.kvizic.core.question.Difficulty
@@ -141,4 +152,57 @@ internal fun AdminOverviewDto.toDomain(): BankOverview =
         liveGames = liveGames,
         connectedPlayers = connectedPlayers,
         gamesToday = gamesToday,
+    )
+
+internal fun AccountOrder.toWire(): AccountSort =
+    when (this) {
+        AccountOrder.LAST_SEEN -> AccountSort.RECENT
+        AccountOrder.CREATED -> AccountSort.CREATED
+        AccountOrder.LEVEL -> AccountSort.LEVEL
+        AccountOrder.GAMES -> AccountSort.GAMES
+    }
+
+internal fun AdminAccountDto.toDomain(): AccountSummary =
+    AccountSummary(
+        id = playerId,
+        name = displayName,
+        avatarId = avatarId,
+        playGamesLinked = playGamesLinked,
+        level = level,
+        xp = xp,
+        gamesPlayed = stats.gamesPlayed,
+        gamesWon = stats.gamesWon,
+        answersGiven = stats.answersGiven,
+        answersCorrect = stats.answersCorrect,
+        soloRuns = stats.soloRuns,
+        soloBest =
+            SoloBest(
+                easy = stats.soloBestEasyScore,
+                medium = stats.soloBestScore,
+                hard = stats.soloBestHardScore,
+            ),
+        createdAt = createdAt,
+        lastSeenAt = lastSeenAt,
+    )
+
+internal fun AdminAccountPageDto.toDomain(): AccountPage =
+    AccountPage(accounts = accounts.map { it.toDomain() }, next = nextCursor, total = total)
+
+internal fun AdminAccountDetailDto.toDomain(): AccountDetail =
+    AccountDetail(
+        account = account.toDomain(),
+        topics = topics.map { AccountTopicStat(it.topicId, it.answered, it.correct) },
+        recentGames =
+            recentGames.map {
+                AccountGame(
+                    endedAt = it.endedAt,
+                    solo = it.solo,
+                    participants = it.participants,
+                    standing = it.standing,
+                    score = it.score,
+                    correct = it.correct,
+                    answered = it.answered,
+                    finished = it.finished,
+                )
+            },
     )

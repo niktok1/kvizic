@@ -59,6 +59,20 @@ public interface ModerationRepository {
         outcome: ReportOutcome,
     )
 
+    /** A page of the players at [order] and [search] (a name's part or an id's start), from [cursor], none first. */
+    public suspend fun accounts(
+        token: AdminToken,
+        order: AccountOrder,
+        search: String = "",
+        cursor: String? = null,
+    ): AccountPage
+
+    /** The account [id] with what it has played; `PLAYER_NOT_FOUND` for none. */
+    public suspend fun account(
+        token: AdminToken,
+        id: String,
+    ): AccountDetail
+
     /** Deletes the account [accountId] names, at its player's request, as their own deletion would. */
     public suspend fun deleteAccount(
         token: AdminToken,

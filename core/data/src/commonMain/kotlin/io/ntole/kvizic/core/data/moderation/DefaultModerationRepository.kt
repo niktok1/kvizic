@@ -2,6 +2,9 @@ package io.ntole.kvizic.core.data.moderation
 
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.data.mapper.runApi
+import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
+import io.ntole.kvizic.core.domain.moderation.AccountPage
 import io.ntole.kvizic.core.domain.moderation.AdminToken
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.ModeratedQuestion
@@ -81,6 +84,27 @@ public class DefaultModerationRepository(
     ) {
         runApi { api.resolve(token.value, ResolveReportsRequest(questionId, outcome.toWire())) }
     }
+
+    override suspend fun accounts(
+        token: AdminToken,
+        order: AccountOrder,
+        search: String,
+        cursor: String?,
+    ): AccountPage =
+        runApi {
+            api.accounts(
+                token.value,
+                sort = order.toWire(),
+                search = search.trim().takeIf { it.isNotEmpty() },
+                cursor = cursor,
+                limit = PAGE_SIZE,
+            )
+        }.toDomain()
+
+    override suspend fun account(
+        token: AdminToken,
+        id: String,
+    ): AccountDetail = runApi { api.account(token.value, id.trim()) }.toDomain()
 
     override suspend fun deleteAccount(
         token: AdminToken,

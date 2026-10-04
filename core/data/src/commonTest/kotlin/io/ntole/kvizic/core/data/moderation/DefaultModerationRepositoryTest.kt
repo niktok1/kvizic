@@ -15,6 +15,8 @@ import io.ntole.kvizic.core.data.storeHolding
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
+import io.ntole.kvizic.core.domain.moderation.AccountTopicStat
 import io.ntole.kvizic.core.domain.moderation.AdminToken
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.QuestionDifficulty
@@ -26,7 +28,13 @@ import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.network.KvizicHttpClient
 import io.ntole.kvizic.core.network.KvizicJson
 import io.ntole.kvizic.core.network.api.ModerationApi
+import io.ntole.kvizic.core.player.AdminAccountDetailDto
+import io.ntole.kvizic.core.player.AdminAccountDto
+import io.ntole.kvizic.core.player.AdminAccountPageDto
+import io.ntole.kvizic.core.player.AdminGameDto
+import io.ntole.kvizic.core.player.AdminTopicStatDto
 import io.ntole.kvizic.core.player.DeleteAccountRequest
+import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.question.AdminOverviewDto
 import io.ntole.kvizic.core.question.AdminQuestionDto
 import io.ntole.kvizic.core.question.AdminQuestionPageDto
@@ -301,6 +309,76 @@ class DefaultModerationRepositoryTest {
             assertEquals(DeleteAccountRequest("p1"), KvizicJson.decodeFromString<DeleteAccountRequest>(bodies[1]))
             assertEquals(mapOf(BankStatus.APPROVED to 40, BankStatus.OTHER to 1), overview.byStatus)
             assertEquals(2, overview.liveGames)
+        }
+
+    @Test
+    fun `accounts ask for their order, search and cursor, and come back as the moderator reads them`() =
+        runTest {
+            answer = {
+                Answer.Json(
+                    KvizicJson.encodeToString(
+                        AdminAccountPageDto(
+                            accounts =
+                                listOf(
+                                    AdminAccountDto(
+                                        playerId = "p1",
+                                        displayName = "Лукави Лисац",
+                                        avatarId = "fox",
+                                        level = 3,
+                                        xp = 45,
+                                        stats = PlayerStatsDto(gamesPlayed = 4, answersGiven = 20, answersCorrect = 15),
+                                        createdAt = 1_000L,
+                                    ),
+                                ),
+                            nextCursor = "50",
+                            total = 51,
+                        ),
+                    ),
+                )
+            }
+
+            val page = repository.accounts(token, AccountOrder.LEVEL, search = "  лис ", cursor = "0")
+
+            val parameters = sent.single().url.parameters
+            assertEquals(KvizicApi.Paths.ADMIN_ACCOUNTS, sent.single().url.encodedPath)
+            assertEquals("LEVEL", parameters[KvizicApi.Query.SORT])
+            assertEquals("лис", parameters[KvizicApi.Query.SEARCH])
+            assertEquals("0", parameters[KvizicApi.Query.CURSOR])
+            assertEquals(KvizicApi.Limits.MAX_PAGE_SIZE.toString(), parameters[KvizicApi.Query.LIMIT])
+            assertEquals("50", page.next)
+            assertEquals(51, page.total)
+            val account = page.accounts.single()
+            assertEquals("p1", account.id)
+            assertEquals(75, account.accuracyPercent)
+            assertEquals(1_000L, account.lastActiveAt)
+        }
+
+    @Test
+    fun `one account is read by its trimmed id and its games and topics come with it`() =
+        runTest {
+            answer = {
+                Answer.Json(
+                    KvizicJson.encodeToString(
+                        AdminAccountDetailDto(
+                            account =
+                                AdminAccountDto(
+                                    playerId = "p1",
+                                    displayName = "A",
+                                    avatarId = "fox",
+                                    createdAt = 1L,
+                                ),
+                            topics = listOf(AdminTopicStatDto("SPORT", answered = 4, correct = 3)),
+                            recentGames = listOf(AdminGameDto(endedAt = 9L, standing = 2, participants = 4)),
+                        ),
+                    ),
+                )
+            }
+
+            val detail = repository.account(token, " p1 ")
+
+            assertEquals("/v1/admin/accounts/p1", sent.single().url.encodedPath)
+            assertEquals(AccountTopicStat("SPORT", 4, 3), detail.topics.single())
+            assertEquals(2, detail.recentGames.single().standing)
         }
 
     @Test

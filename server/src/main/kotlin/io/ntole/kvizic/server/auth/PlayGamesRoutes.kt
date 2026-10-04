@@ -57,6 +57,7 @@ fun Route.playGamesRoutes(
                     db.query {
                         val playerId = IdentityStore.signIn(IdentityProvider.PLAY_GAMES, player.playerId, callerId)
                         name?.let { PlayerStore.setPlayGamesName(playerId, it) }
+                        PlayerStore.touch(playerId)
                         SessionStore.open(playerId, refresh.hash, expiresAt)
                     }
 

@@ -15,6 +15,7 @@ import io.ktor.server.routing.head
 import io.ktor.server.routing.routing
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.admin.AdminToken
+import io.ntole.kvizic.server.admin.accountAdminRoutes
 import io.ntole.kvizic.server.admin.accountDeletionRoutes
 import io.ntole.kvizic.server.admin.adminRoutes
 import io.ntole.kvizic.server.admin.overviewRoutes
@@ -141,9 +142,9 @@ fun Application.kvizicModule(
         get(KvizicApi.Paths.HEALTH) {
             call.respond(listOfNotNull("status" to "ok", config.commit?.let { "commit" to it }).toMap())
         }
-
         // Uptime monitors probe with HEAD (UptimeRobot's free plan always does); 405 read as down.
         head(KvizicApi.Paths.HEALTH) { call.respond(HttpStatusCode.OK) }
+
         authRoutes(db, tokens, config, sessionEnded = { playerId, sessionId -> sessionEnded(playerId, sessionId) })
         playGamesRoutes(db, tokens, config, playGames)
         playerRoutes(db, playerDeleted = { playerId -> sessionEnded(playerId, null) })
@@ -160,6 +161,7 @@ fun Application.kvizicModule(
         reportRoutes(db)
         adminRoutes(adminToken) { token ->
             accountDeletionRoutes(db, token, playerDeleted = { playerId -> sessionEnded(playerId, null) })
+            accountAdminRoutes(db, token)
             topicAdminRoutes(db, token, topics)
             questionAdminRoutes(db, token, topics)
             reportAdminRoutes(db, token)

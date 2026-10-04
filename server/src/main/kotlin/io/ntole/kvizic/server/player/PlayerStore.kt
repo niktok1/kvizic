@@ -5,7 +5,11 @@ import io.ntole.kvizic.core.player.NameSource
 import io.ntole.kvizic.server.db.Players
 import io.ntole.kvizic.server.db.Profiles
 import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
@@ -13,6 +17,9 @@ import java.util.UUID
 import kotlin.random.Random
 
 object PlayerStore {
+    /** How stale "last seen" may be, so it is a write a few minutes and no more. */
+    const val TOUCH_EVERY_MILLIS: Long = 5 * 60 * 1_000L
+
     /** A player as others see them in a lobby. */
     data class Player(
         val id: String,
@@ -40,6 +47,7 @@ object PlayerStore {
             row[createdAt] = now
             row[displayName] = name
             row[nameSource] = NameSource.GENERATED
+            row[lastSeenAt] = now
         }
         Profiles.insert { row ->
             row[playerId] = id
@@ -47,6 +55,22 @@ object PlayerStore {
         }
 
         return Player(id = id, displayName = name, nameSource = NameSource.GENERATED, avatarId = avatar)
+    }
+
+    /**
+     * Notes that [id] is here at [now], at most once in [TOUCH_EVERY_MILLIS]: one `UPDATE` whose `WHERE` holds
+     * the age, so a busy player costs a write a few minutes, never one a request, and two at once write once.
+     * Must run inside a transaction.
+     */
+    fun touch(
+        id: String,
+        now: Long = System.currentTimeMillis(),
+    ) {
+        Players.update({
+            (Players.id eq id) and (Players.lastSeenAt.isNull() or (Players.lastSeenAt less now - TOUCH_EVERY_MILLIS))
+        }) { row ->
+            row[lastSeenAt] = now
+        }
     }
 
     /** The player [id], or null when there is none. Must run inside a transaction. */

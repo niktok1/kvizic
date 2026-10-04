@@ -35,6 +35,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ModeratedQuestion
@@ -52,6 +53,7 @@ import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.StageDialog
 import io.ntole.kvizic.design.component.TextInput
 import io.ntole.kvizic.design.skin.KvizicTheme
+import kotlin.time.Clock
 
 /**
  * The moderation app, whole: which server it talks to, the token, the tabs, and the tab shown, or the
@@ -558,7 +560,12 @@ private fun Overview(
     }
 }
 
-/** Deleting a player's account at their request, by the account id their email names, once confirmed. */
+/**
+ * Every player: searched by a name's part or an id's start, ordered four ways, read a page at a time; a row
+ * opens the account with what it has played and its deletion, and below stands the way to delete one by an
+ * id typed from an email.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Accounts(
     state: ModerationState,
@@ -567,7 +574,55 @@ private fun Accounts(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val accounts = state.accounts
+    val now = remember(accounts.players, accounts.selected) { Clock.System.now().toEpochMilliseconds() }
     Column(Modifier.widthIn(max = space.contentWidth), verticalArrangement = Arrangement.spacedBy(space.sm)) {
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(space.sm)) {
+            TextInput(
+                value = accounts.search,
+                onValueChange = actions::typeAccountSearch,
+                label = "Search a name or the start of an id",
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { actions.load(AdminTab.ACCOUNTS) }),
+            )
+            StageButton(
+                "Search",
+                onClick = { actions.load(AdminTab.ACCOUNTS) },
+                size = ButtonSize.SMALL,
+                enabled = !state.busy,
+            )
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(space.xs),
+            verticalArrangement = Arrangement.spacedBy(space.xs),
+        ) {
+            AccountOrder.entries.forEach { order ->
+                Chip(order.word(), selected = order == accounts.order, onClick = { actions.pickAccountOrder(order) })
+            }
+        }
+        if (accounts.loaded) {
+            KvizicText(
+                "${accounts.total} players",
+                style = type.label,
+                color = KvizicTheme.colors.onPageMuted,
+            )
+        }
+        accounts.selected?.let { AccountDetailCard(it, now, state, actions) }
+        accounts.players.forEach { player -> AccountRow(player, now, onOpen = { actions.openAccount(player.id) }) }
+        when {
+            accounts.next != null -> {
+                StageButton(
+                    "Load more",
+                    onClick = actions::loadMoreAccounts,
+                    kind = ButtonKind.SECONDARY,
+                    enabled = !state.busy,
+                )
+            }
+
+            accounts.loaded && accounts.players.isEmpty() -> {
+                KvizicText("Nobody matches.", style = type.body, color = KvizicTheme.colors.onPageMuted)
+            }
+        }
         KvizicText(
             "A player asks by email to have their account deleted, naming the account id the game's About " +
                 "screen shows. Nothing proves the email is theirs: the id is all it names.",

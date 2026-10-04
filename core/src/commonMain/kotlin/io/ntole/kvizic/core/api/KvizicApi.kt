@@ -119,6 +119,15 @@ public object KvizicApi {
         /** GET: counts of the bank and of what is live right now, an `AdminOverviewDto`. Admin. */
         public const val ADMIN_OVERVIEW: String = "/$VERSION/admin/overview"
 
+        /**
+         * GET: a page of every account (`AdminAccountPageDto`), at the `sort` and `q` asked for, from `cursor`
+         * (an offset the server sent, none first), at most `limit`.
+         */
+        public const val ADMIN_ACCOUNTS: String = "/$VERSION/admin/accounts"
+
+        /** GET: one account and what it has played (`AdminAccountDetailDto`), 404 `PLAYER_NOT_FOUND` for none. */
+        public const val ADMIN_ACCOUNT: String = "/$VERSION/admin/accounts/{id}"
+
         /** POST a `DeleteAccountRequest`: deletes a player's account on their request, answered 204. Admin. */
         public const val ADMIN_ACCOUNT_DELETIONS: String = "/$VERSION/admin/account-deletions"
     }
@@ -155,8 +164,14 @@ public object KvizicApi {
         /** A topic id, repeatable, on [Paths.ADMIN_QUESTIONS]. */
         public const val TOPIC: String = "topic"
 
-        /** Free text matched against a question's text and answers, on [Paths.ADMIN_QUESTIONS]. */
+        /**
+         * Free text matched against a question's text and answers, on [Paths.ADMIN_QUESTIONS], or against a
+         * player's name or the start of their id, on [Paths.ADMIN_ACCOUNTS].
+         */
         public const val SEARCH: String = "q"
+
+        /** An `AccountSort` name, on [Paths.ADMIN_ACCOUNTS]. */
+        public const val SORT: String = "sort"
     }
 
     public object Limits {

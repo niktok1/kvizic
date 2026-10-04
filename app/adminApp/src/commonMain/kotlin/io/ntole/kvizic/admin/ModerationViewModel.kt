@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.AdminToken
 import io.ntole.kvizic.core.domain.moderation.BankStatus
 import io.ntole.kvizic.core.domain.moderation.ModeratedQuestion
@@ -73,7 +74,7 @@ class ModerationViewModel(
                 AdminTab.BANK -> readBank(token, more = false)
                 AdminTab.REPORTS -> readReports(token)
                 AdminTab.OVERVIEW -> mutable.update { it.copy(overview = moderation.overview(token)) }
-                AdminTab.ACCOUNTS -> Unit
+                AdminTab.ACCOUNTS -> readAccounts(token, more = false)
             }
         }
 
@@ -191,7 +192,31 @@ class ModerationViewModel(
 
     // Accounts.
 
-    override fun typeAccountId(id: String) = mutable.update { it.copy(accounts = AccountsState(accountId = id)) }
+    override fun typeAccountSearch(search: String) =
+        mutable.update {
+            it.copy(accounts = it.accounts.copy(search = search))
+        }
+
+    override fun pickAccountOrder(order: AccountOrder) {
+        mutable.update { it.copy(accounts = it.accounts.copy(order = order)) }
+        load(AdminTab.ACCOUNTS)
+    }
+
+    override fun loadMoreAccounts() = act { token -> readAccounts(token, more = true) }
+
+    /** Opens [id] with what it has played, and makes it the account a deletion would name. */
+    override fun openAccount(id: String) =
+        act { token ->
+            val detail = moderation.account(token, id)
+            mutable.update {
+                it.copy(accounts = it.accounts.copy(selected = detail, accountId = id, confirming = false, done = null))
+            }
+        }
+
+    override fun closeAccount() = mutable.update { it.copy(accounts = it.accounts.copy(selected = null)) }
+
+    override fun typeAccountId(id: String) =
+        mutable.update { it.copy(accounts = it.accounts.copy(accountId = id, confirming = false, done = null)) }
 
     override fun askToDelete() {
         if (mutable.value.accounts.accountId
@@ -211,7 +236,19 @@ class ModerationViewModel(
         mutable.update { it.copy(accounts = it.accounts.copy(confirming = false)) }
         act { token ->
             moderation.deleteAccount(token, id)
-            mutable.update { it.copy(accounts = AccountsState(done = "Deleted the account $id.")) }
+            mutable.update { state ->
+                val gone = state.accounts.players.count { it.id == id }
+                state.copy(
+                    accounts =
+                        state.accounts.copy(
+                            players = state.accounts.players.filter { it.id != id },
+                            total = (state.accounts.total - gone).coerceAtLeast(0),
+                            selected = state.accounts.selected?.takeIf { it.account.id != id },
+                            accountId = "",
+                            done = "Deleted the account $id.",
+                        ),
+                )
+            }
         }
     }
 
@@ -223,8 +260,29 @@ class ModerationViewModel(
             AdminTab.BANK -> mutable.value.bank.loaded
             AdminTab.REPORTS -> mutable.value.reports.loaded
             AdminTab.OVERVIEW -> mutable.value.overview != null
-            AdminTab.ACCOUNTS -> true
+            AdminTab.ACCOUNTS -> mutable.value.accounts.loaded
         }
+
+    /** The first page of the players at the order and search, or the next one after those shown. */
+    private suspend fun readAccounts(
+        token: AdminToken,
+        more: Boolean,
+    ) {
+        val accounts = mutable.value.accounts
+        val cursor = if (more) accounts.next ?: return else null
+        val page = moderation.accounts(token, accounts.order, accounts.search, cursor)
+        mutable.update { state ->
+            state.copy(
+                accounts =
+                    state.accounts.copy(
+                        loaded = true,
+                        players = if (more) state.accounts.players + page.accounts else page.accounts,
+                        total = page.total,
+                        next = page.next,
+                    ),
+            )
+        }
+    }
 
     private suspend fun readDrafts(token: AdminToken) {
         val page = moderation.questions(token, QuestionFilter(statuses = setOf(BankStatus.DRAFT)))
