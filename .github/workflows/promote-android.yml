@@ -22,12 +22,18 @@ on:
         type: choice
         options: ['0.2', '0.5', '1.0']
         default: '0.2'
+      when_ready:
+        description: If the track is not live yet (its first review pending), queue the promotion and retry every 3 h
+        type: boolean
+        default: false
 
 concurrency:
   group: promote-android
 
 permissions:
   contents: read
+  # A promotion queued for when the track is live is an issue play-queue.yml works through.
+  issues: write
 
 jobs:
   play:
@@ -42,14 +48,33 @@ jobs:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           ACTION: ${{ inputs.action }}
           FRACTION: ${{ inputs.fraction }}
+          WHEN_READY: ${{ inputs.when_ready }}
+          GH_TOKEN: ${{ github.token }}
         # pipefail: play.py's failure must fail the step, through its tee.
         run: |
           set -o pipefail
           pip install -q -r tools/play/requirements.txt
           play() { python3 tools/play/play.py "$@" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          # A promotion is pinned to the newest build on its source track now, so a queued one promotes what
+          # was asked for, not whatever is newest when the track goes live.
+          promote() {
+            local from=$1 to=$2 code status=0
+            code=$(python3 tools/play/play.py newest --track "$from")
+            play promote --from "$from" --to "$to" --fraction "$FRACTION" --code "$code" || status=$?
+            if [ "$status" -eq 3 ] && [ "$WHEN_READY" = true ]; then
+              gh label create play-queue --color FBCA04 --description "A Play promotion waiting for its track" \
+                -R "$GITHUB_REPOSITORY" --force > /dev/null
+              url=$(gh issue create -R "$GITHUB_REPOSITORY" --label play-queue \
+                --title "Promote $code $from → $to when the track is live" \
+                --body "$(printf 'play-queue.yml promotes this every 3 hours until Play takes it, then closes it.\n\nfrom: %s\nto: %s\ncode: %s\nfraction: %s\n' "$from" "$to" "$code" "$FRACTION")")
+              echo "Queued: $url" | tee -a "$GITHUB_STEP_SUMMARY"
+            elif [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
+          }
           case "$ACTION" in
-            'internal → early access') play promote --from internal --to beta --fraction "$FRACTION" ;;
-            'early access → production') play promote --from beta --to production --fraction "$FRACTION" ;;
+            'internal → early access') promote internal beta ;;
+            'early access → production') promote beta production ;;
             'production rollout share') play rollout --track production --fraction "$FRACTION" ;;
             'production halt') play halt --track production ;;
             'production resume') play resume --track production ;;

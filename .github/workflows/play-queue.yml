@@ -1,0 +1,59 @@
+# Promotions queued for when their track goes live (promote-android.yml with "when ready"): Play refuses a
+# release to a track whose first release is still in Google's review, so every 3 hours this tries each open
+# issue labelled play-queue that the workflows themselves opened, and closes it, with a comment GitHub Mobile
+# notifies of, once Play takes it.
+#
+# Secret: PLAY_SERVICE_ACCOUNT_JSON on the environment `play-queue`, which has no reviewers (a check every 3 h
+# cannot wait for a tap) and deploys from main alone; a key of its own, apart from `production`'s.
+name: Play queue
+
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: play-queue
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: play-queue
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Promote what is queued
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Only issues a workflow opened: anyone may open an issue in a public repository.
+          queued=$(gh issue list -R "$GITHUB_REPOSITORY" --label play-queue --state open --json number,author \
+            --jq '.[] | select(.author.is_bot and (.author.login | test("github-actions"))) | .number')
+          [ -n "$queued" ] || { echo "nothing queued"; exit 0; }
+          pip install -q -r tools/play/requirements.txt
+          for number in $queued; do
+            body=$(gh issue view "$number" -R "$GITHUB_REPOSITORY" --json body --jq .body)
+            field() { printf '%s\n' "$body" | sed -n "s/^$1: \([a-z0-9.]*\)$/\1/p" | head -1; }
+            from=$(field from); to=$(field to); code=$(field code); fraction=$(field fraction)
+            if [ -z "$from" ] || [ -z "$to" ] || [ -z "$code" ] || [ -z "$fraction" ]; then
+              echo "::warning::issue #$number names no promotion"; continue
+            fi
+            status=0
+            out=$(python3 tools/play/play.py promote --from "$from" --to "$to" --code "$code" --fraction "$fraction" 2>&1) || status=$?
+            echo "#$number: $out"
+            if [ "$status" -eq 0 ]; then
+              gh issue close "$number" -R "$GITHUB_REPOSITORY" --comment "@niktok1 done: $out"
+            elif [ "$status" -ne 3 ]; then
+              # Anything but "not live yet" is not tried again: it would fail every 3 hours.
+              gh label create play-queue-failed --color D93F0B --description "A queued Play promotion Play refused" \
+                -R "$GITHUB_REPOSITORY" --force > /dev/null
+              gh issue comment "$number" -R "$GITHUB_REPOSITORY" --body "Play refused it, so it is no longer tried: $(printf '%s' "$out" | tail -3)"
+              gh issue edit "$number" -R "$GITHUB_REPOSITORY" --remove-label play-queue --add-label play-queue-failed
+            fi
+          done

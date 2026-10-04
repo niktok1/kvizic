@@ -238,6 +238,17 @@ FIREBASE_KEY=~/Downloads/<new-key>.json FIREBASE_APP_ID=<app-id> tools/release/s
    it (allow installs from it), and every green `main` arrives as a notification with Install. The dev app
    („Kvizic Dev“) sits beside the Play one.
 
+**G. The promotion queue** (2026-10-04; Mac, 5 min), for a promotion that waits until its track is live:
+1. GitHub → Settings → **Environments → New environment** `play-queue` → no reviewers → **Deployment branches
+   and tags: Selected branches and tags → Add deployment branch or tag rule** `main` → save.
+2. Google Cloud → IAM & Admin → Service accounts → `kvizic-play-release` → **Keys → Add key → JSON** (a second
+   key, so the 3-hourly check never needs `production`'s approval).
+3. `gh secret set PLAY_SERVICE_ACCOUNT_JSON --env play-queue -R niktok1/kvizic < ~/Downloads/<key>.json`, then
+   delete the file.
+
+Then Promote Android with **when ready** ticked queues what Play refuses as an issue; it closes, with a
+notification, once Play takes it.
+
 ### Using it from the phone
 
 - **Prod**: a notification „Review deployments“ → **Approve and deploy**. To roll back: Actions → **Deploy

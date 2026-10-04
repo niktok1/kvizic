@@ -4,14 +4,16 @@ holding the service account's key. The key is the JSON in PLAY_SERVICE_ACCOUNT_J
 environment and never written anywhere. Every change is one edit, committed at the end or not at all.
 
     play.py upload BUNDLE --track internal [--notes-sr TEXT] [--notes-en TEXT]
-    play.py promote --from internal --to beta|production [--fraction 0.2]
+    play.py promote --from internal --to beta|production [--fraction 0.2] [--code 10002]
     play.py rollout --track production --fraction 0.5     a staged release's share; 1.0 completes it
     play.py halt --track production                       stops a staged release reaching more players
     play.py resume --track production                     starts a halted one again, at its share
     play.py status
 
 Tracks: internal (Internal testing), beta (Open testing, the early access), production. Promoting copies
-the release on --from's track, its version codes and notes; a fraction under 1.0 stages it.
+the release on --from's track (the one holding --code, if named), its version codes and notes; a fraction
+under 1.0 stages it. A promotion Play refuses because the track is not live yet (its first release still in
+review, so it targets no countries) exits with NOT_LIVE (3), which the queue (play-queue.yml) retries.
 """
 import argparse
 import json
@@ -20,9 +22,13 @@ import sys
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
 PACKAGE = "io.ntole.kvizic"
+
+# The exit status of a promotion to a track that is not live yet: try again later, nothing is wrong.
+NOT_LIVE = 3
 SCOPES = ["https://www.googleapis.com/auth/androidpublisher"]
 
 
@@ -50,7 +56,13 @@ class Edit:
         self.edits.tracks().update(packageName=PACKAGE, editId=self.id, track=name, body=body).execute()
 
     def commit(self):
-        self.edits.commit(packageName=PACKAGE, editId=self.id).execute()
+        try:
+            self.edits.commit(packageName=PACKAGE, editId=self.id).execute()
+        except HttpError as refused:
+            if "targeting no countries" in str(refused):
+                print("the track is not live yet (its first release is still in review): nothing changed")
+                sys.exit(NOT_LIVE)
+            raise
 
 
 def notes(sr, en):
@@ -96,9 +108,18 @@ def upload(args):
     print(f"version code {code} is on the {args.track} track")
 
 
+def holding(track, code):
+    """The release on [track] whose version codes include [code]."""
+    for release in track.get("releases", []):
+        if code in release.get("versionCodes", []):
+            return release
+    sys.exit(f"the {track['track']} track has no release of version code {code}")
+
+
 def promote(args):
     edit = Edit(publisher())
-    source = latest(edit.track(getattr(args, "from")))
+    track = edit.track(getattr(args, "from"))
+    source = holding(track, str(args.code)) if args.code else latest(track)
     release = staged(
         {key: source[key] for key in ("name", "versionCodes", "releaseNotes") if key in source},
         args.fraction,
@@ -132,6 +153,15 @@ def describe(release):
     fraction = release.get("userFraction")
     share = f" to {fraction:.0%} of players" if fraction else ""
     return f"{', '.join(release.get('versionCodes', []))} {release.get('status')}{share}"
+
+
+def newest(args):
+    """Prints the newest version code on a track, for the queue to pin what it was asked to promote."""
+    edit = Edit(publisher())
+    try:
+        print(max(int(code) for code in latest(edit.track(args.track)).get("versionCodes", [])))
+    finally:
+        edit.edits.delete(packageName=PACKAGE, editId=edit.id).execute()
 
 
 def status(_):
@@ -173,6 +203,7 @@ def main():
     pro.add_argument("--from", required=True, choices=tracks)
     pro.add_argument("--to", required=True, choices=tracks)
     pro.add_argument("--fraction", type=fraction, default=1.0)
+    pro.add_argument("--code", type=int, help="the version code to promote; the newest when left out")
     pro.set_defaults(run=promote)
 
     roll = commands.add_parser("rollout")
@@ -186,6 +217,10 @@ def main():
         sub.set_defaults(run=lambda args, verb=verb: change(args, verb))
 
     commands.add_parser("status").set_defaults(run=status)
+
+    new = commands.add_parser("newest")
+    new.add_argument("--track", required=True, choices=tracks)
+    new.set_defaults(run=newest)
 
     args = parser.parse_args()
     args.run(args)
