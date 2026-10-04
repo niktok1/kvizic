@@ -27,9 +27,9 @@ import io.ntole.kvizic.design.skin.SkinSpace
 
 /**
  * A member's avatar: the animal of [avatarId] (a silhouette for one this build has not drawn), framed in
- * the colour of their [seat], and, for the room's [host], the host's microphone on a badge. [order] marks
+ * the colour of their [seat], and, for the room's [host], a crown above its head. [order] marks
  * the member's place among the first to answer right, on a badge of its own. [level] is the member's level,
- * on a badge at the bottom start, where the host's is at the end; the room's seats and the podium show it, a
+ * on a badge at the bottom end, in the skin's secondary colours; the room's seats and the podium show it, a
  * line of a board is too small to. [dimmed] greys it out: a member who has not answered yet.
  * [contentDescription] names the member to a screen reader.
  */
@@ -69,17 +69,15 @@ fun Avatar(
         )
         Spacer(Modifier.matchParentSize().drawBehind { with(part) { drawOver(seatColor, dimmed) } })
         if (host) {
-            val badge = whole * skin.space.avatar.badgeFraction
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(badge)
-                        .drawBehind { with(part) { drawHostBadge() } },
-                contentAlignment = Alignment.Center,
-            ) {
-                KvizicIcon(KvizicIcons.Mic, contentDescription = null, tint = part.hostIcon, size = badge * BADGE_ICON)
-            }
+            // A crown worn above the head, over the avatar's top edge, so nothing crowds the face.
+            val crown = whole * CROWN_FRACTION
+            KvizicIcon(
+                KvizicIcons.Crown,
+                contentDescription = null,
+                tint = part.hostCrown,
+                size = crown,
+                modifier = Modifier.align(Alignment.TopCenter).offset(y = -crown * CROWN_LIFT),
+            )
         }
         if (level != null) {
             // The same badge as the host's, wider for two digits, with a number on it.
@@ -88,15 +86,15 @@ fun Avatar(
             Box(
                 modifier =
                     Modifier
-                        .align(Alignment.BottomStart)
+                        .align(Alignment.BottomEnd)
                         .size(across)
-                        .drawBehind { with(part) { drawHostBadge() } },
+                        .drawBehind { with(part) { drawLevelBadge() } },
                 contentAlignment = Alignment.Center,
             ) {
                 KvizicText(
                     minOf(level, LEVEL_SHOWN_LEAST).toString(),
                     style = KvizicTheme.type.badge,
-                    color = part.hostIcon,
+                    color = part.levelText,
                     maxLines = 1,
                 )
             }
@@ -203,8 +201,9 @@ internal fun SkinSpace.sizeOf(size: AvatarSize): Dp =
 private val Greyed = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
 private const val DIMMED_ALPHA = 0.55f
 
-/** The microphone's share of its badge. */
-private const val BADGE_ICON = 0.68f
+/** The host's crown: its size as a share of the avatar's, and how much of it stands above the avatar's top edge. */
+private const val CROWN_FRACTION = 0.42f
+private const val CROWN_LIFT = 0.7f
 
 /** A level's badge is wider from this number, and shows no more than [LEVEL_SHOWN_LEAST]: two digits are all it holds. */
 private const val TWO_DIGITS = 10

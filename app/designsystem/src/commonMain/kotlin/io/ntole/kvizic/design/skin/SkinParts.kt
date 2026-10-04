@@ -192,10 +192,18 @@ interface AvatarPart {
         dimmed: Boolean,
     )
 
-    /** The host's badge, over this scope, under the microphone drawn in [hostIcon]. */
+    /** The badge of an order, over this scope, under the number drawn in [hostIcon]. */
     fun DrawScope.drawHostBadge()
 
     val hostIcon: Color
+
+    /** The level's badge, over this scope, in the skin's secondary colours, under the number drawn in [levelText]. */
+    fun DrawScope.drawLevelBadge()
+
+    val levelText: Color
+
+    /** The host's crown, worn above the avatar's head. */
+    val hostCrown: Color
 
     /** How far in from the avatar's edge the animal is drawn, inside the frame, at any size. */
     val artInset: Dp

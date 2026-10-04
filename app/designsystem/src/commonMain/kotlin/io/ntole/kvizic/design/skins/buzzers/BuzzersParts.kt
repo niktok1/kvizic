@@ -230,6 +230,8 @@ internal object BuzzersParts : SkinParts {
             private val ink = 1.5.dp
 
             override val hostIcon: Color = Ink
+            override val levelText: Color = colors.onPlate
+            override val hostCrown: Color = Amber
             override val artInset: Dp = space.avatar.ring + ink
 
             override fun DrawScope.drawUnder(
@@ -264,6 +266,12 @@ internal object BuzzersParts : SkinParts {
                 val radius = size.minDimension / 2
                 drawCircle(Ink, radius)
                 drawCircle(Amber, radius - ink.toPx())
+            }
+
+            override fun DrawScope.drawLevelBadge() {
+                val radius = size.minDimension / 2
+                drawCircle(Ink, radius)
+                drawCircle(colors.plate, radius - ink.toPx())
             }
         }
 

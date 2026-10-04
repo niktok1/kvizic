@@ -331,6 +331,8 @@ internal object NotebookParts : SkinParts {
     override val avatar: AvatarPart =
         object : AvatarPart {
             override val hostIcon: Color = Ballpoint
+            override val levelText: Color = colors.onPlate
+            override val hostCrown: Color = Ballpoint
             override val artInset: Dp = space.avatar.ring + space.xxs
 
             override fun DrawScope.drawUnder(
@@ -354,6 +356,16 @@ internal object NotebookParts : SkinParts {
             override fun DrawScope.drawHostBadge() {
                 val radius = size.minDimension / 2
                 drawPath(circleWobble(radius - space.strokeThin.toPx(), 17), StickyNote)
+                drawPath(
+                    circleWobble(radius - space.strokeThin.toPx(), 17),
+                    Ballpoint,
+                    style = Stroke(space.strokeThin.toPx()),
+                )
+            }
+
+            override fun DrawScope.drawLevelBadge() {
+                val radius = size.minDimension / 2
+                drawPath(circleWobble(radius - space.strokeThin.toPx(), 17), colors.plate)
                 drawPath(
                     circleWobble(radius - space.strokeThin.toPx(), 17),
                     Ballpoint,

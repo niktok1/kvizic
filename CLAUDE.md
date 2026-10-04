@@ -261,7 +261,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
   them until they answer; no words, no count.
 - **The lobby counts in no words** (the owner, 2026-10-01): the seats show who is in and how many more fit,
-  an empty seat a person's outline, the host by the microphone on the avatar, the player's own seat lit in
+  an empty seat a person's outline, the host by a crown above the avatar's head, the player's own seat lit in
   the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
@@ -275,7 +275,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   Play Games hands it; the game's sign stands in the middle of the room the buttons leave, its name shrinking to stay inside the
   sign's panel where the sign is narrow (`LogoSizes.wordInset`; Nunito is wide), with no art (the owner chose
   it over the icon's bulb ring, an animal cast and a question card). Where a level is shown on an avatar it is a
-  badge at the bottom start, where the host's microphone is at the end; a line of a board is too small for it.
+  badge at the bottom end in the skin's secondary colours (never the accent), the host's crown standing above the head; a line of a board is too small for it.
 - **Presence on Home and the public list** (the owner, 2026-10-02): no sentence but a small sign sunk into the page
   (`PresenceStrip`): a person and the players online, a magnifier and those searching, each count on
   flaps; it stays line-sized, being only nice to know, and a screen reader is told the sentence. On Home it stands
