@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.plugins
 
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.head
 import io.ktor.http.HttpStatusCode
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.config.ServerConfig
@@ -40,6 +41,13 @@ class HealthTest {
         }
         runTestServer("health-no-commit") { client, _ ->
             assertEquals(setOf("status"), client.get(KvizicApi.Paths.HEALTH).body<JsonObject>().keys)
+        }
+    }
+
+    @Test
+    fun `health answers a HEAD probe, which uptime monitors send`() {
+        runTestServer("health-head") { client, _ ->
+            assertEquals(HttpStatusCode.OK, client.head(KvizicApi.Paths.HEALTH).status)
         }
     }
 }

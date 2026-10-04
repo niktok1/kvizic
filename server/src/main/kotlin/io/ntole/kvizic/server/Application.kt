@@ -2,6 +2,7 @@ package io.ntole.kvizic.server
 
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.cio.CIO
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopPreparing
 import io.ktor.server.application.ApplicationStopped
@@ -10,6 +11,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
+import io.ktor.server.routing.head
 import io.ktor.server.routing.routing
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.admin.AdminToken
@@ -140,6 +142,8 @@ fun Application.kvizicModule(
             call.respond(listOfNotNull("status" to "ok", config.commit?.let { "commit" to it }).toMap())
         }
 
+        // Uptime monitors probe with HEAD (UptimeRobot's free plan always does); 405 read as down.
+        head(KvizicApi.Paths.HEALTH) { call.respond(HttpStatusCode.OK) }
         authRoutes(db, tokens, config, sessionEnded = { playerId, sessionId -> sessionEnded(playerId, sessionId) })
         playGamesRoutes(db, tokens, config, playGames)
         playerRoutes(db, playerDeleted = { playerId -> sessionEnded(playerId, null) })
