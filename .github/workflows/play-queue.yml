@@ -36,6 +36,7 @@ jobs:
           queued=$(gh issue list -R "$GITHUB_REPOSITORY" --label play-queue --state open --json number,author \
             --jq '.[] | select(.author.is_bot and (.author.login | test("github-actions"))) | .number')
           [ -n "$queued" ] || { echo "nothing queued"; exit 0; }
+          [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ] || { echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not set on play-queue"; exit 1; }
           pip install -q -r tools/play/requirements.txt
           for number in $queued; do
             body=$(gh issue view "$number" -R "$GITHUB_REPOSITORY" --json body --jq .body)
