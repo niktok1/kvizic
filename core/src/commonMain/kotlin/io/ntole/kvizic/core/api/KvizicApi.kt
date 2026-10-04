@@ -172,6 +172,12 @@ public object KvizicApi {
 
         /** An `AccountSort` name, on [Paths.ADMIN_ACCOUNTS]. */
         public const val SORT: String = "sort"
+
+        /** `true` to list only players who have answered a question, on [Paths.ADMIN_ACCOUNTS]. */
+        public const val ANSWERED: String = "answered"
+
+        /** `true` to list only players signed in with Play Games, on [Paths.ADMIN_ACCOUNTS]. */
+        public const val PLAY_GAMES: String = "playGames"
     }
 
     public object Limits {

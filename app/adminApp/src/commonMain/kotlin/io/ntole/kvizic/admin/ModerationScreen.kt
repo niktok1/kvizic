@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
@@ -561,9 +564,10 @@ private fun Overview(
 }
 
 /**
- * Every player: searched by a name's part or an id's start, ordered four ways, read a page at a time; a row
- * opens the account with what it has played and its deletion, and below stands the way to delete one by an
- * id typed from an email.
+ * Every player: searched by a name's part or an id's start, ordered four ways, kept to those who answered or
+ * signed in with Play Games, in one list that reads its next page as the end comes into view; a row opens the
+ * account with what it has played and its deletion, and at the end stands the way to delete one by an id
+ * typed from an email.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -575,73 +579,107 @@ private fun Accounts(
     val type = KvizicTheme.type
     val accounts = state.accounts
     val now = remember(accounts.players, accounts.selected) { Clock.System.now().toEpochMilliseconds() }
-    Column(Modifier.widthIn(max = space.contentWidth), verticalArrangement = Arrangement.spacedBy(space.sm)) {
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(space.sm)) {
-            TextInput(
-                value = accounts.search,
-                onValueChange = actions::typeAccountSearch,
-                label = "Search a name or the start of an id",
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { actions.load(AdminTab.ACCOUNTS) }),
-            )
-            StageButton(
-                "Search",
-                onClick = { actions.load(AdminTab.ACCOUNTS) },
-                size = ButtonSize.SMALL,
-                enabled = !state.busy,
-            )
+    val list = rememberLazyListState()
+    // Reads on as the last rows come into view: the end of what is shown is never far off a scroll.
+    val nearEnd by remember {
+        derivedStateOf {
+            val last =
+                list.layoutInfo.visibleItemsInfo
+                    .lastOrNull()
+                    ?.index ?: 0
+            last >= list.layoutInfo.totalItemsCount - READ_AHEAD
         }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(space.xs),
-            verticalArrangement = Arrangement.spacedBy(space.xs),
-        ) {
-            AccountOrder.entries.forEach { order ->
-                Chip(order.word(), selected = order == accounts.order, onClick = { actions.pickAccountOrder(order) })
+    }
+    LaunchedEffect(nearEnd, accounts.next, state.busy) {
+        if (nearEnd && accounts.next != null && !state.busy) actions.loadMoreAccounts()
+    }
+    LazyColumn(
+        modifier = Modifier.widthIn(max = space.contentWidth).fillMaxSize(),
+        state = list,
+        verticalArrangement = Arrangement.spacedBy(space.sm),
+    ) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(space.sm)) {
+                    TextInput(
+                        value = accounts.search,
+                        onValueChange = actions::typeAccountSearch,
+                        label = "Search a name or the start of an id",
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { actions.load(AdminTab.ACCOUNTS) }),
+                    )
+                    StageButton(
+                        "Search",
+                        onClick = { actions.load(AdminTab.ACCOUNTS) },
+                        size = ButtonSize.SMALL,
+                        enabled = !state.busy,
+                    )
+                }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs),
+                    verticalArrangement = Arrangement.spacedBy(space.xs),
+                ) {
+                    AccountOrder.entries.forEach { order ->
+                        Chip(
+                            order.word(),
+                            selected = order == accounts.order,
+                            onClick = { actions.pickAccountOrder(order) },
+                        )
+                    }
+                    Chip("Has answered", selected = accounts.answeredOnly, onClick = actions::toggleAnsweredOnly)
+                    Chip("Play Games", selected = accounts.playGamesOnly, onClick = actions::togglePlayGamesOnly)
+                }
+                if (accounts.loaded) {
+                    KvizicText(
+                        "${accounts.players.size} of ${accounts.total} players",
+                        style = type.label,
+                        color = KvizicTheme.colors.onPageMuted,
+                    )
+                }
+                accounts.selected?.let { AccountDetailCard(it, now, state, actions) }
             }
         }
-        if (accounts.loaded) {
-            KvizicText(
-                "${accounts.total} players",
-                style = type.label,
-                color = KvizicTheme.colors.onPageMuted,
-            )
+        items(accounts.players, key = { it.id }) { player ->
+            AccountRow(player, now, onOpen = { actions.openAccount(player.id) })
         }
-        accounts.selected?.let { AccountDetailCard(it, now, state, actions) }
-        accounts.players.forEach { player -> AccountRow(player, now, onOpen = { actions.openAccount(player.id) }) }
-        when {
-            accounts.next != null -> {
-                StageButton(
-                    "Load more",
-                    onClick = actions::loadMoreAccounts,
-                    kind = ButtonKind.SECONDARY,
-                    enabled = !state.busy,
-                )
-            }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
+                when {
+                    accounts.next != null -> {
+                        StageButton(
+                            "Load more",
+                            onClick = actions::loadMoreAccounts,
+                            kind = ButtonKind.SECONDARY,
+                            enabled = !state.busy,
+                        )
+                    }
 
-            accounts.loaded && accounts.players.isEmpty() -> {
-                KvizicText("Nobody matches.", style = type.body, color = KvizicTheme.colors.onPageMuted)
+                    accounts.loaded && accounts.players.isEmpty() -> {
+                        KvizicText("Nobody matches.", style = type.body, color = KvizicTheme.colors.onPageMuted)
+                    }
+                }
+                KvizicText(
+                    "A player asks by email to have their account deleted, naming the account id the game's " +
+                        "About screen shows. Nothing proves the email is theirs: the id is all it names.",
+                    style = type.body,
+                    color = KvizicTheme.colors.onPageMuted,
+                )
+                TextInput(
+                    value = accounts.accountId,
+                    onValueChange = actions::typeAccountId,
+                    label = "Account id",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                StageButton(
+                    "Delete account…",
+                    onClick = actions::askToDelete,
+                    kind = ButtonKind.SECONDARY,
+                    enabled = !state.busy && accounts.accountId.isNotBlank(),
+                )
+                accounts.done?.let { KvizicText(it, style = type.bodyStrong, color = KvizicTheme.colors.gain) }
             }
         }
-        KvizicText(
-            "A player asks by email to have their account deleted, naming the account id the game's About " +
-                "screen shows. Nothing proves the email is theirs: the id is all it names.",
-            style = type.body,
-            color = KvizicTheme.colors.onPageMuted,
-        )
-        TextInput(
-            value = accounts.accountId,
-            onValueChange = actions::typeAccountId,
-            label = "Account id",
-            modifier = Modifier.fillMaxWidth(),
-        )
-        StageButton(
-            "Delete account…",
-            onClick = actions::askToDelete,
-            kind = ButtonKind.SECONDARY,
-            enabled = !state.busy && accounts.accountId.isNotBlank(),
-        )
-        accounts.done?.let { KvizicText(it, style = type.bodyStrong, color = KvizicTheme.colors.gain) }
     }
     if (accounts.confirming) {
         StageDialog(
@@ -654,3 +692,6 @@ private fun Accounts(
         }
     }
 }
+
+/** How many rows from the end of the list the next page is read at. */
+private const val READ_AHEAD = 6

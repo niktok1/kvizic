@@ -9,6 +9,16 @@ public enum class AccountOrder {
 }
 
 /**
+ * Which players the list leaves out: [answeredOnly] those who never answered a question (the guests a smoke
+ * test or a first launch leaves behind), [playGamesOnly] those not signed in with Play Games.
+ */
+public data class AccountFilter(
+    public val search: String = "",
+    public val answeredOnly: Boolean = false,
+    public val playGamesOnly: Boolean = false,
+)
+
+/**
  * A player as the moderator reads them. [lastSeenAt] is null for one not seen since the server began noting
  * it; times are epoch milliseconds. [id] is the account id a deletion by email names.
  */

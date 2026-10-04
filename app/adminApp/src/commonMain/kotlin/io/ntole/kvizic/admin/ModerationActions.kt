@@ -78,6 +78,10 @@ interface ModerationActions {
 
     fun pickAccountOrder(order: AccountOrder) {}
 
+    fun toggleAnsweredOnly() {}
+
+    fun togglePlayGamesOnly() {}
+
     fun loadMoreAccounts() {}
 
     fun openAccount(id: String) {}

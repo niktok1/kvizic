@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.moderation.AccountFilter
 import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.AdminToken
 import io.ntole.kvizic.core.domain.moderation.BankStatus
@@ -202,6 +203,16 @@ class ModerationViewModel(
         load(AdminTab.ACCOUNTS)
     }
 
+    override fun toggleAnsweredOnly() {
+        mutable.update { it.copy(accounts = it.accounts.copy(answeredOnly = !it.accounts.answeredOnly)) }
+        load(AdminTab.ACCOUNTS)
+    }
+
+    override fun togglePlayGamesOnly() {
+        mutable.update { it.copy(accounts = it.accounts.copy(playGamesOnly = !it.accounts.playGamesOnly)) }
+        load(AdminTab.ACCOUNTS)
+    }
+
     override fun loadMoreAccounts() = act { token -> readAccounts(token, more = true) }
 
     /** Opens [id] with what it has played, and makes it the account a deletion would name. */
@@ -270,7 +281,13 @@ class ModerationViewModel(
     ) {
         val accounts = mutable.value.accounts
         val cursor = if (more) accounts.next ?: return else null
-        val page = moderation.accounts(token, accounts.order, accounts.search, cursor)
+        val page =
+            moderation.accounts(
+                token,
+                accounts.order,
+                AccountFilter(accounts.search, accounts.answeredOnly, accounts.playGamesOnly),
+                cursor,
+            )
         mutable.update { state ->
             state.copy(
                 accounts =

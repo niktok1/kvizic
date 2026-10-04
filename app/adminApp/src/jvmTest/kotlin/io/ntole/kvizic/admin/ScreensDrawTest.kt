@@ -194,9 +194,15 @@ class ScreensDrawTest {
         listOf("Level 7", "Play Games", "12 games, 4 won · 71% right of 140 answers").forEach {
             assertTrue(it in texts, "no \"$it\": $texts")
         }
-        assertTrue("1 players" in texts, texts.toString())
+        assertTrue("1 of 1 players" in texts, texts.toString())
         assertTrue("Лукави Лисац" in texts, texts.toString())
-        listOf("Last seen", "Newest", "Level", "Games").forEach { assertTrue(it in texts, "no \"$it\"") }
+        listOf(
+            "Last seen",
+            "Newest",
+            "Level",
+            "Games",
+            "Has answered",
+        ).forEach { assertTrue(it in texts, "no \"$it\"") }
     }
 
     @Test

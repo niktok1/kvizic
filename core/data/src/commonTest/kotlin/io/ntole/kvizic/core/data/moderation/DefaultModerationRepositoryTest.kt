@@ -15,6 +15,7 @@ import io.ntole.kvizic.core.data.storeHolding
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.moderation.AccountFilter
 import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.AccountTopicStat
 import io.ntole.kvizic.core.domain.moderation.AdminToken
@@ -337,12 +338,20 @@ class DefaultModerationRepositoryTest {
                 )
             }
 
-            val page = repository.accounts(token, AccountOrder.LEVEL, search = "  лис ", cursor = "0")
+            val page =
+                repository.accounts(
+                    token,
+                    AccountOrder.LEVEL,
+                    AccountFilter(search = "  лис ", answeredOnly = true),
+                    cursor = "0",
+                )
 
             val parameters = sent.single().url.parameters
             assertEquals(KvizicApi.Paths.ADMIN_ACCOUNTS, sent.single().url.encodedPath)
             assertEquals("LEVEL", parameters[KvizicApi.Query.SORT])
             assertEquals("лис", parameters[KvizicApi.Query.SEARCH])
+            assertEquals("true", parameters[KvizicApi.Query.ANSWERED])
+            assertNull(parameters[KvizicApi.Query.PLAY_GAMES])
             assertEquals("0", parameters[KvizicApi.Query.CURSOR])
             assertEquals(KvizicApi.Limits.MAX_PAGE_SIZE.toString(), parameters[KvizicApi.Query.LIMIT])
             assertEquals("50", page.next)

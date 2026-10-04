@@ -59,11 +59,11 @@ public interface ModerationRepository {
         outcome: ReportOutcome,
     )
 
-    /** A page of the players at [order] and [search] (a name's part or an id's start), from [cursor], none first. */
+    /** A page of the players at [order] and [filter] (its search a name's part or an id's start), from [cursor]. */
     public suspend fun accounts(
         token: AdminToken,
         order: AccountOrder,
-        search: String = "",
+        filter: AccountFilter = AccountFilter(),
         cursor: String? = null,
     ): AccountPage
 

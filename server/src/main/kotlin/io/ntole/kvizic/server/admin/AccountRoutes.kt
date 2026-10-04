@@ -1,5 +1,6 @@
 package io.ntole.kvizic.server.admin
 
+import io.ktor.http.Parameters
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -29,7 +30,10 @@ import org.jetbrains.exposed.v1.core.LikePattern
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.exists
+import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
@@ -60,7 +64,9 @@ fun Route.accountAdminRoutes(
             } ?: 0
         val search = parameters[KvizicApi.Query.SEARCH]?.take(MAX_SEARCH_LENGTH)
         val limit = parameters.pageLimit()
-        call.respond(db.query { AccountAdmin.page(sort, search, offset, limit) })
+        val answered = parameters.flag(KvizicApi.Query.ANSWERED)
+        val playGames = parameters.flag(KvizicApi.Query.PLAY_GAMES)
+        call.respond(db.query { AccountAdmin.page(sort, search, answered, playGames, offset, limit) })
     }
 
     get(KvizicApi.Paths.ADMIN_ACCOUNT) {
@@ -79,14 +85,21 @@ internal object AccountAdmin {
     fun page(
         sort: AccountSort,
         search: String?,
+        answeredOnly: Boolean,
+        playGamesOnly: Boolean,
         offset: Int,
         limit: Int,
     ): AdminAccountPageDto {
         var condition: Op<Boolean> = Op.TRUE
+        if (answeredOnly) condition = condition and (Profiles.answersGiven greater 0)
+        if (playGamesOnly) {
+            condition = condition and
+                exists(Identities.select(Identities.playerId).where { Identities.playerId eq Players.id })
+        }
         search?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let { term ->
             val pattern = LikePattern("%", escapeChar = '\\') + LikePattern.ofLiteral(term) + "%"
             val idPattern = LikePattern.ofLiteral(term) + "%"
-            condition = (Players.displayName.lowerCase() like pattern) or (Players.id like idPattern)
+            condition = condition and ((Players.displayName.lowerCase() like pattern) or (Players.id like idPattern))
         }
         val joined = Players.join(Profiles, JoinType.INNER, Players.id, Profiles.playerId)
         val total =
@@ -201,5 +214,8 @@ internal object AccountAdmin {
         )
     }
 }
+
+/** A switch that is on only when it says `true`; anything else, or nothing, is off. */
+private fun Parameters.flag(name: String): Boolean = this[name] == "true"
 
 private const val MAX_SEARCH_LENGTH = 100

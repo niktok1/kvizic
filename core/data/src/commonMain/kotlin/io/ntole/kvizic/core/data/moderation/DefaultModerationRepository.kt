@@ -3,6 +3,7 @@ package io.ntole.kvizic.core.data.moderation
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.data.mapper.runApi
 import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountFilter
 import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.AccountPage
 import io.ntole.kvizic.core.domain.moderation.AdminToken
@@ -88,14 +89,16 @@ public class DefaultModerationRepository(
     override suspend fun accounts(
         token: AdminToken,
         order: AccountOrder,
-        search: String,
+        filter: AccountFilter,
         cursor: String?,
     ): AccountPage =
         runApi {
             api.accounts(
                 token.value,
                 sort = order.toWire(),
-                search = search.trim().takeIf { it.isNotEmpty() },
+                search = filter.search.trim().takeIf { it.isNotEmpty() },
+                answeredOnly = filter.answeredOnly,
+                playGamesOnly = filter.playGamesOnly,
                 cursor = cursor,
                 limit = PAGE_SIZE,
             )

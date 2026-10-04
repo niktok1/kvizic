@@ -179,7 +179,8 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   (ready ones a tap away), E edits, J/K move; the bank filters and pages, retires and restores; reports are
   marked fixed, dismissed or retired; Overview counts the bank and the live games; Accounts lists every player
   (`GET /v1/admin/accounts`, by offset, searched by a name's part or an id's start, ordered by last seen, newest,
-  level or games) and opens one with its topics and last games (`/accounts/{id}`), and deletes one by its id,
+  level or games, and kept by two chips to players who **have answered** or are on **Play Games**, which leaves out
+  the guests a smoke test or a first launch makes: nothing else marks them; the screen reads on as the end nears) and opens one with its topics and last games (`/accounts/{id}`), and deletes one by its id,
   opened or typed from an email (the owner, 2026-10-04). A player's **last seen** is `players.last_seen_at` (V10),
   noted at a guest's mint, a refresh, a Play Games sign-in and a seat taken, at most once in five minutes
   (`PlayerStore.touch`, one compare-and-set `UPDATE`); null before V10, so the list shows the creation, said so.

@@ -487,6 +487,44 @@ class ModerationViewModelTest {
         }
 
     @Test
+    fun `the two switches keep the list to players who answered or signed in with Play Games`() =
+        test {
+            bank.players +=
+                listOf(
+                    player("p1", "Празан"),
+                    player("p2", "Одговарао").copy(answersGiven = 5),
+                    player("p3", "Повезан").copy(answersGiven = 5, playGamesLinked = true),
+                )
+            unlocked()
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+            assertEquals(3, viewModel.state.value.accounts.total)
+
+            viewModel.toggleAnsweredOnly()
+            advanceUntilIdle()
+            assertEquals(
+                setOf("p2", "p3"),
+                viewModel.state.value.accounts.players
+                    .map { it.id }
+                    .toSet(),
+            )
+            assertTrue(bank.calls.last().endsWith("answered"))
+
+            viewModel.togglePlayGamesOnly()
+            advanceUntilIdle()
+            assertEquals(
+                listOf("p3"),
+                viewModel.state.value.accounts.players
+                    .map { it.id },
+            )
+
+            viewModel.toggleAnsweredOnly()
+            viewModel.togglePlayGamesOnly()
+            advanceUntilIdle()
+            assertEquals(3, viewModel.state.value.accounts.total)
+        }
+
+    @Test
     fun `opening a player reads them whole and a deletion then names them and takes them out of the list`() =
         test {
             bank.players += listOf(player("p1", "Један"), player("p2", "Два"))

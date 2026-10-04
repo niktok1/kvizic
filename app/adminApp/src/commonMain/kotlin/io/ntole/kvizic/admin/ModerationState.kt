@@ -92,6 +92,8 @@ data class AccountsState(
     val loaded: Boolean = false,
     val order: AccountOrder = AccountOrder.LAST_SEEN,
     val search: String = "",
+    val answeredOnly: Boolean = false,
+    val playGamesOnly: Boolean = false,
     val players: List<AccountSummary> = emptyList(),
     val total: Int = 0,
     val next: String? = null,

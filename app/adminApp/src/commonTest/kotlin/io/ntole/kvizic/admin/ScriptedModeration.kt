@@ -3,6 +3,7 @@ package io.ntole.kvizic.admin
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.moderation.AccountDetail
+import io.ntole.kvizic.core.domain.moderation.AccountFilter
 import io.ntole.kvizic.core.domain.moderation.AccountGame
 import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.AccountPage
@@ -145,13 +146,19 @@ internal class ScriptedModeration : ModerationRepository {
     override suspend fun accounts(
         token: AdminToken,
         order: AccountOrder,
-        search: String,
+        filter: AccountFilter,
         cursor: String?,
     ): AccountPage {
-        call(token, "accounts $order $search $cursor")
+        val search = filter.search
+        call(
+            token,
+            "accounts $order $search $cursor${if (filter.answeredOnly) " answered" else ""}${if (filter.playGamesOnly) " linked" else ""}",
+        )
         val matching =
             players
                 .filter { search.isBlank() || search.lowercase() in it.name.lowercase() || it.id.startsWith(search) }
+                .filter { !filter.answeredOnly || it.answersGiven > 0 }
+                .filter { !filter.playGamesOnly || it.playGamesLinked }
                 .sortedByDescending {
                     when (order) {
                         AccountOrder.LAST_SEEN -> it.lastActiveAt

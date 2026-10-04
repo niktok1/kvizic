@@ -98,11 +98,13 @@ public class ModerationApi(
         client.post(KvizicApi.Paths.ADMIN_REPORT_RESOLUTIONS) { json(token, request) }
     }
 
-    /** A page of the players, most first at [sort], matching [search] when given. */
+    /** A page of the players, most first at [sort], matching [search] when given and the two switches that are on. */
     public suspend fun accounts(
         token: String,
         sort: AccountSort,
         search: String?,
+        answeredOnly: Boolean,
+        playGamesOnly: Boolean,
         cursor: String?,
         limit: Int,
     ): AdminAccountPageDto =
@@ -111,6 +113,8 @@ public class ModerationApi(
                 admin(token)
                 parameter(KvizicApi.Query.SORT, sort.name)
                 search?.let { parameter(KvizicApi.Query.SEARCH, it) }
+                if (answeredOnly) parameter(KvizicApi.Query.ANSWERED, true)
+                if (playGamesOnly) parameter(KvizicApi.Query.PLAY_GAMES, true)
                 cursor?.let { parameter(KvizicApi.Query.CURSOR, it) }
                 parameter(KvizicApi.Query.LIMIT, limit)
             }.body()

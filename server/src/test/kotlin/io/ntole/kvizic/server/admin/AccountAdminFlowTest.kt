@@ -12,8 +12,16 @@ import io.ntole.kvizic.core.player.AccountSort
 import io.ntole.kvizic.core.player.AdminAccountDetailDto
 import io.ntole.kvizic.core.player.AdminAccountPageDto
 import io.ntole.kvizic.server.FLOW_ADMIN_TOKEN
+import io.ntole.kvizic.server.auth.IdentityProvider
+import io.ntole.kvizic.server.db.Identities
+import io.ntole.kvizic.server.db.Profiles
+import io.ntole.kvizic.server.db.inTransaction
+import io.ntole.kvizic.server.db.serverPool
 import io.ntole.kvizic.server.mintGuest
 import io.ntole.kvizic.server.runTestServer
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -27,6 +35,8 @@ class AccountAdminFlowTest {
         search: String? = null,
         cursor: String? = null,
         limit: Int? = null,
+        answered: Boolean = false,
+        playGames: Boolean = false,
     ): AdminAccountPageDto =
         get(KvizicApi.Paths.ADMIN_ACCOUNTS) {
             header(KvizicApi.Headers.ADMIN_TOKEN, FLOW_ADMIN_TOKEN)
@@ -34,6 +44,8 @@ class AccountAdminFlowTest {
             search?.let { parameter(KvizicApi.Query.SEARCH, it) }
             cursor?.let { parameter(KvizicApi.Query.CURSOR, it) }
             limit?.let { parameter(KvizicApi.Query.LIMIT, it) }
+            if (answered) parameter(KvizicApi.Query.ANSWERED, true)
+            if (playGames) parameter(KvizicApi.Query.PLAY_GAMES, true)
         }.body()
 
     private suspend fun HttpClient.account(
@@ -84,6 +96,46 @@ class AccountAdminFlowTest {
                 client.accounts(search = named.displayName.drop(1).take(4)).accounts.any { it.playerId == ids[1] },
             )
             assertEquals(0, client.accounts(search = "no such player").total)
+        }
+
+    @Test
+    fun `the switches keep the list to players who answered or are signed in with Play Games`() =
+        runTestServer("admin-accounts-switches") { client, database ->
+            val ids = List(3) { client.mintGuest().playerId }
+            database.serverPool().use { pool ->
+                pool.inTransaction {
+                    Profiles.update({ Profiles.playerId eq ids[1] }) { it[answersGiven] = 4 }
+                    Profiles.update({ Profiles.playerId eq ids[2] }) { it[answersGiven] = 9 }
+                    Identities.insert {
+                        it[provider] = IdentityProvider.PLAY_GAMES
+                        it[subject] = "g-1"
+                        it[playerId] = ids[2]
+                        it[createdAt] = 1L
+                    }
+                }
+            }
+
+            assertEquals(3, client.accounts().total)
+            assertEquals(
+                setOf(ids[1], ids[2]),
+                client
+                    .accounts(answered = true)
+                    .accounts
+                    .map { it.playerId }
+                    .toSet(),
+            )
+            assertEquals(listOf(ids[2]), client.accounts(playGames = true).accounts.map { it.playerId })
+            assertEquals(
+                listOf(ids[1]),
+                client.accounts(answered = true, search = ids[1].take(10)).accounts.map { it.playerId },
+            )
+            assertTrue(
+                client
+                    .accounts(playGames = true)
+                    .accounts
+                    .single()
+                    .playGamesLinked,
+            )
         }
 
     @Test
