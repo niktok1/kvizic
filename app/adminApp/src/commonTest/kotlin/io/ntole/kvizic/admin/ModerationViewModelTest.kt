@@ -437,7 +437,7 @@ class ModerationViewModelTest {
     )
 
     @Test
-    fun `the accounts tab lists the players, the last seen first, and says how many there are`() =
+    fun `the accounts tab lists the players with the last seen first and says how many there are`() =
         test {
             bank.players += listOf(player("p1", "Стари", lastSeenAt = 500), player("p2", "Нови", lastSeenAt = 900))
             unlocked()
@@ -453,7 +453,7 @@ class ModerationViewModelTest {
         }
 
     @Test
-    fun `an order and a search read the list again from its start, and more pages add to it`() =
+    fun `an order and a search read the list again from its start and more pages add to it`() =
         test {
             bank.pageSize = 2
             bank.players += List(5) { player("p$it", "Играч $it", xp = it, games = 10 - it) }

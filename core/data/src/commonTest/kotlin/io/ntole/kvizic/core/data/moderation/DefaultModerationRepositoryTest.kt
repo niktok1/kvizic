@@ -312,7 +312,7 @@ class DefaultModerationRepositoryTest {
         }
 
     @Test
-    fun `accounts ask for their order, search and cursor, and come back as the moderator reads them`() =
+    fun `accounts ask for their order and search and cursor and come back as the moderator reads them`() =
         runTest {
             answer = {
                 Answer.Json(
