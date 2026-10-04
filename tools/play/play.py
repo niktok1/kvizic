@@ -190,7 +190,9 @@ def fraction(text):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
-    tracks = ["internal", "alpha", "beta", "production"]
+    # Any track Play names: internal, alpha, beta (Open testing), production, and the console's own, such as the
+    # Early access track, which the API calls by a name of its own (status lists them).
+    tracks = None
 
     up = commands.add_parser("upload")
     up.add_argument("bundle")

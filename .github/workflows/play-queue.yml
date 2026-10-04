@@ -27,6 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Read-only: every track and its releases, by the names the API takes, in the log and the run's summary.
+      - name: Play's tracks
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -o pipefail
+          pip install -q -r tools/play/requirements.txt
+          python3 tools/play/play.py status | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Promote what is queued
         env:
           GH_TOKEN: ${{ github.token }}
@@ -37,7 +46,6 @@ jobs:
             --jq '.[] | select(.author.is_bot and (.author.login | test("github-actions"))) | .number')
           [ -n "$queued" ] || { echo "nothing queued"; exit 0; }
           [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ] || { echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not set on play-queue"; exit 1; }
-          pip install -q -r tools/play/requirements.txt
           for number in $queued; do
             body=$(gh issue view "$number" -R "$GITHUB_REPOSITORY" --json body --jq .body)
             field() { printf '%s\n' "$body" | sed -n "s/^$1: \([a-z0-9.]*\)$/\1/p" | head -1; }
