@@ -130,6 +130,11 @@ services:
     buildCommand: echo "$RENDER_GIT_COMMIT" > site/commit.txt
     staticPublishPath: ./site
     autoDeployTrigger: "off"
+    # A room's link, /j/123456, is one page that reads its code from the address (InviteLink.kt).
+    routes:
+      - type: rewrite
+        source: /j/*
+        destination: /j/index.html
 
 databases:
   - name: kvizic-postgres

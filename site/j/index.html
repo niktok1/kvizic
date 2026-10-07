@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="sr-Cyrl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Позив у собу у Квизићу, квизу за више играча.">
+  <meta property="og:title" content="Позив у Квизић">
+  <meta property="og:description" content="Уђи у моју собу и играј квиз са мном.">
+  <meta property="og:site_name" content="Квизић">
+  <meta property="og:type" content="website">
+  <title>Позив у Квизић</title>
+  <!-- Served at /j/<code> too (render.yaml rewrites it here), so every path is the site's root's. -->
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site">
+    <div class="wrap bar">
+      <a class="brand" href="/index.html"><span class="mark" aria-hidden="true">К</span>Квизић</a>
+    </div>
+  </header>
+
+  <main id="main" class="wrap invite">
+    <!-- A room's link, kvizic.ntole.com/j/123456: Android opens the game at it, which takes the seat at once.
+         This page is where it lands without the game, or in an app's own browser that opens no app. -->
+    <h1 data-en="You're invited">Позив у собу</h1>
+    <p class="lead" data-en="Join my room and play the quiz with me.">
+      Уђи у собу и играј квиз са мном.</p>
+
+    <div class="room-code" hidden>
+      <p class="meta" data-en="Room code">Ко&#x302;д собе</p>
+      <p class="digits" id="code"></p>
+    </div>
+
+    <p><a class="cta" id="open" href="https://play.google.com/store/apps/details?id=io.ntole.kvizic"
+          data-en="Join the room">Уђи у собу</a></p>
+    <p class="meta" id="how"
+       data-en="Without the game, it takes you to Google Play. Once it is installed, join with the code from Home: Join by code.">
+      Без игре води на Google Play. Кад је инсталираш, уђи у собу кодом са Почетне: Уђи кодом.</p>
+  </main>
+
+  <script>
+    (function () {
+      var play = "https://play.google.com/store/apps/details?id=io.ntole.kvizic";
+      var match = location.pathname.match(/^\/j\/(\d{6})\/?$/);
+      var code = match ? match[1] : null;
+
+      // Serbian for the region's languages, English for the rest.
+      var wanted = (navigator.languages && navigator.languages[0]) || navigator.language || "sr";
+      var english = !/^(sr|hr|bs|sh|me|cnr|mk|sl)\b/i.test(wanted);
+      if (english) {
+        document.documentElement.lang = "en";
+        document.title = "Join me in Kvizić";
+        document.querySelectorAll("[data-en]").forEach(function (node) {
+          node.textContent = node.getAttribute("data-en");
+        });
+      }
+
+      if (code) {
+        document.querySelector(".room-code").hidden = false;
+        document.getElementById("code").textContent = code.slice(0, 3) + " " + code.slice(3);
+        // Android opens the game at the room if it is installed, else Google Play: one button for both.
+        if (/Android/i.test(navigator.userAgent)) {
+          document.getElementById("open").href =
+            "intent://kvizic.ntole.com/j/" + code +
+            "#Intent;scheme=https;package=io.ntole.kvizic;S.browser_fallback_url=" +
+            encodeURIComponent(play) + ";end";
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

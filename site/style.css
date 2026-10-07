@@ -376,3 +376,31 @@ footer.site {
 footer.site p {
   margin: 0.3rem 0;
 }
+
+/* The invite a room's link lands on: its code large, one button to the game or to Google Play. */
+.invite {
+  text-align: center;
+}
+
+.room-code .digits {
+  margin: 0 0 1.25rem;
+  font-size: 2.6rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cta {
+  display: inline-block;
+  padding: 0.85rem 2rem;
+  border-radius: 999px;
+  background: var(--amber);
+  color: var(--on-amber);
+  font-weight: 800;
+  font-size: 1.15rem;
+  text-decoration: none;
+}
+
+.cta:hover {
+  filter: brightness(1.05);
+}
