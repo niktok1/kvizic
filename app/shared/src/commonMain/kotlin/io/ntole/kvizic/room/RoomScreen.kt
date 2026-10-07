@@ -94,7 +94,7 @@ import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.navigation.SystemBack
-import io.ntole.kvizic.share.StoreLink
+import io.ntole.kvizic.share.InviteLink
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.time.Duration.Companion.milliseconds
@@ -348,6 +348,10 @@ private fun Waiting(
     val lobby = state.lobby
     val hosting = lobby.host == state.you
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
+    // A room with a seat free asks for players, from its button and from the free seats, until the game starts.
+    val inviting =
+        lobby.kind != LobbyKind.SOLO && countdown == null && lobby.members.size < lobby.settings.maxPlayers
+    val invite = { actions.share(words.shareText.fill(lobby.code, InviteLink.of(lobby.code))) }
 
     // One column: the stage lays its content out as a box, where the bar would sit over the page.
     Column(Modifier.fillMaxSize()) {
@@ -357,17 +361,6 @@ private fun Waiting(
             BackTopBar(
                 onBack = onLeave,
                 titleContent = { RoomCode(lobby, onCopy = { actions.copyCode(lobby.code) }) },
-                actions = {
-                    StageIconButton(
-                        KvizicIcons.Share,
-                        contentDescription = words.shareRoom,
-                        onClick =
-                            tapped(
-                                "room.share",
-                            ) { actions.share(words.shareText.fill(lobby.code, StoreLink.PLAY)) },
-                        small = true,
-                    )
-                },
             )
         }
         Page {
@@ -390,7 +383,13 @@ private fun Waiting(
                 )
                 Spacer(Modifier.height(space.md))
             }
-            Seats(lobby, state.you, bursts, onChoose = if (choosing) ({ chosen = it }) else null)
+            Seats(
+                lobby,
+                state.you,
+                bursts,
+                onChoose = if (choosing) ({ chosen = it }) else null,
+                onInvite = if (inviting) invite else null,
+            )
             Spacer(Modifier.height(space.md))
             // The chips wrap onto another line rather than squeeze one another to nothing.
             FlowRow(
@@ -446,6 +445,18 @@ private fun Waiting(
                     }
                 }
                 Spacer(Modifier.height(space.md))
+            }
+            if (inviting) {
+                StageButton(
+                    words.invite,
+                    onClick = tapped("room.share", onClick = invite),
+                    modifier = Modifier.fillMaxWidth(),
+                    kind = ButtonKind.SECONDARY,
+                    // Smaller than Start, which stays the one thing the lobby is for.
+                    size = ButtonSize.SMALL,
+                    icon = KvizicIcons.Share,
+                )
+                Spacer(Modifier.height(space.sm))
             }
             when {
                 countdown != null -> {
@@ -566,13 +577,17 @@ private fun RoomCode(
     }
 }
 
-/** A room's seats, as many as it holds, the members in their seats' order, each one's last reaction bursting over it. */
+/**
+ * A room's seats, as many as it holds, the members in their seats' order, each one's last reaction bursting over
+ * it; a free seat tapped shares the room, while [onInvite] is given.
+ */
 @Composable
 private fun Seats(
     lobby: Lobby,
     you: String,
     bursts: Map<String, Burst>,
     onChoose: ((String) -> Unit)?,
+    onInvite: (() -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val space = KvizicTheme.space
@@ -586,12 +601,20 @@ private fun Seats(
                     Box(Modifier.weight(1f)) {
                         Seat(
                             member?.let { occupantOf(it, lobby, you) },
-                            emptyDescription = words.freeSeat,
+                            emptyDescription = if (onInvite != null) words.freeSeatInvite else words.freeSeat,
                             onClick =
-                                if (member != null && member.playerId != you && onChoose != null) {
-                                    tapped("room.seat") { onChoose(member.playerId) }
-                                } else {
-                                    null
+                                when {
+                                    member == null -> {
+                                        onInvite?.let { tapped("room.invite_seat", onClick = it) }
+                                    }
+
+                                    member.playerId != you && onChoose != null -> {
+                                        tapped("room.seat") { onChoose(member.playerId) }
+                                    }
+
+                                    else -> {
+                                        null
+                                    }
                                 },
                         )
                         val burst = member?.let { bursts[it.playerId] }

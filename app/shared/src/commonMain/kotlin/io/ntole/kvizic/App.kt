@@ -74,6 +74,7 @@ import io.ntole.kvizic.room.SettingsScreen
 import io.ntole.kvizic.room.entryFailureText
 import io.ntole.kvizic.services.AppServices
 import io.ntole.kvizic.settings.AppSettingsScreen
+import io.ntole.kvizic.share.InviteLink
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
 import io.ntole.kvizic.sound.ProvideCues
@@ -153,6 +154,7 @@ private fun Screens(usage: UsageTracker) {
     SystemBack(enabled = navigator.canGoBack, onBack = { navigator.back() })
     LaunchedEffect(navigator.current) { usage.show(navigator.current.key) }
     LaunchedEffect(inRoom) { navigator.followRoom(inRoom) }
+    FollowInviteLinks(room, navigator, services = koinInject())
     LifecycleStartEffect(room) {
         room.wake()
         onStopOrDispose {}
@@ -549,6 +551,26 @@ private fun Settings(onAbout: () -> Unit) {
         onLanguageChange = languages::select,
         onAbout = onAbout,
     )
+}
+
+/**
+ * A room's link the app was opened at ([InviteLink]): once the launch has taken back any seat the server held,
+ * a seat in the room it names, at once, from Home, so a room that cannot be joined is said there. A player in a
+ * room stays in it.
+ */
+@Composable
+private fun FollowInviteLinks(
+    room: RoomViewModel,
+    navigator: Navigator,
+    services: AppServices,
+) {
+    val invited by InviteLink.code.collectAsStateWithLifecycle()
+    LaunchedEffect(invited) {
+        val code = invited ?: return@LaunchedEffect
+        services.launched()
+        InviteLink.take(code)
+        if (room.joinByLink(code)) navigator.open(Screen.Home)
+    }
 }
 
 /**

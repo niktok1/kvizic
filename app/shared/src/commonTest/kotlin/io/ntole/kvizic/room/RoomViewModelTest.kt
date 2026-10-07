@@ -29,6 +29,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -320,6 +321,51 @@ class RoomViewModelTest {
             room.report("q2", QuestionReportReason.TYPO)
             testScheduler.runCurrent()
             assertEquals(RoomNote.ReportFailed, room.note.value)
+        }
+
+    @Test
+    fun `a room's link takes a seat in it at once and is reported as the way in`() =
+        runTest(main) {
+            val room = room()
+
+            assertTrue(room.joinByLink("482915"))
+            testScheduler.advanceUntilIdle()
+            assertEquals(Entry.Taking(EntryWay.LINK), room.entry.value)
+            session.answerSeat(inLobby(GamePhase.Waiting(null)))
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(listOf("join 482915"), session.commands)
+            assertEquals(
+                listOf(mapOf(AnalyticsProperty.WAY to "link")),
+                analytics.named(AnalyticsEvent.ROOM_ENTERED).map { it.properties },
+            )
+        }
+
+    @Test
+    fun `a room's link never takes the player out of the room they are in or a seat being taken`() =
+        runTest(main) {
+            val room = room()
+            session.state.value = inLobby(GamePhase.Waiting(null))
+            assertFalse(room.joinByLink("111111"))
+
+            session.state.value = LobbySessionState.Idle
+            room.quickPlay()
+            testScheduler.advanceUntilIdle()
+            assertFalse(room.joinByLink("222222"))
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(listOf("quick_play"), session.commands)
+        }
+
+    @Test
+    fun `a room's link that cannot be joined says why`() =
+        runTest(main) {
+            val room = room()
+            room.joinByLink("482915")
+            testScheduler.advanceUntilIdle()
+            session.refuseSeat(GameError.LOBBY_NOT_FOUND)
+            testScheduler.advanceUntilIdle()
+            assertEquals(Entry.Failed(EntryWay.LINK, GameError.LOBBY_NOT_FOUND), room.entry.value)
         }
 
     private fun room() = RoomViewModel(session, ReportQuestion(reports, NoSession), analytics)

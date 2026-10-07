@@ -40,6 +40,9 @@ enum class EntryWay(
     SOLO("solo"),
     CREATE("create"),
     JOIN("join"),
+
+    /** A room's link opened the app ([io.ntole.kvizic.share.InviteLink]). */
+    LINK("link"),
 }
 
 /** How taking a seat stands: none asked, one under way, or why the last one could not. */
@@ -190,6 +193,18 @@ class RoomViewModel(
     fun create(settings: LobbySettings) = take(EntryWay.CREATE) { session.create(settings) }
 
     fun join(code: String) = take(EntryWay.JOIN) { session.join(code) }
+
+    /**
+     * A room's link opened the app: a seat in the room it names, at once, unless the player is in a room or
+     * taking a seat already, which a link never takes them out of. Says whether it takes the seat.
+     */
+    fun joinByLink(code: String): Boolean {
+        val now = session.state.value
+        if (now is LobbySessionState.InLobby || now is LobbySessionState.Joining) return false
+        if (taking?.isActive == true) return false
+        take(EntryWay.LINK) { session.join(code) }
+        return true
+    }
 
     /** Takes the last failure to take a seat down, as a screen does once it has shown it. */
     fun dismissEntryFailure() {

@@ -276,6 +276,13 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
   long press copies it; the settings' chips take an icon where one says it (the clock on the time).
+- **Inviting** (the owner, 2026-10-07): while a seat is free and no countdown runs, „Позови играче“ (a small
+  secondary button, the one label the lobby has, over Start) and a tap on a free seat share the room: the link
+  `kvizic.ntole.com/j/<code>` and the code (`InviteLink`). On Android the link opens the game (an App Link,
+  `singleTask`), which joins at once with no preview, after the launch's rejoin (`AppServices.launched`); a
+  player in a room or taking a seat stays where they are (`RoomViewModel.joinByLink`), and a room that cannot be
+  joined is said on Home (`EntryWay.LINK`). Without the game the site's `j/index.html` shows the code and
+  one button, Android's `intent:` to the game or Google Play. No install referrer: a fresh install types the code.
 - **Home** (the owner, 2026-10-02): the player's name over „Ниво 7“ and a thin bar of how far through the level they
   are (`LevelBar`). Play Games signs a player in by itself (`LinkPlayGames.automatically`); for a guest it did not, in
   a build with Play Games (`HomeState.offersPlayGames`), the fallback (the owner, 2026-10-03, after a full-width
@@ -359,7 +366,10 @@ ever counts towards a question's difficulty. Manual Deploy still works.
 Serbian at the root and English under `en/`: its own subdomain (2026-10-02), since `ntole.com` itself is
 published from WYR's repository. A page states only what the code does. `deploy-site.yml` deploys it through
 its hook after a green push whose `site/` differs from the live `commit.txt`'s commit (its build writes it):
-Render's build filter once left a site change behind (2026-10-02).
+Render's build filter once left a site change behind (2026-10-02). A room's link `/j/<code>` is rewritten to
+`j/index.html` (`render.yaml`'s `routes`, a Blueprint setting); `.well-known/assetlinks.json` verifies the App
+Link for `io.ntole.kvizic` (the upload and debug keys; **Play's app signing key's SHA-256 still to add**, from the
+Play Console's App signing page, or a Play-installed game asks which app opens the link) and `.dev` (debug key).
 **Android releases** (2026-10-03): `release-android.yml` ("Run workflow", from a phone) bumps the version on
 `main` (`tools/release/bump.py`, both files), tags it, and on the owner's approval builds the signed bundle,
 checks it is the upload key's, and uploads it to Play's internal track; a tag `v1.2.3` pushed by hand releases
@@ -413,7 +423,8 @@ box, its lines or an ellipsis, capitals included.
 
 - The design gate: the font, the tile scheme, the host badge, the timer, the Latin letters, the spotlight;
   the clap icon's drawing.
-- Share links that open the room (a share says the code and Play's page, `StoreLink`, for now). Sound's mix on a
+- A room's link on iOS (Universal Links) and the web app; an install referrer so a fresh install opens the room.
+  Sound's mix on a
   phone's speaker (the levels, the cues' character), a skin picker in Settings, and a way for a skin to be
   chosen at all.
 - The moderation app's web page loses the first key after unlocking until the page is clicked.

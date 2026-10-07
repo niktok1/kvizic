@@ -17,15 +17,29 @@
         android:usesCleartextTraffic="${usesCleartextTraffic}"
         tools:targetApi="31">
         <!-- Phones play upright: the game is laid out for a phone's height. Android 16 lets a large screen
-             turn it anyway, where its content keeps its width. -->
+             turn it anyway, where its content keeps its width. One activity, singleTask, so a room's link
+             opened while the game runs comes to it (onNewIntent), never to a second one. -->
         <activity
             android:exported="true"
             android:name=".MainActivity"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- A room's link (InviteLink): the game opens at it and takes the seat, verified by the site's
+                 .well-known/assetlinks.json, so Android asks no one which app to open it in. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="kvizic.ntole.com" />
+                <data android:pathPrefix="/j/" />
             </intent-filter>
         </activity>
 

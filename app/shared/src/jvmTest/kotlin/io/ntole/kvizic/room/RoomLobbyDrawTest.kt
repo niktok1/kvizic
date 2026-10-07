@@ -38,7 +38,7 @@ class RoomLobbyDrawTest : RoomStills() {
                 listOf("5 / 8", words.players, words.freeSeat, words.host, words.you).forEach {
                     assertFalse(it in shown, "${skin.id}: \"$it\" is written in $shown")
                 }
-                assertEquals(3, said.count { it == words.freeSeat }, "${skin.id}: $said")
+                assertEquals(3, said.count { it == words.freeSeatInvite }, "${skin.id}: $said")
                 // A seat says its level first, then what else it shows: "Ниво 12, водитељ".
                 listOf(words.host, words.you).forEach { word ->
                     assertTrue(said.any { word in it }, "${skin.id}: no seat says \"$word\": $said")
@@ -149,6 +149,34 @@ class RoomLobbyDrawTest : RoomStills() {
                 scene.tap(words.withdrawVote)
             }
             assertEquals(listOf("bojan", null), votes, skin.id)
+        }
+    }
+
+    @Test
+    fun `a room with a seat free invites from its button and its free seats, with the link that opens it`() {
+        val words = stringsOf(Language.DEFAULT).game
+        val shared = mutableListOf<String>()
+        val actions = RoomActions(share = { shared += it })
+        draw(Skins.Default, "lobby-invite", inLobby(GamePhase.Waiting(null)), actions) { scene ->
+            val button = scene.nodes().first { words.invite in it.texts }
+            button.config[androidx.compose.ui.semantics.SemanticsActions.OnClick].action?.invoke()
+            val free = scene.nodes().first { words.freeSeatInvite in it.descriptions }
+            free.config[androidx.compose.ui.semantics.SemanticsActions.OnClick].action?.invoke()
+        }
+        assertEquals(2, shared.size, "$shared")
+        shared.forEach { assertTrue("https://kvizic.ntole.com/j/482915" in it && "482915" in it.substringAfter("\n")) }
+    }
+
+    @Test
+    fun `a full room and the countdown invite nobody`() {
+        val words = stringsOf(Language.DEFAULT).game
+        val full = inLobby(GamePhase.Waiting(null), lobby = lobby(settings = LobbySettings(maxPlayers = 5)))
+        val counting = inLobby(GamePhase.Countdown(deadline(3.seconds()), null))
+        listOf("lobby-full" to full, "countdown-invite" to counting).forEach { (name, state) ->
+            draw(Skins.Default, name, state) { scene ->
+                assertFalse(words.invite in scene.everyText(), name)
+                assertFalse(scene.descriptions().any { words.freeSeatInvite in it }, name)
+            }
         }
     }
 

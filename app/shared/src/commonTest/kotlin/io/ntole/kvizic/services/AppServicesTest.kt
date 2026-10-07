@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.room.ScriptedLobbySession
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -13,6 +14,8 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /** What the app does by itself as it comes to the foreground: the launch's Play Games sign-in, and again after. */
 class AppServicesTest {
@@ -44,6 +47,20 @@ class AppServicesTest {
             services.foreground()
             services.foreground()
             testScheduler.runCurrent()
+            assertEquals(listOf("rejoin"), lobby.commands)
+        }
+
+    @Test
+    fun `what the launch asks for waits for its seat taken back`() =
+        runTest {
+            val services = services()
+            val waited = async { services.launched() }
+            testScheduler.runCurrent()
+            assertFalse(waited.isCompleted, "launched before the launch")
+
+            services.foreground()
+            testScheduler.runCurrent()
+            assertTrue(waited.isCompleted)
             assertEquals(listOf("rejoin"), lobby.commands)
         }
 
