@@ -1,5 +1,6 @@
 package io.ntole.kvizic.services
 
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.games.GamesSignInClient
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import kotlinx.coroutines.Dispatchers
@@ -20,16 +21,29 @@ internal class AndroidPlayGames(
 ) : PlayGames {
     override val available: Boolean = true
 
-    override suspend fun isAuthenticated(): Boolean = ask { isAuthenticated().resultOrNull()?.isAuthenticated } == true
+    @Volatile
+    override var lastFailure: String? = null
+        private set
 
-    override suspend fun signIn(): Boolean = ask { signIn().resultOrNull()?.isAuthenticated } == true
+    override suspend fun isAuthenticated(): Boolean = ask { isAuthenticated().resultOrNull(::fail)?.isAuthenticated } == true
+
+    override suspend fun signIn(): Boolean = ask { signIn().resultOrNull(::fail)?.isAuthenticated } == true
 
     override suspend fun serverAuthCode(): String? =
-        ask { requestServerSideAccess(serverClientId, false).resultOrNull() }?.takeIf { it.isNotBlank() }
+        ask { requestServerSideAccess(serverClientId, false).resultOrNull(::fail) }?.takeIf { it.isNotBlank() }
+
+    private fun fail(cause: Exception?) {
+        lastFailure = cause?.let { (it as? ApiException)?.let { api -> "API_${api.statusCode}" } ?: it::class.simpleName }
+    }
 
     private suspend fun <T> ask(question: suspend GamesSignInClient.() -> T?): T? =
         withContext(Dispatchers.Main) {
-            val activity = activities.current() ?: return@withContext null
+            lastFailure = null
+            val activity =
+                activities.current() ?: run {
+                    lastFailure = "NO_ACTIVITY"
+                    return@withContext null
+                }
             GooglePlayGames.getGamesSignInClient(activity).question()
         }
 }

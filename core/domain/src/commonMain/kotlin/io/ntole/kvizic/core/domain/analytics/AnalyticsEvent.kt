@@ -38,6 +38,13 @@ public object AnalyticsEvent {
      */
     public const val PLAY_GAMES_SIGNED_IN: String = "play_games_signed_in"
 
+    /**
+     * A Play Games sign-in came to nothing, [AnalyticsProperty.AUTOMATIC] whether at launch with no tap:
+     * [AnalyticsProperty.CODE] is why, `NOT_AUTHENTICATED` or `NO_AUTH_CODE` or a domain error's name,
+     * and [AnalyticsProperty.REASON] what the platform said when it said anything.
+     */
+    public const val PLAY_GAMES_SIGN_IN_FAILED: String = "play_games_sign_in_failed"
+
     /** The player deleted their account, and plays on as a fresh guest. */
     public const val ACCOUNT_DELETED: String = "account_deleted"
 

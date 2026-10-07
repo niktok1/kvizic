@@ -14,6 +14,9 @@ public object AnalyticsProperty {
     /** A failure's code, the domain's name for it (`NETWORK`, `LOBBY_FULL`...). */
     public const val CODE: String = "code"
 
+    /** What the platform said of a failure, when it said anything: `NO_ACTIVITY` or its own status. */
+    public const val REASON: String = "reason"
+
     /** What failed: `profile` or `delete_account`, and the game's own as they come. */
     public const val ACTION: String = "action"
 

@@ -30,6 +30,9 @@ public interface PlayGames {
      */
     public suspend fun serverAuthCode(): String?
 
+    /** Why the last call answered nothing, when the platform said: for analytics, never for a decision. */
+    public val lastFailure: String? get() = null
+
     public companion object {
         /** No Play Games: a build or a platform without it, and the tests. */
         public val None: PlayGames = NoPlayGames

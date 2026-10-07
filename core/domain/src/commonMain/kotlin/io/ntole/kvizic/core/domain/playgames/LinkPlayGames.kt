@@ -34,6 +34,10 @@ public class LinkPlayGames(
 ) {
     private val mutex = Mutex()
 
+    private companion object {
+        const val NOT_AUTHENTICATED = "NOT_AUTHENTICATED"
+    }
+
     private val signIns =
         MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
@@ -87,10 +91,15 @@ public class LinkPlayGames(
 
     private suspend fun tryUnsettled(): Boolean =
         mutex.withLock {
-            if (link.isSettled() || !playGames.isAuthenticated()) return@withLock false
+            if (link.isSettled()) return@withLock false
+            if (!playGames.isAuthenticated()) {
+                reportFailure(automatic = true, NOT_AUTHENTICATED)
+                return@withLock false
+            }
             try {
                 signIn(automatic = true)
             } catch (failed: KvizicException) {
+                reportFailure(automatic = true, failed.error.name)
                 false
             }
         }
@@ -107,10 +116,22 @@ public class LinkPlayGames(
         if (!playGames.available) return false
         return mutex.withLock {
             if (!playGames.isAuthenticated() && !playGames.signIn()) {
+                reportFailure(automatic = false, NOT_AUTHENTICATED)
                 throw KvizicException(CoreError.PLAY_GAMES_NOT_SIGNED_IN, "Play Games signed nobody in")
             }
-            signIn(automatic = false)
+            try {
+                signIn(automatic = false)
+            } catch (failed: KvizicException) {
+                reportFailure(automatic = false, failed.error.name)
+                throw failed
+            }
         }
+    }
+
+    private fun reportFailure(automatic: Boolean, code: String) {
+        val properties = mutableMapOf<String, Any>(AnalyticsProperty.AUTOMATIC to automatic, AnalyticsProperty.CODE to code)
+        playGames.lastFailure?.let { properties[AnalyticsProperty.REASON] = it }
+        analytics.track(AnalyticsEvent.PLAY_GAMES_SIGN_IN_FAILED, properties)
     }
 
     /** Whether the device plays as the Play Games player now: false when it became another meanwhile. */

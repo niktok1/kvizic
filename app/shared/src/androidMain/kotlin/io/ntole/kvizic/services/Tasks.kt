@@ -9,7 +9,10 @@ import kotlin.coroutines.resume
  * failure is the platform's, and a port answers it as nothing done. The caller's cancellation still
  * throws, as it must.
  */
-internal suspend fun <T> Task<T>.resultOrNull(): T? =
+internal suspend fun <T> Task<T>.resultOrNull(onFailure: (Exception?) -> Unit = {}): T? =
     suspendCancellableCoroutine { continuation ->
-        addOnCompleteListener { task -> continuation.resume(if (task.isSuccessful) task.result else null) }
+        addOnCompleteListener { task ->
+            if (!task.isSuccessful) onFailure(task.exception)
+            continuation.resume(if (task.isSuccessful) task.result else null)
+        }
     }

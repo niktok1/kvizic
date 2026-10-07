@@ -136,6 +136,17 @@ class LinkPlayGamesTest {
 
             assertFalse(linking.automatically())
             assertEquals(listOf("isAuthenticated"), calls, "and never asks the player to sign in")
+            assertEquals(
+                listOf<Pair<String, Map<String, Any?>>>(
+                    AnalyticsEvent.PLAY_GAMES_SIGN_IN_FAILED to
+                        mapOf(
+                            AnalyticsProperty.AUTOMATIC to true,
+                            AnalyticsProperty.CODE to "NOT_AUTHENTICATED",
+                            AnalyticsProperty.REASON to "NO_ACTIVITY",
+                        ),
+                ),
+                analytics.events,
+            )
         }
 
     /** The Play Games player was another player's already: the device is theirs now, and the analytics say so. */
@@ -175,7 +186,9 @@ class LinkPlayGamesTest {
             assertFalse(linking.automatically())
 
             assertEquals(listOf("isAuthenticated", "serverAuthCode", "signIn code-1"), calls)
-            assertEquals(emptyList(), analytics.events)
+            val failed = analytics.events.single()
+            assertEquals(AnalyticsEvent.PLAY_GAMES_SIGN_IN_FAILED, failed.first)
+            assertEquals("PLAY_GAMES_CODE_REFUSED", failed.second[AnalyticsProperty.CODE])
         }
 
     /** The exchange with Google takes seconds: a change of player landing meanwhile is the player's later choice. */
@@ -255,6 +268,7 @@ class LinkPlayGamesTest {
         var authenticated = true
         var signsIn = false
         var code: String? = "code-1"
+        override var lastFailure: String? = "NO_ACTIVITY"
 
         override suspend fun isAuthenticated(): Boolean {
             calls += "isAuthenticated"
