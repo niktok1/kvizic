@@ -368,8 +368,8 @@ published from WYR's repository. A page states only what the code does. `deploy-
 its hook after a green push whose `site/` differs from the live `commit.txt`'s commit (its build writes it):
 Render's build filter once left a site change behind (2026-10-02). A room's link `/j/<code>` is rewritten to
 `j/index.html` (`render.yaml`'s `routes`, a Blueprint setting); `.well-known/assetlinks.json` verifies the App
-Link for `io.ntole.kvizic` (the upload and debug keys; **Play's app signing key's SHA-256 still to add**, from the
-Play Console's App signing page, or a Play-installed game asks which app opens the link) and `.dev` (debug key).
+Link for `io.ntole.kvizic` (Play's app signing key, `97:C8:…:E1:81`, the upload key and the debug key) and
+`.dev` (the debug key).
 **Android releases** (2026-10-03): `release-android.yml` ("Run workflow", from a phone) bumps the version on
 `main` (`tools/release/bump.py`, both files), tags it, and on the owner's approval builds the signed bundle,
 checks it is the upload key's, and uploads it to Play's internal track; a tag `v1.2.3` pushed by hand releases
