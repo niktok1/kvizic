@@ -1,18 +1,23 @@
 package io.ntole.kvizic.admin
 
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,6 +43,8 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import io.ntole.kvizic.core.domain.moderation.AccountOrder
 import io.ntole.kvizic.core.domain.moderation.BankOverview
 import io.ntole.kvizic.core.domain.moderation.BankStatus
@@ -71,7 +78,10 @@ fun ModerationScreen(
 ) {
     val space = KvizicTheme.space
     Stage(modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(space.lg), verticalArrangement = Arrangement.spacedBy(space.md)) {
+        Column(
+            Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(space.lg),
+            verticalArrangement = Arrangement.spacedBy(space.md),
+        ) {
             Header(state, environment, actions)
             if (state.unlocked) {
                 Tabs(state, actions)
@@ -115,8 +125,8 @@ private fun Header(
     val space = KvizicTheme.space
     val colors = KvizicTheme.colors
     val type = KvizicTheme.type
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(space.md)) {
-        Column(Modifier.weight(1f)) {
+    val title: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier) {
             KvizicText("Kvizić moderation", style = type.headline)
             KvizicText(
                 serverLineOf(environment),
@@ -124,37 +134,79 @@ private fun Header(
                 color = if (environment == KvizicEnvironment.PROD) colors.loss else colors.onPageMuted,
             )
         }
-        if (state.unlocked) {
-            StageButton("Lock", onClick = actions::lock, kind = ButtonKind.SECONDARY, size = ButtonSize.SMALL)
-        } else {
-            // The field gives up the focus before it goes: on the web a field removed while focused leaves the
-            // page's focus outside the app, and the review's keys would go nowhere until a click.
-            val focusManager = LocalFocusManager.current
-            val unlock = {
-                focusManager.clearFocus()
-                actions.unlock()
-            }
-            // Made anew on every Lock, so its undo history never gives the token back.
-            key(state.locks) {
-                TextInput(
-                    value = state.tokenText.value,
-                    onValueChange = actions::typeToken,
-                    label = "Admin token",
-                    modifier = Modifier.width(space.contentWidth),
-                    secret = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(onGo = { unlock() }),
-                )
-            }
-            StageButton(
-                "Unlock",
-                onClick = unlock,
-                size = ButtonSize.SMALL,
-                enabled = state.tokenText.value.isNotBlank(),
+    }
+    // The field gives up the focus before it goes: on the web a field removed while focused leaves the
+    // page's focus outside the app, and the review's keys would go nowhere until a click.
+    val focusManager = LocalFocusManager.current
+    val unlock = {
+        focusManager.clearFocus()
+        actions.unlock()
+    }
+    val tokenField: @Composable (Modifier) -> Unit = { modifier ->
+        // Made anew on every Lock, so its undo history never gives the token back.
+        key(state.locks) {
+            TextInput(
+                value = state.tokenText.value,
+                onValueChange = actions::typeToken,
+                label = "Admin token",
+                modifier = modifier,
+                secret = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                keyboardActions = KeyboardActions(onGo = { unlock() }),
             )
         }
     }
+    val unlockButton: @Composable () -> Unit = {
+        StageButton(
+            "Unlock",
+            onClick = unlock,
+            size = ButtonSize.SMALL,
+            enabled = state.tokenText.value.isNotBlank(),
+        )
+    }
+    BoxWithConstraints {
+        val narrow = maxWidth < NARROW_WIDTH
+        when {
+            state.unlocked -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(space.md),
+                ) {
+                    title(Modifier.weight(1f))
+                    StageButton("Lock", onClick = actions::lock, kind = ButtonKind.SECONDARY, size = ButtonSize.SMALL)
+                }
+            }
+
+            // A phone: the title, and the token's field and Unlock under it, across the width.
+            narrow -> {
+                Column(verticalArrangement = Arrangement.spacedBy(space.md)) {
+                    title(Modifier)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(space.md),
+                    ) {
+                        tokenField(Modifier.weight(1f))
+                        unlockButton()
+                    }
+                }
+            }
+
+            else -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(space.md),
+                ) {
+                    title(Modifier.weight(1f))
+                    tokenField(Modifier.width(space.contentWidth))
+                    unlockButton()
+                }
+            }
+        }
+    }
 }
+
+/** Narrower than this a window is a phone's: the tabs scroll and the review stacks. */
+private val NARROW_WIDTH: Dp = 600.dp
 
 /** The name and address of the server the moderator acts on. */
 internal fun serverLineOf(environment: KvizicEnvironment): String =
@@ -166,7 +218,7 @@ private fun Tabs(
     actions: ModerationActions,
 ) {
     val space = KvizicTheme.space
-    Row(horizontalArrangement = Arrangement.spacedBy(space.sm), verticalAlignment = Alignment.CenterVertically) {
+    val chips: @Composable () -> Unit = {
         AdminTab.entries.forEach { tab ->
             val count =
                 when (tab) {
@@ -192,8 +244,11 @@ private fun Tabs(
                 onClick = { actions.select(tab) },
             )
         }
-        Spacer(Modifier.weight(1f))
-        if (state.busy) KvizicText("Working…", style = KvizicTheme.type.caption, color = KvizicTheme.colors.onPageMuted)
+    }
+    val working: @Composable () -> Unit = {
+        if (state.busy) {
+            KvizicText("Working…", style = KvizicTheme.type.caption, color = KvizicTheme.colors.onPageMuted)
+        }
         StageButton(
             "Load again",
             onClick = { actions.load(state.tab) },
@@ -201,6 +256,32 @@ private fun Tabs(
             size = ButtonSize.SMALL,
             enabled = !state.busy && state.editor == null,
         )
+    }
+    BoxWithConstraints {
+        if (maxWidth < NARROW_WIDTH) {
+            // A phone: the tabs scroll sideways, and Load again stands under them at the end.
+            Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(space.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) { chips() }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(space.sm, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) { working() }
+            }
+        } else {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(space.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                chips()
+                Spacer(Modifier.weight(1f))
+                working()
+            }
+        }
     }
 }
 
@@ -224,9 +305,8 @@ private fun Review(
         withFrameNanos {}
         if (!review.rejecting) focus.requestFocus()
     }
-    Row(
+    val keys =
         Modifier
-            .fillMaxSize()
             .focusRequester(focus)
             .focusable()
             .onKeyEvent { event ->
@@ -240,10 +320,9 @@ private fun Review(
                     else -> return@onKeyEvent false
                 }
                 true
-            },
-        horizontalArrangement = Arrangement.spacedBy(space.lg),
-    ) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            }
+    val cardPane: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier.verticalScroll(rememberScrollState())) {
             when {
                 !review.loaded -> {
                     KvizicText("Loading the drafts…", style = type.body)
@@ -262,7 +341,9 @@ private fun Review(
                 }
             }
         }
-        Column(Modifier.width(space.dialogWidth), verticalArrangement = Arrangement.spacedBy(space.sm)) {
+    }
+    val actionPane: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier, verticalArrangement = Arrangement.spacedBy(space.sm)) {
             if (question != null) {
                 KvizicText(
                     "${review.index + 1} of ${review.drafts.size}${if (review.more) "+" else ""} · decided ${review.decided}",
@@ -347,6 +428,20 @@ private fun Review(
                         color = colors.onPageMuted,
                     )
                 }
+            }
+        }
+    }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        if (maxWidth < NARROW_WIDTH) {
+            // A phone: the card over the actions, the card scrolling.
+            Column(Modifier.fillMaxSize().then(keys), verticalArrangement = Arrangement.spacedBy(space.md)) {
+                cardPane(Modifier.weight(1f).fillMaxWidth())
+                actionPane(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(Modifier.fillMaxSize().then(keys), horizontalArrangement = Arrangement.spacedBy(space.lg)) {
+                cardPane(Modifier.weight(1f))
+                actionPane(Modifier.width(space.dialogWidth))
             }
         }
     }

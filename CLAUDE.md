@@ -34,7 +34,8 @@ targets (iOS, desktop, web) keep compiling. Built on WYR's platform, copied and 
 :app:designsystem   the skin engine and every component; no Material. Skins: Buzzers (default), Notebook.
 :app:shared         screens, ViewModels, Strings, navigation, DI; Android's Google services in androidMain.
 :app:androidApp / desktopApp / webApp, app/iosApp   entry points only.
-:app:adminApp       the moderation app, desktop and web: review, the bank, reports, overview, accounts.
+:app:adminApp       the moderation app, desktop, web and Android: review, the bank, reports, overview, accounts.
+:app:adminAndroidApp  its Android entry point, the owner's phone only, installed from the Mac, never published.
 :server             Ktor: auth, lobby actors, realtime, question bank, results, reports, admin. Flyway.
 :e2e                the real server in-process, real client sessions over CIO, through a fault proxy.
 ```
@@ -185,6 +186,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   noted at a guest's mint, a refresh, a Play Games sign-in and a seat taken, at most once in five minutes
   (`PlayerStore.touch`, one compare-and-set `UPDATE`); null before V10, so the list shows the creation, said so.
   English words, the questions as written. It binds `moderationDataModule` alone: no player session.
+  **On the phone** (the owner, 2026-10-07): `./gradlew :app:adminAndroidApp:installDebug` installs `io.ntole.kvizic.admin`;
+  the debug build compiles in `kvizic.adminToken` (and `kvizic.adminEnv`, dev when unset) from `local.properties`
+  and unlocks by itself, so **that APK never leaves the phone**; release builds carry no token and ask for it.
+  The desktop run unlocks the same way from `KVIZIC_ADMIN_TOKEN`; the web page never gets a token.
 
 ## 9. The client
 

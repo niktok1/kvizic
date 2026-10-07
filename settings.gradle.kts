@@ -60,8 +60,9 @@ if (!serverOnly) {
     include(":app:desktopApp")
     include(":app:webApp")
 
-    // The moderation app, for whoever holds a server's admin token: desktop and web only.
+    // The moderation app, for whoever holds a server's admin token: desktop, web and the owner's phone.
     include(":app:adminApp")
+    include(":app:adminAndroidApp")
 
     // Real clients against the real server, through a proxy that can slow or cut them.
     include(":e2e")
