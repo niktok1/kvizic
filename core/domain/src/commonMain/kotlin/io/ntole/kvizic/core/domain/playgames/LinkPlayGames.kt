@@ -128,8 +128,15 @@ public class LinkPlayGames(
         }
     }
 
-    private fun reportFailure(automatic: Boolean, code: String) {
-        val properties = mutableMapOf<String, Any>(AnalyticsProperty.AUTOMATIC to automatic, AnalyticsProperty.CODE to code)
+    private fun reportFailure(
+        automatic: Boolean,
+        code: String,
+    ) {
+        val properties =
+            mutableMapOf<String, Any>(
+                AnalyticsProperty.AUTOMATIC to automatic,
+                AnalyticsProperty.CODE to code,
+            )
         playGames.lastFailure?.let { properties[AnalyticsProperty.REASON] = it }
         analytics.track(AnalyticsEvent.PLAY_GAMES_SIGN_IN_FAILED, properties)
     }

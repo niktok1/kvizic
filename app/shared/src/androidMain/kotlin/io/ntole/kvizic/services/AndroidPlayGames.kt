@@ -25,7 +25,8 @@ internal class AndroidPlayGames(
     override var lastFailure: String? = null
         private set
 
-    override suspend fun isAuthenticated(): Boolean = ask { isAuthenticated().resultOrNull(::fail)?.isAuthenticated } == true
+    override suspend fun isAuthenticated(): Boolean =
+        ask { isAuthenticated().resultOrNull(::fail)?.isAuthenticated } == true
 
     override suspend fun signIn(): Boolean = ask { signIn().resultOrNull(::fail)?.isAuthenticated } == true
 
@@ -33,7 +34,8 @@ internal class AndroidPlayGames(
         ask { requestServerSideAccess(serverClientId, false).resultOrNull(::fail) }?.takeIf { it.isNotBlank() }
 
     private fun fail(cause: Exception?) {
-        lastFailure = cause?.let { (it as? ApiException)?.let { api -> "API_${api.statusCode}" } ?: it::class.simpleName }
+        lastFailure =
+            cause?.let { (it as? ApiException)?.let { api -> "API_${api.statusCode}" } ?: it::class.simpleName }
     }
 
     private suspend fun <T> ask(question: suspend GamesSignInClient.() -> T?): T? =
