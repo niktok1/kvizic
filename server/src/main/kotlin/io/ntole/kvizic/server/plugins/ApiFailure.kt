@@ -97,6 +97,14 @@ class ApiFailure(
         fun staleRevision(id: String) =
             ApiFailure(HttpStatusCode.Conflict, ErrorCode.STALE_REVISION, "question $id changed since it was read")
 
+        /** A bulk deletion the moderator counted as one size that is another now. */
+        fun staleCount() =
+            ApiFailure(
+                HttpStatusCode.Conflict,
+                ErrorCode.STALE_REVISION,
+                "the number of accounts changed since it was counted",
+            )
+
         fun wrongStatus(
             id: String,
             expected: String,

@@ -101,7 +101,17 @@ data class AccountsState(
     val accountId: String = "",
     val confirming: Boolean = false,
     val done: String? = null,
-)
+    val cleanupDays: Int = DEFAULT_CLEANUP_DAYS,
+    val emptyCount: Int? = null,
+    val confirmingCleanup: Boolean = false,
+) {
+    companion object {
+        /** The idle days offered for clearing empty accounts, shortest first. */
+        val CLEANUP_DAYS: List<Int> = listOf(1, 3, 7, 30)
+
+        const val DEFAULT_CLEANUP_DAYS: Int = 1
+    }
+}
 
 /**
  * A question being edited, every field as typed: [options] 2 to 4, [correct] an index into them. [problem]

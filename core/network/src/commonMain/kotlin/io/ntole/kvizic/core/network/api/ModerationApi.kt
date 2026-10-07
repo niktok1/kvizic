@@ -16,6 +16,9 @@ import io.ntole.kvizic.core.player.AccountSort
 import io.ntole.kvizic.core.player.AdminAccountDetailDto
 import io.ntole.kvizic.core.player.AdminAccountPageDto
 import io.ntole.kvizic.core.player.DeleteAccountRequest
+import io.ntole.kvizic.core.player.DeleteEmptyAccountsRequest
+import io.ntole.kvizic.core.player.DeletedAccountsDto
+import io.ntole.kvizic.core.player.EmptyAccountsDto
 import io.ntole.kvizic.core.question.AdminOverviewDto
 import io.ntole.kvizic.core.question.AdminQuestionDto
 import io.ntole.kvizic.core.question.AdminQuestionPageDto
@@ -131,6 +134,21 @@ public class ModerationApi(
     ) {
         client.post(KvizicApi.Paths.ADMIN_ACCOUNT_DELETIONS) { json(token, request) }
     }
+
+    public suspend fun emptyAccounts(
+        token: String,
+        idleDays: Int,
+    ): EmptyAccountsDto =
+        client
+            .get(KvizicApi.Paths.ADMIN_EMPTY_ACCOUNTS) {
+                admin(token)
+                parameter(KvizicApi.Query.IDLE_DAYS, idleDays)
+            }.body()
+
+    public suspend fun deleteEmptyAccounts(
+        token: String,
+        request: DeleteEmptyAccountsRequest,
+    ): DeletedAccountsDto = client.post(KvizicApi.Paths.ADMIN_EMPTY_ACCOUNTS) { json(token, request) }.body()
 
     private suspend inline fun <reified T> post(
         path: String,

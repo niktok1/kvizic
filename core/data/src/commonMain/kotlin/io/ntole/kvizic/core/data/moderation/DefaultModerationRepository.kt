@@ -17,6 +17,7 @@ import io.ntole.kvizic.core.domain.moderation.ReportOutcome
 import io.ntole.kvizic.core.domain.moderation.ReportedQuestion
 import io.ntole.kvizic.core.network.api.ModerationApi
 import io.ntole.kvizic.core.player.DeleteAccountRequest
+import io.ntole.kvizic.core.player.DeleteEmptyAccountsRequest
 import io.ntole.kvizic.core.question.QuestionDecisionRequest
 import io.ntole.kvizic.core.report.ResolveReportsRequest
 
@@ -115,6 +116,18 @@ public class DefaultModerationRepository(
     ) {
         runApi { api.deleteAccount(token.value, DeleteAccountRequest(accountId.trim())) }
     }
+
+    override suspend fun countEmptyAccounts(
+        token: AdminToken,
+        idleDays: Int,
+    ): Int = runApi { api.emptyAccounts(token.value, idleDays) }.count
+
+    override suspend fun deleteEmptyAccounts(
+        token: AdminToken,
+        idleDays: Int,
+        expectedCount: Int,
+    ): Int =
+        runApi { api.deleteEmptyAccounts(token.value, DeleteEmptyAccountsRequest(idleDays, expectedCount)) }.deleted
 
     public companion object {
         /** The most the server lists at once ([KvizicApi.Limits.MAX_PAGE_SIZE]). */

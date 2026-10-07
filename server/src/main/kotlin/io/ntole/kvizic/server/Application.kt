@@ -18,6 +18,7 @@ import io.ntole.kvizic.server.admin.AdminToken
 import io.ntole.kvizic.server.admin.accountAdminRoutes
 import io.ntole.kvizic.server.admin.accountDeletionRoutes
 import io.ntole.kvizic.server.admin.adminRoutes
+import io.ntole.kvizic.server.admin.emptyAccountRoutes
 import io.ntole.kvizic.server.admin.overviewRoutes
 import io.ntole.kvizic.server.auth.GooglePlayGames
 import io.ntole.kvizic.server.auth.TokenService
@@ -161,6 +162,7 @@ fun Application.kvizicModule(
         reportRoutes(db)
         adminRoutes(adminToken) { token ->
             accountDeletionRoutes(db, token, playerDeleted = { playerId -> sessionEnded(playerId, null) })
+            emptyAccountRoutes(db, token, playerDeleted = { playerId -> sessionEnded(playerId, null) })
             accountAdminRoutes(db, token)
             topicAdminRoutes(db, token, topics)
             questionAdminRoutes(db, token, topics)

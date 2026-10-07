@@ -130,6 +130,12 @@ public object KvizicApi {
 
         /** POST a `DeleteAccountRequest`: deletes a player's account on their request, answered 204. Admin. */
         public const val ADMIN_ACCOUNT_DELETIONS: String = "/$VERSION/admin/account-deletions"
+
+        /**
+         * GET, with `idleDays`: how many accounts are empty (an `EmptyAccountsDto`); POST a
+         * `DeleteEmptyAccountsRequest`: deletes them, answered with a `DeletedAccountsDto`. Admin.
+         */
+        public const val ADMIN_EMPTY_ACCOUNTS: String = "/$VERSION/admin/empty-accounts"
     }
 
     public object Headers {
@@ -175,6 +181,9 @@ public object KvizicApi {
 
         /** `true` to list only players who have answered a question, on [Paths.ADMIN_ACCOUNTS]. */
         public const val ANSWERED: String = "answered"
+
+        /** Whole days an account has sat idle, at least 1, on [Paths.ADMIN_EMPTY_ACCOUNTS]. */
+        public const val IDLE_DAYS: String = "idleDays"
 
         /** `true` to list only players signed in with Play Games, on [Paths.ADMIN_ACCOUNTS]. */
         public const val PLAY_GAMES: String = "playGames"

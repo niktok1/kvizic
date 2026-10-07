@@ -35,8 +35,10 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.exists
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
+import org.jetbrains.exposed.v1.core.notExists
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -176,6 +178,22 @@ internal object AccountAdmin {
                 }
         return AdminAccountDetailDto(row.toAccount(id in linkedToPlayGames(listOf(id))), topics, games)
     }
+
+    /**
+     * The ids of the empty accounts: no Play Games link, no game played, no answer given, and last seen
+     * (or made, when never seen) before [idleBefore]. Must run inside a transaction.
+     */
+    fun emptyIds(idleBefore: Long): List<String> =
+        Players
+            .join(Profiles, JoinType.INNER, Players.id, Profiles.playerId)
+            .select(Players.id)
+            .where {
+                (Profiles.gamesPlayed eq 0) and
+                    (Profiles.answersGiven eq 0) and
+                    (Coalesce(Players.lastSeenAt, Players.createdAt) less idleBefore) and
+                    notExists(Identities.select(Identities.playerId).where { Identities.playerId eq Players.id })
+            }.orderBy(Players.id to SortOrder.ASC)
+            .map { it[Players.id] }
 
     private fun linkedToPlayGames(ids: List<String>): Set<String> =
         if (ids.isEmpty()) {

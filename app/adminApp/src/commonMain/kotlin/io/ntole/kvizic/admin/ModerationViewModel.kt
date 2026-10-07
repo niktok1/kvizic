@@ -263,6 +263,45 @@ class ModerationViewModel(
         }
     }
 
+    override fun pickCleanupDays(days: Int) =
+        mutable.update {
+            it.copy(accounts = it.accounts.copy(cleanupDays = days, emptyCount = null, confirmingCleanup = false))
+        }
+
+    /** Counts the empty accounts idle for the days picked, which a deletion then must still find. */
+    override fun countEmptyAccounts() =
+        act { token ->
+            val days = mutable.value.accounts.cleanupDays
+            val count = moderation.countEmptyAccounts(token, days)
+            mutable.update { it.copy(accounts = it.accounts.copy(emptyCount = count, done = null)) }
+        }
+
+    override fun askToCleanUp() {
+        if ((mutable.value.accounts.emptyCount ?: 0) == 0) return
+        mutable.update { it.copy(accounts = it.accounts.copy(confirmingCleanup = true)) }
+    }
+
+    override fun cancelCleanUp() = mutable.update { it.copy(accounts = it.accounts.copy(confirmingCleanup = false)) }
+
+    override fun cleanUpEmptyAccounts() {
+        val accounts = mutable.value.accounts
+        val expected = accounts.emptyCount ?: return
+        mutable.update { it.copy(accounts = it.accounts.copy(confirmingCleanup = false)) }
+        act(
+            onFailure = { message ->
+                mutable.update { it.copy(accounts = it.accounts.copy(emptyCount = null), failure = message) }
+            },
+        ) { token ->
+            val deleted = moderation.deleteEmptyAccounts(token, accounts.cleanupDays, expected)
+            mutable.update {
+                it.copy(
+                    accounts = it.accounts.copy(emptyCount = null, done = "Deleted $deleted empty accounts."),
+                )
+            }
+            readAccounts(token, more = false)
+        }
+    }
+
     // How each read and action runs.
 
     private fun loaded(tab: AdminTab): Boolean =

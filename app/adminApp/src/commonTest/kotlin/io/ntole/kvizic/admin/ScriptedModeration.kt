@@ -1,6 +1,7 @@
 package io.ntole.kvizic.admin
 
 import io.ntole.kvizic.core.domain.error.CoreError
+import io.ntole.kvizic.core.domain.error.GameError
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.moderation.AccountDetail
 import io.ntole.kvizic.core.domain.moderation.AccountFilter
@@ -192,6 +193,26 @@ internal class ScriptedModeration : ModerationRepository {
         accountId: String,
     ) {
         call(token, "delete $accountId")
+    }
+
+    var empty = 0
+
+    override suspend fun countEmptyAccounts(
+        token: AdminToken,
+        idleDays: Int,
+    ): Int {
+        call(token, "count empty $idleDays")
+        return empty
+    }
+
+    override suspend fun deleteEmptyAccounts(
+        token: AdminToken,
+        idleDays: Int,
+        expectedCount: Int,
+    ): Int {
+        call(token, "delete empty $idleDays $expectedCount")
+        if (expectedCount != empty) throw KvizicException(GameError.STALE_REVISION)
+        return empty.also { empty = 0 }
     }
 
     private fun replace(

@@ -95,4 +95,14 @@ interface ModerationActions {
     fun cancelDelete() {}
 
     fun deleteAccount() {}
+
+    fun pickCleanupDays(days: Int) {}
+
+    fun countEmptyAccounts() {}
+
+    fun askToCleanUp() {}
+
+    fun cancelCleanUp() {}
+
+    fun cleanUpEmptyAccounts() {}
 }

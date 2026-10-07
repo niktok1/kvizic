@@ -413,6 +413,54 @@ class ModerationViewModelTest {
             assertEquals("", viewModel.state.value.accounts.accountId)
         }
 
+    @Test
+    fun `empty accounts are counted, then deleted only once confirmed and as counted`() =
+        test {
+            bank.empty = 4
+            unlocked()
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+            viewModel.pickCleanupDays(3)
+            viewModel.askToCleanUp()
+            assertEquals(false, viewModel.state.value.accounts.confirmingCleanup, "nothing counted yet")
+
+            viewModel.countEmptyAccounts()
+            advanceUntilIdle()
+            assertEquals(4, viewModel.state.value.accounts.emptyCount)
+            assertEquals("count empty 3", bank.calls.last())
+
+            viewModel.askToCleanUp()
+            assertEquals(true, viewModel.state.value.accounts.confirmingCleanup)
+            viewModel.cleanUpEmptyAccounts()
+            advanceUntilIdle()
+
+            assertEquals("delete empty 3 4", bank.calls.single { it.startsWith("delete empty") })
+            val after = viewModel.state.value.accounts
+            assertEquals("Deleted 4 empty accounts.", after.done)
+            assertEquals(null, after.emptyCount)
+        }
+
+    @Test
+    fun `a count that changed deletes nothing and has to be taken again`() =
+        test {
+            bank.empty = 4
+            unlocked()
+            viewModel.select(AdminTab.ACCOUNTS)
+            advanceUntilIdle()
+            viewModel.countEmptyAccounts()
+            advanceUntilIdle()
+            bank.empty = 5
+
+            viewModel.askToCleanUp()
+            viewModel.cleanUpEmptyAccounts()
+            advanceUntilIdle()
+
+            val after = viewModel.state.value
+            assertEquals(null, after.accounts.emptyCount)
+            assertEquals(5, bank.empty, "nothing was deleted")
+            assertEquals(true, after.failure != null)
+        }
+
     private fun player(
         id: String,
         name: String,

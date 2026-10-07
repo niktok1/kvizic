@@ -78,4 +78,23 @@ public interface ModerationRepository {
         token: AdminToken,
         accountId: String,
     )
+
+    /**
+     * How many accounts are empty: no Play Games link, no game played, no answer given, and idle for at
+     * least [idleDays] whole days.
+     */
+    public suspend fun countEmptyAccounts(
+        token: AdminToken,
+        idleDays: Int,
+    ): Int
+
+    /**
+     * Deletes the empty accounts idle for [idleDays] days, which were counted as [expectedCount], and
+     * returns how many went. A different count now deletes nothing and fails `STALE_REVISION`.
+     */
+    public suspend fun deleteEmptyAccounts(
+        token: AdminToken,
+        idleDays: Int,
+        expectedCount: Int,
+    ): Int
 }

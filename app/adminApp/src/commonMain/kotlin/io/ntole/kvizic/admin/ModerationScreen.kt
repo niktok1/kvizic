@@ -677,8 +677,21 @@ private fun Accounts(
                     kind = ButtonKind.SECONDARY,
                     enabled = !state.busy && accounts.accountId.isNotBlank(),
                 )
+                EmptyAccountsCleanup(state, actions)
                 accounts.done?.let { KvizicText(it, style = type.bodyStrong, color = KvizicTheme.colors.gain) }
             }
+        }
+    }
+    if (accounts.confirmingCleanup) {
+        StageDialog(
+            onDismiss = actions::cancelCleanUp,
+            title = "Delete ${accounts.emptyCount} empty accounts?",
+            text =
+                "No Play Games link, no game, no answer, idle ${accounts.cleanupDays} days or more. " +
+                    "It cannot be undone.",
+        ) {
+            StageButton("Delete accounts", onClick = actions::cleanUpEmptyAccounts, size = ButtonSize.SMALL)
+            StageButton("Cancel", onClick = actions::cancelCleanUp, kind = ButtonKind.QUIET, size = ButtonSize.SMALL)
         }
     }
     if (accounts.confirming) {
@@ -689,6 +702,62 @@ private fun Accounts(
         ) {
             StageButton("Delete account", onClick = actions::deleteAccount, size = ButtonSize.SMALL)
             StageButton("Cancel", onClick = actions::cancelDelete, kind = ButtonKind.QUIET, size = ButtonSize.SMALL)
+        }
+    }
+}
+
+/**
+ * Clearing the accounts nobody plays, the platform's pre-launch bots among them: pick how long idle, count,
+ * then delete exactly what the count showed.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EmptyAccountsCleanup(
+    state: ModerationState,
+    actions: ModerationActions,
+) {
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val accounts = state.accounts
+    Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
+        KvizicText("Empty accounts", style = type.label, color = KvizicTheme.colors.onPageMuted)
+        KvizicText(
+            "No Play Games link, no game played, no answer given, and not seen for the days picked.",
+            style = type.body,
+            color = KvizicTheme.colors.onPageMuted,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(space.xs),
+            verticalArrangement = Arrangement.spacedBy(space.xs),
+        ) {
+            AccountsState.CLEANUP_DAYS.forEach { days ->
+                Chip(
+                    "$days d",
+                    selected = days == accounts.cleanupDays,
+                    onClick = { actions.pickCleanupDays(days) },
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(space.sm)) {
+            StageButton(
+                "Count",
+                onClick = actions::countEmptyAccounts,
+                kind = ButtonKind.SECONDARY,
+                size = ButtonSize.SMALL,
+                enabled = !state.busy,
+            )
+            accounts.emptyCount?.let { count ->
+                KvizicText("$count empty accounts", style = type.bodyStrong)
+                if (count > 0) {
+                    StageButton(
+                        "Delete them…",
+                        onClick = actions::askToCleanUp,
+                        kind = ButtonKind.SECONDARY,
+                        size = ButtonSize.SMALL,
+                        enabled = !state.busy,
+                    )
+                }
+            }
         }
     }
 }
