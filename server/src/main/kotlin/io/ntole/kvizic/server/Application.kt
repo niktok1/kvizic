@@ -35,6 +35,8 @@ import io.ntole.kvizic.server.lobby.ResultSink
 import io.ntole.kvizic.server.lobby.lobbyRoutes
 import io.ntole.kvizic.server.match.ResultWriter
 import io.ntole.kvizic.server.player.GuestCleanupJob
+import io.ntole.kvizic.server.player.NtfyOpenedNotifier
+import io.ntole.kvizic.server.player.OpenedNotifier
 import io.ntole.kvizic.server.player.playerRoutes
 import io.ntole.kvizic.server.plugins.installPlugins
 import io.ntole.kvizic.server.plugins.installRateLimits
@@ -78,6 +80,7 @@ fun Application.kvizicModule(
     config: ServerConfig,
     googleEngine: () -> HttpClientEngine = { CIO.create() },
     parts: GameParts = GameParts(),
+    opened: OpenedNotifier? = null,
 ) {
     warnAboutInsecureDefaults(config)
 
@@ -98,6 +101,15 @@ fun Application.kvizicModule(
         engine?.close()
     }
     val playGames = config.playGames?.let { client -> GooglePlayGames(client, checkNotNull(google)) }
+    // A server with no topic says nothing; tests hand in their own.
+    val openedClient = if (opened == null && config.openedNotice != null) googleHttpClient(googleEngine()) else null
+    monitor.subscribe(ApplicationStopped) { openedClient?.close() }
+    val notifier =
+        opened
+            ?: config.openedNotice?.let { notice ->
+                NtfyOpenedNotifier(notice, checkNotNull(openedClient), background)
+            }
+            ?: OpenedNotifier.None
 
     // The lobbies: CPU work only, never the database, on the default dispatcher.
     val lobbies = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("kvizic-lobbies"))
@@ -146,8 +158,14 @@ fun Application.kvizicModule(
         // Uptime monitors probe with HEAD (UptimeRobot's free plan always does); 405 read as down.
         head(KvizicApi.Paths.HEALTH) { call.respond(HttpStatusCode.OK) }
 
-        authRoutes(db, tokens, config, sessionEnded = { playerId, sessionId -> sessionEnded(playerId, sessionId) })
-        playGamesRoutes(db, tokens, config, playGames)
+        authRoutes(
+            db,
+            tokens,
+            config,
+            sessionEnded = { playerId, sessionId -> sessionEnded(playerId, sessionId) },
+            opened = notifier,
+        )
+        playGamesRoutes(db, tokens, config, playGames, notifier)
         playerRoutes(db, playerDeleted = { playerId -> sessionEnded(playerId, null) })
         topicRoutes(db)
         lobbyRoutes(

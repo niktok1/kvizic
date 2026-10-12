@@ -11,6 +11,7 @@ import io.ntole.kvizic.core.auth.PlayGamesSignInRequest
 import io.ntole.kvizic.server.config.ServerConfig
 import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.player.DisplayNames
+import io.ntole.kvizic.server.player.OpenedNotifier
 import io.ntole.kvizic.server.player.PlayerStore
 import io.ntole.kvizic.server.plugins.ApiFailure
 import io.ntole.kvizic.server.plugins.RouteLimit
@@ -31,6 +32,7 @@ fun Route.playGamesRoutes(
     tokens: TokenService,
     config: ServerConfig,
     playGames: PlayGamesVerifier?,
+    opened: OpenedNotifier = OpenedNotifier.None,
 ) {
     if (playGames == null) return
 
@@ -53,13 +55,15 @@ fun Route.playGamesRoutes(
 
                 val refresh = tokens.issueRefreshToken()
                 val expiresAt = System.currentTimeMillis() + config.refreshTokenTtlSeconds * 1_000L
+                var beganSession = false
                 val session =
                     db.query {
                         val playerId = IdentityStore.signIn(IdentityProvider.PLAY_GAMES, player.playerId, callerId)
                         name?.let { PlayerStore.setPlayGamesName(playerId, it) }
-                        PlayerStore.touch(playerId)
+                        beganSession = PlayerStore.touch(playerId)
                         SessionStore.open(playerId, refresh.hash, expiresAt)
                     }
+                if (beganSession) opened.opened(session.playerId)
 
                 call.respond(tokens.answer(session, refresh, config))
             }

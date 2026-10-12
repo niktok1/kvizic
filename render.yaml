@@ -68,6 +68,12 @@ services:
         sync: false
       - key: PLAY_GAMES_CLIENT_SECRET
         sync: false
+      # A push to the owner's phone (ntfy.sh) when a player opens the app, none for the owner's own accounts
+      # (their ids, comma-separated). Off without the topic, which is the channel's only secret.
+      - key: NOTIFY_NTFY_TOPIC
+        sync: false
+      - key: NOTIFY_EXCLUDE_PLAYER_IDS
+        sync: false
       # How many days a guest nobody can reach any more is kept. 90 is also the default; 0 turns it off.
       - key: GUEST_RETENTION_DAYS
         value: "90"

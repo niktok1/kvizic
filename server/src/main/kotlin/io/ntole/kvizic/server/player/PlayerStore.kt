@@ -20,6 +20,9 @@ object PlayerStore {
     /** How stale "last seen" may be, so it is a write a few minutes and no more. */
     const val TOUCH_EVERY_MILLIS: Long = 5 * 60 * 1_000L
 
+    /** Away this long, a player who comes back begins a new session: a launch, whatever the app was doing. */
+    const val SESSION_GAP_MILLIS: Long = 30 * 60 * 1_000L
+
     /** A player as others see them in a lobby. */
     data class Player(
         val id: String,
@@ -60,17 +63,28 @@ object PlayerStore {
     /**
      * Notes that [id] is here at [now], at most once in [TOUCH_EVERY_MILLIS]: one `UPDATE` whose `WHERE` holds
      * the age, so a busy player costs a write a few minutes, never one a request, and two at once write once.
-     * Must run inside a transaction.
+     * True when this touch is the one that began a session: it wrote, and the player was last seen more than
+     * [SESSION_GAP_MILLIS] ago or never. Must run inside a transaction.
      */
     fun touch(
         id: String,
         now: Long = System.currentTimeMillis(),
-    ) {
-        Players.update({
-            (Players.id eq id) and (Players.lastSeenAt.isNull() or (Players.lastSeenAt less now - TOUCH_EVERY_MILLIS))
-        }) { row ->
-            row[lastSeenAt] = now
-        }
+    ): Boolean {
+        val before =
+            Players
+                .select(
+                    Players.lastSeenAt,
+                ).where { Players.id eq id }
+                .firstOrNull()
+                ?.get(Players.lastSeenAt)
+        val written =
+            Players.update({
+                (Players.id eq id) and
+                    (Players.lastSeenAt.isNull() or (Players.lastSeenAt less now - TOUCH_EVERY_MILLIS))
+            }) { row ->
+                row[lastSeenAt] = now
+            }
+        return written > 0 && (before == null || now - before > SESSION_GAP_MILLIS)
     }
 
     /** The player [id], or null when there is none. Must run inside a transaction. */

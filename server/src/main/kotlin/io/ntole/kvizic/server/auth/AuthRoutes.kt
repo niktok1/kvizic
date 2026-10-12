@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.auth.RefreshRequest
 import io.ntole.kvizic.core.auth.SessionDto
 import io.ntole.kvizic.server.config.ServerConfig
 import io.ntole.kvizic.server.db.Db
+import io.ntole.kvizic.server.player.OpenedNotifier
 import io.ntole.kvizic.server.player.PlayerStore
 import io.ntole.kvizic.server.plugins.ApiFailure
 import io.ntole.kvizic.server.plugins.RouteLimit
@@ -26,6 +27,7 @@ fun Route.authRoutes(
     tokens: TokenService,
     config: ServerConfig,
     sessionEnded: (playerId: String, sessionId: String) -> Unit,
+    opened: OpenedNotifier = OpenedNotifier.None,
 ) {
     // The server mints the player, so the identity cannot be forged by a tampered client. Limited per
     // address: what bounds a script minting guests.
@@ -36,6 +38,7 @@ fun Route.authRoutes(
 
             // The guest, their profile and first session, in one transaction.
             val session = db.query { SessionStore.open(PlayerStore.createGuest().id, refresh.hash, expiresAt) }
+            opened.opened(session.playerId)
 
             call.respond(tokens.answer(session, refresh, config))
         }
@@ -54,6 +57,7 @@ fun Route.authRoutes(
             // Rotates on every use, in the session the token belongs to. The token a rotation displaces
             // still works once more, until the next rotation displaces it (the grace), so a refresh whose
             // answer was lost can be sent again.
+            var beganSession = false
             val session =
                 db.query {
                     SessionStore
@@ -62,8 +66,10 @@ fun Route.authRoutes(
                             newHash = rotated.hash,
                             expiresAt = expiresAt,
                             graceMillis = config.refreshGraceSeconds?.let { seconds -> seconds * 1_000L },
-                        )?.also { PlayerStore.touch(it.playerId) } ?: throw ApiFailure.invalidRefreshToken()
+                        )?.also { beganSession = PlayerStore.touch(it.playerId) }
+                        ?: throw ApiFailure.invalidRefreshToken()
                 }
+            if (beganSession) opened.opened(session.playerId)
 
             call.respond(tokens.answer(session, rotated, config))
         }

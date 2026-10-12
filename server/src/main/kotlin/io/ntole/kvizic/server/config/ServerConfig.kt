@@ -3,6 +3,7 @@ package io.ntole.kvizic.server.config
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.auth.PlayGamesClient
 import io.ntole.kvizic.server.lobby.LobbyLimits
+import io.ntole.kvizic.server.player.OpenedNotice
 
 /**
  * Everything the server reads from the environment.
@@ -69,6 +70,12 @@ data class ServerConfig(
      * without the other fails at boot, naming the missing one and neither value.
      */
     val playGames: PlayGamesClient? = null,
+    /**
+     * Where a push goes when a player opens the app, from `NOTIFY_NTFY_TOPIC` (an ntfy.sh topic, long enough to
+     * be a secret) and `NOTIFY_EXCLUDE_PLAYER_IDS` (comma-separated, the owner's own accounts), or null when no
+     * topic is set, which turns it off.
+     */
+    val openedNotice: OpenedNotice? = null,
     /**
      * The oldest build the server serves on each platform, by its `KvizicApi.ClientPlatform` name, from
      * `MIN_CLIENT_VERSION_ANDROID`, `_IOS`, `_WEB` and `_DESKTOP`. A platform left out, the default for
@@ -167,6 +174,7 @@ data class ServerConfig(
                 clientIpHeader = env("CLIENT_IP_HEADER")?.let(::parseClientIpHeader),
                 onRender = env("RENDER") == "true",
                 playGames = parsePlayGames(env("PLAY_GAMES_CLIENT_ID"), env("PLAY_GAMES_CLIENT_SECRET")),
+                openedNotice = parseOpenedNotice(env("NOTIFY_NTFY_TOPIC"), env("NOTIFY_EXCLUDE_PLAYER_IDS")),
                 minClientVersions = parseMinClientVersions(env),
                 guestRetentionDays = parseGuestRetentionDays(env("GUEST_RETENTION_DAYS")),
                 questionSeedFile = parseQuestionSeedFile(env("QUESTION_SEED_FILE"), databaseUrl),
@@ -262,6 +270,31 @@ data class ServerConfig(
             ) { "PLAY_GAMES_CLIENT_ID is set but PLAY_GAMES_CLIENT_SECRET is not; set both, or neither." }
             return PlayGamesClient(clientId = id, clientSecret = secret)
         }
+
+        /**
+         * The push for an opened app, or null when [topic] is unset or blank. A topic that is not 16 to 64 letters,
+         * digits, `-` or `_` fails at config load, naming the variable and never its value: a short one would be
+         * guessed, and anyone who knows the topic may read what is sent to it.
+         */
+        internal fun parseOpenedNotice(
+            topic: String?,
+            excluded: String?,
+        ): OpenedNotice? {
+            val name = topic?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+            require(NTFY_TOPIC.matches(name)) {
+                "NOTIFY_NTFY_TOPIC must be 16 to 64 letters, digits, '-' or '_'."
+            }
+            val ids =
+                excluded
+                    ?.split(',')
+                    ?.map(String::trim)
+                    ?.filter(String::isNotEmpty)
+                    ?.toSet()
+                    .orEmpty()
+            return OpenedNotice(topic = name, excludedPlayerIds = ids)
+        }
+
+        private val NTFY_TOPIC = Regex("[A-Za-z0-9_-]{16,64}")
 
         /**
          * Each platform's minimum build whose variable is set, a whole number of at least 1, trimmed;

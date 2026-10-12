@@ -91,6 +91,12 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   less than `dropGrace` ago (3 s) is still waited for before an early reveal.
 - Deploys drain: Render waits `maxShutdownDelaySeconds` (300, prod) and the server drains lobbies for
   `DRAIN_SECONDS` (280 prod, 25 dev), then waits for sockets to close.
+- **A push when a player opens the app** (the owner, 2026-10-12): the server posts „Player opened the app“ to an
+  ntfy.sh topic (`NOTIFY_NTFY_TOPIC`, 16 to 64 characters, the channel's only secret, so a Render variable and never
+  in git) when a touch begins a session (`PlayerStore.touch` true: last seen never or over 30 min ago) at a guest's
+  mint, a refresh or a Play Games sign-in. Nothing of the player is sent, and the owner's own accounts
+  (`NOTIFY_EXCLUDE_PLAYER_IDS`, comma-separated) never push. Off without the topic; set on prod alone
+  (`OpenedNotifier`, fire-and-forget from the background scope, a failure only logged).
 - The client: `DefaultLobbySession`, one per app, reconnects with backoff and jitter, re-tickets, resends
   a pending answer; the UI reads its `StateFlow` (`RoomViewModel`).
 
