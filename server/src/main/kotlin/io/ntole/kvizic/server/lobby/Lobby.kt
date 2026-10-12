@@ -350,6 +350,8 @@ class Lobby(
         } else if (previous == null) {
             changed(except = member) { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
         }
+        // A joiner who finds the host never arrived takes the room at once, not at the next tick.
+        handOverAbsentHost(now())
         send(member, snapshotFor(member))
         lastPresence?.let { send(member, it) }
     }
@@ -589,7 +591,10 @@ class Lobby(
         val current = host?.let { members[it] } ?: return
         val others = members.values.filter { it.announced && it.connection != null && it.playerId != current.playerId }
         if (others.isEmpty()) return
-        val absent = current.connection == null && at - (current.goneSince ?: at) >= timings.absentPublicHost
+        // One who never came to their seat (no socket yet) is no host to wait for: strangers are not held for them.
+        val absent =
+            current.connection == null &&
+                (!current.announced || at - (current.goneSince ?: at) >= timings.absentPublicHost)
         val idle = at - current.activeAt >= timings.afkHost
         // An idle host hands over only to someone who did something since, so two idle members never
         // pass hosting back and forth.

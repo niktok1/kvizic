@@ -257,6 +257,25 @@ class LobbyMembershipTest {
         }
 
     @Test
+    fun `a public host who never came to their seat hands the room to the first to arrive`() =
+        runTest {
+            val public =
+                LobbyScenario(
+                    this,
+                    LobbySettingsDto(questionCount = 3, visibility = Visibility.PUBLIC),
+                    kind = LobbyKind.PUBLIC,
+                )
+            public.player("ana").reserve()
+            assertTrue(public.summary().connected.isEmpty(), "a seat with no socket is not listed as alive")
+            val boris = public.player("boris").join()
+            assertEquals(
+                "boris",
+                boris.last<ServerMessage.HostChanged>().host,
+                "nobody waits for a host who is not there",
+            )
+        }
+
+    @Test
     fun `a public host about to be passed over is told and staying starts their time over`() =
         runTest {
             val lobby =

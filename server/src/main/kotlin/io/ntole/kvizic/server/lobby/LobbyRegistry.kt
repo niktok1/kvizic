@@ -189,11 +189,11 @@ class LobbyRegistry(
             ?.value
             ?.takeIf { it.kind != LobbyKind.SOLO && !it.closed }
 
-    /** The open public lobbies for the list: waiting ones first, fullest first, at most [PUBLIC_LIST_SIZE]. */
+    /** The open public lobbies with someone connected for the list: waiting ones first, fullest first, at most [PUBLIC_LIST_SIZE]. */
     fun publicList(): List<LobbySummary> =
         lobbies.values
             .map { it.summary.value }
-            .filter { it.kind == LobbyKind.PUBLIC && !it.closed && !it.draining && it.seatsTaken > 0 }
+            .filter { it.kind == LobbyKind.PUBLIC && !it.closed && !it.draining && it.connected.isNotEmpty() }
             .sortedWith(
                 compareBy<LobbySummary> { it.inGame }.thenByDescending { it.seatsTaken }.thenBy { it.openedOrder },
             ).take(PUBLIC_LIST_SIZE)

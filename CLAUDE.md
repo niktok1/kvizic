@@ -109,7 +109,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   so nobody away holds a seat: an AFK player is out after at most one game. The countdown's „Нова игра почиње
   — уђи“ is their last call.
 - **Host and vote-kick** (the owner, 2026-10-01; no ready state, no vote to start): the host starts, kicks and
-  hands over as before, and a public room's idle host still hands over after 3 min. The rest may **vote a
+  hands over as before, and a public room's idle host still hands over after 3 min. A public host who never came to their seat (no socket) hands over at once to the first to arrive, and the public list shows only rooms with someone connected (2026-10-05). The rest may **vote a
   member out**, the host included, from the member's seat, while the room waits (never mid-game or in the
   countdown). It takes more than half of the other members in the room (connected and back from the
   results), and at least two (`kickVotesNeeded`), so of two players neither can; the tally moves with who is
