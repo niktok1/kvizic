@@ -226,11 +226,11 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   on `io.ntole.kvizic`'s credential: sign in with a Play-installed build, or add it again.
 - **Phones play upright** (the owner, 2026-10-02): Android's activity is portrait and the iPhone takes
   portrait alone; the game is laid out for a phone's height. iPads, desktop and the web take any shape, and
+  Android 16 lets a large screen turn the app anyway, where the content keeps its width (`contentWidth`).
 - **A start nudges the frames** (the owner, 2026-10-12): a POCO X3 Pro (MIUI, Android 12) came back from the
   background with Compose's frame callback queued and no vsync to run it, so taps were heard and drew nothing
   for up to half a minute; one more frame callback ran it. For 5 s after every start the activity asks for an
   empty frame each 100 ms (`FrameNudge`), on every device: it is unknown which others do this, and it costs a tick.
-  Android 16 lets a large screen turn the app anyway, where the content keeps its width (`contentWidth`).
 
 ## 10. Design system decisions
 
