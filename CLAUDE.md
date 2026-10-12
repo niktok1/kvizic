@@ -142,7 +142,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - **Difficulty is a mix, never a filter** (`DifficultyMix`): easy, medium and hard in 60/30/10, 20/60/20 or
   10/30/60 percent, as whole counts, a share that does not come out whole falling at random. Who has seen
   what comes first: a game asks an unseen question off its level before a seen one on it, and a level the
-  bank is short of takes the nearest. The room's chips name it in a word, unless medium. A solo run keeps its
+  bank is short of takes the nearest. A public list's card names it in a word, unless medium; the lobby always does. A solo run keeps its
   format but its level, picked in its room, and each level keeps its own best (V5; medium in V1's columns).
 
 ## 8. Questions
@@ -285,7 +285,11 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   an empty seat a person's outline, the host by a crown above the avatar's head, the player's own seat lit in
   the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a
   screen reader is told. The code stands small in the top bar, a lock or a globe for private or public, and a
-  long press copies it; the settings' chips take an icon where one says it (the clock on the time).
+  long press copies it. The lobby shows **every setting** on its chips (the owner, 2026-10-12): questions, time,
+  topics, difficulty, the minus, seats and private or public, an icon where one says it (the clock, a person,
+  the lock or globe); the room's name is no chip but a headline over the seats, shrinking to a chip's size
+  before it is cut. The host's chips are one button to the settings, so their rows stand as close as a member's
+  (a touch target each pushed Start off 360×640 under a long name); a change to any of them is said in a snack.
 - **Inviting** (the owner, 2026-10-07): while a seat is free and no countdown runs, „Позови играче“ (a small
   secondary button, the one label the lobby has, over Start) and a tap on a free seat share the room: the link
   `kvizic.ntole.com/j/<code>` and the code (`InviteLink`). On Android the link opens the game (an App Link,

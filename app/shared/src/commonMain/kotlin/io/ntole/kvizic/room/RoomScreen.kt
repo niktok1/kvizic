@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onLongClick
@@ -303,8 +305,8 @@ private fun changedChips(
     note: RoomNote.SettingsChanged,
     topics: List<Topic>,
 ): List<String> {
-    val before = settingsChips(note.before, topics).map { it.text }
-    return settingsChips(note.after, topics).map { it.text }.filter { it !in before }
+    val before = settingsChips(note.before, topics, whole = true).map { it.text }
+    return settingsChips(note.after, topics, whole = true).map { it.text }.filter { it !in before }
 }
 
 @Composable
@@ -374,10 +376,11 @@ private fun Waiting(
                     style = type.headline,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
-                    // As large as the width lets it be, and never cut: the longest a name may be fits.
+                    // As large as the width lets it be, and never cut: the longest a name may be fits, at a
+                    // large font too, down to a chip's size.
                     autoSize =
                         TextAutoSize.StepBased(
-                            minFontSize = type.name.style.fontSize,
+                            minFontSize = type.chip.style.fontSize,
                             maxFontSize = type.headline.style.fontSize,
                         ),
                 )
@@ -391,8 +394,26 @@ private fun Waiting(
                 onInvite = if (inviting) invite else null,
             )
             Spacer(Modifier.height(space.md))
-            // The chips wrap onto another line rather than squeeze one another to nothing.
+            // The host's chips open the settings as one button, so its rows stand as close as a member's: a
+            // touch target's height for each chip would take a row's worth off a small phone. The chips wrap
+            // onto another line rather than squeeze one another to nothing.
+            val editing = lobby.kind != LobbyKind.SOLO && hosting && countdown == null
+            val openSettings = cued(Cue.TAP_SOFT, tapped("room.settings", onClick = actions.openSettings))
             FlowRow(
+                modifier =
+                    if (editing) {
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = null,
+                                indication = null,
+                                role = Role.Button,
+                                onClickLabel = words.settings,
+                                onClick = openSettings,
+                            )
+                    } else {
+                        Modifier
+                    },
                 horizontalArrangement = Arrangement.spacedBy(space.xs),
                 verticalArrangement = Arrangement.spacedBy(space.xs),
             ) {
@@ -413,19 +434,8 @@ private fun Waiting(
                         )
                     }
                 } else {
-                    settingsChips(lobby.settings, topics).forEach { chip ->
-                        Chip(
-                            chip.text,
-                            icon = chip.icon,
-                            onClick =
-                                if (hosting &&
-                                    countdown == null
-                                ) {
-                                    tapped("room.settings", onClick = actions.openSettings)
-                                } else {
-                                    null
-                                },
-                        )
+                    settingsChips(lobby.settings, topics, whole = true).forEach { chip ->
+                        Chip(chip.text, icon = chip.icon)
                     }
                 }
             }

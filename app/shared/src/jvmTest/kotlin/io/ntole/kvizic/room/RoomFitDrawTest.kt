@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
  */
 class RoomFitDrawTest : RoomStills() {
     @Test
-    fun `the lobby's chips are whole with three topics and a difficulty`() {
+    fun `the lobby's chips are whole with every setting under a long name`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game
             val state = inLobby(GamePhase.Waiting(null), lobby = lobby(host = YOU, settings = BUSY))
@@ -35,7 +35,12 @@ class RoomFitDrawTest : RoomStills() {
                 draw(skin, "fit-lobby-$width-$fontScale", state, width = width, fontScale = fontScale) { scene ->
                     assertEquals(emptyList(), cutBeyondSeats(scene), "$where: cut")
                     val shown = scene.everyText()
-                    listOf(words.levelName(LobbyDifficulty.HARD), words.penaltyOn).forEach {
+                    listOf(
+                        words.levelName(LobbyDifficulty.HARD),
+                        words.penaltyOn,
+                        words.seatCount.of(BUSY.maxPlayers, Language.DEFAULT),
+                        words.privateShort,
+                    ).forEach {
                         assertTrue(it in shown, "$where: no \"$it\" in $shown")
                     }
                     val start = scene.nodes().single { words.start in it.texts }.boundsInRoot
@@ -112,9 +117,16 @@ class RoomFitDrawTest : RoomStills() {
     }
 
     private companion object {
-        /** Three topics, the summary „Географија, Историја +1“, and a difficulty: the lobby's most chips. */
+        /**
+         * Three topics, the summary „Географија, Историја +1“, a difficulty, the seats and who can join: the
+         * lobby's most chips, under a name as long as a room's may be.
+         */
         val BUSY =
-            LobbySettings(topics = listOf("GEOGRAPHY", "HISTORY", "FOOD"), difficulty = LobbyDifficulty.HARD)
+            LobbySettings(
+                topics = listOf("GEOGRAPHY", "HISTORY", "FOOD"),
+                difficulty = LobbyDifficulty.HARD,
+                name = "Квиз петком код Мирјане",
+            )
 
         /** The phone the chips were crushed on, the narrowest, and the narrowest at a large font. */
         val LOBBY_SIZES = listOf(393 to 1f, WIDTH to 1f, WIDTH to LARGE_FONT)

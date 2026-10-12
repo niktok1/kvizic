@@ -10,6 +10,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.icon.KvizicIcons
@@ -210,20 +211,35 @@ internal data class SettingChip(
     val icon: ImageVector? = null,
 )
 
-/** A room's settings, each in a few words, as its chips show them: its difficulty only when not medium. */
+/**
+ * A room's settings, each in a few words, as its chips show them: its difficulty only when not medium. The
+ * lobby shows them [whole]: the difficulty always, and its seats and who can join, which a card in the public
+ * list says by its count and by being there.
+ */
 @Composable
 @ReadOnlyComposable
 internal fun settingsChips(
     settings: LobbySettings,
     topics: List<Topic> = emptyList(),
+    whole: Boolean = false,
 ): List<SettingChip> {
     val words = LocalStrings.current.game
     val language = LocalLanguage.current
+    val public = settings.visibility == LobbyVisibility.PUBLIC
     return listOfNotNull(
         SettingChip(words.questionCount.of(settings.questionCount, language)),
         SettingChip(words.seconds.fill(settings.secondsPerQuestion), KvizicIcons.Clock),
         SettingChip(topicsSummary(settings.topics, topics, language, words.allTopics)),
-        settings.difficulty.takeIf { it != LobbyDifficulty.MEDIUM }?.let { SettingChip(words.levelName(it)) },
+        settings.difficulty.takeIf { whole || it != LobbyDifficulty.MEDIUM }?.let { SettingChip(words.levelName(it)) },
         SettingChip(if (settings.wrongAnswerPenalty) words.penaltyOn else words.penaltyOff),
+        if (whole) SettingChip(words.seatCount.of(settings.maxPlayers, language), KvizicIcons.Person) else null,
+        if (whole) {
+            SettingChip(
+                if (public) words.publicShort else words.privateShort,
+                if (public) KvizicIcons.Globe else KvizicIcons.Lock,
+            )
+        } else {
+            null
+        },
     )
 }
