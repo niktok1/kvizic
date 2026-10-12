@@ -10,7 +10,8 @@ import io.ntole.kvizic.share.InviteLink
 /**
  * Binds the shared UI to the Android activity lifecycle, and nothing else: DI is started in
  * [KvizicApplication], and every screen lives in `:app:shared`. A room's link it is opened at, at launch or
- * while it runs (one activity, `singleTask`), goes to [InviteLink].
+ * while it runs (one activity, `singleTask`), goes to [InviteLink]. Each start is followed by a few seconds
+ * of [FrameNudge], for a device that would leave Compose's first frames back undrawn.
  *
  * There is deliberately no `@Preview` of [App] here: it resolves its ViewModels from Koin, which the
  * preview renderer never starts, so the preview would only ever throw.
@@ -21,6 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // An activity made anew, on a rotation say, keeps the intent it was opened at: that link was taken.
         if (savedInstanceState == null) opened(intent)
+        lifecycle.addObserver(FrameNudge())
 
         setContent {
             App()
