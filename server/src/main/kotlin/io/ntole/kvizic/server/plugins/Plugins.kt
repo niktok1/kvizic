@@ -61,6 +61,7 @@ fun Application.installPlugins(
         allowHeader(KvizicApi.Headers.ADMIN_TOKEN)
         allowHeader(KvizicApi.Headers.CLIENT_PLATFORM)
         allowHeader(KvizicApi.Headers.CLIENT_VERSION)
+        allowHeader(KvizicApi.Headers.COUNTRY)
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         // Without it a browser page could never read how long a 429 asks it to wait.

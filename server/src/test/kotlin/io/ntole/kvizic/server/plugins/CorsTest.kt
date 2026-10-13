@@ -126,6 +126,34 @@ class CorsTest {
         }
 
     @Test
+    fun `a browser on an allowed origin may say the country it plays from`() =
+        testApplication {
+            val origin = "https://app.example.com"
+            val config = ServerConfig.fromEnvironment(mapOf("ALLOWED_WEB_ORIGINS" to origin)::get)
+
+            application {
+                installPlugins(config, TokenService(config))
+                routing { post(KvizicApi.Paths.QUICK_PLAY) { call.respondText("ok") } }
+            }
+
+            // Every call of the web build names it, beside its build: refused, every call would fail.
+            val preflight =
+                client.options(KvizicApi.Paths.QUICK_PLAY) {
+                    header(HttpHeaders.Origin, origin)
+                    header(HttpHeaders.AccessControlRequestMethod, "POST")
+                    header(
+                        HttpHeaders.AccessControlRequestHeaders,
+                        "authorization, ${KvizicApi.Headers.CLIENT_PLATFORM}, ${KvizicApi.Headers.COUNTRY}",
+                    )
+                }
+            assertEquals(HttpStatusCode.OK, preflight.status)
+            assertContains(
+                preflight.headers[HttpHeaders.AccessControlAllowHeaders].orEmpty().lowercase(),
+                KvizicApi.Headers.COUNTRY.lowercase(),
+            )
+        }
+
+    @Test
     fun `a browser on an allowed origin may name its build and read that it must update`() =
         testApplication {
             val origin = "https://app.example.com"
