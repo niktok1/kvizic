@@ -7,6 +7,13 @@ import io.ntole.kvizic.core.topic.TopicGroupDto
 
 /** DTO to domain translation for a topic: the only place a `TopicDto` and a `Topic` meet. */
 internal fun TopicDto.toDomain(): Topic =
-    Topic(id = id, nameSr = nameSr, nameEn = nameEn, questionCount = questionCount, groupId = groupId)
+    Topic(
+        id = id,
+        nameSr = nameSr,
+        nameEn = nameEn,
+        questionCount = questionCount,
+        groupId = groupId,
+        names = names,
+    )
 
-internal fun TopicGroupDto.toDomain(): TopicGroup = TopicGroup(id = id, nameSr = nameSr, nameEn = nameEn)
+internal fun TopicGroupDto.toDomain(): TopicGroup = TopicGroup(id = id, nameSr = nameSr, nameEn = nameEn, names = names)
