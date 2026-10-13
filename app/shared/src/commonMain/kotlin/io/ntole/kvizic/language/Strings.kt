@@ -133,10 +133,7 @@ fun stringsOf(language: Language): Strings =
  * Serbian Cyrillic's for Macedonian, so the game shows something whole in it. Once a language's own file
  * is written, its line goes, and `StringsTest` holds it to words of its own, in its own letters.
  */
-internal val PENDING_LANGUAGES: Set<Language> =
-    setOf(
-        Language.MACEDONIAN,
-    )
+internal val PENDING_LANGUAGES: Set<Language> = setOf()
 
 /** The strings of the language the game is shown in; Serbian Cyrillic, the default, until one is provided. */
 val LocalStrings = staticCompositionLocalOf { stringsOf(Language.DEFAULT) }
