@@ -44,6 +44,7 @@ object ProfileStore {
             nameSource = row[Players.nameSource],
             avatarId = row[Profiles.avatarId],
             playGamesLinked = IdentityStore.isLinked(playerId),
+            country = row[Players.country],
             level = PlayerLevelDto(number = level.number, xpIntoLevel = level.into, xpForLevel = level.span),
             stats =
                 PlayerStatsDto(
@@ -64,6 +65,7 @@ object ProfileStore {
         select(
             Players.displayName,
             Players.nameSource,
+            Players.country,
             Profiles.avatarId,
             Profiles.xp,
             Profiles.gamesPlayed,
