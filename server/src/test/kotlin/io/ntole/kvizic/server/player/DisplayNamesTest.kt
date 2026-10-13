@@ -62,10 +62,22 @@ class DisplayNamesTest {
             mapOf(
                 "hr" to names("Šupak, šupčino, Seronja, Buzerant, Kurba, Pizdun, Jebač, Pederčina, Kurčina"),
                 "bs" to names("Balija, balije, Pezevenk, Jebem ti, Pička ti materina, Čifut, Kurvo"),
-                "sl" to names("Fukač, fukam, Fuk, Kurec, Drek, Buzi, Čefur, čefurji, Kurbo, Pizda, Jebemti"),
+                "sl" to
+                    names(
+                        """
+                        Fukač, fukam, fukamo, fukati, fukate, fukaš, fukajo, fukala, Fuka, Fuk, Kurec, Drek, Buzi,
+                        Čefur, čefurji, Kurbo, Pizda, Jebemti
+                        """,
+                    ),
                 "mk" to names("Ебам ти, Ебач, Ебење, Ебига, Курот, Пичка, Курва, Кучка, Шупак, Пезевенк, Педер"),
                 "ethnic" to names("Šiptar, Шиптари, Čivut, Crnčuga, Балија, balijetina, Четник, Ustaša"),
-                "Nazism" to names("Nazi, Nazisti, Nacista, nacizam, Нацист, nacizem, Sieg Heil, SiegHeil, Hitler"),
+                "Nazism" to
+                    names(
+                        """
+                        Nazi, Nazisti, Nacista, Nacisti, nacistima, nacistov, Нацистите, nacistički, Nacistkinja,
+                        nacizam, Нацист, nacizem, Sieg Heil, SiegHeil, Hitler
+                        """,
+                    ),
             )
         val missed = slurs.mapValues { (_, words) -> words.filterNot(DisplayNames::isBlocked) }
         assertEquals(emptyMap(), missed.filterValues { it.isNotEmpty() })
@@ -180,12 +192,14 @@ class DisplayNamesTest {
             )
 
         // What starts like a blocked word yet is none: a title (naziv), a feast (Kurban), Courbet (Курбе), a
-        // crank, a din, ebony, a flower, tapping, kids, and the surnames that begin so.
+        // crank, a din, ebony, a flower, tapping, kids, quite (načisto), the poor (fukara), and the surnames and
+        // places that begin so.
         val NEAR_MISSES =
             names(
                 """
                 Назив, Bez naziva, Kurban-bajram, Kurbalija, Курбе, kurbla, dreka, Siegfried, Kurent, ebanovina,
-                Crnjanski, Arnautović, fuksija, kuckanje, klinci, Fukuoka
+                Crnjanski, Arnautović, fuksija, kuckanje, klinci, Fukuoka, načisto, načistac, načistu, Начисто,
+                Fukarek, fukara, Фукара, Fukami, Fukatsu, Fukasawa
                 """,
             )
     }

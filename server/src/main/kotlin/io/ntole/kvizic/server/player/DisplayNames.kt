@@ -169,7 +169,9 @@ object DisplayNames {
             // Croatian and Slovenian
             "buzeran", // buzerant
             // Slovenian
-            "fuka", // fukati, fukač
+            "fukac", // fukač; fukati's other forms are whole words, not Fukarek or fukara
+            "fukaj", // fukajo, fukajte
+            "fukal", // fukal, fukala
             "cefur", // čefur, for those from the other republics
             // Macedonian
             "ebam", // ебам
@@ -190,7 +192,8 @@ object DisplayNames {
             "hitler",
             "nazis",
             "naziz", // nazizam
-            "nacis", // nacist, nacista
+            "nacistic", // nacistički, nacističen (nacist itself is a whole word: načisto starts as it does)
+            "nacistk", // nacistka, nacistkinja
             "naciz", // nacizam, nacizem
             "siegheil",
             "cetnik",
@@ -199,7 +202,7 @@ object DisplayNames {
 
     /**
      * Whole words, folded, for slurs that start ordinary words or names: kurba but not Kurban or Kurbegović, nazi
-     * but not naziv, Nazif or Nazim.
+     * but not naziv, Nazif or Nazim, nacist but not načisto or načistac.
      */
     private val BLOCKED_WORDS: Set<String> =
         setOf(
@@ -220,8 +223,24 @@ object DisplayNames {
             "drek", // not dreka, a din in Serbian
             "buzi",
             "fuk",
-            // Nazism
+            "fuka",
+            "fukam", // not Fukami
+            "fukamo",
+            "fukas", // fukaš, not Fukasawa
+            "fukati", // not Fukatsu
+            "fukate",
+            // Nazism; not nacistu, which is Croatian načistu too, nor nacisto, načisto
             "nazi",
             "sieg",
+            "nacist",
+            "nacista",
+            "nacisti",
+            "naciste",
+            "nacistom",
+            "nacistima",
+            "nacistov", // Slovenian
+            "nacistih",
+            "nacistot", // Macedonian
+            "nacistite",
         )
 }
