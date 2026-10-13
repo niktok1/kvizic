@@ -79,8 +79,11 @@ class TopicNamesTest {
             val expected = if (language.isCyrillic) "Ђорђе Јовић" else "Đorđe Jović"
             assertEquals(expected, shownIn("Ђорђе Јовић", language), "$language")
         }
-        // Latin is left as it is, and so are Macedonian's own letters.
+        // Latin is left as it is; Macedonian's own letters take North Macedonia's Latin.
         assertEquals("Ana", shownIn("Ana", Language.SERBIAN_CYRILLIC))
         assertEquals("Ѓорѓи Ќосе Ѕвезда", shownIn("Ѓорѓи Ќосе Ѕвезда", Language.MACEDONIAN))
+        assertEquals("Gjorgji Kjose Dzvezda", shownIn("Ѓорѓи Ќосе Ѕвезда", Language.CROATIAN))
+        assertEquals("GJORGJI", shownIn("ЃОРЃИ", Language.SERBIAN_LATIN))
+        assertEquals("Đorđe i Gjorgji", shownIn("Ђорђе и Ѓорѓи", Language.SLOVENIAN))
     }
 }

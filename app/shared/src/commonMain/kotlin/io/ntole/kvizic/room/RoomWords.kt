@@ -170,10 +170,9 @@ internal fun reactionIcon(id: String): ImageVector? = REACTIONS.firstOrNull { it
 /**
  * A word of the server's in the script shown: a question, an answer, a player's name. A language written in
  * Latin shows Serbian Cyrillic in Latin made from it: a player's name, or a question with no text in the
- * player's language but the Serbian. One written in Cyrillic shows it as written. Latin is left as it is,
- * and so are Macedonian's own letters, ѓ, ќ and ѕ, which Serbian Latin has no spelling for: a Macedonian
- * player's name, or a question of North Macedonia's with no text but the Macedonian, which every other
- * language's chain reaches, comes to a Latin reader with those three still in Cyrillic.
+ * player's language but the Serbian. One written in Cyrillic shows it as written. Latin is left as it is.
+ * Macedonian's own letters, ѓ, ќ and ѕ, which Serbian Latin has no spelling for, take North Macedonia's
+ * official Latin, gj, kj and dz (the owner, 2026-10-14), so a Macedonian player's name reads „Gjorgji“.
  */
 @Composable
 @ReadOnlyComposable
@@ -182,7 +181,38 @@ internal fun shown(text: String): String = shownIn(text, LocalLanguage.current)
 internal fun shownIn(
     text: String,
     language: Language,
-): String = if (language.isCyrillic) text else SerbianScript.toLatin(text)
+): String = if (language.isCyrillic) text else macedonianToLatin(SerbianScript.toLatin(text))
+
+/** Macedonian's own letters, which [SerbianScript.toLatin] leaves, as North Macedonia's Latin: gj, kj, dz. */
+private fun macedonianToLatin(text: String): String {
+    if (text.none { it in MACEDONIAN_LATIN }) return text
+    val latin = StringBuilder(text.length + 4)
+    var start = 0
+    while (start < text.length) {
+        var end = start
+        while (end < text.length && text[end].isLetter()) end++
+        if (end == start) {
+            latin.append(text[start])
+            start++
+            continue
+        }
+        val word = text.substring(start, end)
+        val inCapitals = word.length > 1 && word.none(Char::isLowerCase)
+        word.forEach { letter ->
+            val spelled = MACEDONIAN_LATIN[letter]
+            when {
+                spelled == null -> latin.append(letter)
+                inCapitals -> latin.append(spelled.uppercase())
+                else -> latin.append(spelled)
+            }
+        }
+        start = end
+    }
+    return latin.toString()
+}
+
+private val MACEDONIAN_LATIN: Map<Char, String> =
+    mapOf('Ѓ' to "Gj", 'ѓ' to "gj", 'Ќ' to "Kj", 'ќ' to "kj", 'Ѕ' to "Dz", 'ѕ' to "dz")
 
 /** A topic's name in [language], as [nameIn] finds it. */
 internal fun topicName(
