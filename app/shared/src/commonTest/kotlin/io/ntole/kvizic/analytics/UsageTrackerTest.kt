@@ -20,7 +20,7 @@ class UsageTrackerTest {
 
     @Test
     fun `a launch opens the app then shows its first screen`() {
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
         usage.show("home")
 
         assertEquals(
@@ -29,9 +29,25 @@ class UsageTrackerTest {
         )
     }
 
+    /** The opening says what the game is shown in and where the player plays from, as each is when it opens. */
+    @Test
+    fun `the app opens in its language and its country`() {
+        usage.foreground("mk", "MK")
+        usage.background(configurationChanging = false)
+        usage.foreground("sr-Latn", "ME")
+
+        assertEquals(
+            listOf(
+                opened(fromBackground = false, language = "mk", country = "MK"),
+                opened(fromBackground = true, language = "sr-Latn", country = "ME"),
+            ),
+            analytics.named(AnalyticsEvent.APP_OPENED),
+        )
+    }
+
     @Test
     fun `a screen shown leaves the one before after the time on it`() {
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
         usage.show("home")
         clock += 3.seconds
 
@@ -43,7 +59,7 @@ class UsageTrackerTest {
     /** A composition made anew, as a rotation's is, shows the screen it showed: nothing new. */
     @Test
     fun `the screen shown already is nothing new`() {
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
         usage.show("about")
 
         usage.show("about")
@@ -53,7 +69,7 @@ class UsageTrackerTest {
 
     @Test
     fun `the background leaves the screen and sends what waits`() {
-        usage.foreground("en")
+        usage.foreground("en", "RS")
         usage.show("about")
         clock += 5.seconds
 
@@ -67,12 +83,12 @@ class UsageTrackerTest {
 
     @Test
     fun `back from the background the app opens again on the screen it left`() {
-        usage.foreground("en")
+        usage.foreground("en", "RS")
         usage.show("about")
         usage.background(configurationChanging = false)
         clock += 60.seconds
 
-        usage.foreground("en")
+        usage.foreground("en", "RS")
         clock += 2.seconds
         usage.show("update")
 
@@ -90,12 +106,12 @@ class UsageTrackerTest {
     /** Android's activity made anew on a rotation stops and starts again: nothing to report. */
     @Test
     fun `a rotation is neither the background nor a new opening`() {
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
         usage.show("about")
         val before = analytics.recorded.toList()
 
         usage.background(configurationChanging = true)
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
         usage.show("about")
 
         assertEquals(before, analytics.recorded)
@@ -105,7 +121,7 @@ class UsageTrackerTest {
     @Test
     fun `the end leaves the screen and waits for what waits to be sent`() =
         runTest {
-            usage.foreground("sr-Cyrl")
+            usage.foreground("sr-Cyrl", "RS")
             usage.show("about")
             clock += 4.seconds
 
@@ -126,7 +142,7 @@ class UsageTrackerTest {
     @Test
     fun `the end after the background only waits for the send`() =
         runTest {
-            usage.foreground("sr-Cyrl")
+            usage.foreground("sr-Cyrl", "RS")
             usage.background(configurationChanging = false)
             val before = analytics.recorded.size
 
@@ -141,15 +157,15 @@ class UsageTrackerTest {
         usage.show("home")
         assertEquals(emptyList(), analytics.recorded)
 
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
 
         assertEquals(listOf(opened(fromBackground = false), screen("home")), analytics.recorded)
     }
 
     @Test
     fun `a second start or stop in a row is nothing new`() {
-        usage.foreground("sr-Cyrl")
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
+        usage.foreground("sr-Cyrl", "RS")
         usage.background(configurationChanging = false)
         usage.background(configurationChanging = false)
 
@@ -160,9 +176,14 @@ class UsageTrackerTest {
     private fun opened(
         fromBackground: Boolean,
         language: String = "sr-Cyrl",
+        country: String = "RS",
     ) = Recorded(
         AnalyticsEvent.APP_OPENED,
-        mapOf(AnalyticsProperty.FROM_BACKGROUND to fromBackground, AnalyticsProperty.LANGUAGE to language),
+        mapOf(
+            AnalyticsProperty.FROM_BACKGROUND to fromBackground,
+            AnalyticsProperty.LANGUAGE to language,
+            AnalyticsProperty.COUNTRY to country,
+        ),
     )
 
     private fun screen(name: String) =

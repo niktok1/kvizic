@@ -17,7 +17,7 @@ class DesktopEndTest {
 
     @Test
     fun `the end reports the background and waits for the send`() {
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
 
         endApp(usage, LAST_SEND_WAIT)
 
@@ -29,7 +29,7 @@ class DesktopEndTest {
     @Test
     fun `the end waits no longer than its bound`() {
         analytics.sendsFinish = CompletableDeferred()
-        usage.foreground("sr-Cyrl")
+        usage.foreground("sr-Cyrl", "RS")
         val started = TimeSource.Monotonic.markNow()
 
         endApp(usage, 100.milliseconds)

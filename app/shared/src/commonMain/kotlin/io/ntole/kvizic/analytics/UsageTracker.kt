@@ -28,10 +28,13 @@ class UsageTracker(
     private var screenSince: ComparableTimeMark? = null
 
     /**
-     * The app came to the foreground, shown in [languageTag]: at launch, and from the background, when
-     * the screen it went with is shown again.
+     * The app came to the foreground, shown in [languageTag], the player playing from [country], a country's
+     * name: at launch, and from the background, when the screen it went with is shown again.
      */
-    fun foreground(languageTag: String) {
+    fun foreground(
+        languageTag: String,
+        country: String,
+    ) {
         if (restartingForConfiguration) {
             restartingForConfiguration = false
             return
@@ -41,7 +44,11 @@ class UsageTracker(
         foregroundSince = now
         analytics.track(
             AnalyticsEvent.APP_OPENED,
-            mapOf(AnalyticsProperty.FROM_BACKGROUND to launched, AnalyticsProperty.LANGUAGE to languageTag),
+            mapOf(
+                AnalyticsProperty.FROM_BACKGROUND to launched,
+                AnalyticsProperty.LANGUAGE to languageTag,
+                AnalyticsProperty.COUNTRY to country,
+            ),
         )
         launched = true
         screen?.let { name -> showNow(name, now) }

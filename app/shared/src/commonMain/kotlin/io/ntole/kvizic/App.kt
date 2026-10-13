@@ -40,6 +40,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
+import io.ntole.kvizic.core.domain.region.Country
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.topic.GetTopics
 import io.ntole.kvizic.core.domain.topic.Topic
@@ -60,6 +61,7 @@ import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.navigation.Navigator
 import io.ntole.kvizic.navigation.Screen
 import io.ntole.kvizic.navigation.SystemBack
+import io.ntole.kvizic.region.CountryViewModel
 import io.ntole.kvizic.room.Entry
 import io.ntole.kvizic.room.EntryWay
 import io.ntole.kvizic.room.JoinScreen
@@ -92,17 +94,18 @@ import org.koin.compose.viewmodel.koinViewModel
  * publishes the Compose context, so no `KoinContext` wrapper is needed.
  *
  * The shell of the game, for now: Home, opened first, and the About screen, reached through a
- * [Navigator], a back stack made by hand, in the language kept on the device, Serbian Cyrillic until one
- * is picked. The app's comings and goings and every screen shown are reported to the analytics
- * ([UsageTracker]). Once the server serves this build nothing more, the one screen shown says a new
- * version is available ([AppUpdate]), whatever was shown before.
+ * [Navigator], a back stack made by hand, in the language kept on the device, the one a first launch took
+ * for it or the player picked since. The app's comings and goings and every screen shown are reported to
+ * the analytics ([UsageTracker]). Once the server serves this build nothing more, the one screen shown says
+ * a new version is available ([AppUpdate]), whatever was shown before.
  */
 @Composable
 fun App() {
     val languages = koinViewModel<LanguageViewModel>()
     val language by languages.language.collectAsStateWithLifecycle()
+    val country by koinViewModel<CountryViewModel>().country.collectAsStateWithLifecycle()
     val usage = koinInject<UsageTracker>()
-    ReportForegroundAndBackground(usage, language, services = koinInject())
+    ReportForegroundAndBackground(usage, language, country, services = koinInject())
     val updateRequired by koinInject<AppUpdate>().required.collectAsStateWithLifecycle()
 
     // Every tap on every screen is counted there, and what is shared goes through the platform's own sheet.
@@ -536,7 +539,8 @@ private fun About(onDeleted: () -> Unit) {
 
 /**
  * The Settings screen: the Sound switch, the one [SoundViewModel] keeps, the game's language, the one the app's
- * [LanguageViewModel] keeps and shows the game in, and a way to the About screen, [onAbout].
+ * [LanguageViewModel] keeps and shows the game in, the country the player plays from, the one [CountryViewModel]
+ * keeps and the server is told of, and a way to the About screen, [onAbout].
  */
 @Composable
 private fun Settings(onAbout: () -> Unit) {
@@ -544,11 +548,15 @@ private fun Settings(onAbout: () -> Unit) {
     val soundOn by sounds.enabled.collectAsStateWithLifecycle()
     val languages = koinViewModel<LanguageViewModel>()
     val language by languages.language.collectAsStateWithLifecycle()
+    val countries = koinViewModel<CountryViewModel>()
+    val country by countries.country.collectAsStateWithLifecycle()
     AppSettingsScreen(
         soundOn = soundOn,
         onSoundChange = sounds::setEnabled,
         language = language,
         onLanguageChange = languages::select,
+        country = country,
+        onCountryChange = countries::select,
         onAbout = onAbout,
     )
 }
@@ -576,21 +584,23 @@ private fun FollowInviteLinks(
 /**
  * The app coming to the foreground and going to the background, as the platform's lifecycle tells it, to
  * [usage]: Android's activity, the iOS view controller, the desktop window (minimized or not) and the
- * browser page (hidden or not). The app shown in [language]. [services] hear of each coming to the
- * foreground too, the launch's first, and start what runs by itself.
+ * browser page (hidden or not). The app shown in [language], the player playing from [country]. [services]
+ * hear of each coming to the foreground too, the launch's first, and start what runs by itself.
  */
 @Composable
 private fun ReportForegroundAndBackground(
     usage: UsageTracker,
     language: Language,
+    country: Country,
     services: AppServices,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val shownIn by rememberUpdatedState(language)
+    val playingFrom by rememberUpdatedState(country)
     val configurationChanging = rememberConfigurationChanging()
     DisposableEffect(lifecycle, usage, services) {
         fun cameToForeground() {
-            usage.foreground(shownIn.tag)
+            usage.foreground(shownIn.tag, playingFrom.name)
             services.foreground()
         }
         val observer =
