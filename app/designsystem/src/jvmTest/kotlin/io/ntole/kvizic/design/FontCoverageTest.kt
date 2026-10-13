@@ -24,15 +24,16 @@ import kotlin.test.assertTrue
 
 /**
  * The bundled faces, read from their files as the app ships them: every weight draws the whole Serbian
- * alphabet in both scripts, the digits and the punctuation the game sets, with no glyph missing; the
+ * alphabet in both scripts, Macedonian's own letters, and so Croatian's, Bosnian's and Slovenian's, which are
+ * Serbian Latin's, the digits and the punctuation the game sets, with no glyph missing; the
  * faces that claim the Serbian forms of б draw them for a Serbian locale, and the others do not; and
  * each face's figures stand as tall as its [Face.figureHeight] says, which centres a flap's digit.
  * With `KVIZIC_DESIGN_DIR` set it also writes a glyph sheet of each face there, shaped as Android shapes
- * it, for the Serbian locale.
+ * it, for the Serbian locale, and Macedonian's letters for the Macedonian one.
  */
 class FontCoverageTest {
     @Test
-    fun `every weight of every face draws both Serbian alphabets`() {
+    fun `every weight of every face draws both Serbian alphabets and Macedonian's letters`() {
         val missing =
             Faces.ALL.flatMap { face ->
                 face.files.flatMap { file ->
@@ -115,6 +116,7 @@ class FontCoverageTest {
                     add(Row(CYRILLIC_LOWER, SIZE, "sr", file))
                     add(Row(LATIN_UPPER, SIZE, "sr-Latn", file))
                     add(Row(LATIN_LOWER, SIZE, "sr-Latn", file))
+                    add(Row(MACEDONIAN, SIZE, "mk", file))
                     add(Row(FIGURES, SIZE, "sr", file))
                     add(Row(SAMPLE, SIZE, "sr", file))
                     add(Row("Serbian $SERBIAN_FORMS   ·   Russian", SIZE, "sr", file, russianTail = SERBIAN_FORMS))
@@ -210,6 +212,15 @@ class FontCoverageTest {
         const val CYRILLIC_LOWER = "а б в г д ђ е ж з и ј к л љ м н њ о п р с т ћ у ф х ц ч џ ш"
         const val LATIN_UPPER = "A B C Č Ć D Dž Đ E F G H I J K L Lj M N Nj O P R S Š T U V Z Ž Q W X Y"
         const val LATIN_LOWER = "a b c č ć d dž đ e f g h i j k l lj m n nj o p r s š t u v z ž q w x y"
+
+        /**
+         * Macedonian's letters Serbian has not, capital and small, and the accented two it writes more often
+         * than Serbian does (ѝ, her). Croatian, Bosnian and Slovenian write no letter Serbian Latin has not.
+         */
+        const val MACEDONIAN = "Ѓ ѓ Ќ ќ Ѕ ѕ Ѐ ѐ Ѝ ѝ"
+
+        /** The digits and the punctuation the game sets. */
+        const val FIGURES_AND_MARKS = "0123456789+−×%„“”’–—…?!:;,."
         const val FIGURES = "0123456789  +−×%  „“” ’ – — … ? ! : ; , ."
         const val SAMPLE = "Која река протиче кроз Нови Сад? Дунав · Ђурђевак · Љиљана · Џеп"
 
@@ -217,7 +228,8 @@ class FontCoverageTest {
         const val SERBIAN_FORMS = "б"
 
         val COVERED: List<Char> =
-            (CYRILLIC_UPPER + CYRILLIC_LOWER + LATIN_UPPER + LATIN_LOWER + "0123456789" + "+−×%„“”’–—…?!:;,.")
+            listOf(CYRILLIC_UPPER, CYRILLIC_LOWER, LATIN_UPPER, LATIN_LOWER, MACEDONIAN, FIGURES_AND_MARKS)
+                .joinToString("")
                 .filterNot { it == ' ' }
                 .toSet()
                 .toList()
