@@ -3,6 +3,11 @@
 Paste into Play Console → Grow users → Store presence → Main store listing. Serbian is the default language
 (`sr`); English (`en-US`) is a translation. Every claim here is something the app does today.
 
+Croatian (`hr`), Slovenian (`sl`) and Macedonian (`mk-MK`) are translations for the regions release: paste them
+when those languages ship, since each says the game speaks the player's language and asks about their country.
+Play has no Bosnian listing (below). A field's count is its characters as Play counts them, newlines included,
+measured by script.
+
 ## Serbian (default)
 
 **App name** (30 max)
@@ -67,6 +72,127 @@ No ads, no purchases, no sign-up: play at once, and link your account to Google 
 The questions are in Serbian.
 ```
 
+## Croatian (hr)
+
+Reviewer: pending.
+
+**App name** (30 max; 23)
+
+```
+Kvizić: kviz s društvom
+```
+
+**Short description** (80 max; 79)
+
+```
+Ista pitanja, isti sat: tko od vas zna više i brže? Kviz uživo, do osam igrača.
+```
+
+**Full description** (4000 max; 1137)
+
+```
+Kvizić je kviz uživo za društvo. Napravi sobu, pošalji kôd prijateljima i igrajte zajedno: svi dobivaju isto pitanje u isto vrijeme, a bodove nosi tko zna, i tko zna brže.
+
+• Do osam igrača u sobi: u privatnoj, u koju se ulazi kôdom, ili u javnoj, u koju može ući svatko.
+• Brza igra te odmah smješta u prvu slobodnu sobu.
+• Voditelj bira koliko pitanja, koliko vremena za odgovor, teme i težinu te hoće li se za netočan odgovor oduzimati bodovi.
+• Više od dvadeset tema, od geografije, povijesti i sporta do glazbe, filma, znanosti, hrane, prirode, umjetnosti i mitologije.
+• Čim odgovoriš, vidiš što su odabrali ostali, a nakon svakog pitanja točan odgovor, često uz kratko objašnjenje, i poredak.
+• Nema dopisivanja: samo reakcije, od bravo do pljeska.
+• Možeš igrati i sam i rušiti vlastiti rekord.
+• Razina ti raste sa svakom igrom koju u sobi odigraš do kraja.
+
+Kvizić govori tvojim jezikom, a uz pitanja za sve pita i o tvojoj zemlji kad igraš sam ili s društvom iz iste zemlje. U istoj sobi svatko čita pitanja na svom jeziku.
+
+Bez reklama, bez kupnje i bez registracije: igraš odmah, a račun možeš povezati s Google Play igrama.
+```
+
+## Slovenian (sl)
+
+Reviewer: pending.
+
+**App name** (30 max; 25)
+
+```
+Kvizić: kviz s prijatelji
+```
+
+**Short description** (80 max; 76)
+
+```
+Ista vprašanja, isti čas: kdo ve več in hitreje? Kviz v živo, do 8 igralcev.
+```
+
+**Full description** (4000 max; 1145)
+
+```
+Kvizić je kviz v živo za družbo. Ustvari sobo, pošlji kodo prijateljem in igrajte skupaj: vsi dobijo isto vprašanje ob istem času, točke pa dobi, kdor ve, in kdor ve hitreje.
+
+• Do osem igralcev v sobi: v zasebni, v katero vstopiš s kodo, ali v javni, v katero lahko vstopi vsak.
+• Hitra igra te takoj pripelje v prvo prosto sobo.
+• Voditelj izbere število vprašanj, čas za odgovor, teme in težavnost ter ali se za napačen odgovor odštevajo točke.
+• Več kot dvajset tem, od geografije, zgodovine in športa do glasbe, filma, znanosti, hrane, narave, umetnosti in mitologije.
+• Ko odgovoriš, vidiš, kaj so izbrali drugi, po vsakem vprašanju pa pravilni odgovor, pogosto s kratko razlago, in lestvico.
+• Brez klepeta: samo odzivi, od bravo do aplavza.
+• Igraš lahko tudi sam in popravljaš svoj rekord.
+• Tvoja stopnja raste z vsako igro, ki jo v sobi odigraš do konca.
+
+Kvizić govori tvoj jezik in poleg vprašanj za vse sprašuje tudi o tvoji državi, ko igraš sam ali z družbo iz iste države. V isti sobi vsak bere vprašanja v svojem jeziku.
+
+Brez oglasov, brez nakupov in brez registracije: igraš takoj, račun pa lahko povežeš z Google Play Igrami.
+```
+
+## Macedonian (mk-MK)
+
+Reviewer: pending. The name is „Квизиќ“, the owner's choice (2026-10-13) for every Macedonian text.
+
+**App name** (30 max; 25)
+
+```
+Квизиќ: квиз со пријатели
+```
+
+**Short description** (80 max; 78)
+
+```
+Исти прашања, исто време: кој знае повеќе и побрзо? Квиз во живо, до 8 играчи.
+```
+
+**Full description** (4000 max; 1210)
+
+```
+Квизиќ е квиз во живо за друштво. Направи соба, испрати им го кодот на пријателите и играјте заедно: сите го добиваат истото прашање во исто време, а поените ги носи тој што знае, и тој што знае побрзо.
+
+• До осум играчи во соба: во приватна, во која се влегува со код, или во јавна, во која може да влезе секој.
+• Брза игра веднаш те сместува во првата слободна соба.
+• Водителот избира колку прашања, колку време за одговор, теми и тежина, и дали за погрешен одговор се одземаат поени.
+• Повеќе од дваесет теми, од географија, историја и спорт до музика, филм, наука, храна, природа, уметност и митологија.
+• Штом ќе одговориш, гледаш што избраа другите, а по секое прашање точниот одговор, често со кратко објаснување, и пласманот.
+• Нема чет: само реакции, од браво до аплауз.
+• Можеш да играш и сам и да го надминуваш својот рекорд.
+• Нивото ти расте со секоја игра што ќе ја одиграш до крај во соба.
+
+Квизиќ зборува на твојот јазик и, покрај прашањата за сите, те прашува и за твојата земја кога играш сам или со друштво од истата земја. Во иста соба секој ги чита прашањата на својот јазик.
+
+Без реклами, без купувања и без регистрација: играш веднаш, а сметката можеш да ја поврзеш со Google Play Игри.
+```
+
+## Bosnia and Herzegovina, and Montenegro: no listing language
+
+Play offers no Bosnian listing (checked 2026-10-13: [Translate and localize your
+app](https://support.google.com/googleplay/android-developer/answer/9844778), "View list of available languages",
+has Croatian `hr`, Serbian `sr`, Slovenian `sl` and Macedonian `mk-MK`, no Bosnian and no Montenegrin). A phone set
+to a language the listing lacks sees the default language's, ours in Serbian Cyrillic, with an offer of Google's
+machine translation; Play names no fallback to a related language.
+
+For Bosnia and Herzegovina: a custom store listing (Store presence → Custom store listings, targeted by country),
+its default language Croatian with the hr text above, and the sr and en-US texts as its translations. A Bosnian
+phone there reads the hr text (Latin and ijekavian, the nearest of ours to Bosnian; it names no language or country),
+a Serbian one the Cyrillic, an English one the English. Without it, a Bosnian phone reads the Serbian Cyrillic.
+
+Montenegro reads Serbian Latin in the app; its phones set to Serbian see the sr listing in Cyrillic. A custom
+listing for it, with the sr text transliterated to Latin under `sr`, would match: the owner's call.
+
 ## Graphics
 
 - **App icon** 512×512 PNG: [store/icon-512.png](store/icon-512.png), the iOS 1024 tile scaled down (Play rounds
@@ -78,6 +204,9 @@ The questions are in Serbian.
   (the picks on the tiles) · `4-reveal` (the board) · `5-results` (the podium). Drawn by the game's own screens
   from the screen tests' room (`StoreShotsTest`; `KVIZIC_DESIGN_DIR=… ./gradlew :app:shared:jvmTest --tests
   '*StoreShotsTest*'` draws them again). Real-device captures may replace any of them.
+- **Their language**: all five screenshots and the feature graphic (КВИЗИЋ on the sign) show Serbian Cyrillic,
+  and the question in 3 and 4 asks about Novi Sad. A translation with no graphics of its own shows the default
+  language's, so until each language has its own, hr, sl and mk show these. The icon's К reads in either script.
 
 ## Categories and contact
 
