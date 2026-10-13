@@ -124,7 +124,7 @@ fun Application.kvizicModule(
             timings = game.timings,
             limits = game.limits,
             scoring = game.scoring,
-            questions = parts.questions ?: DbQuestionSource(db),
+            questions = parts.questions ?: DbQuestionSource(db, localShare = config.localShare),
             results = parts.results ?: ResultWriter(db, background, log),
             topics = { topics.ids },
         )
