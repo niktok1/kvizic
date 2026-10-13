@@ -3,6 +3,7 @@ package io.ntole.kvizic.region
 import io.ntole.kvizic.core.domain.region.Country
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /** The country a first launch takes from what the device says, case by case. */
 class CountryDetectionTest {
@@ -99,12 +100,12 @@ class CountryDetectionTest {
 
     @Test
     fun `a tag's language and script and region are read in any spelling`() {
-        assertEquals(LanguageTag("sr", "latn", "RS"), LanguageTag.parse("sr-Latn-RS"))
-        assertEquals(LanguageTag("sr", null, "ME"), LanguageTag.parse("sr_ME"))
-        assertEquals(LanguageTag("hr", null, "HR"), LanguageTag.parse("HR-hr"))
-        assertEquals(LanguageTag("cnr", null, null), LanguageTag.parse("cnr"))
-        assertEquals(LanguageTag("es", null, "419"), LanguageTag.parse("es-419"))
-        assertEquals(LanguageTag("sr", "cyrl", null), LanguageTag.parse("sr-Cyrl-u-nu-latn"))
+        assertEquals<LanguageTag?>(LanguageTag("sr", "latn", "RS"), LanguageTag.parse("sr-Latn-RS"))
+        assertEquals<LanguageTag?>(LanguageTag("sr", null, "ME"), LanguageTag.parse("sr_ME"))
+        assertEquals<LanguageTag?>(LanguageTag("hr", null, "HR"), LanguageTag.parse("HR-hr"))
+        assertEquals<LanguageTag?>(LanguageTag("cnr", null, null), LanguageTag.parse("cnr"))
+        assertEquals<LanguageTag?>(LanguageTag("es", null, "419"), LanguageTag.parse("es-419"))
+        assertEquals<LanguageTag?>(LanguageTag("sr", "cyrl", null), LanguageTag.parse("sr-Cyrl-u-nu-latn"))
         assertEquals(null, LanguageTag.parse(""))
         assertEquals(null, LanguageTag.parse("x-private"))
     }

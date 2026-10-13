@@ -70,7 +70,7 @@ class CountryViewModelTest {
             viewModel.select(Country.RS)
             testScheduler.advanceUntilIdle()
 
-            assertEquals(emptyList(), analytics.events)
+            assertEquals(emptyList<Recorded>(), analytics.events)
             assertEquals(0, topics.reads)
         }
 

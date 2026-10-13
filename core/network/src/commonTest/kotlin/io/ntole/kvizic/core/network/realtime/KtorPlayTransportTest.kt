@@ -21,7 +21,7 @@ class KtorPlayTransportTest {
         val transport =
             KtorPlayTransport(API, ClientBuild(KvizicApi.ClientPlatform.ANDROID, 10203), client) { language }
         try {
-            assertEquals(
+            assertEquals<ClientMessage.Hello>(
                 ClientMessage.Hello(
                     ticket = "t1",
                     protocol = Protocol.VERSION,
@@ -34,7 +34,7 @@ class KtorPlayTransportTest {
 
             // A language changed is the next socket's, a reconnection's too.
             language = "sr-Latn"
-            assertEquals("sr-Latn", transport.hello("t2").language)
+            assertEquals<String>("sr-Latn", transport.hello("t2").language)
         } finally {
             client.close()
         }
@@ -45,7 +45,7 @@ class KtorPlayTransportTest {
     fun `a transport told no language names none`() {
         val client = KtorPlayTransport.realtimeClient(MockEngine { respondOk() })
         try {
-            assertEquals("", KtorPlayTransport(API, build = null, client).hello("t1").language)
+            assertEquals<String>("", KtorPlayTransport(API, build = null, client).hello("t1").language)
         } finally {
             client.close()
         }

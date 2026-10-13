@@ -26,7 +26,7 @@ class RegionStoreTest {
             runCurrent()
 
             assertEquals(Country.HR to Language.CROATIAN, store.country.value to store.language.value)
-            assertEquals("HR" to "hr", storage.read(COUNTRY) to storage.read(LANGUAGE))
+            assertEquals<Pair<String?, String?>>("HR" to "hr", storage.read(COUNTRY) to storage.read(LANGUAGE))
             assertEquals(1, device.asked)
             // The server is told the same.
             assertEquals(Country.HR to "hr", store.currentCountry() to store.currentLanguageTag())
@@ -43,7 +43,7 @@ class RegionStoreTest {
             runCurrent()
 
             assertEquals(Country.ME to Language.SERBIAN_LATIN, store.country.value to store.language.value)
-            assertEquals("ME" to "sr-Latn", storage.read(COUNTRY) to storage.read(LANGUAGE))
+            assertEquals<Pair<String?, String?>>("ME" to "sr-Latn", storage.read(COUNTRY) to storage.read(LANGUAGE))
         }
 
     /** An install that picked its language before countries were kept keeps it, and has its country found once. */
@@ -58,7 +58,7 @@ class RegionStoreTest {
             runCurrent()
 
             assertEquals(Country.SI to Language.SERBIAN_LATIN, store.country.value to store.language.value)
-            assertEquals("SI" to "sr-Latn", storage.read(COUNTRY) to storage.read(LANGUAGE))
+            assertEquals<Pair<String?, String?>>("SI" to "sr-Latn", storage.read(COUNTRY) to storage.read(LANGUAGE))
 
             val again = store(storage, device, installedBefore = true, offered = RELEASE)
             assertEquals(Country.SI to Language.SERBIAN_LATIN, again.country.value to again.language.value)

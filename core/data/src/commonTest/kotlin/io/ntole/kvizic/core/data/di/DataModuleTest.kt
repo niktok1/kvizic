@@ -110,7 +110,7 @@ class DataModuleTest {
             region.country = Country.SI
             val second = assertFailsWith<NotSent> { koin.get<AuthApi>().guest() }
 
-            assertEquals("BA" to "SI", first.country to second.country)
+            assertEquals<Pair<String?, String?>>("BA" to "SI", first.country to second.country)
             client.close()
             koin.close()
         }
