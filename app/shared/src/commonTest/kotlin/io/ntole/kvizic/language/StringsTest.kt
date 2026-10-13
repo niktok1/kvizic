@@ -1,6 +1,7 @@
 package io.ntole.kvizic.language
 
 import io.ntole.kvizic.core.domain.language.SerbianScript
+import io.ntole.kvizic.core.domain.region.Country
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -135,6 +136,22 @@ class StringsTest {
             }
         }
         assertTrue(english.any { placeholdersOf(it).isNotEmpty() }, "no template was checked")
+    }
+
+    /** Every country has its name in every language, and a country this build does not know none. */
+    @Test
+    fun `every country is named in every language`() {
+        Language.entries.forEach { language ->
+            val names = stringsOf(language).settingsScreen.countries
+            Country.entries.forEach { country ->
+                val name = names.of(country)
+                if (country == Country.UNKNOWN) {
+                    assertEquals(null, name, "$language")
+                } else {
+                    assertTrue(!name.isNullOrBlank(), "$language: $country")
+                }
+            }
+        }
     }
 
     /** The strings of [language] once they are its own, or none while it is a placeholder. */
