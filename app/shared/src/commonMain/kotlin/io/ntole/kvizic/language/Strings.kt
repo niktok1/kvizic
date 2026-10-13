@@ -136,7 +136,6 @@ fun stringsOf(language: Language): Strings =
 internal val PENDING_LANGUAGES: Set<Language> =
     setOf(
         Language.CROATIAN,
-        Language.BOSNIAN,
         Language.SLOVENIAN,
         Language.MACEDONIAN,
     )
