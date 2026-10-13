@@ -261,7 +261,7 @@ private data class Section(
         language: Language,
     ): Section? {
         if (key.isEmpty()) return this
-        val kept = topics.filter { key in searchKey(topicName(it, language)) || key in searchKey(it.nameEn) }
+        val kept = topics.filter { topic -> searchedNames(topic, language).any { key in searchKey(it) } }
         return if (kept.isEmpty()) null else copy(topics = kept)
     }
 }
@@ -282,26 +282,37 @@ private fun sectionsOf(
     return (grouped + other).filter { it.topics.isNotEmpty() }
 }
 
+/** A group's name in [language], as a topic's is (`nameIn`). */
 internal fun groupName(
     group: TopicGroup,
     language: Language,
-): String =
-    when (language) {
-        Language.SERBIAN_CYRILLIC -> group.nameSr
-        Language.SERBIAN_LATIN -> SerbianScript.toLatin(group.nameSr)
-        Language.ENGLISH -> group.nameEn
-    }
+): String = nameIn(language, group.nameSr, group.nameEn, group.names)
 
 /**
- * [text] as a search compares it: Serbian Latin, lower case, and without its accents, so a query typed in
- * either script, any case, on a keyboard with no Serbian letters, finds a name: *spo*, *Спо* and *SPO* find
- * *Спорт*, *nauka* finds *Наука*, and *djak* and *đak* alike find *Ђак*.
+ * The names a search finds [topic] by: the one shown in [language], the Serbian, which a player of any of the
+ * region's languages may type, and the English.
+ */
+internal fun searchedNames(
+    topic: Topic,
+    language: Language,
+): List<String> = listOf(topicName(topic, language), topic.nameSr, topic.nameEn)
+
+/**
+ * [text] as a search compares it: Latin, lower case, and without its accents, so a query typed in either
+ * script, any case, on a keyboard with none of the region's letters, finds a name: *spo*, *Спо* and *SPO* find
+ * *Спорт*, *nauka* finds *Наука*, and *djak* and *đak* alike find *Ђак*. Macedonian's own letters are spelled
+ * as its Latin spells them, the accents left off: ѓ and ǵ as *gj*, ќ and ḱ as *kj*, ѕ as *dz*.
  */
 internal fun searchKey(text: String): String =
     SerbianScript
         .toLatin(text.trim())
         .lowercase()
         .replace("đ", "dj")
+        .replace("ѓ", "gj")
+        .replace("ǵ", "gj")
+        .replace("ќ", "kj")
+        .replace("ḱ", "kj")
+        .replace("ѕ", "dz")
         .map { char ->
             when (char) {
                 'č', 'ć' -> 'c'

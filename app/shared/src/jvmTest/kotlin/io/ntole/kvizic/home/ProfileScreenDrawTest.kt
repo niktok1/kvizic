@@ -99,14 +99,8 @@ class ProfileScreenDrawTest {
         }
     }
 
-    private fun stringsTopic(language: Language): String =
-        if (language ==
-            Language.SERBIAN_LATIN
-        ) {
-            "Geografija"
-        } else {
-            "Географија"
-        }
+    /** The test's best topic as the server names it, the Serbian, in [language]'s script. */
+    private fun stringsTopic(language: Language): String = if (language.isCyrillic) "Географија" else "Geografija"
 
     /** With `KVIZIC_DESIGN_DIR` set, a still of the profile is written there as a PNG for the owner to see. */
     private fun write(

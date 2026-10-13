@@ -9,9 +9,10 @@ import io.ntole.kvizic.core.domain.language.SerbianScript
  * Every word of the game's own, one value per [Language]: a screen reads them from [LocalStrings] and
  * writes none of its own.
  *
- * Plain Kotlin values rather than compose resources: three languages, one of them made from another by a
- * function, which string resources cannot express, and every text checked by the compiler, a missing one
- * being a constructor that does not compile rather than a key that fails at run time.
+ * Plain Kotlin values rather than compose resources: Serbian Latin is made from Serbian Cyrillic by a
+ * function, which string resources cannot express, and every text is checked by the compiler, a missing one
+ * being a constructor that does not compile rather than a key that fails at run time. Each language's words
+ * are a file of their own (`CroatianStrings.kt` and the rest), each of its parts a value.
  */
 data class Strings(
     /** The game's name. */
@@ -120,8 +121,25 @@ fun stringsOf(language: Language): Strings =
     when (language) {
         Language.SERBIAN_CYRILLIC -> SerbianCyrillicStrings
         Language.SERBIAN_LATIN -> SerbianLatinStrings
+        Language.CROATIAN -> CroatianStrings
+        Language.BOSNIAN -> BosnianStrings
+        Language.SLOVENIAN -> SlovenianStrings
+        Language.MACEDONIAN -> MacedonianStrings
         Language.ENGLISH -> EnglishStrings
     }
+
+/**
+ * The languages whose words are not written yet: each is a placeholder of another's, Serbian Latin's, or
+ * Serbian Cyrillic's for Macedonian, so the game shows something whole in it. Once a language's own file
+ * is written, its line goes, and `StringsTest` holds it to words of its own, in its own letters.
+ */
+internal val PENDING_LANGUAGES: Set<Language> =
+    setOf(
+        Language.CROATIAN,
+        Language.BOSNIAN,
+        Language.SLOVENIAN,
+        Language.MACEDONIAN,
+    )
 
 /** The strings of the language the game is shown in; Serbian Cyrillic, the default, until one is provided. */
 val LocalStrings = staticCompositionLocalOf { stringsOf(Language.DEFAULT) }

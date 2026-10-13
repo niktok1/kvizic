@@ -1,11 +1,15 @@
 package io.ntole.kvizic.language
 
 /**
- * A word counted, each form a template of the count, `{0}`: Serbian's three ([one], [few], [many]), and
- * English's two, its [few] the same as its [many]. [of] picks the form by the language's own rule.
+ * A word counted, each form a template of the count, `{0}`, as CLDR names a language's forms: Serbian's three
+ * ([one], [few], [many]), which Croatian and Bosnian share; Slovenian's four, [two] among them; Macedonian's
+ * and English's two, [one] and [many], CLDR's "other" being [many]. Every language writes all four: a form its
+ * rule never picks repeats the one nearest it, so Serbian's [two] is its [few], and English's its [many].
+ * [of] picks the form by the language's own rule.
  */
 data class Plural(
     val one: String,
+    val two: String,
     val few: String,
     val many: String,
 ) {
@@ -16,8 +20,21 @@ data class Plural(
     ): String {
         val form =
             when (language) {
-                Language.ENGLISH -> if (count == 1) one else many
-                Language.SERBIAN_CYRILLIC, Language.SERBIAN_LATIN -> serbianForm(count)
+                Language.SERBIAN_CYRILLIC, Language.SERBIAN_LATIN, Language.CROATIAN, Language.BOSNIAN -> {
+                    serbianForm(count)
+                }
+
+                Language.SLOVENIAN -> {
+                    slovenianForm(count)
+                }
+
+                Language.MACEDONIAN -> {
+                    macedonianForm(count)
+                }
+
+                Language.ENGLISH -> {
+                    if (count == 1) one else many
+                }
             }
         return form.fill(count)
     }
@@ -33,7 +50,20 @@ data class Plural(
         }
     }
 
-    internal fun map(transform: (String) -> String): Plural = Plural(transform(one), transform(few), transform(many))
+    /** One for 1, 101, 201; two for 2, 102; few for 3 and 4, 103 and 104; many for the rest, 21 and 11 among them. */
+    private fun slovenianForm(count: Int): String =
+        when (count % 100) {
+            1 -> one
+            2 -> two
+            3, 4 -> few
+            else -> many
+        }
+
+    /** One for 1, 21, 101 but 11; many for the rest. */
+    private fun macedonianForm(count: Int): String = if (count % 10 == 1 && count % 100 != 11) one else many
+
+    internal fun map(transform: (String) -> String): Plural =
+        Plural(one = transform(one), two = transform(two), few = transform(few), many = transform(many))
 }
 
 /**
@@ -406,8 +436,8 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         joinByCode = "Уђи кодом",
         publicRooms = "Јавне собе",
         solo = "Соло",
-        games = Plural("{0} игра", "{0} игре", "{0} игара"),
-        wins = Plural("{0} победа", "{0} победе", "{0} победа"),
+        games = Plural(one = "{0} игра", two = "{0} игре", few = "{0} игре", many = "{0} игара"),
+        wins = Plural(one = "{0} победа", two = "{0} победе", few = "{0} победе", many = "{0} победа"),
         level = "Ниво {0}",
         xpProgress = "{0} од {1} бодова искуства",
         saveProgress = "Сачувај напредак",
@@ -480,11 +510,11 @@ internal val SerbianCyrillicGameStrings: GameStrings =
         you = "ти",
         onResults = "на резултатима",
         start = "Почни игру",
-        questionCount = Plural("{0} питање", "{0} питања", "{0} питања"),
-        topicCount = Plural("{0} тема", "{0} теме", "{0} тема"),
+        questionCount = Plural(one = "{0} питање", two = "{0} питања", few = "{0} питања", many = "{0} питања"),
+        topicCount = Plural(one = "{0} тема", two = "{0} теме", few = "{0} теме", many = "{0} тема"),
         penaltyOn = "Минус",
         penaltyOff = "Без минуса",
-        seatCount = Plural("{0} место", "{0} места", "{0} места"),
+        seatCount = Plural(one = "{0} место", two = "{0} места", few = "{0} места", many = "{0} места"),
         privateShort = "Приватна",
         publicShort = "Јавна",
         leave = "Изађи",
@@ -580,8 +610,8 @@ internal val EnglishGameStrings: GameStrings =
         joinByCode = "Join by code",
         publicRooms = "Public rooms",
         solo = "Solo",
-        games = Plural("{0} game", "{0} games", "{0} games"),
-        wins = Plural("{0} win", "{0} wins", "{0} wins"),
+        games = Plural(one = "{0} game", two = "{0} games", few = "{0} games", many = "{0} games"),
+        wins = Plural(one = "{0} win", two = "{0} wins", few = "{0} wins", many = "{0} wins"),
         level = "Level {0}",
         xpProgress = "{0} of {1} experience points",
         saveProgress = "Save progress",
@@ -652,11 +682,12 @@ internal val EnglishGameStrings: GameStrings =
         you = "you",
         onResults = "on results",
         start = "Start the game",
-        questionCount = Plural("{0} question", "{0} questions", "{0} questions"),
-        topicCount = Plural("{0} topic", "{0} topics", "{0} topics"),
+        questionCount =
+            Plural(one = "{0} question", two = "{0} questions", few = "{0} questions", many = "{0} questions"),
+        topicCount = Plural(one = "{0} topic", two = "{0} topics", few = "{0} topics", many = "{0} topics"),
         penaltyOn = "Minus",
         penaltyOff = "No minus",
-        seatCount = Plural("{0} seat", "{0} seats", "{0} seats"),
+        seatCount = Plural(one = "{0} seat", two = "{0} seats", few = "{0} seats", many = "{0} seats"),
         privateShort = "Private",
         publicShort = "Public",
         leave = "Leave",

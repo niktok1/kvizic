@@ -11,6 +11,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
+import io.ntole.kvizic.core.domain.region.ContentLanguages
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.icon.KvizicIcons
@@ -167,8 +168,10 @@ internal val EMOTES: List<ReactionKind> by lazy { REACTIONS.filter { it.id != Lo
 internal fun reactionIcon(id: String): ImageVector? = REACTIONS.firstOrNull { it.id == id }?.icon
 
 /**
- * A word of the server's in the script shown: a question, an answer, a player's name. Serbian Latin is made
- * from the Cyrillic; English shows it as written, the questions being Serbian.
+ * A word of the server's in the script shown: a question, an answer, a player's name. A language written in
+ * Latin shows Serbian Cyrillic in Latin made from it: a player's name, or a question with no text in the
+ * player's language but the Serbian. One written in Cyrillic shows it as written. Latin is left as it is,
+ * and so are Macedonian's own letters, ѓ, ќ and ѕ, since a Macedonian text reaches only Macedonian readers.
  */
 @Composable
 @ReadOnlyComposable
@@ -177,18 +180,34 @@ internal fun shown(text: String): String = shownIn(text, LocalLanguage.current)
 internal fun shownIn(
     text: String,
     language: Language,
-): String = if (language == Language.SERBIAN_LATIN) SerbianScript.toLatin(text) else text
+): String = if (language.isCyrillic) text else SerbianScript.toLatin(text)
 
-/** A topic's name in [language]: the Serbian name as the server keeps it, in Latin made from it, or the English. */
+/** A topic's name in [language], as [nameIn] finds it. */
 internal fun topicName(
     topic: Topic,
     language: Language,
-): String =
-    when (language) {
-        Language.SERBIAN_CYRILLIC -> topic.nameSr
-        Language.SERBIAN_LATIN -> SerbianScript.toLatin(topic.nameSr)
-        Language.ENGLISH -> topic.nameEn
-    }
+): String = nameIn(language, topic.nameSr, topic.nameEn, topic.names)
+
+/**
+ * A name the server gives in several languages, a topic's or a group's, as [language] reads it: its name in
+ * the language's content language, else in the nearest the server has (`ContentLanguages.chain`), [nameSr]
+ * being the Serbian, and shown in the language's script. English reads the English name. A server before
+ * [names] sends none, so a Croatian player reads the Serbian name, in Latin.
+ */
+internal fun nameIn(
+    language: Language,
+    nameSr: String,
+    nameEn: String,
+    names: Map<String, String>,
+): String {
+    if (language == Language.ENGLISH) return names[Language.ENGLISH.tag] ?: nameEn
+    val found =
+        ContentLanguages
+            .chain(language.contentTag)
+            .firstNotNullOfOrNull { tag -> names[tag] ?: nameSr.takeIf { tag == ContentLanguages.SERBIAN } }
+            ?: nameSr
+    return shownIn(found, language)
+}
 
 /** The name of the topic [id] among [topics], or the id itself for one not read yet. */
 internal fun topicNameOf(

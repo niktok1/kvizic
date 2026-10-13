@@ -15,6 +15,14 @@ class SiteTest {
     }
 
     @Test
+    fun `each of the region's other languages has its pages under its tag`() {
+        assertEquals("https://kvizic.ntole.com/hr/privacy.html", Site.url(SitePage.PRIVACY, Language.CROATIAN))
+        assertEquals("https://kvizic.ntole.com/bs/terms.html", Site.url(SitePage.TERMS, Language.BOSNIAN))
+        assertEquals("https://kvizic.ntole.com/sl/delete.html", Site.url(SitePage.DELETE_ACCOUNT, Language.SLOVENIAN))
+        assertEquals("https://kvizic.ntole.com/mk/contact.html", Site.url(SitePage.CONTACT, Language.MACEDONIAN))
+    }
+
+    @Test
     fun `the version shows its build number when there is one`() {
         assertEquals("0.1.0 (100)", versionText(AppVersion("0.1.0", 100)))
         assertEquals("0.1.0", versionText(AppVersion("0.1.0", null)))

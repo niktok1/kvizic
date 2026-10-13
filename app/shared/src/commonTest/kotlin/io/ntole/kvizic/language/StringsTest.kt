@@ -4,13 +4,15 @@ import io.ntole.kvizic.core.domain.language.SerbianScript
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
  * The game's words in each language. [Strings] is a data class, so its `toString` holds every text by
  * name: comparing those checks every text, the ones added later included, without a list of them here to
- * forget one from.
+ * forget one from. A language still in [PENDING_LANGUAGES] is a placeholder of another's words, so only what
+ * holds of every language holds of it: its letters' script, no blank text, the placeholders.
  */
 class StringsTest {
     @Test
@@ -19,17 +21,29 @@ class StringsTest {
     }
 
     @Test
-    fun `every Serbian text is written in Cyrillic`() {
-        textsOf(SerbianCyrillicStrings).forEach { text ->
-            assertTrue(text.any(::isCyrillic), "\"$text\" has no Cyrillic letter")
-            assertFalse(text.any(::isLatin), "\"$text\" has a Latin letter")
+    fun `every text of a language written in Cyrillic is in Cyrillic`() {
+        Language.entries.filter { it.isCyrillic }.forEach { language ->
+            textsOf(stringsOf(language)).forEach { text ->
+                assertTrue(text.any(::isCyrillic), "$language: \"$text\" has no Cyrillic letter")
+                assertFalse(text.any(::isLatin), "$language: \"$text\" has a Latin letter")
+            }
         }
     }
 
     @Test
-    fun `no Latin or English text has a Cyrillic letter`() {
-        listOf(SerbianLatinStrings, EnglishStrings).forEach { strings ->
-            assertFalse(strings.toString().any(::isCyrillic), "$strings")
+    fun `no text of a language written in Latin has a Cyrillic letter`() {
+        Language.entries.filterNot { it.isCyrillic }.forEach { language ->
+            val strings = stringsOf(language)
+            assertFalse(strings.toString().any(::isCyrillic), "$language: $strings")
+        }
+    }
+
+    /** Macedonian writes ѓ and ќ where Serbian writes ђ and ћ, which it has not. */
+    @Test
+    fun `Macedonian has no letter of Serbian's own`() {
+        written(Language.MACEDONIAN)?.let { strings ->
+            val serbian = strings.toString().filter { it in "ЂђЋћ" }
+            assertEquals("", serbian, "Macedonian has Serbian's ${serbian.toSet()}")
         }
     }
 
@@ -44,22 +58,51 @@ class StringsTest {
     fun `each language has strings of its own`() {
         assertSame(SerbianCyrillicStrings, stringsOf(Language.SERBIAN_CYRILLIC))
         assertSame(SerbianLatinStrings, stringsOf(Language.SERBIAN_LATIN))
+        assertSame(CroatianStrings, stringsOf(Language.CROATIAN))
+        assertSame(BosnianStrings, stringsOf(Language.BOSNIAN))
+        assertSame(SlovenianStrings, stringsOf(Language.SLOVENIAN))
+        assertSame(MacedonianStrings, stringsOf(Language.MACEDONIAN))
         assertSame(EnglishStrings, stringsOf(Language.ENGLISH))
-        assertEquals(
-            Language.entries.size,
-            Language.entries
-                .map(::stringsOf)
-                .toSet()
-                .size,
-        )
+        Language.entries.forEach { language ->
+            Language.entries.filter { it != language }.forEach { other ->
+                assertTrue(stringsOf(other) !== stringsOf(language), "$language has $other's strings")
+            }
+        }
+        // A language written has words of its own: a copy of another's would be a placeholder under its name.
+        val written = Language.entries.filterNot { it in PENDING_LANGUAGES }
+        written.forEach { language ->
+            written.filter { it != language }.forEach { other ->
+                assertNotEquals(stringsOf(other), stringsOf(language), "$language says what $other says")
+            }
+        }
     }
 
-    /** The name the game goes by, as the store and the launcher say it: its Latin with the ć. */
+    /** A placeholder says what the language it stands in for says, so the game shows something whole in it. */
+    @Test
+    fun `a language not written yet has Serbian's words in its own script`() {
+        PENDING_LANGUAGES.forEach { language ->
+            val standIn = if (language.isCyrillic) SerbianCyrillicStrings else SerbianLatinStrings
+            assertEquals(standIn, stringsOf(language), "$language")
+        }
+    }
+
+    /** The name the game goes by, as the store and the launcher say it: its Latin with the ć, and Macedonian's ќ. */
     @Test
     fun `the game is Kvizic in every language`() {
-        assertEquals("Квизић", SerbianCyrillicStrings.gameName)
-        assertEquals("Kvizić", SerbianLatinStrings.gameName)
-        assertEquals("Kvizić", EnglishStrings.gameName)
+        val names =
+            mapOf(
+                Language.SERBIAN_CYRILLIC to "Квизић",
+                Language.SERBIAN_LATIN to "Kvizić",
+                Language.CROATIAN to "Kvizić",
+                Language.BOSNIAN to "Kvizić",
+                Language.SLOVENIAN to "Kvizić",
+                Language.MACEDONIAN to "Квизиќ",
+                Language.ENGLISH to "Kvizić",
+            )
+        assertEquals(Language.entries.toSet(), names.keys, "a name for each language")
+        names.forEach { (language, name) ->
+            written(language)?.let { assertEquals(name, it.gameName, "$language") }
+        }
     }
 
     /**
@@ -93,6 +136,9 @@ class StringsTest {
         }
         assertTrue(english.any { placeholdersOf(it).isNotEmpty() }, "no template was checked")
     }
+
+    /** The strings of [language] once they are its own, or none while it is a placeholder. */
+    private fun written(language: Language): Strings? = stringsOf(language).takeIf { language !in PENDING_LANGUAGES }
 
     /** Every text of [strings], as [Strings.map] visits them, which the first test holds to all of them. */
     private fun textsOf(strings: Strings): List<String> {

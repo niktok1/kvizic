@@ -9,8 +9,9 @@ import io.ntole.kvizic.language.KvizicStrings
 import io.ntole.kvizic.language.Language
 
 /**
- * The game's look and words in [language]: [skin] worn, its answers lettered in the language's script, and
- * the strings under it. Every screen draws inside one, the app's and a test's alike.
+ * The game's look and words in [language]: [skin] worn, its text shaped for the language's own tag (its line
+ * breaks, its letters' forms), its answers lettered in the language's script, and the strings under it. Every
+ * screen draws inside one, the app's and a test's alike.
  */
 @Composable
 fun GameTheme(
@@ -18,12 +19,11 @@ fun GameTheme(
     skin: Skin = Skins.Default,
     content: @Composable () -> Unit,
 ) {
-    KvizicSkin(skin, scriptOf(language)) { KvizicStrings(language, content) }
+    KvizicSkin(skin, scriptOf(language), languageTag = language.tag) { KvizicStrings(language, content) }
 }
 
-/** The letters a question's answers are named by in [language]: Cyrillic's А Б В Г, or a Latin quiz's A B C D. */
-internal fun scriptOf(language: Language): Script =
-    when (language) {
-        Language.SERBIAN_CYRILLIC -> Script.CYRILLIC
-        Language.SERBIAN_LATIN, Language.ENGLISH -> Script.LATIN
-    }
+/**
+ * The letters a question's answers are named by in [language]: Cyrillic's А Б В Г for a language written in
+ * Cyrillic, Serbian's and Macedonian's, or a Latin quiz's A B C D for the rest.
+ */
+internal fun scriptOf(language: Language): Script = if (language.isCyrillic) Script.CYRILLIC else Script.LATIN
