@@ -140,16 +140,9 @@ class Lobby(
     private val slow = LinkedHashSet<Member>()
 
     private val publishedSummary = MutableStateFlow(summary())
-    private val publishedCountries = MutableStateFlow(emptySet<Country>())
 
     /** What the lobby shows outside itself, after the last command it handled. */
     val summary: StateFlow<LobbySummary> get() = publishedSummary
-
-    /**
-     * The countries its connected members play from, published with [summary]: what Quick play finds a room
-     * of a player's own country by.
-     */
-    val connectedCountries: StateFlow<Set<Country>> get() = publishedCountries
 
     /** Queues [command] for the lobby's loop. False when the inbox is full or the lobby has closed. */
     fun send(command: LobbyCommand): Boolean = inbox.trySend(command).isSuccess
@@ -205,7 +198,6 @@ class Lobby(
                         closeAfterFailure()
                     }
                     publishedSummary.value = summary()
-                    publishedCountries.value = connectedCountries()
                     if (closed) break
                 }
             } finally {
@@ -354,7 +346,7 @@ class Lobby(
         member.connection = connection
         member.sessionId = connection.sessionId
         // What they read is what their latest socket says: a language changed in between reads from now on.
-        member.language = connection.readerLanguage
+        member.language = connection.language
         member.holdUntil = null
         member.goneSince = null
         member.activeAt = now()
@@ -1454,6 +1446,7 @@ class Lobby(
 
     private fun summary(): LobbySummary {
         val hostMember = host?.let { members[it] }
+        val online = members.values.filter { it.connection != null }
         return LobbySummary(
             id = id,
             code = code,
@@ -1462,23 +1455,14 @@ class Lobby(
             hostName = hostMember?.name.orEmpty(),
             hostAvatar = hostMember?.avatar.orEmpty(),
             seatsTaken = members.size,
-            connected =
-                members.values
-                    .filter { it.connection != null }
-                    .map { it.playerId }
-                    .toSet(),
+            connected = online.map { it.playerId }.toSet(),
             inGame = phase !is Phase.Waiting,
             draining = draining,
             closed = closing,
             openedOrder = openedOrder,
+            connectedCountries = online.map { it.country }.toSet(),
         )
     }
-
-    private fun connectedCountries(): Set<Country> =
-        members.values
-            .filter { it.connection != null }
-            .map { it.country }
-            .toSet()
 
     // --- Helpers ---
 

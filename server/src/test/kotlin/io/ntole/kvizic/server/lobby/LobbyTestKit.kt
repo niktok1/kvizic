@@ -344,7 +344,7 @@ internal class TestConnection(
     override val playerId: String,
     override val sessionId: String,
     override val language: String = ContentLanguages.SERBIAN,
-) : ReaderConnection {
+) : LobbyConnection {
     val messages = mutableListOf<ServerMessage>()
     var clearedUpTo = 0
     var closedWith: Short? = null

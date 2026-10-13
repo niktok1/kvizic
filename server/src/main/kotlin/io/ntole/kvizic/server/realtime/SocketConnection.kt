@@ -5,7 +5,7 @@ import io.ktor.websocket.DefaultWebSocketSession
 import io.ktor.websocket.Frame
 import io.ntole.kvizic.core.protocol.ProtocolJson
 import io.ntole.kvizic.core.protocol.ServerMessage
-import io.ntole.kvizic.server.lobby.ReaderConnection
+import io.ntole.kvizic.server.lobby.LobbyConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -34,7 +34,7 @@ internal class SocketConnection(
     private val watchdog: CoroutineScope,
     private val closeWait: Duration,
     openedAt: ComparableTimeMark,
-) : ReaderConnection {
+) : LobbyConnection {
     private val closedWith = AtomicReference<Short?>(null)
     private val pings = AtomicLong()
     private val pingsSent = ConcurrentHashMap<Long, ComparableTimeMark>()

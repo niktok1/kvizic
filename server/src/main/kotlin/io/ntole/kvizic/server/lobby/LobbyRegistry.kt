@@ -157,8 +157,9 @@ class LobbyRegistry(
             val candidates =
                 lobbies.values
                     .map { lobby ->
-                        val ownCountry = lobby.connectedCountries.value.all { it == seat.country }
-                        QuickPlayCandidate(lobby, lobby.summary.value, ownCountry)
+                        val summary = lobby.summary.value
+                        val ownCountry = summary.connectedCountries.all { it == seat.country }
+                        QuickPlayCandidate(lobby, summary, ownCountry)
                     }.filter { (_, summary) ->
                         summary.kind == LobbyKind.PUBLIC && !summary.draining && !summary.closed &&
                             summary.hasRoom
