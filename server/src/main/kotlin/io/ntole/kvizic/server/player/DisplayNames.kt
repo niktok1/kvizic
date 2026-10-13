@@ -50,15 +50,19 @@ object DisplayNames {
             .filter { it.isNotEmpty() }
             .any { word -> BLOCKED_STEMS.any { stem -> word.startsWith(stem) } }
 
-    /** Lower-cased, Serbian Cyrillic transliterated, diacritics dropped, digits read as the letters they mimic. */
+    /**
+     * The form a name is matched in. Compatibility forms read as their letters (fullwidth letters, the ǉ, ǌ and ǆ
+     * ligatures); diacritics drop, which takes Croatian, Bosnian, Slovenian and Montenegrin Latin to plain letters
+     * and Macedonian ѓ, ќ, ѐ and ѝ to г, к, е and и; then lower-cased; Serbian and Macedonian Cyrillic
+     * transliterated, ѕ as dz, and ђ and đ both as dj, so a name folds alike in either script; digits read as the
+     * letters they mimic.
+     */
     internal fun fold(text: String): String {
-        val latin = buildString { text.lowercase().forEach { append(CYRILLIC[it] ?: it.toString()) } }
-        val bare = Normalizer.normalize(latin, Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
-        return bare
-            .replace('đ', 'd')
-            .map { LEET[it] ?: it }
-            .joinToString("")
+        val bare = Normalizer.normalize(text, Normalizer.Form.NFKD).replace(MARKS, "").lowercase()
+        return buildString { bare.forEach { append(FOLDED[it] ?: it.toString()) } }
     }
+
+    private val MARKS = Regex("\\p{M}+")
 
     private val DROPPED_TYPES: Set<Byte> =
         setOf(
@@ -103,9 +107,15 @@ object DisplayNames {
             'ч' to "c",
             'џ' to "dz",
             'ш' to "s",
+            // Macedonian's own (ѓ and ќ are г and к with an accent, which has dropped by now)
+            'ѕ' to "dz",
         )
 
-    private val LEET: Map<Char, Char> = mapOf('0' to 'o', '1' to 'i', '3' to 'e', '4' to 'a', '5' to 's', '@' to 'a')
+    private val LEET: Map<Char, String> =
+        mapOf('0' to "o", '1' to "i", '3' to "e", '4' to "a", '5' to "s", '@' to "a")
+
+    /** What [fold] writes for a character, after the diacritics have dropped: Cyrillic, đ, and digits. */
+    private val FOLDED: Map<Char, String> = CYRILLIC + ('đ' to "dj") + LEET
 
     /** Stems of Serbian and English slurs and vulgarities. A false hit only means a generated nickname. */
     private val BLOCKED_STEMS: List<String> =

@@ -7,6 +7,33 @@ import kotlin.test.assertNull
 
 class DisplayNamesTest {
     @Test
+    fun `Macedonian letters fold to Latin, capitals too`() {
+        assertEquals("gkdz gkdz", DisplayNames.fold("ѓќѕ ЃЌЅ"))
+        assertEquals("ei ei", DisplayNames.fold("ѐѝ ЀЍ"))
+        assertEquals("gk", DisplayNames.fold("ѓќ"), "decomposed, as a keyboard may type them")
+        assertEquals("jljnjdz", DisplayNames.fold("јљњџ"), "as in Serbian")
+    }
+
+    @Test
+    fun `Croatian, Bosnian, Slovenian and Montenegrin diacritics drop`() {
+        assertEquals("cc cc ss zz djdj dzdz ss zz", DisplayNames.fold("Čč Ćć Šš Žž Đđ Dždž Śś Źź"))
+        assertEquals("s z", DisplayNames.fold("С́ з́"), "Montenegrin Cyrillic's two")
+    }
+
+    @Test
+    fun `a name folds alike in either script`() {
+        listOf("Ђорђе Ђокић", "Đorđe Đokić", "Djordje Djokic", "DJORDJE ĐOKIĆ").forEach { name ->
+            assertEquals("djordje djokic", DisplayNames.fold(name), name)
+        }
+        assertEquals(DisplayNames.fold("Џеко Љиљана Њего"), DisplayNames.fold("Džeko Ljiljana Njego"))
+    }
+
+    @Test
+    fun `compatibility forms read as their letters`() {
+        assertEquals("kviz ljubav dzep", DisplayNames.fold("ＫＶＩＺ ǈubav ǅep"))
+    }
+
+    @Test
     fun `a service's name is cleaned of what could disguise it and held to its length`() {
         assertEquals("Marko Petrović", DisplayNames.clean("  Marko \t\n Petrović  "))
         assertEquals("admin", DisplayNames.clean("ad​min"), "zero-width characters go")
