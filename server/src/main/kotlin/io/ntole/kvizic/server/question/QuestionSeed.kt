@@ -1,6 +1,7 @@
 package io.ntole.kvizic.server.question
 
 import io.ntole.kvizic.core.question.ImportQuestionsRequest
+import io.ntole.kvizic.core.question.QuestionDraftDto
 import io.ntole.kvizic.core.question.QuestionStatus
 import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.plugins.ServerJson
@@ -11,8 +12,10 @@ import java.util.zip.GZIPInputStream
 
 /**
  * The development server's questions, from the seed file `QUESTION_SEED_FILE` names: a draft file of the
- * private content repo, imported as approved at boot. Only ever on H2, which a boot of each discards
- * (`ServerConfig`), so it is read in whole each time. A file that cannot be read fails the boot, naming it.
+ * private content repo, an [ImportQuestionsRequest] with its countries and translations, imported as approved
+ * at boot. Only ever on H2, which a boot of each discards (`ServerConfig`), so it is read in whole each time.
+ * A file that cannot be read fails the boot, naming it; a draft in it that the import refuses, or that does
+ * not read as one (as the import route reads each, `decodedEach`), is left out with a warning.
  *
  * The file is the drafts' JSON, or that JSON gzipped and written in base64 ([text]): a Render secret file
  * holds at most 500 KiB, which 1.536 questions' JSON passes and their gzip in base64 keeps to 315. A bank that
@@ -56,12 +59,13 @@ object QuestionSeed {
         require(file.isFile) { "QUESTION_SEED_FILE names no file: $path" }
         val seed =
             try {
-                ServerJson.decodeFromString(ImportQuestionsRequest.serializer(), text(file.readText()))
+                ServerJson.decodeFromString(ImportBody.serializer(), text(file.readText()))
             } catch (malformed: Exception) {
                 throw IllegalArgumentException("QUESTION_SEED_FILE is no question file: ${malformed.message}")
             }
-        val result = db.query { QuestionStore.import(seed.batch, seed.questions, QuestionStatus.APPROVED, topics, now) }
+        val drafts = seed.questions.decodedEach(QuestionDraftDto.serializer())
+        val result = db.query { QuestionStore.import(seed.batch, drafts.items, QuestionStatus.APPROVED, topics, now) }
         log.info("seeded ${result.created.size} questions from ${file.name}, ${result.duplicates.size} known")
-        result.refused.forEach { log.warn("seed question ${it.key} refused: ${it.reason}") }
+        (drafts.refused + result.refused).forEach { log.warn("seed question ${it.key} refused: ${it.reason}") }
     }
 }

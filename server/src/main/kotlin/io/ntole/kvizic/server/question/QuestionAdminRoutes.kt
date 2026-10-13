@@ -9,6 +9,7 @@ import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.question.EditQuestionRequest
 import io.ntole.kvizic.core.question.ImportQuestionsRequest
 import io.ntole.kvizic.core.question.QuestionDecisionRequest
+import io.ntole.kvizic.core.question.QuestionDraftDto
 import io.ntole.kvizic.core.question.QuestionStatus
 import io.ntole.kvizic.server.admin.AdminToken
 import io.ntole.kvizic.server.admin.logAdmin
@@ -30,9 +31,11 @@ fun Route.questionAdminRoutes(
     topics: TopicCatalog,
     clock: () -> Long = System::currentTimeMillis,
 ) {
+    // An ImportQuestionsRequest, each draft read on its own (ImportBody): one that does not read, as one
+    // naming a country this server does not know, is refused alone, and the rest are imported.
     post(KvizicApi.Paths.ADMIN_QUESTION_IMPORTS) {
         call.requireAdmin(adminToken)
-        val request = call.receiveOrReject<ImportQuestionsRequest>("import")
+        val request = call.receiveOrReject<ImportBody>("import")
         val batch = request.batch.trim()
         if (batch.isEmpty() || batch.length > MAX_BATCH_LENGTH || !isOneLine(batch)) {
             throw ApiFailure.validation("a batch is named in one line of at most $MAX_BATCH_LENGTH characters")
@@ -40,16 +43,18 @@ fun Route.questionAdminRoutes(
         if (request.questions.size > KvizicApi.Limits.MAX_IMPORT_BATCH) {
             throw ApiFailure.validation("an import holds at most ${KvizicApi.Limits.MAX_IMPORT_BATCH} questions")
         }
-        val result =
+        val drafts = request.questions.decodedEach(QuestionDraftDto.serializer())
+        val imported =
             db.query {
                 QuestionStore.import(
                     batch,
-                    request.questions,
+                    drafts.items,
                     QuestionStatus.DRAFT,
                     topics.ids,
                     clock(),
                 )
             }
+        val result = imported.copy(refused = drafts.refused + imported.refused)
         call.logAdmin(
             "imported ${result.created.size} new, ${result.duplicates.size} known and ${result.refused.size} refused of batch",
             batch,
