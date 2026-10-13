@@ -43,9 +43,21 @@ class DifficultyMix(
         count: Int,
         chosen: Difficulty,
         levelOf: (T) -> Difficulty,
+    ): List<T> = pick(tiers, quotas(known(chosen), count), chosen, levelOf)
+
+    /**
+     * As many questions from [tiers] as [quotas] hold in all, by level, as [pick] takes a game's: how a
+     * game picked in two parts asks the second for what the first left ([remaining]).
+     */
+    fun <T> pick(
+        tiers: List<List<T>>,
+        quotas: Map<Difficulty, Int>,
+        chosen: Difficulty,
+        levelOf: (T) -> Difficulty,
     ): List<T> {
         val aim = known(chosen)
-        val wanted = quotas(aim, count).toMutableMap()
+        val wanted = LEVELS.associateWith { quotas[it] ?: 0 }.toMutableMap()
+        val count = wanted.values.sum()
         val picked = mutableListOf<T>()
         for (tier in tiers) {
             val room = count - picked.size
@@ -58,6 +70,22 @@ class DifficultyMix(
             picked += taken
         }
         return picked
+    }
+
+    /**
+     * What a game of [count] at [chosen] still wants by level once [taken] are in it: each level's
+     * [quotas] less those taken at it, never below none, and cut to the room left, from the levels
+     * farthest from [chosen] first, as when a tier gives too many of one.
+     */
+    fun remaining(
+        chosen: Difficulty,
+        count: Int,
+        taken: List<Difficulty>,
+    ): Map<Difficulty, Int> {
+        val aim = known(chosen)
+        val left = quotas(aim, count).toMutableMap()
+        taken.map(::known).forEach { level -> left[level] = (left.getValue(level) - 1).coerceAtLeast(0) }
+        return trimmed(left, (count - taken.size).coerceAtLeast(0), aim)
     }
 
     /** [wanted] cut to [room] in all, from the levels farthest from [aim] first, ties at random. */

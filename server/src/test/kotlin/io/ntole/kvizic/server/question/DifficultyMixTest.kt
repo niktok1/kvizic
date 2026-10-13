@@ -8,6 +8,7 @@ import io.ntole.kvizic.core.question.Difficulty.MEDIUM
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /** A game's mix of levels: mostly the one its host chose, the rest beside it, after who has seen what. */
 class DifficultyMixTest {
@@ -79,5 +80,41 @@ class DifficultyMixTest {
     @Test
     fun `among questions alike the tier's order decides`() {
         assertEquals(setOf("m1", "m2", "m3"), mix.pick(listOf(questions('m', 9)), 3, MEDIUM, ::levelOf).toSet())
+    }
+
+    @Test
+    fun `a game's second part wants what its first left of each level`() {
+        assertEquals(mapOf(EASY to 1, MEDIUM to 5, HARD to 2), mix.remaining(MEDIUM, 10, listOf(EASY, MEDIUM)))
+        assertEquals(mix.quotas(HARD, 10), mix.remaining(HARD, 10, emptyList()), "nothing taken")
+        assertEquals(
+            mapOf(EASY to 0, MEDIUM to 0, HARD to 0),
+            mix.remaining(EASY, 2, listOf(HARD, HARD)),
+            "nothing left",
+        )
+    }
+
+    @Test
+    fun `a first part that took more of a level than the game wants leaves the farthest levels fewer`() {
+        // At hard, 10 want 1 easy, 3 medium and 6 hard; 3 easy taken leave 7 to the medium and the hard.
+        assertEquals(mapOf(EASY to 0, MEDIUM to 1, HARD to 6), mix.remaining(HARD, 10, listOf(EASY, EASY, EASY)))
+        KvizicApi.Limits.QUESTION_COUNTS.forEach { count ->
+            DifficultyMix.LEVELS.forEach { chosen ->
+                (0..count).forEach { taken ->
+                    val left = mix.remaining(chosen, count, List(taken) { EASY })
+                    assertEquals(count - taken, left.values.sum(), "$taken easy of $count at $chosen")
+                    assertTrue(left.values.all { it >= 0 })
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `a pick for given counts takes as many as they hold, of each level`() {
+        val tier = questions('e', 10) + questions('m', 10) + questions('h', 10)
+        val wanted = mapOf(EASY to 1, MEDIUM to 0, HARD to 3)
+        val picked = mix.pick(listOf(tier.shuffled(Random(2))), wanted, MEDIUM, ::levelOf)
+        assertEquals(mapOf(EASY to 1, HARD to 3), levels(picked))
+        val few = questions('m', 2)
+        assertEquals(few, mix.pick(listOf(few), mapOf(HARD to 5), HARD, ::levelOf), "all there is")
     }
 }
