@@ -28,6 +28,16 @@ internal object FirstLaunch {
         return listOf(own, serbian).firstOrNull { it in offered } ?: Language.DEFAULT
     }
 
+    /**
+     * The language a first launch would show were every one of the game's offered: the one [language] gives in a
+     * build that offers it, and waits for in one that does not yet ([RegionStore]). Never English, never a
+     * stand-in.
+     */
+    fun wanted(
+        hints: RegionHints,
+        country: Country,
+    ): Language = language(hints, country, offered = Language.entries)
+
     /** The game's language [tag] is, or none: English is not one a first launch takes, being offered to nobody. */
     private fun languageOf(tag: String): Language? {
         val parsed = LanguageTag.parse(tag) ?: return null

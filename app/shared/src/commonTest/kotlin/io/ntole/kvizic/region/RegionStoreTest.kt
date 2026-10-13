@@ -28,8 +28,60 @@ class RegionStoreTest {
             assertEquals(Country.HR to Language.CROATIAN, store.country.value to store.language.value)
             assertEquals<Pair<String?, String?>>("HR" to "hr", storage.read(COUNTRY) to storage.read(LANGUAGE))
             assertEquals(1, device.asked)
+            assertNull(storage.read(WANTED), "nothing is waited for")
             // The server is told the same.
             assertEquals(Country.HR to "hr", store.currentCountry() to store.currentLanguageTag())
+        }
+
+    /**
+     * A first launch before Croatian is offered shows Serbian in Latin and keeps it, waiting for Croatian: the
+     * first launch of a build that offers it switches, once, and asks the device nothing to.
+     */
+    @Test
+    fun `a first launch waits for its language and takes it once it is offered`() =
+        runTest {
+            val storage = InMemoryTokenStorage()
+            val device = AskedDevice(RegionHints("hr", "hr", "HR", listOf("hr-HR", "en")))
+
+            val first = store(storage, device, installedBefore = false, offered = SERBIAN_ONLY)
+            runCurrent()
+            assertEquals(Language.SERBIAN_LATIN, first.language.value)
+            assertEquals<Pair<String?, String?>>("sr-Latn" to "hr", storage.read(LANGUAGE) to storage.read(WANTED))
+
+            // A session is kept by now, as after any first game.
+            val stillWaiting = store(storage, device, installedBefore = true, offered = SERBIAN_ONLY)
+            runCurrent()
+            assertEquals(Language.SERBIAN_LATIN, stillWaiting.language.value)
+            assertEquals("hr", storage.read(WANTED))
+
+            val offeredNow = store(storage, device, installedBefore = true, offered = RELEASE)
+            runCurrent()
+            assertEquals(Language.CROATIAN, offeredNow.language.value)
+            assertEquals(Country.HR to "hr", offeredNow.currentCountry() to offeredNow.currentLanguageTag())
+            assertEquals<Pair<String?, String?>>("hr" to null, storage.read(LANGUAGE) to storage.read(WANTED))
+
+            val later = store(storage, device, installedBefore = true, offered = RELEASE)
+            assertEquals(Language.CROATIAN, later.language.value)
+            assertEquals(1, device.asked, "only the first launch asks the device")
+        }
+
+    /** The stand-in the player picks over is gone for good: what they pick is theirs, whatever comes after. */
+    @Test
+    fun `a language picked while another is waited for is the player's`() =
+        runTest {
+            val storage = InMemoryTokenStorage()
+            val device = AskedDevice(RegionHints("mk", "mk", "MK", listOf("mk-MK")))
+            val first = store(storage, device, installedBefore = false, offered = SERBIAN_ONLY)
+            runCurrent()
+            assertEquals(Language.SERBIAN_CYRILLIC, first.language.value)
+            assertEquals("mk", storage.read(WANTED))
+
+            first.selectLanguage(Language.SERBIAN_LATIN)
+            runCurrent()
+            assertNull(storage.read(WANTED))
+
+            val offeredNow = store(storage, device, installedBefore = true, offered = RELEASE)
+            assertEquals(Language.SERBIAN_LATIN, offeredNow.language.value)
         }
 
     /** A device in a language the game does not have takes its country's: Montenegro's Serbian in Latin. */
@@ -235,6 +287,10 @@ class RegionStoreTest {
     private companion object {
         const val COUNTRY = RegionStore.COUNTRY_KEY
         const val LANGUAGE = RegionStore.LANGUAGE_KEY
+        const val WANTED = RegionStore.WANTED_KEY
+
+        /** What is offered until the four are reviewed. */
+        val SERBIAN_ONLY = listOf(Language.SERBIAN_CYRILLIC, Language.SERBIAN_LATIN)
 
         val RELEASE =
             listOf(

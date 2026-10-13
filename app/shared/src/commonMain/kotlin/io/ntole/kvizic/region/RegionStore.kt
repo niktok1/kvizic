@@ -27,7 +27,11 @@ import kotlinx.coroutines.sync.withLock
  * What a launch opens with:
  * - A **first launch**, nothing kept and no session either, detects the country from what [device] says
  *   ([CountryDetection]) and picks the language from the device's own, else the country's ([FirstLaunch], among
- *   [offered]), and keeps both.
+ *   [offered]), and keeps both. When the one it wants ([FirstLaunch.wanted]) is not offered yet, it shows and
+ *   keeps the one [FirstLaunch] gives in its stead, Serbian in that one's script, and keeps the one it wants
+ *   under [WANTED_KEY]: the first launch of a build that offers it switches to it, once, unless the player has
+ *   picked a language meanwhile. Kept as the player's own, a stand-in would hold every install made before its
+ *   language came in Serbian for good.
  * - An **install from before** keeps its language: the one it kept, or Serbian Cyrillic, which it has always
  *   shown when it kept none (a session kept is what tells it from a first launch, since an install kept its
  *   language only once one was picked). It only has its country detected, once, and kept.
@@ -46,26 +50,41 @@ class RegionStore(
     private val countryNow: MutableStateFlow<Country>
     private val languageNow: MutableStateFlow<Language>
 
+    /** The language a first launch wanted and found not offered yet, until it is or the player picks one. */
+    private val waitingFor: MutableStateFlow<Language?>
+
     /** One lock a key, so writes of one key land in the order asked, and one stuck holds up no other. */
-    private val writing = mapOf(COUNTRY_KEY to Mutex(), LANGUAGE_KEY to Mutex())
+    private val writing = mapOf(COUNTRY_KEY to Mutex(), LANGUAGE_KEY to Mutex(), WANTED_KEY to Mutex())
 
     init {
         val keptCountry = storage.read(COUNTRY_KEY)
         val keptLanguage = storage.read(LANGUAGE_KEY)
+        val keptWanted = storage.read(WANTED_KEY)
         // Read once at most, and only when something is to be detected.
         val hints by lazy { device.hintsOrNone() }
         val firstLaunch = keptCountry == null && keptLanguage == null && !installedBefore()
         countryNow = MutableStateFlow(keptCountry?.let(::countryNamed) ?: CountryDetection.detect(hints))
+        // What a first launch wants, or what one wanted and this build may offer now.
+        val wanted =
+            if (firstLaunch) {
+                FirstLaunch.wanted(hints, countryNow.value)
+            } else {
+                Language.entries.firstOrNull { it.tag == keptWanted }
+            }
+        val arrived = wanted != null && wanted in offered
         languageNow =
             MutableStateFlow(
                 when {
+                    wanted != null && arrived -> wanted
                     keptLanguage != null -> Language.ofTag(keptLanguage)
                     firstLaunch -> FirstLaunch.language(hints, countryNow.value, offered)
                     else -> Language.DEFAULT
                 },
             )
+        waitingFor = MutableStateFlow(wanted.takeUnless { arrived })
         if (keptCountry == null) keep(COUNTRY_KEY) { countryNow.value.name }
-        if (firstLaunch) keep(LANGUAGE_KEY) { languageNow.value.tag }
+        if (firstLaunch || arrived) keep(LANGUAGE_KEY) { languageNow.value.tag }
+        if (waitingFor.value?.tag != keptWanted) keep(WANTED_KEY) { waitingFor.value?.tag }
     }
 
     /** Where the player plays from. */
@@ -81,25 +100,35 @@ class RegionStore(
         keep(COUNTRY_KEY) { countryNow.value.name }
     }
 
-    /** Shows the game in [language] from now on: the next socket's hello names it. */
+    /** Shows the game in [language] from now on: the next socket's hello names it. The player's, so kept as theirs. */
     fun selectLanguage(language: Language) {
         if (language == languageNow.value) return
         languageNow.value = language
         keep(LANGUAGE_KEY) { languageNow.value.tag }
+        if (waitingFor.value != null) {
+            waitingFor.value = null
+            keep(WANTED_KEY) { waitingFor.value?.tag }
+        }
     }
 
     override fun currentCountry(): Country = countryNow.value
 
     override fun currentLanguageTag(): String = languageNow.value.tag
 
-    /** Writes under [key] what [value] is when the write's turn comes, so the last change asked is what stays. */
+    /**
+     * Writes under [key] what [value] is when the write's turn comes, so the last change asked is what stays; a
+     * value of none removes the key.
+     */
     private fun keep(
         key: String,
-        value: () -> String,
+        value: () -> String?,
     ) {
         scope.launch {
             try {
-                writing.getValue(key).withLock { storage.write(key, value()) }
+                writing.getValue(key).withLock {
+                    val now = value()
+                    if (now != null) storage.write(key, now) else storage.remove(key)
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (ignored: Exception) {
@@ -114,6 +143,9 @@ class RegionStore(
 
         /** Beside the sessions' keys, and none of them: the key the language has always been kept under. */
         const val LANGUAGE_KEY: String = "kvizic.language"
+
+        /** The language a first launch wanted and this build did not offer yet, by its tag, kept until it does. */
+        const val WANTED_KEY: String = "kvizic.language.wanted"
 
         /** The country [name] names, UNKNOWN for one this build does not know. */
         private fun countryNamed(name: String): Country =

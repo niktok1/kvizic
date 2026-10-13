@@ -81,6 +81,35 @@ class FirstLaunchTest {
         assertEquals(Language.DEFAULT, FirstLaunch.language(hints(listOf("hr")), Country.HR, offered = emptyList()))
     }
 
+    /**
+     * What a first launch wants is what it would show with the release's six, whatever is offered yet: the one
+     * it waits for while it shows a stand-in.
+     */
+    @Test
+    fun `what a first launch wants is the release's pick`() {
+        val devices =
+            listOf(
+                listOf("hr-HR", "sr-Latn-HR"),
+                listOf("de-DE", "sl-SI"),
+                listOf("en-US"),
+                listOf("mk"),
+                listOf("sr-Latn-ME"),
+                emptyList<String>(),
+            )
+
+        devices.forEach { languages ->
+            Country.entries.forEach { country ->
+                assertEquals(
+                    FirstLaunch.language(hints(languages), country, RELEASE),
+                    FirstLaunch.wanted(hints(languages), country),
+                    "$languages in $country",
+                )
+            }
+        }
+        assertEquals(Language.CROATIAN, FirstLaunch.wanted(hints(listOf("hr-HR", "sr-Latn-HR")), Country.HR))
+        assertEquals(Language.MACEDONIAN, FirstLaunch.wanted(hints(listOf("en")), Country.MK))
+    }
+
     private fun hints(languages: List<String>) = RegionHints(preferredLanguages = languages)
 
     private companion object {

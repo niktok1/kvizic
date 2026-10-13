@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * The language the game is shown in, as [region] keeps it for the device: a first launch's, the device's own
- * language when the game offers it and else its country's, or the one the player picked since; an install from
- * before keeps the one it showed. A language picked is reported to [analytics], by its tag.
+ * language when the game offers it and else its country's (Serbian standing in for one not offered yet, until a
+ * build offers it), or the one the player picked since; an install from before keeps the one it showed. A
+ * language picked is reported to [analytics], by its tag.
  *
  * The one [region] holds is also the one every socket's hello names, so the server sends the questions in it.
  */
