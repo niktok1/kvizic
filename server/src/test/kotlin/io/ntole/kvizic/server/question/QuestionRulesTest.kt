@@ -3,6 +3,9 @@ package io.ntole.kvizic.server.question
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.core.question.QuestionKind
+import io.ntole.kvizic.core.question.QuestionTextDto
+import io.ntole.kvizic.core.region.ContentLanguages
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.db.QuestionOptions
 import io.ntole.kvizic.server.db.Questions
 import kotlin.test.Test
@@ -26,6 +29,8 @@ class QuestionRulesTest {
         source: String? = "https://sr.wikipedia.org/wiki/Канбера",
         language: String = "sr-Cyrl",
         author: String = "claude",
+        countries: List<Country> = emptyList(),
+        translations: Map<String, QuestionTextDto> = emptyMap(),
     ) = checkedQuestion(
         text,
         options,
@@ -38,7 +43,17 @@ class QuestionRulesTest {
         language,
         author,
         topics,
+        countries,
+        translations,
     )
+
+    /** A translation of the default question's four answers into [tag], or of [options]. */
+    private fun words(
+        tag: String,
+        text: String = "Pitanje $tag?",
+        options: List<String> = listOf("A $tag", "B $tag", "C $tag", "D $tag"),
+        explanation: String? = null,
+    ) = QuestionTextDto(text, options, explanation)
 
     private fun refusal(block: () -> Unit): String = assertFailsWith<QuestionRefused> { block() }.message
 
@@ -101,6 +116,97 @@ class QuestionRulesTest {
     fun `a true or false question has exactly its two answers`() {
         val checked = check(options = listOf("Тачно", "Нетачно"), correct = 0, kind = QuestionKind.TRUE_FALSE)
         assertEquals(QuestionKind.TRUE_FALSE, checked.kind)
+    }
+
+    @Test
+    fun `a question is in a content language, never another tag`() {
+        ContentLanguages.ALL.forEach { assertEquals(it, check(language = " $it ").language) }
+        listOf("sr-Latn", "en", "sr", "HR", "").forEach { tag ->
+            assertTrue(refusal { check(language = tag) }.startsWith("no language"), tag)
+        }
+    }
+
+    @Test
+    fun `a question's countries come in their order, none twice and none unknown`() {
+        assertEquals(emptySet(), check().countries, "common")
+        assertEquals(
+            listOf(Country.RS, Country.BA, Country.ME),
+            check(countries = listOf(Country.ME, Country.RS, Country.BA)).countries.toList(),
+        )
+        assertEquals("countries: HR twice", refusal { check(countries = listOf(Country.HR, Country.SI, Country.HR)) })
+        assertEquals("countries: UNKNOWN is no country", refusal { check(countries = listOf(Country.UNKNOWN)) })
+    }
+
+    @Test
+    fun `a translation is trimmed as its source is, and kept in the languages' order`() {
+        val checked =
+            check(
+                explanation = "Објашњење.",
+                translations =
+                    mapOf(
+                        "mk" to words("mk", explanation = "Објаснување."),
+                        "hr" to words("hr", text = "  Pitanje hr?  ", explanation = " Objašnjenje. "),
+                    ),
+            )
+        assertEquals(listOf("hr", "mk"), checked.translations.keys.toList())
+        val hr = checked.translations.getValue("hr")
+        assertEquals("Pitanje hr?", hr.text)
+        assertEquals(listOf("A hr", "B hr", "C hr", "D hr"), hr.options)
+        assertEquals("Objašnjenje.", hr.explanation)
+        assertNull(check(translations = mapOf("sl" to words("sl", explanation = "  "))).translations["sl"]?.explanation)
+    }
+
+    @Test
+    fun `a translation is refused for what its source would be, naming the language`() {
+        fun refused(vararg translations: Pair<String, QuestionTextDto>) =
+            refusal { check(translations = mapOf(*translations)) }
+
+        assertEquals("translation en: no such language", refused("en" to words("en")))
+        assertEquals("translation sr-Latn: no such language", refused("sr-Latn" to words("sr-Latn")))
+        assertEquals("translation sr-Cyrl: the source's own language", refused("sr-Cyrl" to words("sr-Cyrl")))
+        assertEquals("translation hr: the question is blank", refused("hr" to words("hr", text = " ")))
+        assertEquals(
+            "translation hr: the question is over 120 characters",
+            refused("hr" to words("hr", text = "a".repeat(121))),
+        )
+        assertEquals(
+            "translation bs: the question is not one line",
+            refused("bs" to words("bs", text = "Prvi red\ndrugi red")),
+        )
+        assertEquals(
+            "translation sl: answer 3 is over 60 characters",
+            refused("sl" to words("sl", options = listOf("A", "B", "c".repeat(61), "D"))),
+        )
+        assertEquals(
+            "translation mk: answer 2 is blank",
+            refused("mk" to words("mk", options = listOf("A", " ", "C", "D"))),
+        )
+        assertEquals(
+            "translation hr: 3 answers, not the source's 4",
+            refused("hr" to words("hr", options = listOf("A", "B", "C"))),
+        )
+        assertEquals(
+            "translation hr: two answers are the same",
+            refused("hr" to words("hr", options = listOf("Isto", "B", "isto", "D"))),
+        )
+        assertEquals(
+            "translation hr: an explanation, where the source has none",
+            refused("hr" to words("hr", explanation = "Objašnjenje.")),
+        )
+        assertEquals(
+            "translation hr: the explanation is over 160 characters",
+            refusal {
+                check(
+                    explanation = "Објашњење.",
+                    translations =
+                        mapOf("hr" to words("hr", explanation = "e".repeat(161))),
+                )
+            },
+        )
+        assertEquals(
+            "translation bs: no explanation, where the source has one",
+            refusal { check(explanation = "Објашњење.", translations = mapOf("bs" to words("bs"))) },
+        )
     }
 
     @Test
