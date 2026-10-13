@@ -8,7 +8,9 @@ import io.ntole.kvizic.core.domain.region.Country
  * 1. the mobile network's country, then the SIM's, the first that is one of the six: where the phone is;
  * 2. else the first of the owner's languages that one of the six speaks (`sr` Serbia, `hr` Croatia, `bs` Bosnia,
  *    `sl` Slovenia, `mk` North Macedonia, `cnr` Montenegro), so a Serbian phone abroad on a German SIM stays
- *    Serbian, and a tablet with no SIM goes by its owner's language;
+ *    Serbian, and a tablet with no SIM goes by its owner's language; a tag whose region is one of the six
+ *    gives that region instead (the owner, 2026-10-14): `sr-Latn-ME` Montenegro, `hr-BA` and `sr-Cyrl-BA`
+ *    Bosnia, while `sr-DE` stays Serbia;
  * 3. else the locale's country, if it is one of the six;
  * 4. else Serbia.
  *
@@ -28,8 +30,12 @@ internal object CountryDetection {
         return PLAYABLE_COUNTRIES.firstOrNull { it.name == name }
     }
 
-    /** The country whose language [tag] is, by its language alone. */
-    private fun countryOfLanguage(tag: String): Country? = LanguageTag.parse(tag)?.let { SPOKEN_IN[it.language] }
+    /** The country whose language [tag] is: its region when that is one of the six, else its language's. */
+    private fun countryOfLanguage(tag: String): Country? {
+        val parsed = LanguageTag.parse(tag) ?: return null
+        val spoken = SPOKEN_IN[parsed.language] ?: return null
+        return countryOfCode(parsed.region) ?: spoken
+    }
 
     /** Each of the six's own language, by its ISO 639 code: Montenegrin has its own since 2017. */
     private val SPOKEN_IN: Map<String, Country> =
