@@ -142,27 +142,31 @@ class LobbyRegistry(
     fun lobbyOf(playerId: String): Lobby? = playerLobby[playerId]?.let { lobbies[it] }
 
     /**
-     * Quick play: the player's own public lobby if they wait in one; otherwise the fullest waiting public
-     * lobby with room, the oldest first among equals, then one mid-game with room, whose next game they
-     * play; otherwise a new public lobby of the default settings with them as its host.
+     * Quick play: the player's own public lobby if they wait in one; otherwise a public lobby with room, one
+     * whose connected members all play from the player's country first, so its games can ask that country's
+     * questions; then the fullest waiting one, the oldest first among equals, then one mid-game, whose next
+     * game they play; otherwise a new public lobby of the default settings with them as its host.
      */
     suspend fun quickPlay(seat: Seat): Joined =
         lock.withLock {
             refuseWhileDraining()
             lobbyOf(seat.playerId)?.takeIf { it.kind == LobbyKind.PUBLIC }?.let { return@withLock seatIn(it, seat) }
+            // Each lobby read once, so the order is of one moment's state.
+            val own = setOf(seat.country)
             val candidates =
                 lobbies.values
-                    .map { it to it.summary.value }
+                    .map { QuickPlayCandidate(it, it.summary.value, ownCountry = it.connectedCountries.value == own) }
                     .filter { (_, summary) ->
                         summary.kind == LobbyKind.PUBLIC && !summary.draining && !summary.closed &&
                             summary.hasRoom
                     }.sortedWith(
-                        compareBy<Pair<Lobby, LobbySummary>> { it.second.inGame }
-                            .thenByDescending { it.second.seatsTaken }
-                            .thenBy { it.second.openedOrder },
+                        compareByDescending<QuickPlayCandidate> { it.ownCountry }
+                            .thenBy { it.summary.inGame }
+                            .thenByDescending { it.summary.seatsTaken }
+                            .thenBy { it.summary.openedOrder },
                     ).take(QUICK_PLAY_TRIES)
-            for ((lobby, _) in candidates) {
-                val joined = trySeat(lobby, seat)
+            for (candidate in candidates) {
+                val joined = trySeat(candidate.lobby, seat)
                 if (joined != null) return@withLock joined
             }
             if (lobbies.size >= limits.maxLobbies) throw ApiFailure.tooManyLobbies()
@@ -331,6 +335,13 @@ class LobbyRegistry(
         }
         return Seated(Joined(lobby, tickets.issue(seat.playerId, seat.sessionId, lobby.id)))
     }
+
+    /** A lobby Quick play may seat a player in, as it stood: [ownCountry] when everyone connected plays from theirs. */
+    private data class QuickPlayCandidate(
+        val lobby: Lobby,
+        val summary: LobbySummary,
+        val ownCountry: Boolean,
+    )
 
     private sealed interface SeatOutcome
 

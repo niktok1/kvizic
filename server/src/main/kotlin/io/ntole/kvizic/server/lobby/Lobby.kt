@@ -140,9 +140,16 @@ class Lobby(
     private val slow = LinkedHashSet<Member>()
 
     private val publishedSummary = MutableStateFlow(summary())
+    private val publishedCountries = MutableStateFlow(emptySet<Country>())
 
     /** What the lobby shows outside itself, after the last command it handled. */
     val summary: StateFlow<LobbySummary> get() = publishedSummary
+
+    /**
+     * The countries its connected members play from, published with [summary]: what Quick play finds a room
+     * of a player's own country by.
+     */
+    val connectedCountries: StateFlow<Set<Country>> get() = publishedCountries
 
     /** Queues [command] for the lobby's loop. False when the inbox is full or the lobby has closed. */
     fun send(command: LobbyCommand): Boolean = inbox.trySend(command).isSuccess
@@ -198,6 +205,7 @@ class Lobby(
                         closeAfterFailure()
                     }
                     publishedSummary.value = summary()
+                    publishedCountries.value = connectedCountries()
                     if (closed) break
                 }
             } finally {
@@ -1465,6 +1473,12 @@ class Lobby(
             openedOrder = openedOrder,
         )
     }
+
+    private fun connectedCountries(): Set<Country> =
+        members.values
+            .filter { it.connection != null }
+            .map { it.country }
+            .toSet()
 
     // --- Helpers ---
 
