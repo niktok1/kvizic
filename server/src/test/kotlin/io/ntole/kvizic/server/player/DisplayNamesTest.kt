@@ -73,7 +73,9 @@ class DisplayNamesTest {
 
     @Test
     fun `a slur is caught disguised`() {
-        names("Š1ptar, ＰＩＺＤＡ, Droǉa, Буз1, Kurb4, N4z1, nazi88, ЕБАМ_ТЕ, П1чка").forEach { name ->
+        names(
+            "Š1ptar, ＰＩＺＤＡ, Droǉa, Буз1, Kurb4, N4z1, nazi88, ЕБАМ_ТЕ, П1чка, Balija1, Kurba5, Nazi14, Fuk1, Drek3",
+        ).forEach { name ->
             assertNull(DisplayNames.clean(name), name)
         }
     }

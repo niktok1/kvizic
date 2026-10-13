@@ -47,18 +47,22 @@ object DisplayNames {
 
     /**
      * Whether [name] holds a blocked word, compared folded to plain Latin: a word that starts with one of
-     * [BLOCKED_STEMS], or is one of [BLOCKED_WORDS], digits after it aside (`nazi88` is `nazi`).
+     * [BLOCKED_STEMS], or is one of [BLOCKED_WORDS] read whole or with the digits after it set aside, those that
+     * mimic a letter too (`nazi88` and `nazi14` are `nazi`, `n4z1` is too).
      */
     internal fun isBlocked(name: String): Boolean =
-        fold(name)
+        letters(name)
             .split(NON_WORD)
             .filter { it.isNotEmpty() }
             .any { word ->
-                BLOCKED_STEMS.any { stem -> word.startsWith(stem) } ||
-                    word.trimEnd { it.isDigit() } in BLOCKED_WORDS
+                val folded = leet(word)
+                BLOCKED_STEMS.any { stem -> folded.startsWith(stem) } ||
+                    folded in BLOCKED_WORDS ||
+                    leet(word.trimEnd { it in '0'..'9' }) in BLOCKED_WORDS
             }
 
-    private val NON_WORD = Regex("[^a-z0-9]+")
+    /** What parts words in [letters]' form: all but letters, digits and the `@` that mimics an a. */
+    private val NON_WORD = Regex("[^a-z0-9@]+")
 
     /**
      * The form a name is matched in. Compatibility forms read as their letters (fullwidth letters, the ǉ, ǌ and ǆ
@@ -67,10 +71,15 @@ object DisplayNames {
      * transliterated, ѕ as dz, and ђ and đ both as dj, so a name folds alike in either script; digits read as the
      * letters they mimic.
      */
-    internal fun fold(text: String): String {
+    internal fun fold(text: String): String = leet(letters(text))
+
+    /** [fold] but for the digits, which keep their own form. */
+    private fun letters(text: String): String {
         val bare = Normalizer.normalize(text, Normalizer.Form.NFKD).replace(MARKS, "").lowercase()
-        return buildString { bare.forEach { append(FOLDED[it] ?: it.toString()) } }
+        return buildString { bare.forEach { append(LETTERS[it] ?: it.toString()) } }
     }
+
+    private fun leet(word: String): String = buildString { word.forEach { append(LEET[it] ?: it.toString()) } }
 
     private val MARKS = Regex("\\p{M}+")
 
@@ -124,8 +133,8 @@ object DisplayNames {
     private val LEET: Map<Char, String> =
         mapOf('0' to "o", '1' to "i", '3' to "e", '4' to "a", '5' to "s", '@' to "a")
 
-    /** What [fold] writes for a character, after the diacritics have dropped: Cyrillic, đ, and digits. */
-    private val FOLDED: Map<Char, String> = CYRILLIC + ('đ' to "dj") + LEET
+    /** What [letters] writes for a character, after the diacritics have dropped: Cyrillic and đ. */
+    private val LETTERS: Map<Char, String> = CYRILLIC + ('đ' to "dj")
 
     /**
      * Stems, folded: a word that starts with one is blocked. Each is as short as is safe, since a stem that starts
