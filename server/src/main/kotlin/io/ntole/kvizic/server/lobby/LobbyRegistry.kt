@@ -145,18 +145,21 @@ class LobbyRegistry(
      * Quick play: the player's own public lobby if they wait in one; otherwise a public lobby with room, one
      * whose connected members all play from the player's country first, so its games can ask that country's
      * questions; then the fullest waiting one, the oldest first among equals, then one mid-game, whose next
-     * game they play; otherwise a new public lobby of the default settings with them as its host.
+     * game they play; otherwise a new public lobby of the default settings with them as its host. A lobby
+     * with nobody connected (a host whose socket is still coming, members all away) is of no other country,
+     * so it keeps its place in that order: while every seat is Serbian, the order is as it always was.
      */
     suspend fun quickPlay(seat: Seat): Joined =
         lock.withLock {
             refuseWhileDraining()
             lobbyOf(seat.playerId)?.takeIf { it.kind == LobbyKind.PUBLIC }?.let { return@withLock seatIn(it, seat) }
             // Each lobby read once, so the order is of one moment's state.
-            val own = setOf(seat.country)
             val candidates =
                 lobbies.values
-                    .map { QuickPlayCandidate(it, it.summary.value, ownCountry = it.connectedCountries.value == own) }
-                    .filter { (_, summary) ->
+                    .map { lobby ->
+                        val ownCountry = lobby.connectedCountries.value.all { it == seat.country }
+                        QuickPlayCandidate(lobby, lobby.summary.value, ownCountry)
+                    }.filter { (_, summary) ->
                         summary.kind == LobbyKind.PUBLIC && !summary.draining && !summary.closed &&
                             summary.hasRoom
                     }.sortedWith(
@@ -336,7 +339,7 @@ class LobbyRegistry(
         return Seated(Joined(lobby, tickets.issue(seat.playerId, seat.sessionId, lobby.id)))
     }
 
-    /** A lobby Quick play may seat a player in, as it stood: [ownCountry] when everyone connected plays from theirs. */
+    /** A lobby Quick play may seat a player in, as it stood: [ownCountry] when nobody connected plays from another. */
     private data class QuickPlayCandidate(
         val lobby: Lobby,
         val summary: LobbySummary,

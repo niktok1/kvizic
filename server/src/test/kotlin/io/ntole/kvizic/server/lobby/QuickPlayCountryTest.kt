@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.lobby
 
 import io.ntole.kvizic.core.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.rules.ScoringRules
 import kotlinx.coroutines.test.TestScope
@@ -9,8 +10,9 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.ZERO
 
-/** Quick play seats a player first where everyone connected plays from their country, then as it always did. */
+/** Quick play seats a player first where nobody connected plays from another country, then as it always did. */
 class QuickPlayCountryTest {
     private class Registry(
         private val test: TestScope,
@@ -27,6 +29,7 @@ class QuickPlayCountryTest {
                 topics = { TEST_TOPICS },
             )
         private var connections = 0L
+        private val sockets = HashMap<String, TestConnection>()
 
         private fun seat(
             name: String,
@@ -40,9 +43,33 @@ class QuickPlayCountryTest {
             take: suspend (Seat) -> Joined,
         ): Lobby {
             val joined = take(seat(name, country))
-            check(joined.lobby.send(LobbyCommand.Attach(TestConnection(++connections, name, "session-$name"))))
+            val socket = TestConnection(++connections, name, "session-$name")
+            sockets[name] = socket
+            check(joined.lobby.send(LobbyCommand.Attach(socket)))
             test.runCurrent()
             return joined.lobby
+        }
+
+        /** A public lobby [name] opened and whose socket has not come yet: nobody is connected in it. */
+        suspend fun holds(
+            name: String,
+            country: Country,
+        ): Lobby {
+            val lobby = registry.create(seat(name, country), PUBLIC, LobbyKind.PUBLIC).lobby
+            test.runCurrent()
+            return lobby
+        }
+
+        /** [host] starts a game in [lobby]: from its countdown on, the lobby is in a game. */
+        fun starts(
+            host: String,
+            lobby: Lobby,
+        ) {
+            val socket = checkNotNull(sockets[host]) { "$host has no socket" }
+            val start = ClientMessage.Start(1)
+            check(lobby.send(LobbyCommand.FromClient(socket, start, test.testScheduler.timeSource.markNow(), ZERO)))
+            test.runCurrent()
+            check(lobby.summary.value.inGame) { "$host's game did not start" }
         }
 
         suspend fun opens(
@@ -115,6 +142,29 @@ class QuickPlayCountryTest {
             testScheduler.runCurrent()
 
             assertEquals(held, rooms.quickPlays("eva", Country.RS), "the fuller of two Serbian rooms")
+        }
+
+    @Test
+    fun `a room with nobody connected yet keeps its place, a waiting one before a game under way`() =
+        runTest {
+            val rooms = Registry(this)
+            val playing = rooms.opens("ana", Country.RS)
+            rooms.joins("boris", Country.RS, playing)
+            rooms.starts("ana", playing)
+            // Opened a moment ago, its host's socket on its way: as Quick play's own new room is.
+            val fresh = rooms.holds("ceca", Country.RS)
+
+            assertEquals(fresh, rooms.quickPlays("dragan", Country.RS), "the waiting one, as before countries")
+        }
+
+    @Test
+    fun `a room with nobody connected is nobody else's, so it comes before one of another country`() =
+        runTest {
+            val rooms = Registry(this)
+            rooms.opens("ana", Country.RS)
+            val fresh = rooms.holds("boris", Country.HR)
+
+            assertEquals(fresh, rooms.quickPlays("ceca", Country.HR), "the younger room: nobody in it is Serbian")
         }
 
     private companion object {
