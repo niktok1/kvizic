@@ -189,21 +189,28 @@ class RegionStoreTest {
             assertEquals(Country.BA to Language.SERBIAN_LATIN, next.country.value to next.language.value)
         }
 
-    /** Writes that take their time land in the order asked: the last pick is the one kept. */
+    /**
+     * A pick made while the last one's write is still on its way waits for it, and lands after it: were the two
+     * written at once, the earlier, landing last, would be the one kept.
+     */
     @Test
-    fun `the last of quick picks is the one kept`() =
+    fun `a pick made while the last is being written is the one kept`() =
         runTest {
-            val storage = SlowStorage()
+            val storage = SlowStorage(COUNTRY to "RS", LANGUAGE to "sr-Cyrl")
             val store = store(storage, AskedDevice(RegionHints("rs")), installedBefore = true)
 
             store.selectCountry(Country.HR)
-            store.selectCountry(Country.SI)
-            store.selectCountry(Country.ME)
             runCurrent()
-            storage.release.complete(Unit)
+            store.selectCountry(Country.SI)
+            runCurrent()
+            // The later write lands first, as a disk may land them, then the earlier.
+            storage.landing(1).complete(Unit)
+            runCurrent()
+            storage.landing(0).complete(Unit)
             runCurrent()
 
-            assertEquals("ME", storage.read(COUNTRY))
+            assertEquals("SI", storage.read(COUNTRY))
+            assertEquals(listOf(COUNTRY to "HR", COUNTRY to "SI"), storage.writing)
         }
 
     /** A slow disk holds up neither the screen nor the other setting. */
@@ -250,11 +257,21 @@ class RegionStoreTest {
         }
     }
 
-    /** A storage whose writes wait until [release], as a slow disk's do, and are kept in the order they land. */
-    private class SlowStorage : TokenStorage {
-        val release = CompletableDeferred<Unit>()
+    /**
+     * A storage holding [kept], whose writes wait as a slow disk's do: the [writing] begun, in the order begun, the
+     * n-th of them landing once [landing] (n) is completed.
+     */
+    private class SlowStorage(
+        vararg kept: Pair<String, String>,
+    ) : TokenStorage {
         val writing = mutableListOf<Pair<String, String>>()
-        private val values = mutableMapOf<String, String>()
+        private val landings = mutableListOf<CompletableDeferred<Unit>>()
+        private val values = mutableMapOf(*kept)
+
+        fun landing(write: Int): CompletableDeferred<Unit> {
+            while (landings.size <= write) landings += CompletableDeferred<Unit>()
+            return landings[write]
+        }
 
         override fun read(key: String): String? = values[key]
 
@@ -262,8 +279,9 @@ class RegionStoreTest {
             key: String,
             value: String,
         ) {
+            val landed = landing(writing.size)
             writing += key to value
-            release.await()
+            landed.await()
             values[key] = value
         }
 
