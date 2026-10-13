@@ -123,9 +123,9 @@ public fun platformDataModule(
 
 /**
  * The game's own repositories over the platform's client and session, which [platformDataModule] binds:
- * the player's profile, the topics, and the lobbies with their realtime socket, which goes to
- * [environment]'s API host and names [build] in its hello, and the language the [PlayerRegion] holds as it
- * opens.
+ * the player's profile, the topics, a question's report, and the lobbies with their realtime socket, which goes
+ * to [environment]'s API host and names [build] in its hello, and the language the [PlayerRegion] holds as it
+ * opens, as a report does as it goes.
  *
  * The lobby session lives as long as the app, in [appScope]: a lobby outlasts every screen.
  */
@@ -145,7 +145,10 @@ public fun gameDataModule(
 
         single<PlayerRepository> { DefaultPlayerRepository(api = get(), session = get()) }
         single<TopicRepository> { DefaultTopicRepository(api = get()) }
-        single<ReportRepository> { DefaultReportRepository(api = get(), session = get()) }
+        single<ReportRepository> {
+            val region = get<PlayerRegion>()
+            DefaultReportRepository(api = get(), session = get(), languageTag = region::currentLanguageTag)
+        }
         single<PublicLobbyRepository> { DefaultPublicLobbyRepository(api = get(), session = get()) }
         single<LobbySession> {
             DefaultLobbySession(api = get(), transport = get(), session = get(), scope = appScope, upgrade = get())

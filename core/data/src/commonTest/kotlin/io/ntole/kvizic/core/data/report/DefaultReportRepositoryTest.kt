@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 /** A question reported through the real client, against [FakeServer]. */
 class DefaultReportRepositoryTest {
@@ -35,6 +36,20 @@ class DefaultReportRepositoryTest {
                 ),
                 server.reportsSentAs,
             )
+        }
+
+    /** The server keeps the content language a report was read in: Serbian Latin reads the Serbian Cyrillic. */
+    @Test
+    fun `a report names the content language the player reads`() =
+        runTest {
+            val reads =
+                mapOf("hr" to "hr", "sr-Latn" to "sr-Cyrl", "sr-Cyrl" to "sr-Cyrl", "mk" to "mk", "en" to "sr-Cyrl")
+            reads.forEach { (shown, read) ->
+                reportQuestion(storeHolding(null), languageTag = { shown })("q1", QuestionReportReason.TYPO)
+                assertEquals<String?>(read, sentLast().language, shown)
+            }
+            reportQuestion(storeHolding(null))("q1", QuestionReportReason.TYPO)
+            assertNull(sentLast().language, "a client that knows none names none")
         }
 
     @Test
@@ -76,7 +91,12 @@ class DefaultReportRepositoryTest {
             assertEquals(GameError.QUESTION_NOT_FOUND, refused.error)
         }
 
-    private fun reportQuestion(store: io.ntole.kvizic.core.network.SessionStore): ReportQuestion {
+    private fun sentLast(): ReportQuestionRequest = server.reportsSentAs.last().second
+
+    private fun reportQuestion(
+        store: io.ntole.kvizic.core.network.SessionStore,
+        languageTag: () -> String? = { null },
+    ): ReportQuestion {
         val client = KvizicHttpClient.create(BASE_URL, store, server.engine)
         val sessions =
             DefaultSessionRepository(
@@ -84,6 +104,6 @@ class DefaultReportRepositoryTest {
                     .AuthApi(client),
                 store,
             )
-        return ReportQuestion(DefaultReportRepository(ReportApi(client), sessions), sessions)
+        return ReportQuestion(DefaultReportRepository(ReportApi(client), sessions, languageTag), sessions)
     }
 }
