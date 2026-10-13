@@ -3,6 +3,7 @@ package io.ntole.kvizic.core.protocol
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 
 /**
  * Frames exactly as protocol 1 sent them. A later build must still decode every one of them the same
@@ -56,13 +57,15 @@ class GoldenFramesTest {
             // Since 2026-10-01: a vote to put a member out, and one taken back.
             """{"t":"vote_kick","id":7,"player":"p3"}""",
             """{"t":"vote_kick","id":8}""",
+            // Since 2026-10-13: the player's UI language, which the questions are read in.
+            """{"t":"hello","ticket":"t","protocol":1,"platform":"android","build":101,"language":"hr"}""",
         )
 
     @Test
     fun everyShippedServerFrameStillDecodesToAKnownMessage() {
         v1ServerFrames.forEach { frame ->
             val decoded = ProtocolJson.decodeFromString(ServerMessage.serializer(), frame)
-            assert(decoded != ServerMessage.Unknown) { "$frame no longer decodes" }
+            assertNotEquals<ServerMessage>(ServerMessage.Unknown, decoded, "$frame no longer decodes")
         }
     }
 
@@ -70,7 +73,7 @@ class GoldenFramesTest {
     fun everyShippedClientFrameStillDecodesToAKnownMessage() {
         v1ClientFrames.forEach { frame ->
             val decoded = ProtocolJson.decodeFromString(ClientMessage.serializer(), frame)
-            assert(decoded != ClientMessage.Unknown) { "$frame no longer decodes" }
+            assertNotEquals<ClientMessage>(ClientMessage.Unknown, decoded, "$frame no longer decodes")
         }
     }
 
@@ -82,7 +85,7 @@ class GoldenFramesTest {
         assertEquals(Triple(2, 3, true), member.member.let { Triple(it.kickVotes, it.kickVotesNeeded, it.kickVoted) })
         assertEquals(
             ClientMessage.VoteKick(id = 8, player = null),
-            ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames.last()),
+            ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames.last { "vote_kick" in it }),
         )
     }
 
@@ -111,5 +114,20 @@ class GoldenFramesTest {
                 ) as ServerMessage.GameOver
             ).results
         assertEquals(12, results.standings.single().level)
+    }
+
+    @Test
+    fun aHelloFromBeforeLanguagesHasNoneAndOneSinceHasIt() {
+        fun hello(frame: String) =
+            ProtocolJson.decodeFromString(ClientMessage.serializer(), frame) as ClientMessage.Hello
+
+        val before = v1ClientFrames.first { """"t":"hello"""" in it }
+        val since = v1ClientFrames.last { """"t":"hello"""" in it }
+        assertEquals(
+            ClientMessage.Hello(ticket = "t", protocol = 1, platform = "android", build = 100, language = ""),
+            hello(before),
+            "a client that sends no language is an old one",
+        )
+        assertEquals("hr", hello(since).language)
     }
 }

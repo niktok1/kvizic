@@ -1,6 +1,7 @@
 package io.ntole.kvizic.core.question
 
 import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.region.Country
 import kotlinx.serialization.Serializable
 
 /**
@@ -8,6 +9,10 @@ import kotlinx.serialization.Serializable
  * import idempotent: a key the bank has already is a duplicate, not a second question. [options] holds
  * 2 to [KvizicApi.Limits.MAX_OPTIONS] answers and [correct] is the right one's position. [source] is
  * where the answer was checked; it is kept for the moderator and never sent to players.
+ *
+ * [countries] scopes the question to players of those countries alone, none for a common one, which goes
+ * to everyone. [translations] holds its text in the other content languages, by tag, never its own
+ * [language]'s; each keeps the answers in [options]' order, so [correct] holds in every language.
  */
 @Serializable
 public data class QuestionDraftDto(
@@ -22,6 +27,16 @@ public data class QuestionDraftDto(
     public val source: String? = null,
     public val language: String = "sr-Cyrl",
     public val author: String = "",
+    public val countries: List<Country> = emptyList(),
+    public val translations: Map<String, QuestionTextDto> = emptyMap(),
+)
+
+/** A question's words in one language: its text, its answers in the source's order, and its explanation. */
+@Serializable
+public data class QuestionTextDto(
+    public val text: String,
+    public val options: List<String>,
+    public val explanation: String? = null,
 )
 
 /** Up to [KvizicApi.Limits.MAX_IMPORT_BATCH] drafts, all of one [batch]. */
@@ -43,6 +58,32 @@ public data class ImportResultDto(
 public data class ImportRefusalDto(
     public val key: String,
     public val reason: String,
+)
+
+/** Up to [KvizicApi.Limits.MAX_IMPORT_BATCH] questions' countries and translations, set where they stand. */
+@Serializable
+public data class LocalizeQuestionsRequest(
+    public val questions: List<QuestionLocalizationDto>,
+)
+
+/**
+ * What one question is asked where and reads like: [key] names it by its import key or its id. [countries]
+ * replaces its countries, empty making it common, and none keeps them as they are. Each language in
+ * [translations] replaces that language's text, and a language left out is kept.
+ */
+@Serializable
+public data class QuestionLocalizationDto(
+    public val key: String,
+    public val countries: List<Country>? = null,
+    public val translations: Map<String, QuestionTextDto> = emptyMap(),
+)
+
+/** What a localization did with each question, by the key it was named by: [unknown] names none in the bank. */
+@Serializable
+public data class LocalizeResultDto(
+    public val updated: List<String> = emptyList(),
+    public val unknown: List<String> = emptyList(),
+    public val refused: List<ImportRefusalDto> = emptyList(),
 )
 
 /** A question as the moderator sees it: everything, the answer and the source included. */

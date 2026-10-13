@@ -8,8 +8,9 @@ here in the same commit. It is lean on purpose: the code's KDoc holds the detail
 A realtime multiplayer trivia game with Among Us-style rooms: a host sets a room up (questions, time,
 topics, seats, private or public, the wrong-answer minus) and starts; everyone answers the same question
 against the clock, sees the others' picks once locked in, then the reveal, then the next. Results at the
-end; each player goes back to the room by hand. Solo is a side mode. Serbian first, Android first; the KMP
-targets (iOS, desktop, web) keep compiling. Built on WYR's platform, copied and renamed.
+end; each player goes back to the room by hand. Solo is a side mode. For the region's six countries in five
+languages (§8a), Serbian first, Android first; the KMP targets (iOS, desktop, web) keep compiling. Built on
+WYR's platform, copied and renamed.
 
 ## 2. Ground rules
 
@@ -72,8 +73,11 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 ## 6. Realtime
 
 - REST takes a seat (create, join by code, Quick play, solo) and answers a one-time ticket (30 s). A room may be read first by its code (preview). The
-  socket `wss://…/v1/play` takes `hello(ticket, protocol, platform, build)` as its first frame within 5 s;
+  socket `wss://…/v1/play` takes `hello(ticket, protocol, platform, build, language)` as its first frame within 5 s;
   nothing secret is in the URL.
+- The player's country goes in `X-Client-Country` on every REST call, which a seat-taking takes, and their UI
+  language in `hello.language`, since a browser cannot set a socket's headers; a client that sends neither
+  (1.0.x) is RS and sr-Cyrl (§8a).
 - **The launch takes back a held seat** (the owner, 2026-10-03): the system ends an app in the background
   mid-game and the code dies with it, so a launch with a session stored asks `POST /v1/lobby-rejoins`, which
   answers a ticket for the seat the player holds wherever it is, never a fresh one (LOBBY_NOT_FOUND), and the
@@ -159,8 +163,9 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   with Спорт, Престонице with Географија, Свемир and Математика with Наука), so a narrow topic is no split:
   its questions stay in the broad one too. The content repo's `STYLE.md` holds the rule. A topic is a
   subject, never a place: Наши простори went (the owner, 2026-10-01, V6), its questions to their subjects
-  and its dishes to Храна и пиће, the one migration that deletes a topic. Questions are ekavian Serbian
-  Cyrillic; Latin is made by transliteration.
+  and its dishes to Храна и пиће, the one migration that deletes a topic. A common question is written in
+  ekavian Serbian Cyrillic and translated, a scoped one in what its countries read (§8a); Latin is made by
+  transliteration.
 - **Topic groups** (the owner's B, 2026-10-01): server data (`topic_groups`, V3), each topic in one or none:
   Знање (with V7's nature, art, mythology, body and vehicles, and V9's technology, space, maths, capitals and
   landmarks), Забава (with Храна и пиће, Игре, Стрипови и цртани, and V9's customs and famous people), Спорт
@@ -197,12 +202,42 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   and unlocks by itself, so **that APK never leaves the phone**; release builds carry no token and ask for it.
   The desktop run unlocks the same way from `KVIZIC_ADMIN_TOKEN`; the web page never gets a token.
 
+## 8a. Regions and languages
+
+The owner, 2026-10-13. The wire's `Country` and `ContentLanguages` hold the rules (`:core`'s `region`), the
+domain a pinned copy of `Country`.
+
+- **Six countries, five languages**: RS, HR, BA, SI, MK and ME, no Kosovo option; sr-Cyrl (sr-Latn made from it
+  on the client, as ever), hr, bs, sl and mk, the four new ones shipping at once, each only once its native
+  reviewer has been through it. English stays hidden. A UI language reads the content language `of` gives it.
+- **The country decides which questions, the language how they read**: two settings, since they often differ
+  (a Serb in Croatia, Republika Srpska in Cyrillic, the diaspora). A question with no countries is common and
+  goes to everyone; one scoped to some is asked only when every player's country is among them, so a mixed
+  room gets common questions alone, and solo the player's own country's. A room of one country takes about 20%
+  local questions when its topics hold enough (`LOCAL_SHARE`, 0 off): a country's set is otherwise some 10% of
+  its pool and rarely shows. `UNKNOWN`, a newer client's country, is scoped to by nothing.
+- **Each player reads in their own language**: the same question, its answers in the same order on every
+  screen, in the first text `chain` finds, the source last (`GameQuestion.textIn`). A question carries what its
+  countries read (`required`): a common one all five, a BA-only one bs, hr and sr-Cyrl; ME-only ones are written
+  in Serbian Cyrillic, ijekavian. A translation keeps the source's slots and the revision it was made from (V11),
+  which an edit leaves behind, stale. Topic and group names come in every language (`names`), beside the
+  Serbian and English ones.
+- **The server hears them** as §6 says, and keeps a player's last country (`players.country`, null for never,
+  which counts as RS).
+- **The client**: the language chips become Српски · Srpski · Hrvatski · Bosanski · Slovenščina · Македонски,
+  since „Ћирилица / Latinica“ stops reading clearly beside Hrvatski and Bosanski. A first launch takes the
+  device's language when it is one offered, else its country's (`defaultFor`, ME shown in Latin); an install
+  from before keeps its own. No flags or country chips in rooms yet. In Macedonian the game is „Квизиќ“.
+- **No moderation-app work this round**: `publish.py` approves what it imports; countries and translations go
+  live through `localize.py` (`/v1/admin/question-localizations`) with no review status, reviewed in the content
+  repo through the native reviewers' sheets.
+
 ## 9. The client
 
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
   by `GamePhase`), Settings (the app's: the Sound switch, Ћирилица or Latinica on two chips with no heading, it being a script
-  more than a language (the owner, 2026-10-03; `Language.OFFERED`), and a way to About; `AppSettingsScreen`, apart from a room's), About
+  more than a language (the owner, 2026-10-03; `Language.OFFERED`; §8a's six chips replace them with the regions), and a way to About; `AppSettingsScreen`, apart from a room's), About
   (version, legal pages, licences and the fonts' OFL, each text a tap away, and last what is kept of the player, under „Подаци“: Statistics, the account's
   id and its deletion), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,

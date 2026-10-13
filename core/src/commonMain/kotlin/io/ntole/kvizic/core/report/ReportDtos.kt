@@ -14,11 +14,15 @@ public enum class ReportReason {
     UNKNOWN,
 }
 
-/** A player reporting question [questionId], named by the reveal. One per player per revision of it. */
+/**
+ * A player reporting question [questionId], named by the reveal. One per player per revision of it.
+ * [language] is the content language they read it in (`ContentLanguages`), none from an old client.
+ */
 @Serializable
 public data class ReportQuestionRequest(
     public val questionId: String,
     public val reason: ReportReason = ReportReason.UNKNOWN,
+    public val language: String? = null,
 )
 
 /** A reported question with its open reports counted by reason. */

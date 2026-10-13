@@ -10,7 +10,12 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 public sealed interface ClientMessage {
-    /** The first frame, and only the first: the ticket REST issued, and which build is talking. */
+    /**
+     * The first frame, and only the first: the ticket REST issued, which build is talking, and the player's
+     * UI [language] by its tag (sr-Cyrl, sr-Latn, hr and the rest), which the questions are read in
+     * (`ContentLanguages.of`). Here rather than in a header, since a browser cannot set a socket's. None is
+     * an old client's, which reads Serbian Cyrillic.
+     */
     @Serializable
     @SerialName("hello")
     public data class Hello(
@@ -18,9 +23,10 @@ public sealed interface ClientMessage {
         public val protocol: Int,
         public val platform: String = "",
         public val build: Int = 0,
+        public val language: String = "",
     ) : ClientMessage {
         public override fun toString(): String =
-            "Hello(ticket=***, protocol=$protocol, platform=$platform, build=$build)"
+            "Hello(ticket=***, protocol=$protocol, platform=$platform, build=$build, language=$language)"
     }
 
     /** Answers the server's [ServerMessage.Ping] with its [seq], which is how the server measures the trip. */

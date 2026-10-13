@@ -116,6 +116,13 @@ public object KvizicApi {
         /** GET: the whole bank in the import format, the owner's private backup of edited questions. Admin. */
         public const val ADMIN_QUESTION_EXPORTS: String = "/$VERSION/admin/question-exports"
 
+        /**
+         * POST a `LocalizeQuestionsRequest`: sets questions' countries and translations, each named by its
+         * import key or its id, answered with a `LocalizeResultDto`. A language given replaces that language's
+         * text and a language left out is kept. Admin.
+         */
+        public const val ADMIN_QUESTION_LOCALIZATIONS: String = "/$VERSION/admin/question-localizations"
+
         /** GET: counts of the bank and of what is live right now, an `AdminOverviewDto`. Admin. */
         public const val ADMIN_OVERVIEW: String = "/$VERSION/admin/overview"
 
@@ -150,6 +157,13 @@ public object KvizicApi {
 
         /** The client's build number; a server with a minimum for the platform refuses an older one with 426. */
         public const val CLIENT_VERSION: String = "X-Client-Version"
+
+        /**
+         * The player's country, a `Country` name, on every REST call: what a seat taken picks the questions by.
+         * A client that sends none (1.0.x) counts as Serbia. The language goes in the socket's `hello` instead,
+         * since a browser cannot set a socket's headers.
+         */
+        public const val COUNTRY: String = "X-Client-Country"
     }
 
     /** What [Headers.CLIENT_PLATFORM] names, in lower case. */

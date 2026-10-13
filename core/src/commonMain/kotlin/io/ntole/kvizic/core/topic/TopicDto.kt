@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
  * A topic questions are filed under: a stable [id] and a name in Serbian Cyrillic and in English. Topics
  * are server data, never an enum, so a topic added later is only an id an older client can't name.
  * [questionCount] is how many approved questions it has, so a picker can grey out thin topics. [groupId] is
- * the [TopicGroupDto] a picker lists it under, or none, after every group.
+ * the [TopicGroupDto] a picker lists it under, or none, after every group. [names] holds its name in the
+ * content languages by tag (`ContentLanguages`), `en` too; a server before them sends none.
  */
 @Serializable
 public data class TopicDto(
@@ -15,14 +16,19 @@ public data class TopicDto(
     public val nameEn: String,
     public val questionCount: Int = 0,
     public val groupId: String? = null,
+    public val names: Map<String, String> = emptyMap(),
 )
 
-/** What topics are grouped under in a picker, server data too, in the order a list is to show them. */
+/**
+ * What topics are grouped under in a picker, server data too, in the order a list is to show them, with
+ * [names] by tag as a [TopicDto]'s.
+ */
 @Serializable
 public data class TopicGroupDto(
     public val id: String,
     public val nameSr: String,
     public val nameEn: String,
+    public val names: Map<String, String> = emptyMap(),
 )
 
 /** Every topic, oldest first, and every group, in its order: a server before groups sends none. */

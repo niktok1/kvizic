@@ -1,11 +1,12 @@
 package io.ntole.kvizic.core.player
 
+import io.ntole.kvizic.core.region.Country
 import kotlinx.serialization.Serializable
 
 /**
  * The bearer's own profile: the name and avatar other players see, and their stats. [displayName] is
  * the Play Games name when they signed in with Play Games ([nameSource]), otherwise the nickname the
- * server generated for them.
+ * server generated for them. [country] is the one the server last heard from them, none before it has.
  */
 @Serializable
 public data class ProfileDto(
@@ -16,6 +17,7 @@ public data class ProfileDto(
     public val playGamesLinked: Boolean = false,
     public val level: PlayerLevelDto = PlayerLevelDto(),
     public val stats: PlayerStatsDto = PlayerStatsDto(),
+    public val country: Country? = null,
 )
 
 /**

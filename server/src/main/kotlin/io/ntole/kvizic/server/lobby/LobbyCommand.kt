@@ -3,6 +3,7 @@ package io.ntole.kvizic.server.lobby
 import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.LeaveReason
+import io.ntole.kvizic.core.region.Country
 import kotlinx.coroutines.CompletableDeferred
 import kotlin.time.ComparableTimeMark
 import kotlin.time.Duration
@@ -76,13 +77,17 @@ sealed interface LobbyCommand {
     ) : LobbyCommand
 }
 
-/** Who a reservation is for, the name and avatar the lobby shows for them, and the experience their level is. */
+/**
+ * Who a reservation is for, the name and avatar the lobby shows for them, the experience their level is,
+ * and the [country] they play from, which the questions are picked by.
+ */
 data class Seat(
     val playerId: String,
     val sessionId: String,
     val name: String,
     val avatar: String,
     val xp: Int = 0,
+    val country: Country = Country.RS,
 )
 
 sealed interface ReserveResult {
