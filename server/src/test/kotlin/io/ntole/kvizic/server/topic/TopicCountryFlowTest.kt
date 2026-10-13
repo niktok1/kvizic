@@ -38,22 +38,27 @@ class TopicCountryFlowTest {
     fun `a topic counts what the caller's country could be asked, and no header is Serbia`() =
         runTestServer("topics-by-country") { client, database ->
             assertEquals(0, client.geography())
+            // One common question, one for Serbia and two for Croatia: every way to count gives its own number.
             database.serverPool().use { pool ->
                 pool.inTransaction {
                     BankFixtures.question("common", listOf("GEOGRAPHY"))
-                    BankFixtures.question("hr", listOf("GEOGRAPHY"))
-                    QuestionCountries.insert { row ->
-                        row[questionId] = "hr"
-                        row[country] = Country.HR
+                    listOf("rs" to Country.RS, "hr-1" to Country.HR, "hr-2" to Country.HR).forEach { (id, scope) ->
+                        BankFixtures.question(id, listOf("GEOGRAPHY"))
+                        QuestionCountries.insert { row ->
+                            row[questionId] = id
+                            row[country] = scope
+                        }
                     }
                 }
             }
 
-            assertEquals(1, client.geography())
-            assertEquals(1, client.geography("RS"))
-            assertEquals(1, client.geography(""))
-            assertEquals(2, client.geography("HR"))
-            assertEquals(2, client.geography("hr"))
+            assertEquals(2, client.geography("RS"))
+            // No header, or a blank one, is Serbia: neither Croatia's three nor the common one alone.
+            assertEquals(2, client.geography())
+            assertEquals(2, client.geography(""))
+            assertEquals(2, client.geography(" "))
+            assertEquals(3, client.geography("HR"))
+            assertEquals(3, client.geography("hr"))
             assertEquals(1, client.geography("BA"))
             // A country this build does not know gets the common questions alone.
             assertEquals(1, client.geography("XK"))
