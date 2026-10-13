@@ -15,6 +15,11 @@ import javax.sql.DataSource
  *
  * Flyway's history table is left out, since only the migrated database has one. Columns are compared
  * as a set, since a column a migration adds lands last whatever its place in the table definition.
+ *
+ * So is the index H2 makes by itself for a foreign key no index serves, which nothing can name: H2 makes
+ * it with the key, and drops it for an index on just the key's columns when it rebuilds the table, which
+ * a column added does (V11's `reports.lang`, beside `reports_reporter_id`). PostgreSQL makes none, and
+ * `ForeignKeyIndexTest` holds every key to an index of the definitions'.
  */
 internal fun schemaSnapshot(dataSource: DataSource): Map<String, List<String>> =
     dataSource.connection.use { connection ->
@@ -61,7 +66,7 @@ private fun DatabaseMetaData.describe(
     val indexes =
         getIndexInfo(catalog, schema, table, false, true)
             .rows {
-                val name = getString("INDEX_NAME") ?: return@rows null
+                val name = getString("INDEX_NAME")?.takeUnless(H2_FOREIGN_KEY_INDEX::matches) ?: return@rows null
                 val kind = if (getBoolean("NON_UNIQUE")) "index" else "unique index"
                 Triple("$kind ${generated(name)}", getInt("ORDINAL_POSITION"), getString("COLUMN_NAME"))
             }.sortedBy { it.second }
@@ -79,6 +84,9 @@ private fun DatabaseMetaData.describe(
 private fun generated(name: String): String = H2_GENERATED_NAME.replace(name) { "${it.groupValues[1]}<n>" }
 
 private val H2_GENERATED_NAME = Regex("^(CONSTRAINT_|PRIMARY_KEY_|.+_INDEX_)[0-9A-F]+$")
+
+/** H2's own index for a foreign key, named after it (`FK_REPORTS_REPORTER_ID__ID_INDEX_8`). */
+private val H2_FOREIGN_KEY_INDEX = Regex("^FK_.+_INDEX_[0-9A-F]+$")
 
 private fun <T : Any> ResultSet.rows(read: ResultSet.() -> T?): List<T> =
     use {

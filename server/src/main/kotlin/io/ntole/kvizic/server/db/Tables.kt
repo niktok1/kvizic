@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.player.NameSource
 import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.core.question.QuestionKind
 import io.ntole.kvizic.core.question.QuestionStatus
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.core.report.ReportReason
 import io.ntole.kvizic.core.report.ReportResolution
 import io.ntole.kvizic.server.auth.IdentityProvider
@@ -34,10 +35,19 @@ object Players : Table("players") {
     /** When the player last did anything with the server, kept to the minute (`PlayerStore.touch`); V10, null before. */
     val lastSeenAt = long("last_seen_at").nullable()
 
+    /**
+     * The country the player last said they play from (V11): null for never, which counts as [Country.RS].
+     * [Country.UNKNOWN] is not one to keep, and does not fit.
+     */
+    val country = enumerationByName<Country>("country", COUNTRY_COLUMN).nullable()
+
     override val primaryKey = PrimaryKey(id)
 
     /** Wide enough for [KvizicApi.Limits.MAX_DISPLAY_NAME_LENGTH] code points in UTF-16 units. */
     private const val DISPLAY_NAME_COLUMN = 64
+
+    /** A country's two letters, the width of every country column. */
+    const val COUNTRY_COLUMN = 2
 }
 
 /**
@@ -146,6 +156,27 @@ object Topics : Table("topics") {
     }
 }
 
+/** A topic's name in each content language, and `en` (V11), beside [Topics]' own two. */
+object TopicNames : Table("topic_names") {
+    val topicId =
+        varchar("topic_id", KvizicApi.Limits.MAX_ID_LENGTH).references(Topics.id, onDelete = ReferenceOption.CASCADE)
+    val language = varchar("lang", Questions.LANGUAGE_COLUMN)
+    val name = varchar("name", KvizicApi.Limits.MAX_TOPIC_NAME_LENGTH)
+
+    override val primaryKey = PrimaryKey(topicId, language)
+}
+
+/** A topic group's name in each content language, and `en` (V11), as [TopicNames] a topic's. */
+object TopicGroupNames : Table("topic_group_names") {
+    val groupId =
+        varchar("group_id", KvizicApi.Limits.MAX_ID_LENGTH)
+            .references(TopicGroups.id, onDelete = ReferenceOption.CASCADE)
+    val language = varchar("lang", Questions.LANGUAGE_COLUMN)
+    val name = varchar("name", KvizicApi.Limits.MAX_TOPIC_NAME_LENGTH)
+
+    override val primaryKey = PrimaryKey(groupId, language)
+}
+
 /**
  * The question bank. Only an [QuestionStatus.APPROVED] question is asked. Every edit moves [revision]
  * on, which is what an edit's compare-and-set and a report name. [sourceUrl] is the moderator's alone.
@@ -161,7 +192,9 @@ object Questions : Table("questions") {
     val difficulty = enumerationByName<Difficulty>("difficulty", 16)
     val explanation = varchar("explanation", EXPLANATION_COLUMN).nullable()
     val sourceUrl = varchar("source_url", KvizicApi.Limits.MAX_SOURCE_URL_LENGTH).nullable()
-    val language = varchar("lang", 16)
+
+    /** The source's content language (`ContentLanguages`); its translations are in [QuestionTranslations]. */
+    val language = varchar("lang", LANGUAGE_COLUMN)
     val author = varchar("author", 64)
     val importBatch = varchar("import_batch", 64).nullable()
 
@@ -185,6 +218,9 @@ object Questions : Table("questions") {
 
     /** Wider than [KvizicApi.Limits.MAX_EXPLANATION_LENGTH], which was 300 when V1 made the column. */
     const val EXPLANATION_COLUMN = 300
+
+    /** Wide enough for any language tag a column holds, `sr-Cyrl` among them. */
+    const val LANGUAGE_COLUMN = 16
 }
 
 /** A question's 2 to 4 answers, by slot, from 0: never a fixed number of columns. */
@@ -197,6 +233,46 @@ object QuestionOptions : Table("question_options") {
 
     /** Wider than [KvizicApi.Limits.MAX_OPTION_LENGTH], so the limit can rise this far with no migration. */
     const val TEXT_COLUMN = 80
+}
+
+/**
+ * The countries a question is asked in alone (V11): asked only when every player's country is one of them.
+ * A question with none is common, asked everywhere. [Country.UNKNOWN] is never one.
+ */
+object QuestionCountries : Table("question_countries") {
+    val questionId = varchar("question_id", 36).references(Questions.id, onDelete = ReferenceOption.CASCADE)
+    val country = enumerationByName<Country>("country", Players.COUNTRY_COLUMN)
+
+    override val primaryKey = PrimaryKey(questionId, country)
+
+    init {
+        index(isUnique = false, country, questionId)
+    }
+}
+
+/**
+ * A question's text and explanation in a content language other than its source's (V11). [sourceRevision]
+ * is the question's revision it was made from: an edit moves the question on and leaves it behind, stale.
+ */
+object QuestionTranslations : Table("question_translations") {
+    val questionId = varchar("question_id", 36).references(Questions.id, onDelete = ReferenceOption.CASCADE)
+    val language = varchar("lang", Questions.LANGUAGE_COLUMN)
+    val text = varchar("text", Questions.TEXT_COLUMN)
+    val explanation = varchar("explanation", Questions.EXPLANATION_COLUMN).nullable()
+    val sourceRevision = integer("source_revision")
+    val updatedAt = long("updated_at")
+
+    override val primaryKey = PrimaryKey(questionId, language)
+}
+
+/** A translation's answers, by the source's slots (V11), so the right one is the same in every language. */
+object QuestionOptionTranslations : Table("question_option_translations") {
+    val questionId = varchar("question_id", 36).references(Questions.id, onDelete = ReferenceOption.CASCADE)
+    val language = varchar("lang", Questions.LANGUAGE_COLUMN)
+    val slot = integer("slot")
+    val text = varchar("text", QuestionOptions.TEXT_COLUMN)
+
+    override val primaryKey = PrimaryKey(questionId, language, slot)
 }
 
 object QuestionTopics : Table("question_topics") {
@@ -326,6 +402,9 @@ object Reports : Table("reports") {
     val createdAt = long("created_at")
     val resolvedAt = long("resolved_at").nullable()
 
+    /** The content language the reporter read the question in (V11), null from an old client. */
+    val language = varchar("lang", Questions.LANGUAGE_COLUMN).nullable()
+
     override val primaryKey = PrimaryKey(id)
 
     init {
@@ -355,4 +434,9 @@ val appTables: Array<Table> =
         MatchQuestions,
         PlayerTopicStats,
         Reports,
+        QuestionCountries,
+        QuestionTranslations,
+        QuestionOptionTranslations,
+        TopicNames,
+        TopicGroupNames,
     )
