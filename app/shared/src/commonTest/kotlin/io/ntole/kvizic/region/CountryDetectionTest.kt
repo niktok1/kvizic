@@ -47,12 +47,24 @@ class CountryDetectionTest {
                 ),
                 Case("a Montenegrin's own language", RegionHints("de", "de", "DE", listOf("cnr-ME")), Country.ME),
                 // A tag's region, when it is one of the six, before its language's country.
-                Case("Serbian set to Montenegro, no SIM", RegionHints(null, null, null, listOf("sr-Latn-ME")), Country.ME),
+                Case(
+                    "Serbian set to Montenegro, no SIM",
+                    RegionHints(null, null, null, listOf("sr-Latn-ME")),
+                    Country.ME,
+                ),
                 Case("Croatian set to Bosnia, no SIM", RegionHints(null, null, null, listOf("hr-BA")), Country.BA),
                 Case("Serbian set to Bosnia, no SIM", RegionHints(null, null, null, listOf("sr-Cyrl-BA")), Country.BA),
                 Case("Bosnian set to Serbia, no SIM", RegionHints(null, null, null, listOf("bs-RS")), Country.RS),
-                Case("Serbian set to Germany stays Serbian", RegionHints(null, null, null, listOf("sr-DE")), Country.RS),
-                Case("English set to Montenegro is no language of the six", RegionHints(null, null, "RS", listOf("en-ME")), Country.RS),
+                Case(
+                    "Serbian set to Germany stays Serbian",
+                    RegionHints(null, null, null, listOf("sr-DE")),
+                    Country.RS,
+                ),
+                Case(
+                    "English set to Montenegro is no language of the six",
+                    RegionHints(null, null, "RS", listOf("en-ME")),
+                    Country.RS,
+                ),
                 Case("Macedonian in Switzerland", RegionHints("ch", "ch", "CH", listOf("mk")), Country.MK),
                 Case(
                     "a tablet with no SIM goes by its owner's language",
