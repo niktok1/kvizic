@@ -19,16 +19,23 @@ import io.ntole.kvizic.core.question.ImportQuestionsRequest
 import io.ntole.kvizic.core.question.QuestionDecisionRequest
 import io.ntole.kvizic.core.question.QuestionDraftDto
 import io.ntole.kvizic.core.question.QuestionStatus
+import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.report.AdminReportListDto
 import io.ntole.kvizic.core.report.ReportQuestionRequest
 import io.ntole.kvizic.core.report.ReportReason
 import io.ntole.kvizic.core.report.ReportResolution
 import io.ntole.kvizic.core.report.ResolveReportsRequest
 import io.ntole.kvizic.server.FLOW_ADMIN_TOKEN
+import io.ntole.kvizic.server.db.Reports
+import io.ntole.kvizic.server.db.inTransaction
+import io.ntole.kvizic.server.db.serverPool
 import io.ntole.kvizic.server.mintGuest
 import io.ntole.kvizic.server.runTestServer
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Players reporting questions, the suspension three wrong-answer reports bring, and the moderator's answer. */
@@ -122,6 +129,38 @@ class ReportFlowTest {
                         header(KvizicApi.Headers.ADMIN_TOKEN, FLOW_ADMIN_TOKEN)
                     }.body<AdminReportListDto>()
             assertTrue(after.reports.isEmpty())
+        }
+
+    @Test
+    fun `a report keeps the content language its reporter read the question in`() =
+        runTestServer("reports-language") { client, database ->
+            val id = client.approvedQuestion()
+
+            suspend fun reportedIn(language: String?): String? {
+                val reporter = client.mintGuest()
+                val sent =
+                    client.post(KvizicApi.Paths.REPORTS) {
+                        bearerAuth(reporter.accessToken)
+                        contentType(ContentType.Application.Json)
+                        setBody(ReportQuestionRequest(id, ReportReason.TYPO, language))
+                    }
+                assertEquals(HttpStatusCode.NoContent, sent.status)
+                return database.serverPool().use { pool ->
+                    pool.inTransaction {
+                        Reports
+                            .select(Reports.language)
+                            .where { Reports.reporterId eq reporter.playerId }
+                            .single()[Reports.language]
+                    }
+                }
+            }
+
+            assertEquals(ContentLanguages.CROATIAN, reportedIn("hr"))
+            assertEquals(ContentLanguages.MACEDONIAN, reportedIn(" MK "))
+            // What a client reading Serbian in either script, or a tag not known here, reads is the Cyrillic.
+            assertEquals(ContentLanguages.SERBIAN, reportedIn("sr-Latn"))
+            assertEquals(ContentLanguages.SERBIAN, reportedIn("x".repeat(40)))
+            assertNull(reportedIn(null), "an old client says none")
         }
 
     @Test

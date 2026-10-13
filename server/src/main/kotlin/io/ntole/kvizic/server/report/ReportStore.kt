@@ -32,15 +32,16 @@ object ReportStore {
     enum class Outcome { REPORTED, NO_PLAYER, NO_QUESTION }
 
     /**
-     * Records [reporterId]'s report of [questionId]. The reporter's row is locked first, as a deletion
-     * locks it, then the question's, so reports of one question go one at a time: a repeat finds the
-     * first, and the suspension counts what is there.
+     * Records [reporterId]'s report of [questionId], read in [language] (a content tag, null from an old
+     * client). The reporter's row is locked first, as a deletion locks it, then the question's, so reports
+     * of one question go one at a time: a repeat finds the first, and the suspension counts what is there.
      */
     fun report(
         reporterId: String,
         questionId: String,
         reason: ReportReason,
         now: Long,
+        language: String? = null,
     ): Outcome {
         Players
             .select(Players.id)
@@ -73,6 +74,7 @@ object ReportStore {
                 row[questionRevision] = revision
                 row[status] = ReportStatus.OPEN
                 row[createdAt] = now
+                row[Reports.language] = language
             }
         }
         if (reason == ReportReason.WRONG_ANSWER) {

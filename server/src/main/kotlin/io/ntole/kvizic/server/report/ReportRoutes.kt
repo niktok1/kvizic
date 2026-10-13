@@ -7,6 +7,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.report.AdminReportListDto
 import io.ntole.kvizic.core.report.ReportQuestionRequest
 import io.ntole.kvizic.core.report.ReportReason
@@ -35,7 +36,11 @@ fun Route.reportRoutes(
                 val reporter = call.authenticatedPlayerId()
                 val request = call.receiveOrReject<ReportQuestionRequest>("report")
                 if (request.reason == ReportReason.UNKNOWN) throw ApiFailure.validation("no reason")
-                when (db.query { ReportStore.report(reporter, request.questionId, request.reason, clock()) }) {
+                // The content language the reporter read it in, kept as one of ours; an old client says none.
+                val language = request.language?.let(ContentLanguages::of)
+                val outcome =
+                    db.query { ReportStore.report(reporter, request.questionId, request.reason, clock(), language) }
+                when (outcome) {
                     ReportStore.Outcome.REPORTED -> call.respond(HttpStatusCode.NoContent)
                     ReportStore.Outcome.NO_PLAYER -> throw ApiFailure.unauthorized("unknown player")
                     ReportStore.Outcome.NO_QUESTION -> throw ApiFailure.questionNotFound(request.questionId)
