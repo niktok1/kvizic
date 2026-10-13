@@ -8,8 +8,10 @@ import java.text.Normalizer
  *
  * Normalized to NFC; stripped of control and format characters, which is where the bidirectional
  * overrides and the zero-width characters that could disguise a name live, and of anything unassigned
- * or private; whitespace collapsed and trimmed; cut to [maxLength] code points, a player's name's by default. A name left blank, or holding a word from a short list of slurs and vulgarities, is refused
- * (null), and the player keeps their generated nickname instead.
+ * or private; whitespace collapsed and trimmed; cut to [maxLength] code points, a player's name's by default.
+ * A name left blank, or holding a word from a short list of slurs and vulgarities in any of the six countries'
+ * languages or English, is refused (null): the player keeps their generated nickname instead, and a room goes
+ * unnamed. The list must never refuse an ordinary name of those countries (`DisplayNamesTest`).
  */
 object DisplayNames {
     fun clean(
@@ -43,12 +45,20 @@ object DisplayNames {
         return name
     }
 
-    /** Whether [name] holds a word that starts with a blocked stem, compared folded to plain Latin. */
+    /**
+     * Whether [name] holds a blocked word, compared folded to plain Latin: a word that starts with one of
+     * [BLOCKED_STEMS], or is one of [BLOCKED_WORDS], digits after it aside (`nazi88` is `nazi`).
+     */
     internal fun isBlocked(name: String): Boolean =
         fold(name)
-            .split(Regex("[^a-z0-9]+"))
+            .split(NON_WORD)
             .filter { it.isNotEmpty() }
-            .any { word -> BLOCKED_STEMS.any { stem -> word.startsWith(stem) } }
+            .any { word ->
+                BLOCKED_STEMS.any { stem -> word.startsWith(stem) } ||
+                    word.trimEnd { it.isDigit() } in BLOCKED_WORDS
+            }
+
+    private val NON_WORD = Regex("[^a-z0-9]+")
 
     /**
      * The form a name is matched in. Compatibility forms read as their letters (fullwidth letters, the ǉ, ǌ and ǆ
@@ -117,9 +127,14 @@ object DisplayNames {
     /** What [fold] writes for a character, after the diacritics have dropped: Cyrillic, đ, and digits. */
     private val FOLDED: Map<Char, String> = CYRILLIC + ('đ' to "dj") + LEET
 
-    /** Stems of Serbian and English slurs and vulgarities. A false hit only means a generated nickname. */
+    /**
+     * Stems, folded: a word that starts with one is blocked. Each is as short as is safe, since a stem that starts
+     * an ordinary word or name is worse than none; a slur that starts one is in [BLOCKED_WORDS] instead. A false
+     * hit costs a player their own name for a generated nickname, or a room its name.
+     */
     private val BLOCKED_STEMS: List<String> =
         listOf(
+            // Serbian, Croatian, Bosnian and Montenegrin alike; Slovenian and Macedonian say most of them too
             "jeb",
             "kurac",
             "kurc",
@@ -131,6 +146,29 @@ object DisplayNames {
             "peder",
             "kurv",
             "drolj",
+            "supak", // šupak
+            "supcin", // šupčina
+            "seronj", // seronja
+            // ...and their ethnic slurs, for Albanians, Jews, black people and Bosniaks (balija is a whole word)
+            "siptar",
+            "cifut",
+            "civut",
+            "crncug", // crnčuga
+            "balijetin",
+            // Bosnian: a Turkism, which Serbian and Macedonian say too
+            "pezeven", // pezevenk
+            // Croatian and Slovenian
+            "buzeran", // buzerant
+            // Slovenian
+            "fuka", // fukati, fukač
+            "cefur", // čefur, for those from the other republics
+            // Macedonian
+            "ebam", // ебам
+            "ebac", // ебач
+            "ebenj", // ебење
+            "ebig", // ебига
+            "kurot", // курот
+            // English
             "fuck",
             "shit",
             "cunt",
@@ -139,10 +177,42 @@ object DisplayNames {
             "whore",
             "bitch",
             "retard",
+            // Nazism's and the wars' names, in every one of the languages
             "hitler",
-            "nazi",
+            "nazis",
+            "naziz", // nazizam
+            "nacis", // nacist, nacista
+            "naciz", // nacizam, nacizem
+            "siegheil",
             "cetnik",
             "ustas",
+        )
+
+    /**
+     * Whole words, folded, for slurs that start ordinary words or names: kurba but not Kurban or Kurbegović, nazi
+     * but not naziv, Nazif or Nazim.
+     */
+    private val BLOCKED_WORDS: Set<String> =
+        setOf(
+            // Serbian, Croatian, Bosnian, Montenegrin and Macedonian: kučka (and Croatian kucka, taps, with it)
+            "kucka",
+            "kucko",
+            // ...and the slur for Bosniaks, not Balijagić
+            "balija",
+            "balije",
+            "baliji",
+            "balijo",
+            "baliju",
+            // Croatian and Slovenian: not Kurban, Kurbalija, Kurbegović, or Курбе (Courbet)
+            "kurba",
+            "kurbo",
+            // Slovenian
+            "kurec",
+            "drek", // not dreka, a din in Serbian
+            "buzi",
+            "fuk",
+            // Nazism
+            "nazi",
             "sieg",
         )
 }
