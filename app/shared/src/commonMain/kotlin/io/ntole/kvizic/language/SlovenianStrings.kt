@@ -5,8 +5,10 @@ package io.ntole.kvizic.language
  * English, its meaning: the player addressed as ti, as Slovenian games do, and no word agreeing with their
  * gender, since a guest has none. Every counted word writes the dual ([Plural.two]: 2 vprašanji, 2 igri).
  * The words a page of the site quotes are the site's own (Nastavitve, O igri, Podatki, Statistika, Izbriši
- * račun, Hitra igra, Vstopi s kodo, Koda sobe), so the two say the same. Each part of [Strings] is a value of
- * its own; the parts come first, as a file's values are made in its order.
+ * račun, Hitra igra, Vstopi s kodo, Koda sobe), so the two say the same. A one-letter preposition on the
+ * screen (s, z, v) is bound to the word after it by a no-break space, since Slovenian never leaves one at a
+ * line's end. Each part of [Strings] is a value of its own; the parts come first, as a file's values are made
+ * in its order.
  */
 
 internal val SlovenianAboutStrings: AboutStrings =
@@ -33,7 +35,7 @@ internal val SlovenianAboutStrings: AboutStrings =
         deleteAccount =
             DeleteAccountStrings(
                 button = "Izbriši račun",
-                warning = "Račun bo z vsem, kar vsebuje, za vedno izbrisan.",
+                warning = "Račun bo z\u00A0vsem, kar vsebuje, za vedno izbrisan.",
                 confirm = "Izbriši",
             ),
     )
@@ -51,7 +53,7 @@ internal val SlovenianSettingsScreenStrings: SettingsScreenStrings =
                 macedonia = "Severna Makedonija",
                 montenegro = "Črna gora",
             ),
-        countrySaid = "Država, iz katere igraš, po kateri dobiš tudi vprašanja o njej",
+        countrySaid = "Država, iz katere igraš in o kateri dobiš tudi vprašanja",
     )
 
 internal val SlovenianUpdateStrings: UpdateStrings =
@@ -66,7 +68,7 @@ internal val SlovenianGameStrings: GameStrings =
         quickPlay = "Hitra igra",
         presence = "Na spletu: {0} · Iščejo igro: {1}",
         createRoom = "Ustvari sobo",
-        joinByCode = "Vstopi s kodo",
+        joinByCode = "Vstopi s\u00A0kodo",
         publicRooms = "Javne sobe",
         solo = "Solo",
         games = Plural(one = "{0} igra", two = "{0} igri", few = "{0} igre", many = "{0} iger"),
@@ -76,21 +78,21 @@ internal val SlovenianGameStrings: GameStrings =
         saveProgress = "Shrani napredek",
         saveProgressSaid = "Shrani napredek z Igrami Play",
         guest = "Igraš kot gost",
-        guestKeepsLevel = "Poveži Igre Play, da ti raven ostane na vsaki napravi.",
+        guestKeepsLevel = "Poveži Igre Play in obdrži raven na vseh napravah.",
         connectPlayGames = "Poveži",
         playGamesNotSignedIn = "Igre Play te niso prijavile. Poskusi znova.",
         exitKicked = "Gostitelj te je izključil iz sobe.",
-        exitVotedOut = "Igralci so te izglasovali.",
+        exitVotedOut = "Z\u00A0glasovanjem so te izločili.",
         exitNotBack = "Nova igra se je začela brez tebe.",
         exitClosed = "Soba je zaprta.",
         exitGone = "Te sobe ni več.",
         exitReplaced = "Soba je odprta na drugi napravi.",
         exitSessionEnded = "Seja je končana.",
         exitRestarting = "Strežnik se znova zaganja, zato je igra prekinjena.",
-        exitConnectionLost = "Povezava s sobo se je prekinila.",
+        exitConnectionLost = "Povezava s\u00A0sobo se je prekinila.",
         ok = "V redu",
-        entering = "Vstopam v sobo…",
-        roomNotFound = "Ni sobe s to kodo.",
+        entering = "Vstopanje v\u00A0sobo…",
+        roomNotFound = "Ni sobe s\u00A0to kodo.",
         roomFull = "Soba je polna.",
         roomBanned = "Ta soba te ne spusti nazaj.",
         tooManyRooms = "Strežnik je trenutno poln. Poskusi znova čez kakšno minuto.",
@@ -118,7 +120,7 @@ internal val SlovenianGameStrings: GameStrings =
         done = "Končano",
         players = "Igralci",
         whoCanJoin = "Kdo lahko vstopi",
-        codeOnly = "Samo s kodo",
+        codeOnly = "Samo s\u00A0kodo",
         anyone = "Vsi",
         wrongAnswerPenalty = "Minus za napačen odgovor",
         difficulty = "Težavnost",
@@ -167,12 +169,12 @@ internal val SlovenianGameStrings: GameStrings =
         reactionOops = "Ups",
         reactionNudge = "Daj, začni!",
         gameStarting = "Igra se začenja",
-        joinNewGame = "V novo igro",
+        joinNewGame = "V igro",
         spectating = "To igro gledaš, naslednjo pa igraš.",
-        onlyHost = "To lahko stori samo gostitelj.",
-        refused = "Tega zdaj ni mogoče narediti.",
+        onlyHost = "To sme le gostitelj.",
+        refused = "To zdaj ne gre.",
         voteTooSoon = "Pred novim glasom malo počakaj.",
-        topicsToppedUp = "Izbrane teme imajo premalo vprašanj, zato so dodana še druga.",
+        topicsToppedUp = "Izbrane teme imajo malo vprašanj, dodana so še druga.",
         gameShortened = "Vprašanj je malo, zato je igra krajša.",
         hostChanged = "{0} je zdaj gostitelj",
         youAreHost = "Zdaj si ti gostitelj",
@@ -205,7 +207,7 @@ internal val SlovenianGameStrings: GameStrings =
         endedEarly = "Igra se je predčasno končala.",
         profile = "Profil",
         // Slovenian sets a space before the percent sign; a no-break one, so the two never part.
-        correctShare = "{0} % pravilnih odgovorov",
+        correctShare = "{0}\u00A0% pravilnih odgovorov",
         soloBest = "Solo rekord: {0}",
         bestTopic = "Najboljša tema: {0}",
         pickAvatar = "Izberi avatar",
@@ -229,7 +231,7 @@ internal val SlovenianGameStrings: GameStrings =
                 "Mačka",
             ),
         reportQuestion = "Prijavi vprašanje",
-        reportWhy = "Kaj je narobe z vprašanjem?",
+        reportWhy = "Kaj je narobe z\u00A0vprašanjem?",
         reportWrongAnswer = "Označeni odgovor ni pravilen",
         reportTypo = "Ima tipkarsko napako",
         reportAmbiguous = "Nejasno je ali pa je več odgovorov pravilnih",
