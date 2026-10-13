@@ -11,7 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** A socket's hello says the UI language its player reads, which the lobby words what it sends them in. */
+/** A socket's hello names the UI language its player uses, and the lobby sends them the game in what that reads. */
 class SocketLanguageTest {
     @Test
     fun `each socket reads in the content language its hello's UI language reads`() =
