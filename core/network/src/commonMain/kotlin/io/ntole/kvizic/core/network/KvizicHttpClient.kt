@@ -28,6 +28,7 @@ import io.ntole.kvizic.core.auth.RefreshRequest
 import io.ntole.kvizic.core.auth.SessionDto
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.error.ErrorDto
+import io.ntole.kvizic.core.region.Country
 import kotlinx.coroutines.CancellationException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -92,6 +93,10 @@ public object KvizicHttpClient {
      *   moderation app's, or a build that could not read its own number.
      * @param upgrade raised the first time an answer is `UPGRADE_REQUIRED`, the server refusing this build
      *   as too old, so the game can say a new version is available; null where nobody listens.
+     * @param country where the player plays from, which every request names in [KvizicApi.Headers.COUNTRY],
+     *   asked again for each, so a country changed applies to the next request; the server takes it at
+     *   every seat taken, so a player already seated plays on with the one they sat down with. Null names
+     *   none, which the server counts as Serbia: the moderation app's, which plays nowhere.
      */
     public fun create(
         baseUrl: String,
@@ -99,6 +104,7 @@ public object KvizicHttpClient {
         engine: HttpClientEngine? = null,
         build: ClientBuild? = null,
         upgrade: UpgradeSignal? = null,
+        country: () -> Country? = { null },
     ): HttpClient {
         val config: HttpClientConfig<*>.() -> Unit = {
             expectSuccess = true
@@ -125,6 +131,8 @@ public object KvizicHttpClient {
                     header(KvizicApi.Headers.CLIENT_PLATFORM, build.platform)
                     header(KvizicApi.Headers.CLIENT_VERSION, build.number.toString())
                 }
+                // Run for each request, so this is the country as it is now, not as it was at the start.
+                country()?.let { header(KvizicApi.Headers.COUNTRY, it.name) }
             }
 
             install(Auth) {

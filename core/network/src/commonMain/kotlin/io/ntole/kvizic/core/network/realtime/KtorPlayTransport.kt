@@ -31,31 +31,39 @@ import kotlin.time.Duration.Companion.seconds
  * The realtime socket over Ktor's WebSockets, `wss://…/v1/play` beside the API. A client of its own,
  * with no bearer and no timeouts: a socket outlives every request bound, and its ticket, sent in the
  * first frame, is all that lets it in. Nothing secret goes in the URL. The build is named in the hello,
- * since a browser cannot set a socket's headers.
+ * and so is [language], since a browser cannot set a socket's headers.
+ *
+ * @param language the tag of the language the game is shown in (`sr-Cyrl`, `sr-Latn`, `hr`…), asked again
+ *   for each socket opened, so a language changed is the one the next connection reads its questions in, a
+ *   reconnection's included. Empty is an old client's, which reads Serbian Cyrillic.
  */
 public class KtorPlayTransport(
     apiBaseUrl: String,
     private val build: ClientBuild?,
     private val client: HttpClient = realtimeClient(),
+    private val language: () -> String = { "" },
 ) : PlayTransport {
     private val url = socketUrlOf(apiBaseUrl)
 
     override suspend fun open(ticket: String): PlayConnection {
         val session = client.webSocketSession(url)
         val connection = KtorPlayConnection(session)
-        val hello =
-            ClientMessage.Hello(
-                ticket = ticket,
-                protocol = Protocol.VERSION,
-                platform = build?.platform.orEmpty(),
-                build = build?.number ?: 0,
-            )
-        if (!connection.send(hello)) {
+        if (!connection.send(hello(ticket))) {
             connection.close()
             throw IllegalStateException("the socket closed before its hello")
         }
         return connection
     }
+
+    /** The first frame [open] sends with [ticket]: who this build is, and the language the game is shown in now. */
+    internal fun hello(ticket: String): ClientMessage.Hello =
+        ClientMessage.Hello(
+            ticket = ticket,
+            protocol = Protocol.VERSION,
+            platform = build?.platform.orEmpty(),
+            build = build?.number ?: 0,
+            language = language(),
+        )
 
     public companion object {
         /** The socket's URL for the API at [apiBaseUrl]: the same host, `ws` for `http`, `wss` for `https`. */

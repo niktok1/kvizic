@@ -14,6 +14,7 @@ import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.error.ErrorCode
 import io.ntole.kvizic.core.error.ErrorDto
 import io.ntole.kvizic.core.network.api.PlayerApi
+import io.ntole.kvizic.core.region.Country
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -72,6 +73,49 @@ class KvizicHttpClientTest {
                 }
 
             PlayerApi(KvizicHttpClient.create(BASE_URL, storeHolding(session("a")), engine)).me()
+        }
+
+    /**
+     * Every request names the player's country, a refresh's included, as it is when the request goes: one
+     * changed between two calls is the next call's.
+     */
+    @Test
+    fun `every request names the country as it is when it goes`() =
+        runTest {
+            val named = mutableListOf<String?>()
+            var calls = 0
+            val engine =
+                MockEngine { request ->
+                    named += request.headers[KvizicApi.Headers.COUNTRY]
+                    calls++
+                    when {
+                        calls == 1 -> respondErrorDto(HttpStatusCode.Unauthorized, ErrorCode.UNAUTHORIZED)
+                        request.url.encodedPath == KvizicApi.Paths.AUTH_REFRESH -> respondSession(session("a"))
+                        else -> respondProfile()
+                    }
+                }
+            var country = Country.HR
+            val api = PlayerApi(KvizicHttpClient.create(BASE_URL, storeHolding(session("a")), engine) { country })
+
+            api.me()
+            country = Country.ME
+            api.me()
+
+            assertEquals(listOf<String?>("HR", "HR", "HR", "ME"), named)
+        }
+
+    /** The moderation app plays from nowhere, and a client told no country names none. */
+    @Test
+    fun `a client with no country names none`() =
+        runTest {
+            val engine =
+                MockEngine { request ->
+                    assertNull(request.headers[KvizicApi.Headers.COUNTRY])
+                    respondProfile()
+                }
+
+            PlayerApi(KvizicHttpClient.create(BASE_URL, storeHolding(session("a")), engine)).me()
+            PlayerApi(KvizicHttpClient.create(BASE_URL, storeHolding(session("a")), engine) { null }).me()
         }
 
     @Test
