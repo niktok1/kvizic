@@ -120,9 +120,11 @@ class DbQuestionSource(
     /**
      * The game's questions, from [inTopics] before [others]. With no local share, or a game too short for
      * one, every question as it was seen, local or common. With one, first the share from the local ones in
-     * [inTopics], fewer when they hold fewer, then the rest of the game from the common ones, the local ones
-     * left over only after them, so a game is never shorter for it. The levels are the game's over both
-     * parts, and the two are mixed, so no level opens with the local ones.
+     * [inTopics], fewer when they hold fewer, then the rest of the game, where among questions seen alike and
+     * at one level the common ones come before the local ones left over ([tiers]): a game takes about its
+     * share while unseen common ones last, yet never a seen question before an unseen local one, a level
+     * off for want of a common one at it, or a shorter game. The levels are the game's over both parts, and
+     * the two are mixed, so no level opens with the local ones.
      */
     private fun choose(
         request: PickRequest,
@@ -132,7 +134,7 @@ class DbQuestionSource(
         val levelOf = { candidate: Candidate -> candidate.level }
         val share = (request.count * localShare).roundToInt()
         if (share == 0) return mix.pick(tiers(inTopics) + tiers(others), request.count, request.difficulty, levelOf)
-        val (localInTopics, commonInTopics) = inTopics.partition { it.local }
+        val localInTopics = inTopics.filter { it.local }
         val local =
             if (localInTopics.isEmpty()) {
                 emptyList()
@@ -140,13 +142,9 @@ class DbQuestionSource(
                 mix.pick(tiers(localInTopics), share, request.difficulty, levelOf)
             }
         val taken = local.map { it.id }.toSet()
-        val (localOthers, commonOthers) = others.partition { it.local }
         val rest =
             mix.pick(
-                tiers(commonInTopics) +
-                    tiers(localInTopics.filter { it.id !in taken }) +
-                    tiers(commonOthers) +
-                    tiers(localOthers),
+                tiers(inTopics.filter { it.id !in taken }, commonFirst = true) + tiers(others, commonFirst = true),
                 mix.remaining(request.difficulty, request.count, local.map(levelOf)),
                 request.difficulty,
                 levelOf,
@@ -266,14 +264,21 @@ class DbQuestionSource(
         case().When(condition, intLiteral(1)).Else(intLiteral(0))
 
     /**
-     * [candidates] by how many of the players saw each, the fewest first; in each, those readable in every
-     * language the players read first, then those seen longest ago.
+     * [candidates] by how many of the players saw each, the fewest first; in each, with [commonFirst] the
+     * common ones before the local ones, then those readable in every language the players read first, then
+     * those seen longest ago. [DifficultyMix] takes a tier whole when the game has room for it, and else
+     * the first at each level it wants, so a local one is taken in a tier only where the common ones at its
+     * level have run out.
      */
-    private fun tiers(candidates: List<Candidate>): List<List<Candidate>> =
+    private fun tiers(
+        candidates: List<Candidate>,
+        commonFirst: Boolean = false,
+    ): List<List<Candidate>> =
         candidates
             .shuffled(random)
             .sortedWith(
                 compareBy<Candidate> { it.seenBy }
+                    .thenBy { commonFirst && it.local }
                     .thenBy { !it.readable }
                     .thenBy { it.lastSeen ?: Long.MIN_VALUE },
             ).groupBy { it.seenBy }

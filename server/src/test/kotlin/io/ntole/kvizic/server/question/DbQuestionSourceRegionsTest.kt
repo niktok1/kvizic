@@ -309,7 +309,7 @@ internal class DbQuestionSourceRegionsTest(
     }
 
     @Test
-    fun `a local question the share leaves comes only after the common ones`() {
+    fun `a local question the share leaves comes after the common ones seen alike`() {
         bank {
             questions("c", 8)
             questions("rs", 10, RS)
@@ -318,6 +318,46 @@ internal class DbQuestionSourceRegionsTest(
             assertEquals(2, pick(10, seed = seed).ids().count { it.startsWith("rs") }, "seed $seed")
         }
         assertEquals(18, pick(18).questions.size, "never a shorter game for the share")
+    }
+
+    @Test
+    fun `an unseen local question the share leaves comes before a seen common one`() {
+        bank {
+            questions("c", 8).forEach { id -> seen("ana", id, at = 100) }
+            questions("rs", 5, RS)
+            questions("geo", 2, topic = "GEOGRAPHY")
+        }
+        (1..10).forEach { seed ->
+            val picked = pick(10, topics = listOf("SPORT"), seed = seed).ids()
+            assertEquals(10, picked.size, "seed $seed")
+            assertEquals(5, picked.count { it.startsWith("rs") }, "every unseen one, seed $seed")
+            assertEquals(5, picked.count { it.startsWith("c") }, "then the seen ones, seed $seed")
+        }
+        (1..10).forEach { seed ->
+            val toppedUp = pick(5, topics = listOf("GEOGRAPHY"), seed = seed)
+            assertTrue(toppedUp.toppedUp)
+            val topUp = toppedUp.ids() - setOf("geo1", "geo2")
+            assertEquals(3, topUp.size, "seed $seed")
+            assertTrue(topUp.all { it.startsWith("rs") }, "the top-up too, seed $seed: $topUp")
+        }
+    }
+
+    @Test
+    fun `a level the common questions lack takes a local one at it before a common one off it`() {
+        bank {
+            questions("c-easy-", 10, difficulty = Difficulty.EASY)
+            questions("c-medium-", 10)
+            questions("rs-hard-", 10, RS, difficulty = Difficulty.HARD)
+        }
+        (1..10).forEach { seed ->
+            val picked = pick(10, difficulty = Difficulty.HARD, seed = seed).questions
+            assertEquals(
+                mapOf(Difficulty.EASY to 1, Difficulty.MEDIUM to 3, Difficulty.HARD to 6),
+                picked.groupingBy { it.difficulty }.eachCount(),
+                "a hard game as without a share, seed $seed",
+            )
+            assertEquals(6, picked.count { it.questionId.startsWith("rs") }, "seed $seed")
+        }
     }
 
     @Test
