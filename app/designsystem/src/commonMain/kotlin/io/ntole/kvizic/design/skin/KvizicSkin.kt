@@ -11,8 +11,9 @@ import androidx.compose.ui.text.intl.LocaleList
 import io.ntole.kvizic.design.font.family
 
 /**
- * The script the game is shown in, which sets the locale its text is shaped for, so the fonts draw the
- * Serbian forms where the platform lets them, and the letters its answers are named by.
+ * The script the game is shown in, which sets the letters its answers are named by, and the locale its text
+ * is shaped for, [languageTag], where no language names its own (`KvizicSkin`'s `languageTag`): Serbian's, so
+ * the fonts draw the Serbian forms where the platform lets them.
  */
 enum class Script(
     val languageTag: String,
@@ -46,21 +47,23 @@ internal val LocalSkinType =
     staticCompositionLocalOf<SkinType> { error("Draw inside KvizicSkin, which loads the skin's fonts.") }
 
 /**
- * Wears [skin] over [content], in [script]: loads the skin's two faces, sets every style in them for
- * the script's locale, and gives the content the page's text colour. Every screen and component draws
- * inside one.
+ * Wears [skin] over [content], in [script]: loads the skin's two faces, sets every style in them for the
+ * locale [languageTag] names, a BCP 47 tag (`hr`, `mk`, `sr-Latn`), which shapes the text for its language,
+ * its line breaks and its letters' forms, the script's own by default, and gives the content the page's text
+ * colour. Every screen and component draws inside one.
  */
 @Composable
 fun KvizicSkin(
     skin: Skin = Skins.Default,
     script: Script = Script.CYRILLIC,
+    languageTag: String = script.languageTag,
     content: @Composable () -> Unit,
 ) {
     val display = skin.fonts.display.family()
     val body = skin.fonts.body.family()
     val type =
-        remember(skin.type, skin.fonts, display, body, script) {
-            SkinType.of(skin.type, skin.fonts.display, display, skin.fonts.body, body, LocaleList(script.languageTag))
+        remember(skin.type, skin.fonts, display, body, languageTag) {
+            SkinType.of(skin.type, skin.fonts.display, display, skin.fonts.body, body, LocaleList(languageTag))
         }
     CompositionLocalProvider(
         LocalSkin provides skin,
