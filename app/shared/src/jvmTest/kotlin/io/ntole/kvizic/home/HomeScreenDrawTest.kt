@@ -46,7 +46,7 @@ class HomeScreenDrawTest {
             val words = strings.game
             val scene = scene(HomeState(profile = PROFILE), language, counts = HomeCounts(128, 7, 12))
             try {
-                write("home-${language.name.lowercase()}", scene.renderSettled())
+                write("home-${language.name.lowercase()}") { scene.renderSettled() }
                 val shown = scene.everyText()
                 listOf(
                     words.level.fill(7),
@@ -74,30 +74,34 @@ class HomeScreenDrawTest {
     }
 
     /**
-     * Every word on Home whole, in every skin, on a small phone at the usual font and at a phone's large one
-     * (130%, a common setting): „Направи собу“ wraps on its tile rather than losing „собу“.
+     * Every word on Home whole, in every language and every skin, on a small phone at the usual font and at a
+     * phone's large one (130%, a common setting): „Направи собу“ wraps on its tile rather than losing „собу“,
+     * and a language's long word fails here.
      */
     @Test
     fun `Home keeps every word whole at a large font`() {
-        val words = stringsOf(Language.DEFAULT).game
-        Skins.ALL.forEach { skin ->
-            listOf(1f, LARGE_FONT).forEach { fontScale ->
-                val where = "${skin.id} at $fontScale"
-                val scene =
-                    scene(
-                        HomeState(profile = PROFILE),
-                        Language.DEFAULT,
-                        counts = HomeCounts(128, 7, 12),
-                        skin = skin,
-                        fontScale = fontScale,
-                    )
-                try {
-                    write("home-${skin.id}-$fontScale", scene.renderSettled())
-                    assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
-                    val solo = scene.nodes().single { words.solo in it.texts }
-                    assertTrue(solo.boundsInRoot.bottom <= SHORT_PHONE_HEIGHT, "$where: Solo runs off the screen")
-                } finally {
-                    scene.close()
+        Language.entries.forEach { language ->
+            val words = stringsOf(language).game
+            Skins.ALL.forEach { skin ->
+                listOf(1f, LARGE_FONT).forEach { fontScale ->
+                    val where = "$language, ${skin.id} at $fontScale"
+                    val scene =
+                        scene(
+                            HomeState(profile = PROFILE),
+                            language,
+                            counts = HomeCounts(128, 7, 12),
+                            skin = skin,
+                            fontScale = fontScale,
+                        )
+                    try {
+                        val still = if (language == Language.DEFAULT) "" else "-${language.tag}"
+                        write("home-${skin.id}-$fontScale$still") { scene.renderSettled() }
+                        assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
+                        val solo = scene.nodes().single { words.solo in it.texts }
+                        assertTrue(solo.boundsInRoot.bottom <= SHORT_PHONE_HEIGHT, "$where: Solo runs off the screen")
+                    } finally {
+                        scene.close()
+                    }
                 }
             }
         }
@@ -224,8 +228,8 @@ class HomeScreenDrawTest {
             val linked = scene(guest.copy(profile = PROFILE.copy(playGamesLinked = true)), language)
             val large = scene(guest, language, fontScale = LARGE_FONT)
             try {
-                write("home-guest-${language.name.lowercase()}", offered.renderSettled())
-                write("home-guest-large-${language.name.lowercase()}", large.renderSettled())
+                write("home-guest-${language.name.lowercase()}") { offered.renderSettled() }
+                write("home-guest-large-${language.name.lowercase()}") { large.renderSettled() }
                 val link = offered.everyNode().single { words.saveProgress in it.texts }
                 assertEquals(
                     words.saveProgressSaid,
@@ -310,14 +314,17 @@ class HomeScreenDrawTest {
         }
     }
 
-    /** With `KVIZIC_DESIGN_DIR` set, a still of Home is written there as a PNG for the owner to see. */
+    /**
+     * With `KVIZIC_DESIGN_DIR` set, a still of Home is written there as a PNG for the owner to see; [image] is
+     * drawn only then, since a scene is drawn settled when it is made, and a still nobody keeps costs a draw.
+     */
     private fun write(
         name: String,
-        image: Image,
+        image: () -> Image,
     ) {
         val directory = System.getenv("KVIZIC_DESIGN_DIR")?.takeIf { it.isNotBlank() }?.let(::File) ?: return
         directory.mkdirs()
-        File(directory, "$name.png").writeBytes(checkNotNull(image.encodeToData()).bytes)
+        File(directory, "$name.png").writeBytes(checkNotNull(image().encodeToData()).bytes)
     }
 
     private fun scene(

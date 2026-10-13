@@ -16,9 +16,10 @@ import org.jetbrains.skia.Image
 import java.io.File
 
 /**
- * The room drawn off screen, in a skin, on a small phone, at the font's own size or a phone's larger one; with
- * `KVIZIC_DESIGN_DIR` set, each still is written there as a PNG. One class a stage of the room (the lobby, a question, the reveal and the results): the test
- * JVMs share out classes, never the tests of one, so the stages draw side by side.
+ * The room drawn off screen, in a skin and a language, Serbian Cyrillic unless one is named, on a small phone,
+ * at the font's own size or a phone's larger one; with `KVIZIC_DESIGN_DIR` set, each still is written there as
+ * a PNG. One class a stage of the room (the lobby, a question, the reveal and the results): the test JVMs share
+ * out classes, never the tests of one, so the stages draw side by side.
  */
 abstract class RoomStills {
     protected fun eachSkin(check: (Skin) -> Unit) = Skins.ALL.forEach(check)
@@ -33,11 +34,12 @@ abstract class RoomStills {
         note: RoomNote? = null,
         height: Int = HEIGHT,
         fontScale: Float = 1f,
+        language: Language = Language.DEFAULT,
         check: (ImageComposeScene) -> Unit,
     ) {
         val scene =
             ImageComposeScene(width = width, height = height, density = Density(1f, fontScale)) {
-                GameTheme(Language.DEFAULT, skin) {
+                GameTheme(language, skin) {
                     Stage(Modifier.fillMaxSize()) {
                         RoomScreen(state, topics, note = note, bursts = emptyMap(), actions = actions)
                     }

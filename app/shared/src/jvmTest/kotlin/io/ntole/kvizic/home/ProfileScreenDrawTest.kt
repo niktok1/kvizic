@@ -37,7 +37,7 @@ class ProfileScreenDrawTest {
             assertEquals(AvatarArt.DRAWN.size, words.avatarNames.size, "$language: an animal's name for each avatar")
             val scene = scene(language)
             try {
-                write("profile-${language.name.lowercase()}", scene.renderSettled())
+                write("profile-${language.name.lowercase()}") { scene.renderSettled() }
                 val shown = scene.everyText()
                 listOf(
                     words.games.of(12, language),
@@ -85,7 +85,7 @@ class ProfileScreenDrawTest {
             val offered = scene(language, state = guest, onPlayGames = { taps++ })
             val linked = scene(language, state = guest.copy(profile = PROFILE.copy(playGamesLinked = true)))
             try {
-                write("profile-guest-${language.name.lowercase()}", offered.renderSettled())
+                write("profile-guest-${language.name.lowercase()}") { offered.renderSettled() }
                 listOf(words.guest, words.guestKeepsLevel, words.playGamesNotSignedIn).forEach {
                     assertTrue(it in offered.everyText(), "$language: \"$it\" is not shown")
                 }
@@ -102,14 +102,18 @@ class ProfileScreenDrawTest {
     /** The test's best topic as the server names it, the Serbian, in [language]'s script. */
     private fun stringsTopic(language: Language): String = if (language.isCyrillic) "Географија" else "Geografija"
 
-    /** With `KVIZIC_DESIGN_DIR` set, a still of the profile is written there as a PNG for the owner to see. */
+    /**
+     * With `KVIZIC_DESIGN_DIR` set, a still of the profile is written there as a PNG for the owner to see;
+     * [image] is drawn only then, since a scene is drawn settled when it is made, and a still nobody keeps
+     * costs a draw.
+     */
     private fun write(
         name: String,
-        image: Image,
+        image: () -> Image,
     ) {
         val directory = System.getenv("KVIZIC_DESIGN_DIR")?.takeIf { it.isNotBlank() }?.let(::File) ?: return
         directory.mkdirs()
-        File(directory, "$name.png").writeBytes(checkNotNull(image.encodeToData()).bytes)
+        File(directory, "$name.png").writeBytes(checkNotNull(image().encodeToData()).bytes)
     }
 
     private fun scene(
