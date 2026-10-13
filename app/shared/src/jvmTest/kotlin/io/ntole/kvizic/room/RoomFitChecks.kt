@@ -150,5 +150,8 @@ abstract class RoomFitChecks : RoomStills() {
 
         /** The narrowest phone at the usual font and at a large one: where a word is cut first. */
         val NARROWEST = listOf(WIDTH to 1f, WIDTH to LARGE_FONT)
+
+        /** The tablet the host's Kick was squeezed on: a dialog's buttons stand in a row there, at their width. */
+        const val TABLET = 800
     }
 }

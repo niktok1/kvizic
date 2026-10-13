@@ -28,6 +28,6 @@ class RoomFitDrawTest : RoomFitChecks() {
         val LOBBY_SIZES = listOf(393 to 1f, WIDTH to 1f, WIDTH to LARGE_FONT)
 
         /** The phone and the tablet the host's Kick was squeezed on, and the narrowest at a large font. */
-        val DIALOG_SIZES = listOf(393 to 1f, 800 to 1f, WIDTH to LARGE_FONT)
+        val DIALOG_SIZES = listOf(393 to 1f, TABLET to 1f, WIDTH to LARGE_FONT)
     }
 }
