@@ -8,8 +8,11 @@ import io.ktor.server.routing.post
 import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.question.EditQuestionRequest
 import io.ntole.kvizic.core.question.ImportQuestionsRequest
+import io.ntole.kvizic.core.question.ImportRefusalDto
+import io.ntole.kvizic.core.question.LocalizeResultDto
 import io.ntole.kvizic.core.question.QuestionDecisionRequest
 import io.ntole.kvizic.core.question.QuestionDraftDto
+import io.ntole.kvizic.core.question.QuestionLocalizationDto
 import io.ntole.kvizic.core.question.QuestionStatus
 import io.ntole.kvizic.server.admin.AdminToken
 import io.ntole.kvizic.server.admin.logAdmin
@@ -60,6 +63,33 @@ fun Route.questionAdminRoutes(
             batch,
         )
         call.respond(result)
+    }
+
+    // A LocalizeQuestionsRequest, each question read on its own as an import's drafts are, and each set in a
+    // transaction of its own: one refused, or not in the bank, leaves the others set. Idempotent.
+    post(KvizicApi.Paths.ADMIN_QUESTION_LOCALIZATIONS) {
+        call.requireAdmin(adminToken)
+        val request = call.receiveOrReject<LocalizeBody>("localization")
+        if (request.questions.size > KvizicApi.Limits.MAX_IMPORT_BATCH) {
+            throw ApiFailure.validation("a localization holds at most ${KvizicApi.Limits.MAX_IMPORT_BATCH} questions")
+        }
+        val localizations = request.questions.decodedEach(QuestionLocalizationDto.serializer())
+        val updated = mutableListOf<String>()
+        val unknown = mutableListOf<String>()
+        val refused = localizations.refused.toMutableList()
+        localizations.items.forEach { localization ->
+            val key = localization.key.take(MAX_SHOWN_KEY)
+            when (val outcome = db.query { QuestionStore.localize(localization, clock()) }) {
+                Localized.Updated -> updated += key
+                Localized.Unknown -> unknown += key
+                is Localized.Refused -> refused += ImportRefusalDto(key, outcome.reason)
+            }
+        }
+        call.logAdmin(
+            "localized questions, updated, unknown and refused",
+            "${updated.size}, ${unknown.size}, ${refused.size}",
+        )
+        call.respond(LocalizeResultDto(updated, unknown, refused))
     }
 
     get(KvizicApi.Paths.ADMIN_QUESTIONS) {

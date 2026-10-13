@@ -7,11 +7,18 @@ import io.ntole.kvizic.core.question.EditQuestionRequest
 import io.ntole.kvizic.core.question.ImportRefusalDto
 import io.ntole.kvizic.core.question.ImportResultDto
 import io.ntole.kvizic.core.question.QuestionDraftDto
+import io.ntole.kvizic.core.question.QuestionLocalizationDto
 import io.ntole.kvizic.core.question.QuestionStatsDto
 import io.ntole.kvizic.core.question.QuestionStatus
+import io.ntole.kvizic.core.question.QuestionTextDto
+import io.ntole.kvizic.core.region.ContentLanguages
+import io.ntole.kvizic.core.region.Country
+import io.ntole.kvizic.server.db.QuestionCountries
+import io.ntole.kvizic.server.db.QuestionOptionTranslations
 import io.ntole.kvizic.server.db.QuestionOptions
 import io.ntole.kvizic.server.db.QuestionStats
 import io.ntole.kvizic.server.db.QuestionTopics
+import io.ntole.kvizic.server.db.QuestionTranslations
 import io.ntole.kvizic.server.db.Questions
 import io.ntole.kvizic.server.db.Reports
 import io.ntole.kvizic.server.db.Topics
@@ -41,15 +48,18 @@ import org.jetbrains.exposed.v1.jdbc.update
 import java.util.UUID
 
 /**
- * The question bank as the moderator works it: imports, the list, edits and every move between
- * statuses. Each must run inside a transaction. An edit is a compare-and-set on the revision it was made
- * from, and a move one on the statuses it may start from, so two moderators never undo each other.
+ * The question bank as the moderator works it: imports, the list, edits, every move between statuses, and
+ * the countries and translations the content repo sets. Each must run inside a transaction. An edit is a
+ * compare-and-set on the revision it was made from, and a move one on the statuses it may start from, so two
+ * moderators never undo each other.
  */
 object QuestionStore {
     /**
-     * Imports [drafts] as [status], each checked by the rules: a key the bank has already, or one earlier
-     * in the same import, is a duplicate and writes nothing. Two imports of one key racing fail on its
-     * unique index, and the rerun finds it.
+     * Imports [drafts] as [status], each checked by the rules, its countries and translations with it, the
+     * translations made from its first revision: a key the bank has already, or one earlier in the same
+     * import, is a duplicate and writes nothing, its countries and translations included, which a
+     * localization sets ([localize]). Two imports of one key racing fail on its unique index, and the rerun
+     * finds it.
      */
     fun import(
         batch: String,
@@ -95,6 +105,8 @@ object QuestionStore {
                         language = draft.language,
                         author = draft.author,
                         knownTopics = knownTopics,
+                        countries = draft.countries,
+                        translations = draft.translations,
                     )
                 } catch (refusal: QuestionRefused) {
                     refused += ImportRefusalDto(draft.key, refusal.message)
@@ -176,7 +188,9 @@ object QuestionStore {
 
     /**
      * The moderator's edit, made from [EditQuestionRequest.revision]: refused as stale when another got
-     * there first. New answers, or another right one, start the question's stats afresh.
+     * there first. New answers, or another right one, start the question's stats afresh. Its countries and
+     * translations are never touched: the revision moving on leaves each translation's own behind, which
+     * marks it stale until the content repo sends it again.
      */
     fun edit(
         request: EditQuestionRequest,
@@ -266,7 +280,73 @@ object QuestionStore {
         return checkNotNull(find(id)) { "question $id vanished mid-transaction" }
     }
 
-    /** Every question at [statuses], oldest first, as drafts that import back as they are. */
+    /**
+     * Sets the countries and translations of the question [localization] names, by its import key, else by
+     * its id, where they stand, whatever its status: its countries replaced when it names a set (empty makes
+     * it common), and each language it holds replaced, made from the question's revision now; a language it
+     * leaves out is kept. All of it is checked as an import's is, against the question as stored, and one
+     * part refused writes nothing. No status moves and the revision does not: a translation is no edit.
+     *
+     * What already stands as sent is left as it is, its `updated_at` too, so the same localization twice
+     * changes nothing the second time. The question's row is locked first, as an edit's update locks it, so
+     * the two take turns, and what a translation was checked against is the revision it is marked with.
+     */
+    fun localize(
+        localization: QuestionLocalizationDto,
+        now: Long,
+    ): Localized {
+        val key = localization.key
+        if (!isImportKey(key)) return Localized.Unknown
+        val question =
+            lockedSource(Questions.importKey eq key)
+                ?: lockedSource(Questions.id eq key)
+                ?: return Localized.Unknown
+        val id = question[Questions.id]
+        val revision = question[Questions.revision]
+        val optionCount =
+            QuestionOptions
+                .select(QuestionOptions.slot)
+                .where { QuestionOptions.questionId eq id }
+                .count()
+                .toInt()
+        val (countries, translations) =
+            try {
+                localization.countries?.let(::checkedCountries) to
+                    checkedTranslations(
+                        localization.translations,
+                        question[Questions.language],
+                        optionCount,
+                        question[Questions.explanation] != null,
+                    )
+            } catch (refusal: QuestionRefused) {
+                return Localized.Refused(refusal.message)
+            }
+        if (countries != null && countries != countriesOf(listOf(id))[id].orEmpty().toSet()) {
+            QuestionCountries.deleteWhere { QuestionCountries.questionId eq id }
+            insertCountries(id, countries)
+        }
+        val stored = translationsOf(listOf(id))[id].orEmpty()
+        translations
+            .filter { (tag, words) -> stored[tag] != StoredTranslation(words, revision) }
+            .forEach { (tag, words) ->
+                QuestionOptionTranslations.deleteWhere {
+                    (QuestionOptionTranslations.questionId eq id) and (QuestionOptionTranslations.language eq tag)
+                }
+                QuestionTranslations.deleteWhere {
+                    (QuestionTranslations.questionId eq id) and (QuestionTranslations.language eq tag)
+                }
+                insertTranslations(id, mapOf(tag to words), revision, now)
+            }
+        return Localized.Updated
+    }
+
+    /**
+     * Every question at [statuses], oldest first, as drafts that import back as they are: with its countries
+     * and its translations, stale or not, which an import makes from its first revision. A translation that
+     * no longer fits its question, its answers counted otherwise or its explanation there or not where the
+     * question's is not, is left out, since the rules would refuse the whole draft for it; such a one is
+     * made again and sent by a localization.
+     */
     fun export(statuses: Set<QuestionStatus>): List<QuestionDraftDto> {
         val rows =
             Questions
@@ -274,7 +354,11 @@ object QuestionStore {
                 .where { Questions.status inList statuses }
                 .orderBy(Questions.createdAt to SortOrder.ASC, Questions.id to SortOrder.ASC)
                 .toList()
-        return dtosOf(rows).map { question ->
+        val questions = dtosOf(rows)
+        val ids = questions.map { it.id }
+        val countries = countriesOf(ids)
+        val translations = translationsOf(ids)
+        return questions.map { question ->
             QuestionDraftDto(
                 key = question.importKey ?: question.id,
                 text = question.text,
@@ -287,9 +371,26 @@ object QuestionStore {
                 source = question.source,
                 language = question.language,
                 author = question.author,
+                countries = countries[question.id].orEmpty(),
+                translations =
+                    translations[question.id]
+                        .orEmpty()
+                        .mapValues { (_, stored) -> stored.words }
+                        .filterValues { words ->
+                            words.options.size == question.options.size &&
+                                (words.explanation != null) == (question.explanation != null)
+                        }.mapValues { (_, words) -> QuestionTextDto(words.text, words.options, words.explanation) },
             )
         }
     }
+
+    /** The question [where] picks, locked, with what its translations are checked against. */
+    private fun lockedSource(where: Op<Boolean>): ResultRow? =
+        Questions
+            .select(Questions.id, Questions.language, Questions.revision, Questions.explanation)
+            .where(where)
+            .forUpdate()
+            .singleOrNull()
 
     private fun insert(
         checked: CheckedQuestion,
@@ -302,6 +403,7 @@ object QuestionStore {
         Questions.insert { row ->
             row[Questions.id] = id
             row[Questions.status] = status
+            row[revision] = FIRST_REVISION
             row[kind] = checked.kind
             row[text] = checked.text
             row[correctSlot] = checked.correct
@@ -319,6 +421,85 @@ object QuestionStore {
         insertOptions(id, checked.options)
         insertTopics(id, checked.topics)
         QuestionStats.insert { row -> row[questionId] = id }
+        insertCountries(id, checked.countries)
+        insertTranslations(id, checked.translations, FIRST_REVISION, now)
+    }
+
+    private fun insertCountries(
+        id: String,
+        countries: Set<Country>,
+    ) {
+        if (countries.isEmpty()) return
+        QuestionCountries.batchInsert(countries, shouldReturnGeneratedValues = false) { country ->
+            this[QuestionCountries.questionId] = id
+            this[QuestionCountries.country] = country
+        }
+    }
+
+    /** [translations] of question [id], each with its answers in the source's slots, made from [revision]. */
+    private fun insertTranslations(
+        id: String,
+        translations: Map<String, CheckedText>,
+        revision: Int,
+        now: Long,
+    ) {
+        if (translations.isEmpty()) return
+        QuestionTranslations.batchInsert(translations.entries, shouldReturnGeneratedValues = false) { (tag, words) ->
+            this[QuestionTranslations.questionId] = id
+            this[QuestionTranslations.language] = tag
+            this[QuestionTranslations.text] = words.text
+            this[QuestionTranslations.explanation] = words.explanation
+            this[QuestionTranslations.sourceRevision] = revision
+            this[QuestionTranslations.updatedAt] = now
+        }
+        val options = translations.flatMap { (tag, words) -> words.options.withIndex().map { tag to it } }
+        QuestionOptionTranslations.batchInsert(options, shouldReturnGeneratedValues = false) { (tag, option) ->
+            this[QuestionOptionTranslations.questionId] = id
+            this[QuestionOptionTranslations.language] = tag
+            this[QuestionOptionTranslations.slot] = option.index
+            this[QuestionOptionTranslations.text] = option.value
+        }
+    }
+
+    /** The countries of each of [ids] that has any, in [Country]'s order. */
+    private fun countriesOf(ids: List<String>): Map<String, List<Country>> {
+        if (ids.isEmpty()) return emptyMap()
+        return QuestionCountries
+            .selectAll()
+            .where { QuestionCountries.questionId inList ids }
+            .groupBy({ it[QuestionCountries.questionId] }, { it[QuestionCountries.country] })
+            .mapValues { (_, countries) -> countries.sorted() }
+    }
+
+    /** The translations of each of [ids] that has any, by tag in `ContentLanguages.ALL`'s order. */
+    private fun translationsOf(ids: List<String>): Map<String, Map<String, StoredTranslation>> {
+        if (ids.isEmpty()) return emptyMap()
+        val options =
+            QuestionOptionTranslations
+                .selectAll()
+                .where { QuestionOptionTranslations.questionId inList ids }
+                .orderBy(QuestionOptionTranslations.slot)
+                .groupBy(
+                    { it[QuestionOptionTranslations.questionId] to it[QuestionOptionTranslations.language] },
+                    { it[QuestionOptionTranslations.text] },
+                )
+        return QuestionTranslations
+            .selectAll()
+            .where { QuestionTranslations.questionId inList ids }
+            .sortedBy { ContentLanguages.ALL.indexOf(it[QuestionTranslations.language]) }
+            .groupBy { it[QuestionTranslations.questionId] }
+            .mapValues { (id, rows) ->
+                rows.associate { row ->
+                    val tag = row[QuestionTranslations.language]
+                    val words =
+                        CheckedText(
+                            text = row[QuestionTranslations.text],
+                            options = options[id to tag].orEmpty(),
+                            explanation = row[QuestionTranslations.explanation],
+                        )
+                    tag to StoredTranslation(words, row[QuestionTranslations.sourceRevision])
+                }
+            }
     }
 
     private fun insertOptions(
@@ -427,6 +608,26 @@ object QuestionStore {
         )
     }
 
-    /** How long a refused key is shown back: an import key's length, whatever was sent. */
-    private const val MAX_SHOWN_KEY = 64
+    /** The revision a question is imported at, which its first translations are made from. */
+    private const val FIRST_REVISION = 1
+}
+
+/** A translation as the bank holds it: its words, and the question's revision they were made from. */
+private data class StoredTranslation(
+    val words: CheckedText,
+    val sourceRevision: Int,
+)
+
+/** What [QuestionStore.localize] did with the question it was given. */
+sealed interface Localized {
+    /** Found and set, or found as it was sent already. */
+    data object Updated : Localized
+
+    /** No question has the key as its import key or its id. */
+    data object Unknown : Localized
+
+    /** Found, and refused by the rules for [reason]: nothing of it was written. */
+    data class Refused(
+        val reason: String,
+    ) : Localized
 }

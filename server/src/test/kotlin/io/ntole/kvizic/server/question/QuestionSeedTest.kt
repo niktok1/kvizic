@@ -9,6 +9,8 @@ import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.core.question.ImportQuestionsRequest
 import io.ntole.kvizic.core.question.QuestionDraftDto
 import io.ntole.kvizic.core.question.QuestionStatus
+import io.ntole.kvizic.core.question.QuestionTextDto
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.FLOW_ADMIN_TOKEN
 import io.ntole.kvizic.server.plugins.ServerJson
 import io.ntole.kvizic.server.runTestServer
@@ -48,12 +50,55 @@ class QuestionSeedTest {
         )
 
     /** The JSON gzipped and in base64, as a Render secret file holds it, in lines of 76 as `base64` writes. */
-    private val packed =
+    private val packed = packed(json)
+
+    private fun packed(json: String) =
         Base64.getMimeEncoder().encodeToString(
             ByteArrayOutputStream()
                 .also { bytes -> GZIPOutputStream(bytes).use { it.write(json.encodeToByteArray()) } }
                 .toByteArray(),
         ) + "\n"
+
+    @Test
+    fun `a packed seed's countries and translations are in the bank with its questions`() {
+        val local =
+            QuestionDraftDto(
+                key = "seed-ba",
+                text = "Семе?",
+                options = listOf("Да", "Не"),
+                correct = 1,
+                topics = listOf("GEOGRAPHY"),
+                difficulty = Difficulty.HARD,
+                explanation = "Зато.",
+                countries = listOf(Country.BA),
+                translations =
+                    mapOf(
+                        "hr" to QuestionTextDto("Sjeme?", listOf("Da", "Ne"), "Zato hr."),
+                        "bs" to QuestionTextDto("Sjeme bs?", listOf("Da bs", "Ne bs"), "Zato bs."),
+                    ),
+            )
+        val common = local.copy(key = "seed-common", countries = emptyList(), translations = emptyMap())
+        val seed =
+            ServerJson.encodeToString(
+                ImportQuestionsRequest.serializer(),
+                ImportQuestionsRequest("dev-seed", listOf(local, common)),
+            )
+        val file =
+            File.createTempFile("kvizic-seed", ".gz.b64").apply {
+                deleteOnExit()
+                writeText(packed(seed))
+            }
+        runTestServer("bank-seed-regions", configure = { it.copy(questionSeedFile = file.path) }) { client, _ ->
+            val bank =
+                client
+                    .get(
+                        KvizicApi.Paths.ADMIN_QUESTION_EXPORTS,
+                    ) { header(KvizicApi.Headers.ADMIN_TOKEN, FLOW_ADMIN_TOKEN) }
+                    .body<ImportQuestionsRequest>()
+                    .questions
+            assertEquals(setOf(local, common), bank.toSet(), "approved, so exported, as written")
+        }
+    }
 
     @Test
     fun `a seed file's questions are in the bank, approved, when the server comes up`() =
