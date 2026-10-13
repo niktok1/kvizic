@@ -8,7 +8,10 @@ package io.ntole.kvizic.core.domain.analytics
  * The game's own: a room entered and left, and a game played to its end.
  */
 public object AnalyticsEvent {
-    /** The app came to the foreground: at launch, and from the background ([AnalyticsProperty.FROM_BACKGROUND]). */
+    /**
+     * The app came to the foreground: at launch, and from the background ([AnalyticsProperty.FROM_BACKGROUND]),
+     * shown in [AnalyticsProperty.LANGUAGE], the player playing from [AnalyticsProperty.COUNTRY].
+     */
     public const val APP_OPENED: String = "app_opened"
 
     /** The app went to the background, after [AnalyticsProperty.DURATION_MS] in the foreground. */
@@ -28,6 +31,9 @@ public object AnalyticsEvent {
 
     /** The player picked a language to play in, [AnalyticsProperty.LANGUAGE]. */
     public const val LANGUAGE_CHANGED: String = "language_changed"
+
+    /** The player picked the country they play from, [AnalyticsProperty.COUNTRY]. */
+    public const val COUNTRY_CHANGED: String = "country_changed"
 
     /** The player turned the game's sound on or off, [AnalyticsProperty.ENABLED]. */
     public const val SOUND_CHANGED: String = "sound_changed"

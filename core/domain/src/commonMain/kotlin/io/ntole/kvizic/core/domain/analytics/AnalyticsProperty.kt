@@ -29,8 +29,11 @@ public object AnalyticsProperty {
     /** Whether a sign-in made this device another player's, the one before left behind. */
     public const val SWITCHED: String = "switched"
 
-    /** A language's tag: `sr-Cyrl`, `sr-Latn` or `en`. */
+    /** A language's tag, as the game shows it: `sr-Cyrl`, `sr-Latn`, `hr`, `bs`, `sl`, `mk` or `en`. */
     public const val LANGUAGE: String = "language"
+
+    /** A country's name, where a player plays from: `RS`, `HR`, `BA`, `SI`, `MK` or `ME`. */
+    public const val COUNTRY: String = "country"
 
     /** Whether a setting the player changed is now on. */
     public const val ENABLED: String = "enabled"
