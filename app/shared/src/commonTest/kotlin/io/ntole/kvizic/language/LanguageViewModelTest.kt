@@ -6,10 +6,13 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.network.InMemoryTokenStorage
 import io.ntole.kvizic.core.network.TokenStorage
+import io.ntole.kvizic.region.DeviceRegion
+import io.ntole.kvizic.region.RegionStore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -19,7 +22,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** The language the game is shown in, as the device keeps it. */
+/**
+ * The language the game is shown in, as the device keeps it. Each store here is an install from before, which
+ * keeps the language it showed: what a first launch picks is `RegionStoreTest`'s.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LanguageViewModelTest {
     private val dispatcher = StandardTestDispatcher()
@@ -37,18 +43,19 @@ class LanguageViewModelTest {
     }
 
     @Test
-    fun `a device that never picked a language shows Serbian Cyrillic`() {
-        assertEquals(Language.SERBIAN_CYRILLIC, LanguageViewModel(InMemoryTokenStorage(), analytics).language.value)
-    }
+    fun `a device that never picked a language shows Serbian Cyrillic`() =
+        runTest(dispatcher) {
+            assertEquals(Language.SERBIAN_CYRILLIC, viewModel(InMemoryTokenStorage()).language.value)
+        }
 
     @Test
     fun `a language picked is kept on the device under its own key`() =
         runTest(dispatcher) {
             val storage = InMemoryTokenStorage()
-            val viewModel = LanguageViewModel(storage, analytics)
+            val viewModel = viewModel(storage)
 
             viewModel.select(Language.SERBIAN_LATIN)
-            testScheduler.advanceUntilIdle()
+            testScheduler.runCurrent()
 
             assertEquals("sr-Latn", storage.read("kvizic.language"))
         }
@@ -59,13 +66,13 @@ class LanguageViewModelTest {
             Language.entries.forEach { language ->
                 val storage = InMemoryTokenStorage()
                 // English first, so each language is a change, Serbian Cyrillic included.
-                LanguageViewModel(storage, analytics).apply {
+                viewModel(storage).apply {
                     select(Language.ENGLISH)
                     select(language)
                 }
-                testScheduler.advanceUntilIdle()
+                testScheduler.runCurrent()
 
-                assertEquals(language, LanguageViewModel(storage, analytics).language.value)
+                assertEquals(language, viewModel(storage).language.value)
             }
         }
 
@@ -74,23 +81,23 @@ class LanguageViewModelTest {
     fun `a language picked shows at once before it is kept`() =
         runTest(dispatcher) {
             val storage = StuckStorage()
-            val viewModel = LanguageViewModel(storage, analytics)
+            val viewModel = viewModel(storage)
 
             viewModel.select(Language.ENGLISH)
 
             assertEquals(Language.ENGLISH, viewModel.language.value)
-            testScheduler.advanceUntilIdle()
+            testScheduler.runCurrent()
             assertEquals(Language.ENGLISH, viewModel.language.value)
-            assertEquals(listOf("en"), storage.writing)
+            assertEquals<List<String>?>(listOf("en"), storage.writing[RegionStore.LANGUAGE_KEY])
         }
 
     @Test
     fun `a language that cannot be kept is still this run's`() =
         runTest(dispatcher) {
-            val viewModel = LanguageViewModel(FailingStorage(), analytics)
+            val viewModel = viewModel(FailingStorage())
 
             viewModel.select(Language.ENGLISH)
-            testScheduler.advanceUntilIdle()
+            testScheduler.runCurrent()
 
             assertEquals(Language.ENGLISH, viewModel.language.value)
         }
@@ -99,8 +106,8 @@ class LanguageViewModelTest {
     fun `picking the language shown writes nothing`() =
         runTest(dispatcher) {
             val storage = InMemoryTokenStorage()
-            LanguageViewModel(storage, analytics).select(Language.SERBIAN_CYRILLIC)
-            testScheduler.advanceUntilIdle()
+            viewModel(storage).select(Language.SERBIAN_CYRILLIC)
+            testScheduler.runCurrent()
 
             assertNull(storage.read("kvizic.language"))
         }
@@ -111,14 +118,14 @@ class LanguageViewModelTest {
             val storage = InMemoryTokenStorage()
             storage.write("kvizic.language", "de")
 
-            assertEquals(Language.SERBIAN_CYRILLIC, LanguageViewModel(storage, analytics).language.value)
+            assertEquals(Language.SERBIAN_CYRILLIC, viewModel(storage).language.value)
         }
 
     /** A language picked, by its tag, for the analytics; the one shown already is none. */
     @Test
     fun `a language picked is reported by its tag`() =
         runTest(dispatcher) {
-            val viewModel = LanguageViewModel(InMemoryTokenStorage(), analytics)
+            val viewModel = viewModel(InMemoryTokenStorage())
 
             viewModel.select(Language.SERBIAN_CYRILLIC)
             viewModel.select(Language.ENGLISH)
@@ -129,9 +136,25 @@ class LanguageViewModelTest {
             )
         }
 
-    /** A storage whose every write waits for good, as one stuck on a slow disk would. */
+    /** The language picked is the one the server is told of, in the next socket's hello. */
+    @Test
+    fun `a language picked is the one the next hello names`() =
+        runTest(dispatcher) {
+            val region = region(InMemoryTokenStorage())
+
+            LanguageViewModel(region, analytics).select(Language.MACEDONIAN)
+
+            assertEquals("mk", region.currentLanguageTag())
+        }
+
+    private fun TestScope.viewModel(storage: TokenStorage) = LanguageViewModel(region(storage), analytics)
+
+    private fun TestScope.region(storage: TokenStorage) =
+        RegionStore(storage, DeviceRegion.None, installedBefore = { true }, scope = backgroundScope)
+
+    /** A storage whose every write waits for good, as one stuck on a slow disk would, by key. */
     private class StuckStorage : TokenStorage {
-        val writing = mutableListOf<String>()
+        val writing = mutableMapOf<String, MutableList<String>>()
 
         override fun read(key: String): String? = null
 
@@ -139,7 +162,7 @@ class LanguageViewModelTest {
             key: String,
             value: String,
         ) {
-            writing += value
+            writing.getOrPut(key) { mutableListOf() } += value
             CompletableDeferred<Unit>().await()
         }
 

@@ -7,6 +7,8 @@ import io.ntole.kvizic.analytics.UsageTracker
 import io.ntole.kvizic.core.auth.SessionDto
 import io.ntole.kvizic.core.domain.analytics.Analytics
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
+import io.ntole.kvizic.core.domain.region.Country
+import io.ntole.kvizic.core.domain.region.PlayerRegion
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.update.AppUpdate
 import io.ntole.kvizic.core.network.InMemoryTokenStorage
@@ -16,6 +18,10 @@ import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.home.HomeViewModel
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LanguageViewModel
+import io.ntole.kvizic.region.CountryViewModel
+import io.ntole.kvizic.region.DeviceRegion
+import io.ntole.kvizic.region.RegionHints
+import io.ntole.kvizic.region.RegionStore
 import io.ntole.kvizic.services.AppServices
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,6 +41,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -64,6 +71,7 @@ class AppModuleTest {
         koin.get<HomeViewModel>()
         koin.get<AboutViewModel>()
         koin.get<LanguageViewModel>()
+        koin.get<CountryViewModel>()
         // What App asks for before any screen: whether the server refused this build, the analytics and
         // their tracker, and the About screen's version and account id.
         koin.get<AppUpdate>()
@@ -138,6 +146,43 @@ class AppModuleTest {
             assertEquals(Language.SERBIAN_LATIN, language.value)
         }
 
+    /**
+     * The country is the player's, as the language is: detected once by whichever build runs first, from what the
+     * device says, and the one every environment's build plays from, until one of them is told another.
+     */
+    @Test
+    fun `the country is one for the device whatever the environment`() =
+        runTest {
+            val storage = InMemoryTokenStorage()
+            val croatia = DeviceRegion { RegionHints("hr", "hr", "HR", listOf("hr-HR")) }
+            val slovenia = DeviceRegion { RegionHints("si", "si", "SI", listOf("sl-SI")) }
+
+            val detected = koinFor(KvizicEnvironment.DEV, storage, croatia).get<CountryViewModel>().country
+            assertEquals(Country.HR, detected.value)
+            testScheduler.advanceUntilIdle()
+
+            KvizicEnvironment.entries.forEach { environment ->
+                val region = koinFor(environment, storage, slovenia).get<PlayerRegion>()
+                assertEquals(Country.HR, region.currentCountry(), "$environment")
+            }
+
+            koinFor(KvizicEnvironment.PROD, storage).get<RegionStore>().selectCountry(Country.ME)
+            testScheduler.advanceUntilIdle()
+
+            KvizicEnvironment.entries.forEach { environment ->
+                val country = koinFor(environment, storage).get<CountryViewModel>().country
+                assertEquals(Country.ME, country.value, "$environment")
+            }
+        }
+
+    /** What the server is told, on every request and in every hello, is what the Settings screen shows. */
+    @Test
+    fun `the region the server is told of is the one the screens show`() {
+        val koin = koinFor(KvizicEnvironment.LOCAL)
+
+        assertSame<Any>(koin.get<RegionStore>(), koin.get<PlayerRegion>())
+    }
+
     @Test
     fun `initKoin starts the environment each entry point's name names`() {
         mapOf(
@@ -193,8 +238,13 @@ class AppModuleTest {
     private fun koinFor(
         environment: KvizicEnvironment,
         storage: TokenStorage = InMemoryTokenStorage(),
+        device: DeviceRegion = DeviceRegion.None,
     ): Koin {
-        val platform = module { single<TokenStorage> { storage } }
+        val platform =
+            module {
+                single<TokenStorage> { storage }
+                single<DeviceRegion> { device }
+            }
         return koinApplication {
             modules(listOf(platform) + appModules(environment, analytics = null, version = AppVersion("0.1.0", null)))
         }.koin

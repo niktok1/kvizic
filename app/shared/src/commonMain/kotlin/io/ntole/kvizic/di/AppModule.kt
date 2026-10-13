@@ -6,16 +6,21 @@ import io.ntole.kvizic.analytics.AnalyticsSettings
 import io.ntole.kvizic.analytics.UsageTracker
 import io.ntole.kvizic.core.data.di.gameDataModule
 import io.ntole.kvizic.core.data.di.platformDataModule
+import io.ntole.kvizic.core.domain.region.PlayerRegion
 import io.ntole.kvizic.core.network.ClientBuild
+import io.ntole.kvizic.core.network.SessionStore
 import io.ntole.kvizic.core.network.analytics.PostHogConfig
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.home.HomeViewModel
 import io.ntole.kvizic.language.LanguageViewModel
+import io.ntole.kvizic.region.CountryViewModel
+import io.ntole.kvizic.region.RegionStore
 import io.ntole.kvizic.room.PublicRoomsViewModel
 import io.ntole.kvizic.room.RoomPreviewViewModel
 import io.ntole.kvizic.room.RoomViewModel
 import io.ntole.kvizic.services.AppServices
 import io.ntole.kvizic.sound.SoundViewModel
+import kotlinx.coroutines.MainScope
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModelOf
@@ -23,12 +28,15 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import kotlin.time.TimeSource
 
-// Internal, not private, so a test can resolve every ViewModel from the real graph.
-internal val uiModule =
+// Internal, not private, so a test can resolve every ViewModel from the real graph. Made anew for each Koin, as the
+// data modules are: a Koin single is kept in its module's definition, so one module loaded by two Koins, as a
+// test's are, would hand the second the first one's instances.
+internal fun uiModule(): Module =
     module {
         viewModelOf(::HomeViewModel)
         viewModelOf(::AboutViewModel)
         viewModelOf(::LanguageViewModel)
+        viewModelOf(::CountryViewModel)
         viewModelOf(::SoundViewModel)
         viewModelOf(::RoomViewModel)
         viewModelOf(::PublicRoomsViewModel)
@@ -39,6 +47,20 @@ internal val uiModule =
         single { UsageTracker(analytics = get(), timeSource = get()) }
         // What the app does by itself, as long as it runs: one for its life too.
         single { AppServices(linkPlayGames = get(), lobby = get()) }
+        // Where the player plays from and what they read: one copy for the app's life, which every request and
+        // every socket tells the server of. Made when first asked for, by the first request or the first screen,
+        // so a first launch detects both before anything is sent; its writes run on the main thread, as a
+        // ViewModel's would.
+        single {
+            val sessions = get<SessionStore>()
+            RegionStore(
+                storage = get(),
+                device = get(),
+                installedBefore = { sessions.read() != null },
+                scope = MainScope(),
+            )
+        }
+        single<PlayerRegion> { get<RegionStore>() }
     }
 
 /**
@@ -99,5 +121,5 @@ internal fun appModules(
         },
         platformDataModule(environment, analytics, ClientBuild.of(version.number), playGames = device.playGames),
         gameDataModule(environment, ClientBuild.of(version.number)),
-        uiModule,
+        uiModule(),
     )

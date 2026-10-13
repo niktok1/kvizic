@@ -3,6 +3,8 @@ package io.ntole.kvizic.di
 import io.ntole.kvizic.core.network.JvmTokenStorage
 import io.ntole.kvizic.core.network.TokenStorage
 import io.ntole.kvizic.desktopProfileName
+import io.ntole.kvizic.region.DeviceRegion
+import io.ntole.kvizic.region.JvmDeviceRegion
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -15,5 +17,6 @@ actual fun platformModule(): Module {
     val profile = JvmTokenStorage.checkedProfile(desktopProfileName())
     return module {
         single<TokenStorage> { JvmTokenStorage.forProfile(profile) }
+        single<DeviceRegion> { JvmDeviceRegion }
     }
 }

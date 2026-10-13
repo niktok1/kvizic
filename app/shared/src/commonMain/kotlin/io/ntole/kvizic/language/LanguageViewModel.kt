@@ -1,56 +1,34 @@
 package io.ntole.kvizic.language
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import io.ntole.kvizic.core.domain.analytics.Analytics
 import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
-import io.ntole.kvizic.core.network.TokenStorage
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
+import io.ntole.kvizic.region.RegionStore
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 /**
- * The language the game is shown in, as the device keeps it: [Language.DEFAULT], Serbian Cyrillic, until
- * the player picks another.
+ * The language the game is shown in, as [region] keeps it for the device: a first launch's, the device's own
+ * language when the game offers it and else its country's, or the one the player picked since; an install from
+ * before keeps the one it showed. A language picked is reported to [analytics], by its tag.
  *
- * Kept in [storage], the platform's own key-value storage the session is kept in, under [KEY], one key
- * for the device whatever server the build talks to: the language is the player's, not the environment's,
- * so every build on a desktop, an iPhone or a browser shows the one last picked on it. A language picked
- * is reported to [analytics], by its tag.
+ * The one [region] holds is also the one every socket's hello names, so the server sends the questions in it.
  */
 class LanguageViewModel(
-    private val storage: TokenStorage,
+    private val region: RegionStore,
     private val analytics: Analytics,
 ) : ViewModel() {
-    private val selected = MutableStateFlow(Language.ofTag(storage.read(KEY)))
+    val language: StateFlow<Language> = region.language
 
-    val language: StateFlow<Language> = selected.asStateFlow()
-
-    /**
-     * Shows the game in [language] at once, then keeps it for the next launch. A write that fails leaves it
-     * the language of this run only: the next launch opens in the one kept before, which is no reason to
-     * stop the game or to say anything.
-     */
+    /** Shows the game in [language] at once, then keeps it for the next launch, as [RegionStore] does. */
     fun select(language: Language) {
-        if (language == selected.value) return
-        selected.value = language
+        if (language == region.language.value) return
+        region.selectLanguage(language)
         analytics.track(AnalyticsEvent.LANGUAGE_CHANGED, mapOf(AnalyticsProperty.LANGUAGE to language.tag))
-        viewModelScope.launch {
-            try {
-                storage.write(KEY, language.tag)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (ignored: Exception) {
-                // Kept for this run only, as the KDoc says.
-            }
-        }
     }
 
     companion object {
-        /** Beside the sessions' keys (`SessionStore.keyFor`), and none of them. */
-        const val KEY: String = "kvizic.language"
+        /** The key the language is kept under, [RegionStore.LANGUAGE_KEY]. */
+        const val KEY: String = RegionStore.LANGUAGE_KEY
     }
 }
