@@ -100,6 +100,12 @@ data class ServerConfig(
      * `maxShutdownDelaySeconds` after its stop signal before killing the process.
      */
     val drainSeconds: Int = DEFAULT_DRAIN_SECONDS,
+    /**
+     * The part of a game a room of one country takes from its country's questions when its topics hold that
+     * many (`DbQuestionSource`), from `LOCAL_SHARE`: a number from 0 to 1, [DEFAULT_LOCAL_SHARE] when unset or
+     * blank, 0 taking none on purpose, local questions then coming only as they fall.
+     */
+    val localShare: Double = DEFAULT_LOCAL_SHARE,
     /** The game's own timings, limits and scoring. */
     val game: GameConfig = GameConfig(),
     /**
@@ -133,6 +139,12 @@ data class ServerConfig(
         const val DEFAULT_DRAIN_SECONDS: Int = 280
 
         private const val MAX_DRAIN_SECONDS = 300
+
+        /**
+         * The local share when `LOCAL_SHARE` is unset: a country's set is some 10% of its pool, and would
+         * rarely show without one.
+         */
+        const val DEFAULT_LOCAL_SHARE: Double = 0.2
 
         private const val DEFAULT_PORT = 8080
         private const val ACCESS_TTL_SECONDS = 15L * 60L
@@ -179,6 +191,7 @@ data class ServerConfig(
                 guestRetentionDays = parseGuestRetentionDays(env("GUEST_RETENTION_DAYS")),
                 questionSeedFile = parseQuestionSeedFile(env("QUESTION_SEED_FILE"), databaseUrl),
                 drainSeconds = parseDrainSeconds(env("DRAIN_SECONDS")),
+                localShare = parseLocalShare(env("LOCAL_SHARE")),
                 commit = env("RENDER_GIT_COMMIT")?.trim()?.takeIf { it.isNotEmpty() },
                 game =
                     GameConfig(
@@ -247,6 +260,22 @@ data class ServerConfig(
                 "DRAIN_SECONDS is \"$raw\"; expected a whole number of seconds from 0 to $MAX_DRAIN_SECONDS."
             }
             return seconds
+        }
+
+        /**
+         * A number from 0 to 1, trimmed, with a point for its decimals; unset or blank is the default. Anything
+         * else fails at boot, naming the variable, rather than falling back: a mistyped 0 must not leave the
+         * share on unnoticed, nor a mistyped share turn it off.
+         */
+        internal fun parseLocalShare(raw: String?): Double {
+            val trimmed = raw?.trim().orEmpty()
+            if (trimmed.isEmpty()) return DEFAULT_LOCAL_SHARE
+            val share = trimmed.toDoubleOrNull()
+            require(share != null && share in 0.0..1.0) {
+                "LOCAL_SHARE is \"$raw\"; expected a number from 0, which turns the local share off, to 1, " +
+                    "or unset for $DEFAULT_LOCAL_SHARE."
+            }
+            return share
         }
 
         /**
