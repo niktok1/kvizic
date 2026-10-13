@@ -5,9 +5,11 @@ import kotlinx.serialization.Serializable
 /**
  * A topic questions are filed under: a stable [id] and a name in Serbian Cyrillic and in English. Topics
  * are server data, never an enum, so a topic added later is only an id an older client can't name.
- * [questionCount] is how many approved questions it has, so a picker can grey out thin topics. [groupId] is
- * the [TopicGroupDto] a picker lists it under, or none, after every group. [names] holds its name in the
- * content languages by tag (`ContentLanguages`), `en` too; a server before them sends none.
+ * [questionCount] is how many approved questions a solo player in the caller's country could be asked, so a
+ * picker can grey out thin topics: the common ones and those scoped to that country, the country being the
+ * request's `KvizicApi.Headers.COUNTRY` (none is Serbia; one not known, `Country.UNKNOWN`, the common ones
+ * alone). [groupId] is the [TopicGroupDto] a picker lists it under, or none, after every group. [names] holds
+ * its name in the content languages by tag (`ContentLanguages`), `en` too; a server before them sends none.
  */
 @Serializable
 public data class TopicDto(
