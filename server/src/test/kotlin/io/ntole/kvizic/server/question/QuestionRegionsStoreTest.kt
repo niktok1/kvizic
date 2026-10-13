@@ -179,7 +179,10 @@ class QuestionRegionsStoreTest {
             ),
             result.refused.associate { it.key to it.reason },
         )
-        assertEquals(1, rows().count { it.size == QuestionTranslations.columns.size }, "d's alone")
+        val d = idOf("d")
+        val left = rows()
+        assertEquals(1 + 3, left.size, "d's translation and its three answers, and no country")
+        assertTrue(left.all { it.first() == d }, "d's alone")
     }
 
     @Test
