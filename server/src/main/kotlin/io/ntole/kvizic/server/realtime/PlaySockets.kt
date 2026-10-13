@@ -9,6 +9,7 @@ import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.CloseCodes
 import io.ntole.kvizic.core.protocol.Protocol
 import io.ntole.kvizic.core.protocol.ProtocolJson
+import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.server.lobby.Delivery
 import io.ntole.kvizic.server.lobby.GameTimings
 import io.ntole.kvizic.server.lobby.Lobby
@@ -38,6 +39,8 @@ import kotlin.time.TimeSource
  * The realtime socket, `/v1/play`. A socket's first frame must be a `hello` within
  * [GameTimings.helloTimeout], naming a protocol this server still speaks, a build its platform still
  * serves, and a one-time ticket REST issued for a seat; then it is its lobby's until either closes it.
+ * The hello's UI language says which content language the socket's player reads, an old client's none
+ * Serbian Cyrillic (`ContentLanguages.of`).
  *
  * Every frame a client sends spends from the socket's frame budget; a socket that floods is closed with
  * 4429, one that sends what is no protocol frame with 4400, and one silent past [GameTimings.silentAfter]
@@ -113,6 +116,7 @@ class PlaySockets(
                 id = ids.incrementAndGet(),
                 playerId = ticket.playerId,
                 sessionId = ticket.sessionId,
+                language = ContentLanguages.of(hello.language),
                 session = session,
                 watchdog = watchdog,
                 closeWait = CLOSE_WAIT,

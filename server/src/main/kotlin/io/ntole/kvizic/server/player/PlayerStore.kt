@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.player
 
 import io.ntole.kvizic.core.player.Avatars
 import io.ntole.kvizic.core.player.NameSource
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.db.Players
 import io.ntole.kvizic.server.db.Profiles
 import org.jetbrains.exposed.v1.core.JoinType
@@ -9,6 +10,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
@@ -85,6 +87,23 @@ object PlayerStore {
                 row[lastSeenAt] = now
             }
         return written > 0 && (before == null || now - before > SESSION_GAP_MILLIS)
+    }
+
+    /**
+     * Notes that [id] plays from [country], as a seat-taking said: one `UPDATE` whose `WHERE` holds the value, a
+     * compare-and-set, so the same country said again writes nothing. [Country.UNKNOWN] is never kept (it is no
+     * country the column holds), so it writes nothing either. True when it wrote. Must run inside a transaction.
+     */
+    fun setCountry(
+        id: String,
+        country: Country,
+    ): Boolean {
+        if (country == Country.UNKNOWN) return false
+        return Players.update({
+            (Players.id eq id) and (Players.country.isNull() or (Players.country neq country))
+        }) { row ->
+            row[Players.country] = country
+        } > 0
     }
 
     /** The player [id], or null when there is none. Must run inside a transaction. */

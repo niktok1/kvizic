@@ -4,8 +4,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -28,10 +30,12 @@ import io.ntole.kvizic.core.protocol.Protocol
 import io.ntole.kvizic.core.protocol.ProtocolJson
 import io.ntole.kvizic.core.protocol.ServerMessage
 import io.ntole.kvizic.server.GameParts
+import io.ntole.kvizic.server.TestDatabaseSettings
 import io.ntole.kvizic.server.config.ServerConfig
 import io.ntole.kvizic.server.lobby.GameQuestion
 import io.ntole.kvizic.server.lobby.GameRecord
 import io.ntole.kvizic.server.lobby.GameTimings
+import io.ntole.kvizic.server.lobby.PickRequest
 import io.ntole.kvizic.server.lobby.PickResult
 import io.ntole.kvizic.server.lobby.QuestionSource
 import io.ntole.kvizic.server.lobby.sampleQuestions
@@ -52,25 +56,34 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-/** The whole server with questions of the test's own, and every game it records. */
+/**
+ * The whole server with questions of the test's own, every game it records, every pick a game asked it for,
+ * and its [database], for a test that reaches into it.
+ */
 internal class GameServer(
     val client: HttpClient,
     val records: List<GameRecord>,
+    val asked: List<PickRequest>,
+    val database: TestDatabaseSettings,
     private val scope: CoroutineScope,
 ) {
     /** A fresh guest, with a name for the test's messages. */
     suspend fun guest(): SessionDto = client.mintGuest()
 
-    /** Opens a socket for [ticket] and says hello; [autoPong] answers every ping. */
+    /**
+     * Opens a socket for [ticket] and says hello, in the UI [language] given (an old client's none);
+     * [autoPong] answers every ping.
+     */
     suspend fun connect(
         ticket: TicketDto,
         protocol: Int = Protocol.VERSION,
         platform: String = "android",
         build: Int = 100,
         autoPong: Boolean = true,
+        language: String = "",
     ): TestSocket =
         open(autoPong).also { socket ->
-            socket.send(ClientMessage.Hello(ticket.ticket, protocol, platform, build))
+            socket.send(ClientMessage.Hello(ticket.ticket, protocol, platform, build, language))
         }
 
     /** Opens a socket and sends nothing. */
@@ -80,12 +93,14 @@ internal class GameServer(
     suspend fun create(
         who: SessionDto,
         settings: LobbySettingsDto = LobbySettingsDto(questionCount = 5, secondsPerQuestion = 10),
-    ): TicketDto = client.createLobby(who, settings).bodyOrFail()
+        country: String? = null,
+    ): TicketDto = client.createLobby(who, settings, country).bodyOrFail()
 
     suspend fun join(
         who: SessionDto,
         code: String,
-    ): TicketDto = client.joinLobby(who, code).bodyOrFail()
+        country: String? = null,
+    ): TicketDto = client.joinLobby(who, code, country).bodyOrFail()
 
     /** A guest with a seat in the lobby [code] names, and a socket in it, welcomed and snapshotted. */
     suspend fun joinWithSocket(code: String): Pair<SessionDto, TestSocket> {
@@ -107,14 +122,19 @@ internal fun runGameServer(
     block: suspend ApplicationTestBuilder.(GameServer) -> Unit,
 ) {
     val records = CopyOnWriteArrayList<GameRecord>()
+    val asked = CopyOnWriteArrayList<PickRequest>()
     val parts =
         GameParts(
-            questions = QuestionSource { request -> PickResult(questions.take(request.count)) },
+            questions =
+                QuestionSource { request ->
+                    asked += request
+                    PickResult(questions.take(request.count))
+                },
             results = { record -> records += record },
         )
-    runTestServer(name, configure, parts = parts) { client, _ ->
+    runTestServer(name, configure, parts = parts) { client, database ->
         kotlinx.coroutines.coroutineScope {
-            val server = GameServer(client, records, this)
+            val server = GameServer(client, records, asked, database, this)
             try {
                 block(server)
             } finally {
@@ -124,12 +144,19 @@ internal fun runGameServer(
     }
 }
 
+/** Says the request comes from [country], a `Country` name as a client sends it, or nothing for none. */
+internal fun HttpRequestBuilder.from(country: String?) {
+    if (country != null) header(KvizicApi.Headers.COUNTRY, country)
+}
+
 internal suspend fun HttpClient.createLobby(
     who: SessionDto,
     settings: LobbySettingsDto,
+    country: String? = null,
 ): HttpResponse =
     post(KvizicApi.Paths.LOBBIES) {
         bearerAuth(who.accessToken)
+        from(country)
         contentType(ContentType.Application.Json)
         setBody(CreateLobbyRequest(settings))
     }
@@ -137,9 +164,11 @@ internal suspend fun HttpClient.createLobby(
 internal suspend fun HttpClient.joinLobby(
     who: SessionDto,
     code: String,
+    country: String? = null,
 ): HttpResponse =
     post(KvizicApi.Paths.LOBBY_JOINS) {
         bearerAuth(who.accessToken)
+        from(country)
         contentType(ContentType.Application.Json)
         setBody(JoinLobbyRequest(code))
     }
@@ -149,14 +178,32 @@ internal suspend fun HttpClient.previewLobby(
     code: String,
 ): HttpResponse = get(KvizicApi.Paths.LOBBY_PREVIEWS.replace("{code}", code)) { bearerAuth(who.accessToken) }
 
-internal suspend fun HttpClient.quickPlay(who: SessionDto): HttpResponse =
-    post(KvizicApi.Paths.QUICK_PLAY) { bearerAuth(who.accessToken) }
+internal suspend fun HttpClient.quickPlay(
+    who: SessionDto,
+    country: String? = null,
+): HttpResponse =
+    post(KvizicApi.Paths.QUICK_PLAY) {
+        bearerAuth(who.accessToken)
+        from(country)
+    }
 
-internal suspend fun HttpClient.soloRun(who: SessionDto): HttpResponse =
-    post(KvizicApi.Paths.SOLO_RUNS) { bearerAuth(who.accessToken) }
+internal suspend fun HttpClient.soloRun(
+    who: SessionDto,
+    country: String? = null,
+): HttpResponse =
+    post(KvizicApi.Paths.SOLO_RUNS) {
+        bearerAuth(who.accessToken)
+        from(country)
+    }
 
-internal suspend fun HttpClient.rejoinLobby(who: SessionDto): HttpResponse =
-    post(KvizicApi.Paths.LOBBY_REJOINS) { bearerAuth(who.accessToken) }
+internal suspend fun HttpClient.rejoinLobby(
+    who: SessionDto,
+    country: String? = null,
+): HttpResponse =
+    post(KvizicApi.Paths.LOBBY_REJOINS) {
+        bearerAuth(who.accessToken)
+        from(country)
+    }
 
 internal suspend fun HttpClient.publicLobbies(who: SessionDto): LobbyListDto =
     get(KvizicApi.Paths.LOBBIES) { bearerAuth(who.accessToken) }.bodyOrFail()

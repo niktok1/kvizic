@@ -23,6 +23,8 @@ import io.ntole.kvizic.core.protocol.ResultsView
 import io.ntole.kvizic.core.protocol.RevealView
 import io.ntole.kvizic.core.protocol.ServerMessage
 import io.ntole.kvizic.core.protocol.StandingView
+import io.ntole.kvizic.core.region.ContentLanguages
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.player.Levels
 import io.ntole.kvizic.server.rules.ScoringRules
 import io.ntole.kvizic.server.rules.Tally
@@ -91,8 +93,9 @@ interface LobbyEvents {
  *
  * Every state change moves [version] on by one and reaches every connected member in order, fitted to
  * who reads it: a member who locked in an answer sees everyone's picks, one who has not sees only who
- * answered. A reconnecting member gets a full snapshot. Nothing on the wire says which answer is right,
- * nor what anyone scored, until the reveal.
+ * answered, and each reads a question's words in their own language, its answers in the one order the
+ * game shuffled for everyone. A reconnecting member gets a full snapshot. Nothing on the wire says which
+ * answer is right, nor what anyone scored, until the reveal.
  */
 class Lobby(
     val id: String,
@@ -281,6 +284,8 @@ class Lobby(
 
                 existing != null -> {
                     existing.sessionId = seat.sessionId
+                    // Wherever they sit down from now, a rejoin included, is the country they play from.
+                    existing.country = seat.country
                     updateIdentity(existing, seat.name, seat.avatar, seat.xp)
                     if (existing.connection ==
                         null
@@ -310,6 +315,7 @@ class Lobby(
                             name = seat.name,
                             avatar = seat.avatar,
                             xp = seat.xp,
+                            country = seat.country,
                             order = nextOrder++,
                             seat = freeSeat(),
                             activeAt = now(),
@@ -339,6 +345,8 @@ class Lobby(
         }
         member.connection = connection
         member.sessionId = connection.sessionId
+        // What they read is what their latest socket says: a language changed in between reads from now on.
+        member.language = connection.readerLanguage
         member.holdUntil = null
         member.goneSince = null
         member.activeAt = now()
@@ -651,17 +659,17 @@ class Lobby(
         val loadEpoch = ++loads
         val lastResults = (phase as? Phase.Waiting)?.lastResults
         phase = Phase.Countdown(endsAt = now() + length, loadEpoch = loadEpoch, lastResults = lastResults)
+        // Every member's country picks the questions, and their languages say what those should read in.
+        val seated = members.values.filter { it.announced }
         val request =
             PickRequest(
                 count = settings.questionCount,
                 topics = settings.topics,
-                players =
-                    members.values
-                        .filter { it.announced }
-                        .map { it.playerId }
-                        .toSet(),
+                players = seated.map { it.playerId }.toSet(),
                 soloPlayer = if (kind == LobbyKind.SOLO) host else null,
                 difficulty = settings.difficulty,
+                countries = seated.map { it.country }.toSet(),
+                languages = seated.map { it.language }.toSet(),
             )
         env.scope.launch(CoroutineName("lobby-$code-questions")) {
             val result =
@@ -786,24 +794,27 @@ class Lobby(
         showQuestion(game)
     }
 
-    /** [question] with its answers in an order of this game's own, and the right one's place in it. */
+    /**
+     * [question] with its answers in an order of this game's own, and the right one's place in it: one order
+     * of its slots, which every language's answers are put in, so an index is the same answer to everyone.
+     */
     private fun shuffled(question: GameQuestion): AskedQuestion {
         val order = question.options.indices.shuffled(env.random)
-        return AskedQuestion(
-            question,
-            options = order.map { question.options[it] },
-            correct = order.indexOf(question.correct),
-        )
+        return AskedQuestion(question, order = order, correct = order.indexOf(question.correct))
     }
 
     private fun showQuestion(game: Game) {
         game.step = Step.READING
         game.answers.clear()
         game.openedAt = null
-        val read = timings.readTime(game.current().source.text)
+        // One clock for the room, long enough for the longest of the texts its members read.
+        val question = game.current()
+        val read = readersLanguages().maxOf { timings.readTime(question.wordsIn(it).text) }
         game.stepEndsAt = now() + read
         schedule(read)
-        changed { v, _ -> ServerMessage.QuestionShown(v, questionView(game), read.inWholeMilliseconds) }
+        changed { v, reader ->
+            ServerMessage.QuestionShown(v, questionView(game, reader.language), read.inWholeMilliseconds)
+        }
     }
 
     private fun openAnswers(game: Game) {
@@ -815,11 +826,11 @@ class Lobby(
         // The clients' clocks run the question's time; the server takes answers a little past it.
         schedule(duration + timings.answerGrace)
         val question = game.current()
-        changed { v, _ ->
+        changed { v, reader ->
             ServerMessage.AnswersOpened(
                 v,
                 game.index,
-                question.options,
+                question.wordsIn(reader.language).options,
                 duration.inWholeMilliseconds,
                 duration.inWholeMilliseconds,
             )
@@ -843,7 +854,7 @@ class Lobby(
             Step.ANSWERING -> Unit
         }
         val question = game.current()
-        if (message.option !in question.options.indices) return reject(member, message.id, RejectCode.INVALID_OPTION)
+        if (message.option !in question.order.indices) return reject(member, message.id, RejectCode.INVALID_OPTION)
         game.answers[member.playerId]?.let { locked ->
             return if (locked.option == message.option) {
                 ack(member, message.id)
@@ -921,7 +932,7 @@ class Lobby(
                         else -> {
                             env.scoring.wrong(
                                 fractionLeft(given.time, duration),
-                                question.options.size,
+                                question.order.size,
                                 game.settings.wrongAnswerPenalty,
                             )
                         }
@@ -957,27 +968,53 @@ class Lobby(
                 silent = waitedFor(game).count { it !in game.answers },
             )
 
-        val showFor = if (question.source.explanation != null) timings.revealWithExplanation else timings.reveal
+        val explained = readersLanguages().any { question.wordsIn(it).explanation != null }
+        val showFor = if (explained) timings.revealWithExplanation else timings.reveal
+        // Built once, in the source's words: each language's words go in as a reader of it is sent the reveal.
+        val source = question.wordsIn(question.source.language)
         val reveal =
             RevealView(
                 index = game.index,
                 count = game.questions.size,
                 questionId = question.source.questionId,
-                text = question.source.text,
-                options = question.options,
+                text = source.text,
+                options = source.options,
                 correct = question.correct,
                 results = results,
                 standings = standingsOf(game),
-                explanation = question.source.explanation,
+                explanation = source.explanation,
                 nextInMs = showFor.inWholeMilliseconds,
                 last = game.isLastQuestion(),
             )
         game.step = Step.REVEALING
         game.lastReveal = reveal
+        game.reveals.clear()
         game.stepEndsAt = now() + showFor
         schedule(showFor)
-        changed { v, _ -> ServerMessage.Revealed(v, reveal) }
+        changed { v, reader -> ServerMessage.Revealed(v, revealIn(game, reader.language)) }
     }
+
+    /** The reveal of the question asked now, in [language]'s words: made once for each language read. */
+    private fun revealIn(
+        game: Game,
+        language: String,
+    ): RevealView =
+        game.reveals.getOrPut(language) {
+            val words = game.current().wordsIn(language)
+            checkNotNull(game.lastReveal).copy(
+                text = words.text,
+                options = words.options,
+                explanation = words.explanation,
+            )
+        }
+
+    /** The content languages the lobby's members read, each once; Serbian Cyrillic in a lobby of none. */
+    private fun readersLanguages(): Set<String> =
+        members.values
+            .filter { it.announced }
+            .map { it.language }
+            .toSet()
+            .ifEmpty { setOf(ContentLanguages.SERBIAN) }
 
     private fun nextQuestion(game: Game) {
         game.index++
@@ -1346,7 +1383,7 @@ class Lobby(
                         PhaseView.Reading(
                             game.id,
                             game.players,
-                            questionView(game),
+                            questionView(game, member.language),
                             remainingMs(game.stepEndsAt),
                             standingsOf(game),
                         )
@@ -1357,8 +1394,8 @@ class Lobby(
                         PhaseView.Answering(
                             gameId = game.id,
                             players = game.players,
-                            question = questionView(game),
-                            options = game.current().options,
+                            question = questionView(game, member.language),
+                            options = game.current().wordsIn(member.language).options,
                             remainingMs = remainingMs(game.stepEndsAt),
                             durationMs = game.duration().inWholeMilliseconds,
                             answered = game.answers.keys.toList(),
@@ -1379,7 +1416,7 @@ class Lobby(
                         PhaseView.Revealing(
                             game.id,
                             game.players,
-                            checkNotNull(game.lastReveal),
+                            revealIn(game, member.language),
                             remainingMs(game.stepEndsAt),
                         )
                     }
@@ -1387,14 +1424,17 @@ class Lobby(
             }
         }
 
-    private fun questionView(game: Game): QuestionView {
+    private fun questionView(
+        game: Game,
+        language: String,
+    ): QuestionView {
         val question = game.current()
         return QuestionView(
             index = game.index,
             count = game.questions.size,
-            text = question.source.text,
+            text = question.wordsIn(language).text,
             topic = question.source.topicId,
-            optionCount = question.options.size,
+            optionCount = question.order.size,
             kind = question.source.kind,
         )
     }
@@ -1490,12 +1530,17 @@ class Lobby(
         var avatar: String,
         /** What they have earned in games: their level is worked out from it, and a game finished adds to it here. */
         var xp: Int,
+        /** Where they play from, as their latest seat-taking said: what the lobby's questions are picked by. */
+        var country: Country,
         val order: Long,
         val seat: Int,
         var activeAt: ComparableTimeMark,
         val reactions: ReactionBudget,
     ) {
         var connection: LobbyConnection? = null
+
+        /** The content language they read, as their latest socket said: kept while they are away. */
+        var language: String = ContentLanguages.SERBIAN
 
         /** False while only a seat is held for them: nobody else sees them yet. */
         var announced = false
@@ -1559,11 +1604,24 @@ class Lobby(
 
     private enum class Step { READING, ANSWERING, REVEALING }
 
+    /**
+     * A question as this game asks it: [order] is the source's answer slots in the order shown, the same in
+     * every language, and [correct] the right one's place in it.
+     */
     private class AskedQuestion(
         val source: GameQuestion,
-        val options: List<String>,
+        val order: List<Int>,
         val correct: Int,
-    )
+    ) {
+        private val words = HashMap<String, QuestionText>()
+
+        /** The question in [language]'s words, its answers in this game's order: made once for each language. */
+        fun wordsIn(language: String): QuestionText =
+            words.getOrPut(language) {
+                val text = source.textIn(language)
+                text.copy(options = order.map { text.options[it] })
+            }
+    }
 
     private class Answer(
         val option: Int,
@@ -1597,7 +1655,12 @@ class Lobby(
         lateinit var stepEndsAt: ComparableTimeMark
         var openedAt: ComparableTimeMark? = null
         val answers = LinkedHashMap<String, Answer>()
+
+        /** The reveal of the question asked now, in its source's words. */
         var lastReveal: RevealView? = null
+
+        /** [lastReveal] in each language one of its readers reads, as it was first sent in it. */
+        val reveals = HashMap<String, RevealView>()
         val records = mutableListOf<QuestionRecord>()
 
         /** Set by a drain that the rest of the game would not fit: the next reveal is the last. */

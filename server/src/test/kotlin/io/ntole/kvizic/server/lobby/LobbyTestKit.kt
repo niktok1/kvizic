@@ -7,6 +7,8 @@ import io.ntole.kvizic.core.protocol.PhaseView
 import io.ntole.kvizic.core.protocol.ProtocolJson
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ServerMessage
+import io.ntole.kvizic.core.region.ContentLanguages
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.rules.ScoringRules
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
@@ -36,6 +38,33 @@ internal fun sampleQuestions(
             topicId = TEST_TOPICS.first(),
         )
     }
+
+/**
+ * [count] of [sampleQuestions], each explained (unless not [explained]) and with a Croatian translation of
+ * its own, longer than the source, whose answers end with their slot as the source's do (`….0` the right one).
+ */
+internal fun translatedQuestions(
+    count: Int,
+    explained: Boolean = true,
+): List<GameQuestion> =
+    sampleQuestions(count).map { question ->
+        val id = question.questionId
+        question.copy(
+            explanation = "Објашњење $id".takeIf { explained },
+            texts =
+                mapOf(
+                    ContentLanguages.CROATIAN to
+                        QuestionText(
+                            text = "Pitanje-hr $id, malo duže od izvornog?",
+                            options = question.options.indices.map { slot -> "Odgovor-hr $id.$slot" },
+                            explanation = "Objašnjenje-hr $id".takeIf { explained },
+                        ),
+                ),
+        )
+    }
+
+/** Which of a test question's stored answers [option] is: the slot each of them ends with. */
+internal fun slotOf(option: String): Int = option.substringAfterLast('.').toInt()
 
 /**
  * One lobby on the test's virtual clock, with players who connect through recording connections. Every
@@ -149,6 +178,10 @@ internal class TestPlayer(
     var avatar: String = "fox",
     /** What they have earned in games: the seat they hold shows the level it is. */
     var xp: Int = 0,
+    /** The country their seat-takings say they play from. */
+    var country: Country = Country.RS,
+    /** The content language their sockets' hellos say they read. */
+    var language: String = ContentLanguages.SERBIAN,
 ) {
     var connection: TestConnection? = null
         private set
@@ -170,14 +203,14 @@ internal class TestPlayer(
     /** Holds a seat, as REST does before issuing a ticket. */
     fun reserve(): ReserveResult {
         val reply = CompletableDeferred<ReserveResult>()
-        check(scenario.lobby.send(LobbyCommand.Reserve(Seat(id, sessionId, "Играч $id", avatar, xp), reply)))
+        check(scenario.lobby.send(LobbyCommand.Reserve(Seat(id, sessionId, "Играч $id", avatar, xp, country), reply)))
         scenario.settle()
         return reply.getCompleted()
     }
 
     /** Opens a socket with a redeemed ticket. */
     fun attach(): TestConnection {
-        val socket = TestConnection(scenario.nextConnectionId(), id, sessionId)
+        val socket = TestConnection(scenario.nextConnectionId(), id, sessionId, language)
         connection = socket
         all += socket
         check(scenario.lobby.send(LobbyCommand.Attach(socket)))
@@ -236,11 +269,11 @@ internal class TestPlayer(
     /** Answers the question asked now wrong. */
     fun answerWrong(rtt: Duration = ZERO): Int = answer((rightOption() + 1) % optionsNow().size, rtt)
 
-    /** Where the right answer is among the options as this game shuffled them: the source's first one. */
+    /** Where the right answer is among the options as this game shuffled them, in the player's language. */
     fun rightOption(): Int {
         val options = optionsNow()
-        val right = scenario.questions.first { q -> q.options.toSet() == options.toSet() }
-        return options.indexOf(right.options[right.correct])
+        val right = scenario.questions.first { q -> q.textIn(language).options.toSet() == options.toSet() }
+        return options.indexOf(right.textIn(language).options[right.correct])
     }
 
     fun optionsNow(): List<String> =
@@ -310,7 +343,8 @@ internal class TestConnection(
     override val id: Long,
     override val playerId: String,
     override val sessionId: String,
-) : LobbyConnection {
+    override val language: String = ContentLanguages.SERBIAN,
+) : ReaderConnection {
     val messages = mutableListOf<ServerMessage>()
     var clearedUpTo = 0
     var closedWith: Short? = null

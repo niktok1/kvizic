@@ -5,7 +5,7 @@ import io.ktor.websocket.DefaultWebSocketSession
 import io.ktor.websocket.Frame
 import io.ntole.kvizic.core.protocol.ProtocolJson
 import io.ntole.kvizic.core.protocol.ServerMessage
-import io.ntole.kvizic.server.lobby.LobbyConnection
+import io.ntole.kvizic.server.lobby.ReaderConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -21,18 +21,20 @@ import kotlin.time.Duration.Companion.ZERO
  * A member's socket, as its lobby sees it. [send] only ever offers a frame to the session's bounded
  * outgoing channel and returns: a socket too slow to take it is failed, and the lobby drops the member,
  * who resyncs on coming back. The heartbeat's pongs measure the round trip ([rtt]), which is taken off
- * the member's answer times, up to a cap.
+ * the member's answer times, up to a cap. [language] is the content language its hello said the player
+ * reads, for the whole of the socket's life.
  */
 internal class SocketConnection(
     override val id: Long,
     override val playerId: String,
     override val sessionId: String,
+    override val language: String,
     private val session: DefaultWebSocketSession,
     /** Where a closed socket is cut, should its peer never answer the close frame. */
     private val watchdog: CoroutineScope,
     private val closeWait: Duration,
     openedAt: ComparableTimeMark,
-) : LobbyConnection {
+) : ReaderConnection {
     private val closedWith = AtomicReference<Short?>(null)
     private val pings = AtomicLong()
     private val pingsSent = ConcurrentHashMap<Long, ComparableTimeMark>()

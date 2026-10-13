@@ -16,6 +16,7 @@ import io.ntole.kvizic.core.lobby.JoinLobbyRequest
 import io.ntole.kvizic.core.lobby.LobbyListDto
 import io.ntole.kvizic.core.lobby.PublicLobbyDto
 import io.ntole.kvizic.core.lobby.TicketDto
+import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.auth.JWT_AUTH
 import io.ntole.kvizic.server.auth.authenticatedPlayerId
 import io.ntole.kvizic.server.auth.authenticatedSessionId
@@ -42,14 +43,24 @@ fun Route.lobbyRoutes(
     ticketTtlMs: Long,
     clientIpHeader: String?,
 ) {
+    /**
+     * The seat the caller takes, wherever it is taken: in the country their [KvizicApi.Headers.COUNTRY] names,
+     * Serbia for none (a 1.0.x client), `UNKNOWN` for one this build does not know. A country said is kept as
+     * the player's last; none said leaves what was kept.
+     */
     suspend fun RoutingCall.seat(): Seat {
         val playerId = authenticatedPlayerId()
         val sessionId = authenticatedSessionId()
+        val country = Country.parse(request.headers[KvizicApi.Headers.COUNTRY])
         // A validly signed token can outlive its player.
         val player =
-            db.query { PlayerStore.find(playerId)?.also { PlayerStore.touch(playerId) } }
-                ?: throw ApiFailure.unauthorized("unknown player")
-        return Seat(playerId, sessionId, player.displayName, player.avatarId, player.xp)
+            db.query {
+                PlayerStore.find(playerId)?.also {
+                    PlayerStore.touch(playerId)
+                    if (country != null) PlayerStore.setCountry(playerId, country)
+                }
+            } ?: throw ApiFailure.unauthorized("unknown player")
+        return Seat(playerId, sessionId, player.displayName, player.avatarId, player.xp, country ?: Country.RS)
     }
 
     fun Joined.ticket() =
