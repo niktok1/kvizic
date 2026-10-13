@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ntole.kvizic.core.data.account.DefaultAccountRepository
 import io.ntole.kvizic.core.data.lobby.DefaultLobbySession
 import io.ntole.kvizic.core.data.lobby.DefaultPublicLobbyRepository
+import io.ntole.kvizic.core.data.mapper.toWire
 import io.ntole.kvizic.core.data.moderation.DefaultModerationRepository
 import io.ntole.kvizic.core.data.player.DefaultPlayerRepository
 import io.ntole.kvizic.core.data.playgames.DefaultPlayGamesRepository
@@ -23,6 +24,7 @@ import io.ntole.kvizic.core.domain.player.SetAvatar
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
+import io.ntole.kvizic.core.domain.region.PlayerRegion
 import io.ntole.kvizic.core.domain.report.ReportQuestion
 import io.ntole.kvizic.core.domain.report.ReportRepository
 import io.ntole.kvizic.core.domain.session.CurrentSession
@@ -59,7 +61,8 @@ import org.koin.dsl.module
  * repositories are [gameDataModule]'s, loaded beside this one.
  *
  * Expects a [TokenStorage] to be registered already: the one binding only a platform can supply, so it
- * comes from `:app:shared`'s platform module.
+ * comes from `:app:shared`'s platform module. Expects the [PlayerRegion] too, which the app keeps: every
+ * request names the country it holds when the request goes.
  *
  * @param environment the server environment the build targets: every request goes to its
  *   [KvizicEnvironment.apiBaseUrl], and its session is kept apart from every other environment's in that
@@ -84,11 +87,13 @@ public fun platformDataModule(
         single { UpgradeSignal() }
         single<AppUpdate> { get<UpgradeSignal>() }
         single<HttpClient> {
+            val region = get<PlayerRegion>()
             KvizicHttpClient.create(
                 baseUrl = environment.apiBaseUrl,
                 sessionStore = get(),
                 build = build,
                 upgrade = get(),
+                country = { region.currentCountry().toWire() },
             )
         }
 
@@ -119,7 +124,8 @@ public fun platformDataModule(
 /**
  * The game's own repositories over the platform's client and session, which [platformDataModule] binds:
  * the player's profile, the topics, and the lobbies with their realtime socket, which goes to
- * [environment]'s API host and names [build] in its hello.
+ * [environment]'s API host and names [build] in its hello, and the language the [PlayerRegion] holds as it
+ * opens.
  *
  * The lobby session lives as long as the app, in [appScope]: a lobby outlasts every screen.
  */
@@ -132,7 +138,10 @@ public fun gameDataModule(
         single { TopicApi(get()) }
         single { ReportApi(get()) }
         single { LobbyApi(get()) }
-        single<PlayTransport> { KtorPlayTransport(environment.apiBaseUrl, build) }
+        single<PlayTransport> {
+            val region = get<PlayerRegion>()
+            KtorPlayTransport(environment.apiBaseUrl, build, language = region::currentLanguageTag)
+        }
 
         single<PlayerRepository> { DefaultPlayerRepository(api = get(), session = get()) }
         single<TopicRepository> { DefaultTopicRepository(api = get()) }

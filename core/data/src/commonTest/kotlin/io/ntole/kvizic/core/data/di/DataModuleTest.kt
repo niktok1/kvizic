@@ -19,6 +19,8 @@ import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.SetAvatar
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
+import io.ntole.kvizic.core.domain.region.Country
+import io.ntole.kvizic.core.domain.region.PlayerRegion
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.session.SessionRepository
 import io.ntole.kvizic.core.domain.topic.GetTopics
@@ -91,6 +93,29 @@ class DataModuleTest {
         }
 
     /**
+     * The game's every request names the country the player plays from, as the app holds it when the request
+     * goes: one picked between two calls is the next call's.
+     */
+    @Test
+    fun `every request names the player's country as it is now`() =
+        runTest {
+            val region = HeldRegion(Country.BA)
+            val koin = koin(KvizicEnvironment.LOCAL, region = region)
+            val client = koin.get<HttpClient>()
+            client.plugin(HttpSend).intercept { request ->
+                throw NotSent(request.url.buildString(), country = request.headers[KvizicApi.Headers.COUNTRY])
+            }
+
+            val first = assertFailsWith<NotSent> { koin.get<TopicApi>().all() }
+            region.country = Country.SI
+            val second = assertFailsWith<NotSent> { koin.get<AuthApi>().guest() }
+
+            assertEquals("BA" to "SI", first.country to second.country)
+            client.close()
+            koin.close()
+        }
+
+    /**
      * The client the game's calls go through is the one that raises the update the app shows. The answer
      * is made by a client of the test's own, since the module's reaches no engine a test can stand in for,
      * and thrown where the engine would answer.
@@ -149,7 +174,10 @@ class DataModuleTest {
         val koin =
             koinApplication {
                 modules(
-                    module { single<TokenStorage> { InMemoryTokenStorage() } },
+                    module {
+                        single<TokenStorage> { InMemoryTokenStorage() }
+                        single<PlayerRegion> { HeldRegion() }
+                    },
                     platformDataModule(KvizicEnvironment.LOCAL, analytics = null, build = null),
                 )
             }.koin
@@ -176,6 +204,7 @@ class DataModuleTest {
                         request.url.buildString(),
                         platform = request.headers[KvizicApi.Headers.CLIENT_PLATFORM],
                         version = request.headers[HttpHeaders.Authorization],
+                        country = request.headers[KvizicApi.Headers.COUNTRY],
                     )
                 }
                 val sent = assertFailsWith<NotSent> { koin.get<ModerationApi>().overview("t") }
@@ -183,6 +212,7 @@ class DataModuleTest {
                 assertEquals(environment.apiBaseUrl + KvizicApi.Paths.ADMIN_OVERVIEW, sent.url)
                 assertNull(sent.platform)
                 assertNull(sent.version, "a bearer went with it")
+                assertNull(sent.country, "a moderator plays from no country")
                 assertNotNull(koin.get<ModerationRepository>())
                 assertNotNull(koin.get<GetTopics>())
                 assertNull(koin.getOrNull<SessionRepository>())
@@ -211,23 +241,42 @@ class DataModuleTest {
             koin.close()
         }
 
+    /** The modules as the app loads them, over the platform's storage and the region the app keeps, stood in for. */
     private fun koin(
         environment: KvizicEnvironment,
         build: ClientBuild? = null,
         storage: TokenStorage = InMemoryTokenStorage(),
+        region: PlayerRegion = HeldRegion(),
     ): Koin =
         koinApplication {
             modules(
-                module { single<TokenStorage> { storage } },
+                module {
+                    single<TokenStorage> { storage }
+                    single<PlayerRegion> { region }
+                },
                 platformDataModule(environment, analytics = null, build = build),
                 gameDataModule(environment, build),
             )
         }.koin
 
-    /** Stops a request at the engine's door, carrying the URL it was about to go to and the build it names. */
+    /**
+     * Stops a request at the engine's door, carrying the URL it was about to go to, the build it names and the
+     * country.
+     */
     private class NotSent(
         val url: String,
         val platform: String? = null,
         val version: String? = null,
+        val country: String? = null,
     ) : Exception(url)
+
+    /** The region as the app would hold it: what a test sets is what the next request reads. */
+    private class HeldRegion(
+        var country: Country = Country.RS,
+        var languageTag: String = "sr-Cyrl",
+    ) : PlayerRegion {
+        override fun currentCountry(): Country = country
+
+        override fun currentLanguageTag(): String = languageTag
+    }
 }
