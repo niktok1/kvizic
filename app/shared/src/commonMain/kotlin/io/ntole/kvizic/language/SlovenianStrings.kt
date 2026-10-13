@@ -1,23 +1,257 @@
 package io.ntole.kvizic.language
 
 /*
- * Slovenian (sl), as [Language.SLOVENIAN] shows the game: for now a placeholder, the words of
- * Serbian Latin, until its own are written by hand. Each part of [Strings] is a value of its own here, so
- * writing them changes this file alone; [PENDING_LANGUAGES] names Slovenian until then. The parts come first:
- * a file's values are made in its order.
+ * Slovenian (sl), as [Language.SLOVENIAN] shows the game, written by hand from the Serbian, its voice, and the
+ * English, its meaning: the player addressed as ti, as Slovenian games do, and no word agreeing with their
+ * gender, since a guest has none. Every counted word writes the dual ([Plural.two]: 2 vprašanji, 2 igri).
+ * The words a page of the site quotes are the site's own (Nastavitve, O igri, Podatki, Statistika, Izbriši
+ * račun, Hitra igra, Vstopi s kodo, Koda sobe), so the two say the same. Each part of [Strings] is a value of
+ * its own; the parts come first, as a file's values are made in its order.
  */
 
-internal val SlovenianAboutStrings: AboutStrings = SerbianLatinStrings.aboutScreen
+internal val SlovenianAboutStrings: AboutStrings =
+    AboutStrings(
+        title = "O igri",
+        version = "Različica {0}",
+        privacy = "Politika zasebnosti",
+        terms = "Pogoji uporabe",
+        deleteAccountPage = "Izbris računa",
+        contact = "Kontakt",
+        licences = "Odprtokodne licence",
+        fonts = "Pisave",
+        data = "Podatki",
+        accountId = "ID računa",
+        copy = "Kopiraj",
+        copyAccountId = "Kopiraj ID računa",
+        copied = "Kopirano",
+        statistics = "Statistika",
+        aboutStatistics = "O statistiki",
+        statisticsInfo =
+            "Pošiljamo podatke o tem, kako se igra uporablja, da jo lahko izboljšamo. Brez tvojega imena in " +
+                "besedila vprašanj.",
+        ok = "V redu",
+        deleteAccount =
+            DeleteAccountStrings(
+                button = "Izbriši račun",
+                warning = "Račun bo z vsem, kar vsebuje, za vedno izbrisan.",
+                confirm = "Izbriši",
+            ),
+    )
 
-internal val SlovenianSettingsScreenStrings: SettingsScreenStrings = SerbianLatinStrings.settingsScreen
+internal val SlovenianSettingsScreenStrings: SettingsScreenStrings =
+    SettingsScreenStrings(
+        title = "Nastavitve",
+        sound = "Zvok",
+        countries =
+            CountryNames(
+                serbia = "Srbija",
+                croatia = "Hrvaška",
+                bosnia = "Bosna in Hercegovina",
+                slovenia = "Slovenija",
+                macedonia = "Severna Makedonija",
+                montenegro = "Črna gora",
+            ),
+        countrySaid = "Država, iz katere igraš, po kateri dobiš tudi vprašanja o njej",
+    )
 
-internal val SlovenianUpdateStrings: UpdateStrings = SerbianLatinStrings.updateScreen
+internal val SlovenianUpdateStrings: UpdateStrings =
+    UpdateStrings(
+        newVersion = "Na voljo je nova različica",
+        update = "Posodobi",
+        reload = "Osveži",
+    )
 
-internal val SlovenianGameStrings: GameStrings = SerbianLatinStrings.game
+internal val SlovenianGameStrings: GameStrings =
+    GameStrings(
+        quickPlay = "Hitra igra",
+        presence = "Na spletu: {0} · Iščejo igro: {1}",
+        createRoom = "Ustvari sobo",
+        joinByCode = "Vstopi s kodo",
+        publicRooms = "Javne sobe",
+        solo = "Solo",
+        games = Plural(one = "{0} igra", two = "{0} igri", few = "{0} igre", many = "{0} iger"),
+        wins = Plural(one = "{0} zmaga", two = "{0} zmagi", few = "{0} zmage", many = "{0} zmag"),
+        level = "Raven {0}",
+        xpProgress = "{0} od {1} točk izkušenj",
+        saveProgress = "Shrani napredek",
+        saveProgressSaid = "Shrani napredek z Igrami Play",
+        guest = "Igraš kot gost",
+        guestKeepsLevel = "Poveži Igre Play, da ti raven ostane na vsaki napravi.",
+        connectPlayGames = "Poveži",
+        playGamesNotSignedIn = "Igre Play te niso prijavile. Poskusi znova.",
+        exitKicked = "Gostitelj te je izključil iz sobe.",
+        exitVotedOut = "Igralci so te izglasovali.",
+        exitNotBack = "Nova igra se je začela brez tebe.",
+        exitClosed = "Soba je zaprta.",
+        exitGone = "Te sobe ni več.",
+        exitReplaced = "Soba je odprta na drugi napravi.",
+        exitSessionEnded = "Seja je končana.",
+        exitRestarting = "Strežnik se znova zaganja, zato je igra prekinjena.",
+        exitConnectionLost = "Povezava s sobo se je prekinila.",
+        ok = "V redu",
+        entering = "Vstopam v sobo…",
+        roomNotFound = "Ni sobe s to kodo.",
+        roomFull = "Soba je polna.",
+        roomBanned = "Ta soba te ne spusti nazaj.",
+        tooManyRooms = "Strežnik je trenutno poln. Poskusi znova čez kakšno minuto.",
+        serverDraining = "Strežnik se znova zaganja. Poskusi znova čez kakšno minuto.",
+        codeHint = "Vnesi šestmestno kodo sobe",
+        // The keypad's key, a third of its width: „Vstopi“ is cut there at a large font.
+        join = "Igraj",
+        // The keypad's key, beside its icon: „Izbriši“ is cut there.
+        deleteDigit = "Briši",
+        noPublicRooms = "Ni odprtih sob. Poskusi hitro igro ali ustvari svojo.",
+        inGame = "v igri",
+        publicRoomOf = "Soba: {0}",
+        newRoom = "Nova soba",
+        settings = "Nastavitve",
+        questions = "Vprašanja",
+        time = "Čas",
+        seconds = "{0} s",
+        topics = "Teme",
+        allTopics = "Vse teme",
+        searchTopics = "Išči teme",
+        wholeGroup = "Cela skupina",
+        otherTopics = "Ostalo",
+        fewQuestions = "malo vprašanj",
+        noTopicFound = "Ni take teme",
+        done = "Končano",
+        players = "Igralci",
+        whoCanJoin = "Kdo lahko vstopi",
+        codeOnly = "Samo s kodo",
+        anyone = "Vsi",
+        wrongAnswerPenalty = "Minus za napačen odgovor",
+        difficulty = "Težavnost",
+        easy = "Lahko",
+        medium = "Srednje",
+        hard = "Težko",
+        create = "Ustvari",
+        save = "Shrani",
+        privateRoom = "Zasebna soba",
+        publicRoom = "Javna soba",
+        soloRun = "Solo",
+        roomCode = "Koda sobe",
+        code = "Koda",
+        copyCode = "Kopiraj kodo",
+        codeCopied = "Koda je kopirana",
+        shareRoom = "Deli sobo",
+        invite = "Povabi igralce",
+        shareText = "Igraj Kvizić z mano! Vstopi v sobo: {1}\nKoda sobe: {0}",
+        freeSeat = "prosto",
+        freeSeatInvite = "Prosto mesto, povabi igralca",
+        host = "gostitelj",
+        you = "ti",
+        onResults = "na rezultatih",
+        start = "Začni igro",
+        questionCount =
+            Plural(one = "{0} vprašanje", two = "{0} vprašanji", few = "{0} vprašanja", many = "{0} vprašanj"),
+        topicCount = Plural(one = "{0} tema", two = "{0} temi", few = "{0} teme", many = "{0} tem"),
+        penaltyOn = "Minus",
+        penaltyOff = "Brez minusa",
+        seatCount = Plural(one = "{0} mesto", two = "{0} mesti", few = "{0} mesta", many = "{0} mest"),
+        privateShort = "Zasebna",
+        publicShort = "Javna",
+        leave = "Zapusti",
+        leaveRoom = "Zapustiš sobo?",
+        removePlayer = "Izključi",
+        makeHost = "Naj vodi",
+        voteKick = "Glasuj za izključitev",
+        withdrawVote = "Umakni glas",
+        kickVotes = "Glasovi za izključitev: {0} od {1}",
+        reconnecting = "Povezovanje…",
+        reactionBravo = "Bravo",
+        reactionClap = "Aplavz",
+        reactionFire = "Ogenj",
+        reactionWow = "Vau",
+        reactionLaugh = "Smeh",
+        reactionOops = "Ups",
+        reactionNudge = "Daj, začni!",
+        gameStarting = "Igra se začenja",
+        joinNewGame = "V novo igro",
+        spectating = "To igro gledaš, naslednjo pa igraš.",
+        onlyHost = "To lahko stori samo gostitelj.",
+        refused = "Tega zdaj ni mogoče narediti.",
+        voteTooSoon = "Pred novim glasom malo počakaj.",
+        topicsToppedUp = "Izbrane teme imajo premalo vprašanj, zato so dodana še druga.",
+        gameShortened = "Vprašanj je malo, zato je igra krajša.",
+        hostChanged = "{0} je zdaj gostitelj",
+        youAreHost = "Zdaj si ti gostitelj",
+        settingsChanged = "Gostitelj je spremenil: {0}",
+        settingsChangedPlain = "Gostitelj je spremenil nastavitve",
+        hostIdle = "Še čakaš? Kmalu bo sobo vodil nekdo drug.",
+        roomIdle = "Soba se bo kmalu zaprla, ker se nič ne dogaja.",
+        stillWaiting = "Še čakam",
+        stayInRoom = "Ostani",
+        roomName = "Ime sobe",
+        roomNameHint = "Ni obvezno",
+        questionOf = "Vprašanje {0} od {1}",
+        points = "Točke",
+        answersComing = "Odgovori prihajajo…",
+        waitingFor = "Čakamo na: {0}",
+        secondsToAnswer = "{0} sekund za odgovor",
+        yourAnswer = "Tvoj odgovor",
+        rightAnswer = "Pravilen odgovor",
+        wrongAnswer = "Napačen odgovor",
+        nextQuestionIn = "Naslednje vprašanje čez {0} s",
+        resultsIn = "Rezultati čez {0} s",
+        gameOver = "Konec igre · {0}",
+        winner = "Zmagovalec",
+        youWon = "Tvoja zmaga!",
+        rightOf = "Pravilno {0} od {1}",
+        // The results' two buttons share a row: „Nazaj v sobo“ beside Zapusti is cut there.
+        backToRoom = "V sobo",
+        newBest = "Nov rekord!",
+        best = "Rekord: {0}",
+        endedEarly = "Igra se je predčasno končala.",
+        profile = "Profil",
+        // Slovenian sets a space before the percent sign; a no-break one, so the two never part.
+        correctShare = "{0} % pravilnih odgovorov",
+        soloBest = "Solo rekord: {0}",
+        bestTopic = "Najboljša tema: {0}",
+        pickAvatar = "Izberi avatar",
+        avatarNames =
+            listOf(
+                "Lisica",
+                "Medved",
+                "Sova",
+                "Jež",
+                "Volk",
+                "Ris",
+                "Jelen",
+                "Štorklja",
+                "Veverica",
+                "Zajec",
+                "Jazbec",
+                "Vidra",
+                "Želva",
+                "Žaba",
+                "Čebela",
+                "Mačka",
+            ),
+        reportQuestion = "Prijavi vprašanje",
+        reportWhy = "Kaj je narobe z vprašanjem?",
+        reportWrongAnswer = "Označeni odgovor ni pravilen",
+        reportTypo = "Ima tipkarsko napako",
+        reportAmbiguous = "Nejasno je ali pa je več odgovorov pravilnih",
+        reportOffensive = "Žaljivo je",
+        reportOther = "Nekaj drugega",
+        reported = "Hvala! Prijava je poslana.",
+    )
 
 /** The game's words in Slovenian. */
 val SlovenianStrings: Strings =
-    SerbianLatinStrings.copy(
+    Strings(
+        gameName = "Kvizić",
+        back = "Nazaj",
+        tryAgain = "Poskusi znova",
+        cancel = "Prekliči",
+        loading = "Nalaganje",
+        stillLoading = "Še malo…",
+        offline = "Ni internetne povezave.",
+        tooManyTries = "Preveč poskusov. Počakaj {0} s.",
+        tooManyTriesMinutes = "Preveč poskusov. Počakaj {0} min.",
+        tooManyTriesNoWait = "Preveč poskusov. Počakaj malo.",
+        somethingWrong = "Nekaj je šlo narobe. Poskusi znova.",
         aboutScreen = SlovenianAboutStrings,
         settingsScreen = SlovenianSettingsScreenStrings,
         updateScreen = SlovenianUpdateStrings,
