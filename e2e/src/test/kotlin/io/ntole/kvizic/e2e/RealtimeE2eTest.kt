@@ -7,6 +7,8 @@ import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyExit
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.region.ContentLanguages
+import io.ntole.kvizic.core.region.Country
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlin.concurrent.thread
@@ -83,6 +85,47 @@ class RealtimeE2eTest {
             boris.lobby.answer(wrongOf(phases[1]))
             val reveal = ana.awaitReveal(0).reveal
             assertTrue(reveal.results.associate { it.playerId to it.points }.getValue(ana.id) > 0)
+        }
+
+    /**
+     * A Croat whose app says its language and country beside a 1.0.x client that says neither: one question,
+     * one order of its answers, each in their own words.
+     */
+    @Test
+    fun `a Croat and an old client play the same question, each in their own words`(): Unit =
+        runBlocking {
+            val questions = e2eTranslatedQuestions()
+            val server = E2eServer(questions).closedAfter()
+            val ana = E2ePlayer("ana", server, language = "hr", country = "HR").closedAfter()
+            val boris = player("boris", server)
+            lobbyOf(ana, boris)
+
+            ana.lobby.start()
+            val (croat, serb) = listOf(ana, boris).map { it.awaitAnswering(0) }
+            val source = questions.first()
+            val croatian = checkNotNull(source.texts[ContentLanguages.CROATIAN])
+            assertEquals(croatian.text, croat.question.text)
+            assertEquals(source.text, serb.question.text)
+            assertEquals(
+                serb.options.map(source.options::indexOf),
+                croat.options.map(croatian.options::indexOf),
+                "the same answer at every place",
+            )
+
+            // The same place, the same answer: both right.
+            ana.lobby.answer(rightOf(croat))
+            boris.lobby.answer(rightOf(croat))
+            val (croatReveal, serbReveal) = listOf(ana, boris).map { it.awaitReveal(0).reveal }
+            assertEquals(serbReveal.questionId, croatReveal.questionId)
+            assertEquals(serbReveal.correct, croatReveal.correct)
+            assertEquals(rightOf(croat), croatReveal.correct)
+            assertEquals(croatian.explanation, croatReveal.explanation)
+            assertEquals(source.explanation, serbReveal.explanation)
+            assertTrue(croatReveal.results.all { it.points > 0 })
+
+            val asked = server.asked.single()
+            assertEquals(setOf(Country.HR, Country.RS), asked.countries)
+            assertEquals(setOf(ContentLanguages.CROATIAN, ContentLanguages.SERBIAN), asked.languages)
         }
 
     @Test

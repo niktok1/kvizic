@@ -2,10 +2,13 @@ package io.ntole.kvizic.e2e
 
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpSend
+import io.ktor.client.plugins.plugin
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
+import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.data.lobby.DefaultLobbySession
 import io.ntole.kvizic.core.data.lobby.ReconnectPolicy
 import io.ntole.kvizic.core.data.session.DefaultSessionRepository
@@ -21,6 +24,7 @@ import io.ntole.kvizic.core.network.api.AuthApi
 import io.ntole.kvizic.core.network.api.LobbyApi
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.core.network.realtime.KtorPlayTransport
+import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.server.GameParts
 import io.ntole.kvizic.server.config.GameConfig
 import io.ntole.kvizic.server.config.RequestBudget
@@ -29,8 +33,10 @@ import io.ntole.kvizic.server.kvizicModule
 import io.ntole.kvizic.server.lobby.GameQuestion
 import io.ntole.kvizic.server.lobby.GameRecord
 import io.ntole.kvizic.server.lobby.GameTimings
+import io.ntole.kvizic.server.lobby.PickRequest
 import io.ntole.kvizic.server.lobby.PickResult
 import io.ntole.kvizic.server.lobby.QuestionSource
+import io.ntole.kvizic.server.lobby.QuestionText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,14 +65,36 @@ internal fun e2eQuestions(count: Int = 10): List<GameQuestion> =
     }
 
 /**
+ * [e2eQuestions], each explained and with a Croatian translation whose answers stand in the source's slots:
+ * the right one `Točno N`, the first.
+ */
+internal fun e2eTranslatedQuestions(count: Int = 10): List<GameQuestion> =
+    e2eQuestions(count).mapIndexed { n, question ->
+        question.copy(
+            explanation = "Објашњење $n",
+            texts =
+                mapOf(
+                    ContentLanguages.CROATIAN to
+                        QuestionText(
+                            text = "Pitanje broj $n?",
+                            options = listOf("Točno $n", "Netočno A$n", "Netočno B$n", "Netočno C$n"),
+                            explanation = "Objašnjenje $n",
+                        ),
+                ),
+        )
+    }
+
+/**
  * The real server on Netty, on a port of its own and its own in-memory database, with the game's fast
- * timings, budgets no test comes near, and [questions] in every game. Every game it records is kept.
+ * timings, budgets no test comes near, and [questions] in every game. Every game it records is kept, and
+ * every pick a game asked for.
  */
 internal class E2eServer(
     questions: List<GameQuestion> = e2eQuestions(),
     configure: (ServerConfig) -> ServerConfig = { it },
 ) : AutoCloseable {
     val records = CopyOnWriteArrayList<GameRecord>()
+    val asked = CopyOnWriteArrayList<PickRequest>()
     private val plenty = RequestBudget(requests = 100_000, per = 1.hours)
     val config: ServerConfig =
         ServerConfig
@@ -98,7 +126,11 @@ internal class E2eServer(
                 config,
                 parts =
                     GameParts(
-                        questions = QuestionSource { request -> PickResult(questions.take(request.count)) },
+                        questions =
+                            QuestionSource { request ->
+                                asked += request
+                                PickResult(questions.take(request.count))
+                            },
                         results = { record -> records += record },
                     ),
             )
@@ -123,18 +155,25 @@ internal class E2eServer(
  * One player's app: their own session storage, REST client, and lobby session, whose socket goes
  * through a [FaultProxy] of their own so a test can slow or cut this player alone. REST goes straight
  * to the server. Against a server elsewhere ([baseUrl], the prod check) there is no proxy.
+ *
+ * A player may say the UI [language] they read in their socket's hello and the [country] they play from on
+ * every REST call, as a build after 1.0.x does; one that says neither is a 1.0.x client.
  */
 internal class E2ePlayer private constructor(
     val name: String,
     baseUrl: String,
     private val faults: FaultProxy?,
     socketEngine: () -> HttpClientEngine,
+    language: String? = null,
+    country: String? = null,
 ) : AutoCloseable {
     constructor(
         name: String,
         server: E2eServer,
         socketEngine: () -> HttpClientEngine = { CIO.create() },
-    ) : this(name, server.baseUrl, FaultProxy(server.port), socketEngine)
+        language: String? = null,
+        country: String? = null,
+    ) : this(name, server.baseUrl, FaultProxy(server.port), socketEngine, language, country)
 
     constructor(
         name: String,
@@ -145,19 +184,28 @@ internal class E2ePlayer private constructor(
     val proxy: FaultProxy get() = checkNotNull(faults) { "$name plays a server elsewhere, with no proxy" }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val store = SessionStore(InMemoryTokenStorage(), KvizicEnvironment.LOCAL)
-    private val http = KvizicHttpClient.create(baseUrl, store, CIO.create())
+    private val http =
+        KvizicHttpClient.create(baseUrl, store, CIO.create()).also { client ->
+            if (country != null) {
+                client.plugin(HttpSend).intercept { request ->
+                    request.headers[KvizicApi.Headers.COUNTRY] = country
+                    execute(request)
+                }
+            }
+        }
     val sessions = DefaultSessionRepository(AuthApi(http), store)
     val upgrade = UpgradeSignal()
     val events = CopyOnWriteArrayList<LobbyEvent>()
+    private val socketClient = KtorPlayTransport.realtimeClient(socketEngine())
     val lobby =
         DefaultLobbySession(
             api = LobbyApi(http),
             transport =
-                KtorPlayTransport(
-                    faults?.baseUrl ?: baseUrl,
-                    ClientBuild("desktop", 100),
-                    KtorPlayTransport.realtimeClient(socketEngine()),
-                ),
+                if (language == null) {
+                    KtorPlayTransport(faults?.baseUrl ?: baseUrl, BUILD, socketClient)
+                } else {
+                    LanguageTransport(faults?.baseUrl ?: baseUrl, BUILD, language, socketClient)
+                },
             session = sessions,
             scope = scope,
             upgrade = upgrade,
@@ -211,9 +259,14 @@ internal class E2ePlayer private constructor(
         scope.cancel()
         faults?.close()
     }
+
+    private companion object {
+        val BUILD = ClientBuild("desktop", 100)
+    }
 }
 
-/** Where the right answer is among [phase]'s options, as the game shuffled them. */
-internal fun rightOf(phase: GamePhase.Answering): Int = phase.options.indexOfFirst { it.startsWith("Тачно") }
+/** Where the right answer is among [phase]'s options, as the game shuffled them, in Serbian or Croatian. */
+internal fun rightOf(phase: GamePhase.Answering): Int =
+    phase.options.indexOfFirst { it.startsWith("Тачно") || it.startsWith("Točno") }
 
 internal fun wrongOf(phase: GamePhase.Answering): Int = (rightOf(phase) + 1) % phase.options.size
