@@ -171,7 +171,9 @@ internal fun reactionIcon(id: String): ImageVector? = REACTIONS.firstOrNull { it
  * A word of the server's in the script shown: a question, an answer, a player's name. A language written in
  * Latin shows Serbian Cyrillic in Latin made from it: a player's name, or a question with no text in the
  * player's language but the Serbian. One written in Cyrillic shows it as written. Latin is left as it is,
- * and so are Macedonian's own letters, ѓ, ќ and ѕ, since a Macedonian text reaches only Macedonian readers.
+ * and so are Macedonian's own letters, ѓ, ќ and ѕ, which Serbian Latin has no spelling for: a Macedonian
+ * player's name, or a question of North Macedonia's with no text but the Macedonian, which every other
+ * language's chain reaches, comes to a Latin reader with those three still in Cyrillic.
  */
 @Composable
 @ReadOnlyComposable
