@@ -8,8 +8,10 @@ import kotlinx.serialization.Serializable
  * [questionCount] is how many approved questions a solo player in the caller's country could be asked, so a
  * picker can grey out thin topics: the common ones and those scoped to that country, the country being the
  * request's `KvizicApi.Headers.COUNTRY` (none is Serbia; one not known, `Country.UNKNOWN`, the common ones
- * alone). [groupId] is the [TopicGroupDto] a picker lists it under, or none, after every group. [names] holds
- * its name in the content languages by tag (`ContentLanguages`), `en` too; a server before them sends none.
+ * alone). That is in `KvizicApi.Paths.TOPICS`; a moderator's route counts the whole approved bank, and a topic
+ * just added 0. [groupId] is the [TopicGroupDto] a picker lists it under, or none, after every group. [names]
+ * holds its name in the content languages by tag (`ContentLanguages`), `en` too; a server before them sends
+ * none.
  */
 @Serializable
 public data class TopicDto(
