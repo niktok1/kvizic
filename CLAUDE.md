@@ -178,10 +178,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   counted as not knowing, above what a guess among its answers gets. Read when a game is picked and by the
   moderation app ("plays hard"), never stored; a game runs from easy to hard by it.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
-  Dev loads the seed from a Render secret file (`QUESTION_SEED_FILE`), H2 only: JSON, or the JSON gzipped in
-  base64 (`QuestionSeed`), since a secret file holds at most 500 KiB and Render refuses every deploy while one
-  is over; the content repo's `pack_seed.py` writes it, in as few parts as fit, which `QUESTION_SEED_FILE` names
-  separated by commas (2.827 questions in two parts of about 300 KiB, 2026-10-03).
+  **Dev keeps its bank in a database of its own** (the owner, 2026-10-14): `kvizic_dev`, with a role of its own, on
+  the `kvizic-postgres` instance, so what is published there outlasts deploys and spin-downs. A seed
+  (`QUESTION_SEED_FILE`: JSON, or the JSON gzipped in base64 in parts, `QuestionSeed`, from the content repo's
+  `pack_seed.py`) seeds only an in-memory H2, a local run's, and the server refuses one beside `DATABASE_URL`.
 - **Publishing drafts**: `KVIZIC_ADMIN_TOKEN=… ./publish.py dev drafts/*.json` in the content repo checks them,
   imports them (25 a request, a known key a duplicate) and approves the drafts it brought; `--import-only`
   leaves them to review in the moderation app.
@@ -408,7 +408,7 @@ domain a pinned copy of `Country`.
 
 ## 11. Hosting
 
-`render.yaml`: `kvizic-server-dev` (free, H2, deploys every green `main`), `kvizic-server` (Starter, on
+`render.yaml`: `kvizic-server-dev` (free, on its own `kvizic_dev` database, deploys every green `main`), `kvizic-server` (Starter, on
 `kvizic-postgres`), API at `kvizic-api.ntole.com`. Secrets are Render environment variables, never committed.
 **Prod deploys only on the owner's approval** (2026-10-03): `deploy-prod.yml`, after a green CI run of a push
 to `main` that changes what the server is built from (or "Run workflow" with a commit, an older one being the

@@ -1,9 +1,9 @@
 # Render blueprint: two environments from one repo, both tracking main, as the client expects them
 # (KvizicEnvironment).
-#   - kvizic-server-dev deploys every commit on main once its CI checks pass (checksPass). It has no
-#     database of its own: without DATABASE_URL the server runs on in-memory H2, so dev's data resets on
-#     every deploy, restart and free-tier spin-down. Its questions come from the dev seed, uploaded as a
-#     Render secret file (below), since the question bank never goes in this public repo.
+#   - kvizic-server-dev deploys every commit on main once its CI checks pass (checksPass). Its data lives
+#     in a database of its own, kvizic_dev, with a login of its own, on the kvizic-postgres instance (the
+#     owner, 2026-10-14), so it outlasts every deploy, restart and free-tier spin-down; its questions go in
+#     once through the content repo's publish.py, since the question bank never goes in this public repo.
 #   - kvizic-server is production, on kvizic-postgres, reached through https://kvizic-api.ntole.com. It
 #     never deploys by itself: .github/workflows/deploy-prod.yml calls its deploy hook with a commit green in
 #     CI and already live on dev, once the owner approves it (Manual Deploy still works).
@@ -91,7 +91,10 @@ services:
     healthCheckPath: /health
     # No maxShutdownDelaySeconds: Render refuses one on a free service, which keeps the default, 30 s.
     envVars:
-      # No DATABASE_URL: the server runs on in-memory H2 and says so at boot.
+      # kvizic_dev's internal connection string, with its own role, set in the dashboard: a blueprint cannot
+      # name a second database on an instance. Without it the server runs on in-memory H2 and says so at boot.
+      - key: DATABASE_URL
+        sync: false
       # Drains its lobbies within Render's 30 s default, not the 280 s production drains in, which would
       # be killed partway. Dev's games are tests, so a deploy may cut one short.
       - key: DRAIN_SECONDS
@@ -114,13 +117,6 @@ services:
         sync: false
       - key: PLAY_GAMES_CLIENT_SECRET
         sync: false
-      # The dev seed, kvizic-content's dev-seed.questions.json, imported as approved at every boot. It is
-      # uploaded in the dashboard as a secret file of that name, which Render mounts under /etc/secrets/.
-      # Not declared here: a blueprint cannot upload the file, and a QUESTION_SEED_FILE naming a missing
-      # file fails the boot. Once the file is uploaded, add this variable in the dashboard:
-      #   QUESTION_SEED_FILE=/etc/secrets/dev-seed.questions.json
-      # A seed past one secret file's 500 KiB is cut into parts (pack_seed.py), named separated by commas:
-      #   QUESTION_SEED_FILE=/etc/secrets/dev-seed-1.gz.b64,/etc/secrets/dev-seed-2.gz.b64
 
   # The game's public site, the legal pages the app and Google Play link to (Site.kt): plain HTML and one
   # stylesheet in site/, nothing to build, free. Its own subdomain, since ntole.com itself is published from
