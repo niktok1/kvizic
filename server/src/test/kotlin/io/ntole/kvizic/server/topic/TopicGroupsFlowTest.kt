@@ -3,6 +3,7 @@ package io.ntole.kvizic.server.topic
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.topic.TopicListDto
 import io.ntole.kvizic.server.runTestServer
 import kotlin.test.Test
@@ -50,5 +51,23 @@ class TopicGroupsFlowTest {
                 list.topics.map { it.id to it.groupId },
             )
             assertEquals("Кошарка", list.topics.last().nameSr)
+        }
+
+    /**
+     * V12's names keep every topic apart in every language (Фудбал and Кошарка, Свемир and Математика, two
+     * names each everywhere), as each language writes them.
+     */
+    @Test
+    fun `no two topics are named alike in any language`() =
+        runTestServer("topic-names") { client, _ ->
+            val list: TopicListDto = client.get(KvizicApi.Paths.TOPICS).body()
+            (ContentLanguages.ALL + "en").forEach { tag ->
+                val names = list.topics.map { it.names.getValue(tag) }
+                assertEquals(names.size, names.toSet().size, "$tag names two topics alike")
+            }
+            val football = list.topics.single { it.id == "FOOTBALL" }.names
+            assertEquals("Nogomet", football.getValue(ContentLanguages.CROATIAN))
+            assertEquals("Fudbal", football.getValue(ContentLanguages.BOSNIAN))
+            assertEquals("Фудбал", football.getValue(ContentLanguages.MACEDONIAN))
         }
 }

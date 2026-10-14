@@ -11,8 +11,6 @@ import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.core.topic.TopicListDto
 import io.ntole.kvizic.server.db.QuestionCountries
-import io.ntole.kvizic.server.db.TopicGroupNames
-import io.ntole.kvizic.server.db.TopicNames
 import io.ntole.kvizic.server.db.inTransaction
 import io.ntole.kvizic.server.db.serverPool
 import io.ntole.kvizic.server.question.BankFixtures
@@ -72,28 +70,10 @@ class TopicCountryFlowTest {
             )
         }
 
+    /** Serbian and English from each row's own columns, and every other content language from V12. */
     @Test
-    fun `every topic and group is named in Serbian and English, and in every language a name is written in`() =
-        runTestServer("topics-names") { client, database ->
-            // The migrations run as the server starts.
-            startApplication()
-            database.serverPool().use { pool ->
-                pool.inTransaction {
-                    ContentLanguages.ALL.drop(1).forEach { tag ->
-                        TopicNames.insert { row ->
-                            row[topicId] = "FOOTBALL"
-                            row[language] = tag
-                            row[name] = "Football $tag"
-                        }
-                        TopicGroupNames.insert { row ->
-                            row[groupId] = "SPORT"
-                            row[language] = tag
-                            row[name] = "Sport $tag"
-                        }
-                    }
-                }
-            }
-
+    fun `every topic and group is named in Serbian and English from its row and in every other language`() =
+        runTestServer("topics-names") { client, _ ->
             val list: TopicListDto = client.topics().body()
 
             (
@@ -102,14 +82,7 @@ class TopicCountryFlowTest {
             ).forEach { (names, sr, en) ->
                 assertEquals(sr, names[ContentLanguages.SERBIAN])
                 assertEquals(en, names[TopicStore.ENGLISH])
-            }
-            val football = list.topics.first { it.id == "FOOTBALL" }.names
-            val sport = list.groups.first { it.id == "SPORT" }.names
-            assertEquals(ContentLanguages.ALL + TopicStore.ENGLISH, football.keys.toList())
-            assertEquals(ContentLanguages.ALL + TopicStore.ENGLISH, sport.keys.toList())
-            ContentLanguages.ALL.drop(1).forEach { tag ->
-                assertEquals("Football $tag", football[tag])
-                assertEquals("Sport $tag", sport[tag])
+                assertEquals(ContentLanguages.ALL + TopicStore.ENGLISH, names.keys.toList(), sr)
             }
         }
 }

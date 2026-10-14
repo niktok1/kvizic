@@ -223,7 +223,8 @@ domain a pinned copy of `Country`.
   countries read (`required`): a common one all five, a BA-only one bs, hr and sr-Cyrl; ME-only ones are written
   in Serbian Cyrillic, ijekavian. A translation keeps the source's slots and the revision it was made from (V11),
   which an edit leaves behind, stale. Topic and group names come in every language (`names`), beside the
-  Serbian and English ones.
+  Serbian and English ones: V12 holds S5's draft, shipped before review (the owner, 2026-10-14), so a
+  reviewer's fix comes as a later migration's UPDATE.
 - **The server hears them** as §6 says, and keeps a player's last country (`players.country`, null for never,
   which counts as RS).
 - **The client**: Settings shows a globe and the six flags with no word (`FlagChip`; `FlagArt`, which
