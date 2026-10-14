@@ -3,6 +3,7 @@ package io.ntole.kvizic.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,28 +27,36 @@ import io.ntole.kvizic.design.component.ButtonKind
 import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.Divider
+import io.ntole.kvizic.design.component.FlagChip
+import io.ntole.kvizic.design.component.KvizicIcon
 import io.ntole.kvizic.design.component.StageButton
 import io.ntole.kvizic.design.component.Toggle
+import io.ntole.kvizic.design.flag.FlagArt
+import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.LocalCues
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.region.PLAYABLE_COUNTRIES
+import io.ntole.kvizic.region.RegionLanguages
 
 /**
  * The app's Settings screen, not a room's: what the player sets, in one place, a part each between dividers:
  * - the Sound switch, [soundOn] whether the game makes sound, which [onSoundChange] changes;
- * - the language the game is shown in, [language], one chip for each of those [offered] (`Language.OFFERED`),
- *   each named in itself, which [onLanguageChange] changes; a screen reader hears Serbian's two with their
- *   script, as both are Serbian;
- * - the country the player plays from, [country], one chip for each of the six, named in the screen's language,
- *   which [onCountryChange] changes, and which decides the questions of a country the player gets; the chips
- *   have no heading, and a screen reader hears what they are for (`SettingsScreenStrings.countrySaid`);
+ * - the region (the owner, 2026-10-14): a globe, then the six countries' flags and no word, [country] the one
+ *   picked; a flag tapped picks its country, [onCountryChange], which decides the questions of a country the
+ *   player gets, and the language with it, [onLanguageChange], the one [RegionLanguages.picked] gives for the
+ *   [language] the game is in now (a player in Latin stays in Latin where the country reads both). A screen
+ *   reader hears each flag as its country, named in the screen's language, and what the row is for
+ *   (`SettingsScreenStrings.countrySaid`);
+ * - under it, only where [country] reads two scripts, Serbia's and Montenegro's Serbian and Bosnia's Bosnian
+ *   (Latin) or Serbian (Cyrillic): Ћирилица and Latinica on two chips, each written in itself, [language] the
+ *   one picked, among those [offered] (`Language.OFFERED`);
  * - and a way to the About screen, [onAbout], where what the game keeps of the player is.
  *
- * Neither row has a heading: each chip says what it is. A row too long for the width goes on to the next line.
- * It scrolls, its content held to a readable column on a wide window.
+ * No row has a heading. A row too long for the width goes on to the next line. It scrolls, its content held to a
+ * readable column on a wide window.
  */
 @Composable
 fun AppSettingsScreen(
@@ -89,40 +98,52 @@ fun AppSettingsScreen(
             )
 
             Divider()
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(space.xs),
-                verticalArrangement = Arrangement.spacedBy(space.xs),
-            ) {
-                offered.forEach { offered ->
-                    val said = offered.saidWithScript
-                    Chip(
-                        offered.ownName,
-                        modifier = if (said == null) Modifier else Modifier.semantics { contentDescription = said },
-                        selected = offered == language,
-                        onClick =
-                            tapped("settings.language", mapOf("language" to offered.tag)) {
-                                onLanguageChange(offered)
-                            },
-                    )
-                }
-            }
-
-            Divider()
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(space.xs),
-                verticalArrangement = Arrangement.spacedBy(space.xs),
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(space.sm),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.semantics { contentDescription = words.countrySaid },
             ) {
-                PLAYABLE_COUNTRIES.forEach { playable ->
-                    val name = words.countries.of(playable) ?: return@forEach
-                    Chip(
-                        name,
-                        selected = playable == country,
-                        onClick =
-                            tapped("settings.country", mapOf(AnalyticsProperty.COUNTRY to playable.name)) {
-                                onCountryChange(playable)
-                            },
-                    )
+                KvizicIcon(KvizicIcons.Globe, contentDescription = null)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    PLAYABLE_COUNTRIES.forEach { playable ->
+                        val name = words.countries.of(playable) ?: return@forEach
+                        val flag = FlagArt.of(playable.name) ?: return@forEach
+                        FlagChip(
+                            flag = flag,
+                            contentDescription = name,
+                            selected = playable == country,
+                            onClick =
+                                tapped("settings.country", mapOf(AnalyticsProperty.COUNTRY to playable.name)) {
+                                    onCountryChange(playable)
+                                    onLanguageChange(RegionLanguages.picked(playable, language, offered))
+                                },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+            val scripts = RegionLanguages.choices(country, offered)
+            if (scripts.size > 1) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs),
+                    verticalArrangement = Arrangement.spacedBy(space.xs),
+                ) {
+                    // Cyrillic first, as the game's own script is.
+                    scripts.sortedByDescending { it.isCyrillic }.forEach { script ->
+                        Chip(
+                            script.scriptName,
+                            modifier = Modifier.semantics { contentDescription = script.saidWithScript },
+                            selected = script == language,
+                            onClick =
+                                tapped("settings.language", mapOf("language" to script.tag)) {
+                                    onLanguageChange(script)
+                                },
+                        )
+                    }
                 }
             }
 
@@ -138,14 +159,13 @@ fun AppSettingsScreen(
     }
 }
 
+/** A script's chip, written in that script whatever the screen is in. */
+private val Language.scriptName: String
+    get() = if (isCyrillic) "Ћирилица" else "Latinica"
+
 /**
- * What a screen reader says of a language's chip where its name alone would not tell it from another's: Serbian's
- * two, both Serbian, with their script, each in itself. None for the rest, which are said as their names.
+ * What a screen reader says of a script's chip: the language it shows the game in and its script, each in itself
+ * („Bosanski, latinica“, „Српски, ћирилица“), since a script alone does not say whether Bosnia's is Bosnian.
  */
-private val Language.saidWithScript: String?
-    get() =
-        when (this) {
-            Language.SERBIAN_CYRILLIC -> "Српски, ћирилица"
-            Language.SERBIAN_LATIN -> "Srpski, latinica"
-            else -> null
-        }
+private val Language.saidWithScript: String
+    get() = "$ownName, ${if (isCyrillic) "ћирилица" else "latinica"}"

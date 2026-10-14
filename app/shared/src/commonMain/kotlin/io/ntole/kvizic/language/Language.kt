@@ -38,9 +38,12 @@ enum class Language(
         fun ofTag(tag: String?): Language = entries.firstOrNull { it.tag == tag } ?: DEFAULT
 
         /**
-         * The languages a picker offers, in its order: the one list that decides it. English is kept, and a
-         * device that kept it shows it still, but the launch offers Serbian alone, in both scripts.
+         * The languages the game offers, the one list that decides it: Serbian in both scripts, Croatian,
+         * Bosnian, Slovenian and Macedonian (2026-10-14, to be played on dev before their reviewers sign off).
+         * The Settings screen reaches them through the countries' flags (`RegionLanguages`). English is kept,
+         * and a device that kept it shows it still, but it is offered to nobody.
          */
-        val OFFERED: List<Language> = listOf(SERBIAN_CYRILLIC, SERBIAN_LATIN)
+        val OFFERED: List<Language> =
+            listOf(SERBIAN_CYRILLIC, SERBIAN_LATIN, CROATIAN, BOSNIAN, SLOVENIAN, MACEDONIAN)
     }
 }

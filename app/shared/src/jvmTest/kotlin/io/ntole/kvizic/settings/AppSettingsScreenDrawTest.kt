@@ -33,30 +33,19 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The Settings screen drawn off screen in each language: the Sound switch, the languages, the countries and the
- * way to About. The languages are those offered, and the six the release offers where it matters what fits.
+ * The Settings screen drawn off screen in each language: the Sound switch, the region (a globe and the six
+ * flags, with Ћирилица and Latinica where the country reads both) and the way to About.
  */
 class AppSettingsScreenDrawTest {
     @Test
-    fun `the screen shows the sound switch, the languages, the countries and the way to About`() {
+    fun `the screen shows the sound switch, the flags, Serbia's two scripts and the way to About`() {
         Language.entries.forEach { language ->
             val strings = stringsOf(language)
-            val countries = strings.settingsScreen.countries
             val scene = scene(language)
             try {
-                val shown = scene.everyText()
                 assertEquals(
-                    listOf(strings.settingsScreen.sound) + Language.OFFERED.map { it.ownName } +
-                        listOf(
-                            countries.serbia,
-                            countries.croatia,
-                            countries.bosnia,
-                            countries.slovenia,
-                            countries.macedonia,
-                            countries.montenegro,
-                        ) +
-                        strings.aboutScreen.title,
-                    shown,
+                    listOf(strings.settingsScreen.sound, CYRILLIC, LATIN, strings.aboutScreen.title),
+                    scene.everyText(),
                     "$language",
                 )
             } finally {
@@ -89,83 +78,170 @@ class AppSettingsScreenDrawTest {
         }
     }
 
-    /** Each language is named in itself whatever the screen is in, the one shown is picked, and a tap picks another. */
+    /** A flag shows no word: a screen reader hears its country, named in the screen's language, and the one picked. */
     @Test
-    fun `a language tapped is the one the game is shown in`() {
-        listOf(Language.OFFERED, RELEASE).forEach { offered ->
-            Language.entries.forEach { shownIn ->
-                val picked = mutableListOf<Language>()
-                val scene = scene(shownIn, onLanguageChange = { picked += it }, offered = offered)
-                try {
-                    offered.forEach { language ->
-                        val chip = scene.nodes().single { language.ownName in it.texts }
-                        assertEquals(
-                            language == shownIn,
-                            chip.config.getOrNull(SemanticsProperties.Selected) == true,
-                            "$shownIn: ${language.ownName}",
-                        )
-                        scene.tap(language.ownName)
-                    }
-                } finally {
-                    scene.close()
-                }
-                assertEquals(offered, picked, "$shownIn")
-            }
-        }
-    }
-
-    /**
-     * Both Serbian chips say Serbian, in their own script; a screen reader hears which script each is, and every
-     * other language as its name.
-     */
-    @Test
-    fun `a screen reader tells Serbian's two chips apart by their script`() {
-        val scene = scene(Language.CROATIAN, offered = RELEASE)
-        try {
-            val said = RELEASE.associateWith { language -> scene.nodes().single { language.ownName in it.texts } }
-            assertEquals(listOf("Српски, ћирилица"), said.getValue(Language.SERBIAN_CYRILLIC).descriptions)
-            assertEquals(listOf("Srpski, latinica"), said.getValue(Language.SERBIAN_LATIN).descriptions)
-            (RELEASE - Language.SERBIAN_CYRILLIC - Language.SERBIAN_LATIN).forEach { language ->
-                assertEquals(emptyList(), said.getValue(language).descriptions, "${language.ownName}")
-            }
-        } finally {
-            scene.close()
-        }
-    }
-
-    /** Each country is named in the screen's language, the one played from is picked, and a tap picks another. */
-    @Test
-    fun `a country tapped is the one played from`() {
+    fun `a flag is heard as its country and the one played from is picked`() {
         Language.entries.forEach { language ->
             val names = stringsOf(language).settingsScreen.countries
             PLAYABLE.forEach { from ->
-                val picked = mutableListOf<Country>()
-                val scene = scene(language, country = from, onCountryChange = { picked += it })
+                val scene = scene(language, country = from)
                 try {
                     PLAYABLE.forEach { country ->
-                        val name = checkNotNull(names.of(country))
-                        val chip = scene.nodes().single { name in it.texts }
+                        val flag = scene.nodes().single { checkNotNull(names.of(country)) in it.descriptions }
+                        assertEquals(emptyList(), flag.texts, "$language: $country")
                         assertEquals(
                             country == from,
-                            chip.config.getOrNull(SemanticsProperties.Selected) == true,
-                            "$language from $from: $name",
+                            flag.config.getOrNull(SemanticsProperties.Selected) == true,
+                            "$language from $from: $country",
                         )
-                        scene.tap(name)
                     }
                 } finally {
                     scene.close()
                 }
-                assertEquals(PLAYABLE, picked, "$language from $from")
             }
         }
     }
 
     /**
-     * The country chips have no heading, as the language chips have none: a screen reader hears what they are for
-     * from the row they stand in, which is no button itself.
+     * A flag picks its country and the language with it: the country's own, or the one of its two in the script
+     * the game is in now, so a player in Latin stays in Latin.
      */
     @Test
-    fun `a screen reader hears what the country chips are for`() {
+    fun `a flag tapped picks its country and the language it reads`() {
+        val lands =
+            mapOf(
+                Language.SERBIAN_CYRILLIC to
+                    listOf(
+                        Language.SERBIAN_CYRILLIC,
+                        Language.CROATIAN,
+                        Language.SERBIAN_CYRILLIC,
+                        Language.SLOVENIAN,
+                        Language.MACEDONIAN,
+                        Language.SERBIAN_CYRILLIC,
+                    ),
+                Language.SERBIAN_LATIN to
+                    listOf(
+                        Language.SERBIAN_LATIN,
+                        Language.CROATIAN,
+                        Language.BOSNIAN,
+                        Language.SLOVENIAN,
+                        Language.MACEDONIAN,
+                        Language.SERBIAN_LATIN,
+                    ),
+                Language.CROATIAN to
+                    listOf(
+                        Language.SERBIAN_LATIN,
+                        Language.CROATIAN,
+                        Language.BOSNIAN,
+                        Language.SLOVENIAN,
+                        Language.MACEDONIAN,
+                        Language.SERBIAN_LATIN,
+                    ),
+                Language.MACEDONIAN to
+                    listOf(
+                        Language.SERBIAN_CYRILLIC,
+                        Language.CROATIAN,
+                        Language.SERBIAN_CYRILLIC,
+                        Language.SLOVENIAN,
+                        Language.MACEDONIAN,
+                        Language.SERBIAN_CYRILLIC,
+                    ),
+            )
+        lands.forEach { (from, expected) ->
+            val names = stringsOf(from).settingsScreen.countries
+            val countries = mutableListOf<Country>()
+            val languages = mutableListOf<Language>()
+            val scene =
+                scene(
+                    from,
+                    country = Country.UNKNOWN,
+                    onCountryChange = { countries += it },
+                    onLanguageChange = { languages += it },
+                )
+            try {
+                PLAYABLE.forEach { country -> scene.tap(checkNotNull(names.of(country))) }
+            } finally {
+                scene.close()
+            }
+            assertEquals(PLAYABLE, countries, "from $from")
+            assertEquals(expected, languages, "from $from")
+        }
+    }
+
+    /** Ћирилица and Latinica stand only under a country that reads both, Serbia, Montenegro and Bosnia. */
+    @Test
+    fun `the scripts stand only where the country reads two`() {
+        PLAYABLE.forEach { country ->
+            val language = if (country == Country.HR) Language.CROATIAN else Language.SERBIAN_CYRILLIC
+            val scene = scene(language, country = country)
+            try {
+                val shown = scene.everyText()
+                val two = country in listOf(Country.RS, Country.ME, Country.BA)
+                assertEquals(two, CYRILLIC in shown && LATIN in shown, "$country")
+                assertEquals(two, CYRILLIC in shown || LATIN in shown, "$country")
+            } finally {
+                scene.close()
+            }
+        }
+    }
+
+    /**
+     * A script tapped is the language the game is shown in: Serbian in that script in Serbia and Montenegro,
+     * Bosnian in Latin and Serbian in Cyrillic in Bosnia; the one shown is picked.
+     */
+    @Test
+    fun `a script tapped is the language the game is shown in`() {
+        mapOf(
+            Country.RS to (Language.SERBIAN_CYRILLIC to Language.SERBIAN_LATIN),
+            Country.ME to (Language.SERBIAN_CYRILLIC to Language.SERBIAN_LATIN),
+            Country.BA to (Language.SERBIAN_CYRILLIC to Language.BOSNIAN),
+        ).forEach { (country, scripts) ->
+            val (cyrillic, latin) = scripts
+            listOf(cyrillic, latin).forEach { shownIn ->
+                val picked = mutableListOf<Language>()
+                val scene = scene(shownIn, country = country, onLanguageChange = { picked += it })
+                try {
+                    listOf(CYRILLIC to cyrillic, LATIN to latin).forEach { (name, language) ->
+                        val chip = scene.nodes().single { name in it.texts }
+                        assertEquals(
+                            language == shownIn,
+                            chip.config.getOrNull(SemanticsProperties.Selected) == true,
+                            "$country in $shownIn: $name",
+                        )
+                    }
+                    scene.tap(CYRILLIC)
+                    scene.tap(LATIN)
+                } finally {
+                    scene.close()
+                }
+                assertEquals(listOf(cyrillic, latin), picked, "$country in $shownIn")
+            }
+        }
+    }
+
+    /** A script alone does not say whether Bosnia's Latin is Bosnian: a screen reader hears the language with it. */
+    @Test
+    fun `a screen reader hears each script with its language`() {
+        mapOf(
+            Country.RS to listOf("Српски, ћирилица", "Srpski, latinica"),
+            Country.BA to listOf("Српски, ћирилица", "Bosanski, latinica"),
+        ).forEach { (country, said) ->
+            val scene = scene(Language.SERBIAN_CYRILLIC, country = country)
+            try {
+                val chips = listOf(CYRILLIC, LATIN).map { name -> scene.nodes().single { name in it.texts } }
+                assertEquals(said, chips.map { it.descriptions.single() }, "$country")
+            } finally {
+                scene.close()
+            }
+        }
+    }
+
+    /**
+     * The flags have no heading: a screen reader hears what they are for from the row they stand in, beside the
+     * globe, which is no button itself.
+     */
+    @Test
+    fun `a screen reader hears what the flags are for`() {
         Language.entries.forEach { language ->
             val words = stringsOf(language).settingsScreen
             val scene = scene(language)
@@ -174,8 +250,14 @@ class AppSettingsScreenDrawTest {
                 val row = nodes.single { words.countrySaid in it.descriptions }
                 assertNull(row.config.getOrNull(SemanticsActions.OnClick), "$language: the row is a button")
                 PLAYABLE.forEach { country ->
-                    val chip = nodes.single { checkNotNull(words.countries.of(country)) in it.texts }.boundsInRoot
-                    assertTrue(row.boundsInRoot.contains(chip.center), "$language: $country stands outside its row")
+                    val flag =
+                        nodes
+                            .single {
+                                checkNotNull(
+                                    words.countries.of(country),
+                                ) in it.descriptions
+                            }.boundsInRoot
+                    assertTrue(row.boundsInRoot.contains(flag.center), "$language: $country stands outside its row")
                 }
             } finally {
                 scene.close()
@@ -183,7 +265,7 @@ class AppSettingsScreenDrawTest {
         }
     }
 
-    /** A country's chip is reported by the country's name, never by the words it shows. */
+    /** A flag is reported by its country's name, never by the words a screen reader hears. */
     @Test
     fun `a country tapped is reported by its name`() {
         val analytics = RecordingAnalytics()
@@ -191,7 +273,9 @@ class AppSettingsScreenDrawTest {
         val scene =
             ImageComposeScene(width = SMALL_PHONE_WIDTH, height = SMALL_PHONE_HEIGHT, density = Density(1f)) {
                 CompositionLocalProvider(LocalAnalytics provides analytics) {
-                    GameTheme(Language.SLOVENIAN) { AppSettingsScreen(language = Language.SLOVENIAN) }
+                    GameTheme(Language.SLOVENIAN) {
+                        AppSettingsScreen(language = Language.SLOVENIAN, country = Country.SI)
+                    }
                 }
             }.also { it.renderSettled() }
         try {
@@ -206,12 +290,12 @@ class AppSettingsScreenDrawTest {
     }
 
     /**
-     * The six languages the release offers and the six countries, whole, on a small phone in every skin, at the
-     * usual font and at a phone's large one (130%): a chip too long for its row would be cut, never wrapped. With
+     * The six flags and Bosnia's two scripts, whole, on a small phone in every skin, at the usual font and at a
+     * phone's large one (130%): a flag or a chip too long for its row would run off or be cut, never wrapped. With
      * `KVIZIC_DESIGN_DIR` set, a still of each is written there.
      */
     @Test
-    fun `six languages and six countries fit on a small phone at a large font`() {
+    fun `the flags and the scripts fit on a small phone at a large font`() {
         Language.entries.forEach { language ->
             Skins.ALL.forEach { skin ->
                 listOf(1f, LARGE_FONT).forEach { fontScale ->
@@ -220,7 +304,6 @@ class AppSettingsScreenDrawTest {
                         scene(
                             language,
                             country = Country.BA,
-                            offered = RELEASE,
                             skin = skin,
                             fontScale = fontScale,
                             width = SMALL_PHONE_WIDTH,
@@ -229,12 +312,17 @@ class AppSettingsScreenDrawTest {
                     try {
                         write("settings-${skin.id}-$fontScale-${language.tag}") { scene.renderSettled() }
                         assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
-                        val words = stringsOf(language).settingsScreen
-                        val chips =
-                            RELEASE.map { it.ownName } + PLAYABLE.map { checkNotNull(words.countries.of(it)) }
-                        chips.forEach { text ->
-                            val chip = scene.nodes().single { text in it.texts }.boundsInRoot
-                            assertTrue(chip.left >= 0f && chip.right <= SMALL_PHONE_WIDTH, "$where: $text runs off")
+                        val names = stringsOf(language).settingsScreen.countries
+                        val parts =
+                            PLAYABLE.map { country ->
+                                val name = checkNotNull(names.of(country))
+                                name to scene.nodes().single { name in it.descriptions }.boundsInRoot
+                            } +
+                                listOf(CYRILLIC, LATIN).map { name ->
+                                    name to scene.nodes().single { name in it.texts }.boundsInRoot
+                                }
+                        parts.forEach { (name, bounds) ->
+                            assertTrue(bounds.left >= 0f && bounds.right <= SMALL_PHONE_WIDTH, "$where: $name runs off")
                         }
                     } finally {
                         scene.close()
@@ -277,7 +365,6 @@ class AppSettingsScreenDrawTest {
         country: Country = Country.RS,
         onCountryChange: (Country) -> Unit = {},
         onAbout: () -> Unit = {},
-        offered: List<Language> = Language.OFFERED,
         skin: Skin = Skins.Default,
         fontScale: Float = 1f,
         width: Int = SHORT_PHONE_WIDTH,
@@ -293,12 +380,15 @@ class AppSettingsScreenDrawTest {
                     country = country,
                     onCountryChange = onCountryChange,
                     onAbout = onAbout,
-                    offered = offered,
                 )
             }
         }.also { it.render() }
 
     private companion object {
+        /** The two scripts' chips, each written in itself. */
+        const val CYRILLIC = "Ћирилица"
+        const val LATIN = "Latinica"
+
         /** An iPhone SE's size less its status bar and the top bar above the screen. */
         const val SHORT_PHONE_WIDTH = 375
         const val SHORT_PHONE_HEIGHT = 599
@@ -309,17 +399,6 @@ class AppSettingsScreenDrawTest {
 
         /** A phone's large font, 130%, a common setting. */
         const val LARGE_FONT = 1.3f
-
-        /** The six languages the release offers (`Language.OFFERED` once the four are reviewed). */
-        val RELEASE =
-            listOf(
-                Language.SERBIAN_CYRILLIC,
-                Language.SERBIAN_LATIN,
-                Language.CROATIAN,
-                Language.BOSNIAN,
-                Language.SLOVENIAN,
-                Language.MACEDONIAN,
-            )
 
         /** The six countries, in the screen's order. */
         val PLAYABLE = listOf(Country.RS, Country.HR, Country.BA, Country.SI, Country.MK, Country.ME)

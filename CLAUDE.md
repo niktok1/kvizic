@@ -210,8 +210,10 @@ domain a pinned copy of `Country`.
 - **Six countries, five languages**: RS, HR, BA, SI, MK and ME, no Kosovo option; sr-Cyrl (sr-Latn made from it
   on the client, as ever), hr, bs, sl and mk, the four new ones shipping at once, each only once its native
   reviewer has been through it. English stays hidden. A UI language reads the content language `of` gives it.
-- **The country decides which questions, the language how they read**: two settings, since they often differ
-  (a Serb in Croatia, Republika Srpska in Cyrillic, the diaspora). A question with no countries is common and
+- **The country decides which questions, the language how they read**, two values on the wire (§6), and **one
+  picker** (the owner, 2026-10-14, after two settings): a country's flag picks both, Serbia and Montenegro
+  Serbian in either script (Montenegro Latin first), Bosnia Bosnian in Latin or Serbian in Cyrillic, Croatia,
+  Slovenia and North Macedonia their own (`RegionLanguages`), so a Serb in Croatia reads Croatian. A question with no countries is common and
   goes to everyone; one scoped to some is asked only when every player's country is among them, so a mixed
   room gets common questions alone, and solo the player's own country's. A room of one country takes about 20%
   local questions when its topics hold enough (`LOCAL_SHARE`, 0 off): a country's set is otherwise some 10% of
@@ -224,10 +226,14 @@ domain a pinned copy of `Country`.
   Serbian and English ones.
 - **The server hears them** as §6 says, and keeps a player's last country (`players.country`, null for never,
   which counts as RS).
-- **The client**: the language chips become Српски · Srpski · Hrvatski · Bosanski · Slovenščina · Македонски,
-  since „Ћирилица / Latinica“ stops reading clearly beside Hrvatski and Bosanski. A first launch takes the
-  device's language when it is one offered, else its country's (`defaultFor`, ME shown in Latin); an install
-  from before keeps its own. No flags or country chips in rooms yet. In Macedonian the game is „Квизиќ“.
+- **The client**: Settings shows a globe and the six flags with no word (`FlagChip`; `FlagArt`, which
+  `tools/flags/convert.py` draws from Wikimedia Commons' public-domain SVGs in the flags' own colours, never a
+  skin's), the picked one ringed in `primary`, a screen reader hearing each as its country; under them, only
+  where the country reads two, Ћирилица and Latinica, each in itself. A flag keeps the script the game is in
+  where it can (Srpski from Hrvatski). A first launch takes the detected country's language, the device's
+  only choosing the script of two (`FirstLaunch`); an install from before keeps its own. All six are offered
+  (2026-10-14), to be played on dev before the reviewers sign off: a prod release before then puts the gate
+  back (R). No flags or country chips in rooms yet. In Macedonian the game is „Квизиќ“.
 - **No moderation-app work this round**: `publish.py` approves what it imports; countries and translations go
   live through `localize.py` (`/v1/admin/question-localizations`) with no review status, reviewed in the content
   repo through the native reviewers' sheets.
@@ -236,8 +242,8 @@ domain a pinned copy of `Country`.
 
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
-  by `GamePhase`), Settings (the app's: the Sound switch, Ћирилица or Latinica on two chips with no heading, it being a script
-  more than a language (the owner, 2026-10-03; `Language.OFFERED`; §8a's six chips replace them with the regions), and a way to About; `AppSettingsScreen`, apart from a room's), About
+  by `GamePhase`), Settings (the app's: the Sound switch, the region, a globe and six flags with Ћирилица or Latinica under those that read
+  both (§8a), and a way to About; `AppSettingsScreen`, apart from a room's), About
   (version, legal pages, licences and the fonts' OFL, each text a tap away, and last what is kept of the player, under „Подаци“: Statistics, the account's
   id and its deletion), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,

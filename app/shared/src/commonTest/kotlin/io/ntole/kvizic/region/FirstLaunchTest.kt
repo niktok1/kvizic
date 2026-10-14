@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 /** The language a first launch shows the game in, with the six the release offers and with today's two. */
 class FirstLaunchTest {
     @Test
-    fun `the device's first language the game offers is the one`() {
+    fun `the country decides and the device's language only which of its two scripts`() {
         val cases =
             listOf(
                 Triple(listOf("sr-Cyrl-RS"), Country.RS, Language.SERBIAN_CYRILLIC),
@@ -21,11 +21,14 @@ class FirstLaunchTest {
                 Triple(listOf("bs-BA"), Country.BA, Language.BOSNIAN),
                 Triple(listOf("sl-SI"), Country.SI, Language.SLOVENIAN),
                 Triple(listOf("mk-MK"), Country.MK, Language.MACEDONIAN),
-                // A Serb in Croatia reads Serbian, a Croat in Serbia Croatian: the language, never the country.
-                Triple(listOf("sr-Cyrl"), Country.HR, Language.SERBIAN_CYRILLIC),
-                Triple(listOf("hr"), Country.RS, Language.CROATIAN),
-                // The first the game has, past those it has not.
-                Triple(listOf("de-DE", "en-US", "sl-SI"), Country.RS, Language.SLOVENIAN),
+                // The flag decides (the owner, 2026-10-14): a Serbian phone in Croatia reads Croatian, a Croatian
+                // one in Serbia Serbian, in the Latin it reads, and one in Bosnia Bosnian.
+                Triple(listOf("sr-Cyrl"), Country.HR, Language.CROATIAN),
+                Triple(listOf("hr"), Country.RS, Language.SERBIAN_LATIN),
+                Triple(listOf("hr"), Country.BA, Language.BOSNIAN),
+                Triple(listOf("mk"), Country.BA, Language.SERBIAN_CYRILLIC),
+                // The first the game knows, past those it does not.
+                Triple(listOf("de-DE", "en-US", "sl-SI"), Country.RS, Language.SERBIAN_LATIN),
             )
 
         cases.forEach { (languages, country, expected) ->
