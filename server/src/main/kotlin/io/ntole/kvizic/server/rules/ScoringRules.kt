@@ -9,9 +9,10 @@ import kotlin.math.roundToInt
  * - Right: [base] + [speed] · f, plus [orderBonus] for the first right answers, so both speed and beating
  *   the others to it count.
  * - Wrong: −([wrongMin] + [wrongSpeed] · f²) with the wrong-answer minus on, 0 with it off. The square
- *   keeps the minus small for a considered answer and large for a rushed one, so a blind click as the
- *   answers appear loses on average while a late guess barely pays. With fewer answers a blind hit is
- *   likelier, so the minus grows with it: scaled by 3 / (answers − 1), 1 for four answers.
+ *   keeps the minus small for a considered answer and large for a rushed one. [wrongMin] is the floor a
+ *   late guess cannot fall under; it is set so a blind guess never pays on average, at any speed, not even
+ *   waiting the clock out to answer at the last instant. With fewer answers a blind hit is likelier, so the
+ *   minus grows with it: scaled by 3 / (answers − 1), 1 for four answers.
  * - No answer: 0.
  *
  * `ScoringBalanceTest` pins what these numbers are for; retune them only with it.
@@ -20,7 +21,7 @@ data class ScoringRules(
     val base: Int = 50,
     val speed: Int = 40,
     val orderBonus: List<Int> = listOf(10, 5, 2),
-    val wrongMin: Int = 5,
+    val wrongMin: Int = 18,
     val wrongSpeed: Int = 35,
 ) {
     /** A right answer with [fractionLeft] of the time left, the [order]-th right answer (0 first), or later. */

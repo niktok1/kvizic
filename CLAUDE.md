@@ -126,9 +126,12 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - **Read time**: 1.5 s + 45 ms a character, at most 7 s (the longest question reads in 6.9 s).
 - Answers: 2 to 4 per question, never hard-coded to 4. One locked answer each; a player sees the others'
   picks once locked in. The question ends early once everyone it waits for has answered.
-- **Scoring**, max 100: right `50 + 40·f` plus +10/+5/+2 for the first three right; wrong `−(5 + 35·f²)`
-  (−5 to −40), scaled for fewer answers; none 0; the minus can be turned off per room. `f` is the time
-  left when the answer lands, less min(RTT, 300 ms).
+- **Scoring**, max 100: right `50 + 40·f` plus +10/+5/+2 for the first three right; wrong `−(18 + 35·f²)`
+  (−18 to −53), scaled for fewer answers; none 0; the minus can be turned off per room. `f` is the time
+  left when the answer lands, less min(RTT, 300 ms). **The floor is set so a blind guess never pays on
+  average, at any speed** (the owner, 2026-10-14): waiting out the clock to guess at the last instant used
+  to be close to free, `wrongMin` (5 → 18) closes that, at the cost of a bot-speed answer that narrows a
+  question to 3 options sometimes showing a loss where it used to always pay (`ScoringBalanceTest`).
 - **Levels** (the owner, 2026-10-02): a player's level is worked out on the server from `profiles.xp` (V8), earned
   by a finished game in a room, **never in a solo run**, and only by those who stayed to its end: 20 for the game,
   1 for each right answer, 20 for a win (`Levels`). Level `n` begins at `10·(n−1)²` experience, so the first levels

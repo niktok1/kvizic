@@ -34,8 +34,8 @@ class ScoringBalanceTest {
     }
 
     @Test
-    fun `a blind guess never averages more than about 10 a question, and knowing earns 50 to 100`() {
-        fractions.forEach { f -> assertTrue(blindAverage(f) <= 10.0, "at $f: ${blindAverage(f)}") }
+    fun `a blind guess never averages more than about 0 a question, and knowing earns 50 to 100`() {
+        fractions.forEach { f -> assertTrue(blindAverage(f) <= 1.0, "at $f: ${blindAverage(f)}") }
         fractions.forEach { f ->
             assertTrue(rules.correct(f, order = null) in 50..90)
             assertTrue(rules.correct(f, order = 0) in 60..100)
@@ -52,19 +52,25 @@ class ScoringBalanceTest {
     }
 
     @Test
-    fun `ruling out wrong answers pays at any speed`() {
-        fractions.forEach { f ->
+    fun `ruling out wrong answers pays, down to the fastest a human answers`() {
+        // oneOfThree's penalty is still scaled for the question's real 4 answers, not for the 3 it was
+        // narrowed to, so only a bot-speed answer (f past 0.8, under a fifth of the time left) dips at a loss.
+        fractions.filter { it <= 0.8 }.forEach { f ->
             val oneOfThree = (1.0 / 3) * rules.correct(f, null) + (2.0 / 3) * rules.wrong(f, 4, true)
             val oneOfTwo = 0.5 * rules.correct(f, null) + 0.5 * rules.wrong(f, 4, true)
             assertTrue(oneOfThree > 0, "one of three left at $f: $oneOfThree")
             assertTrue(oneOfTwo > oneOfThree)
         }
+        fractions.forEach { f ->
+            val oneOfTwo = 0.5 * rules.correct(f, null) + 0.5 * rules.wrong(f, 4, true)
+            assertTrue(oneOfTwo > 0, "one of two left at $f: $oneOfTwo")
+        }
     }
 
     @Test
-    fun `no wrong answer to four answers costs more than 40, and the minus off costs nothing`() {
+    fun `no wrong answer to four answers costs more than 53, and the minus off costs nothing`() {
         fractions.forEach { f ->
-            assertTrue(rules.wrong(f, 4, penaltyOn = true) >= -40)
+            assertTrue(rules.wrong(f, 4, penaltyOn = true) >= -53)
             assertTrue(rules.wrong(f, 4, penaltyOn = false) == 0)
         }
         assertTrue(rules.correct(1.0, 0) == ScoringRules.MAX_POINTS)
