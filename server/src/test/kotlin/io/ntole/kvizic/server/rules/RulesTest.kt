@@ -30,12 +30,12 @@ class RulesTest {
         assertEquals(92, rules.correct(1.0, order = 2))
         assertEquals(90, rules.correct(1.0, order = 3), "the bonus is for the first three")
         assertEquals(50, rules.correct(0.0, order = null))
-        assertEquals(-40, rules.wrong(1.0, 4, penaltyOn = true))
-        assertEquals(-25, rules.wrong(0.75, 4, penaltyOn = true))
-        assertEquals(-14, rules.wrong(0.5, 4, penaltyOn = true))
-        assertEquals(-5, rules.wrong(0.0, 4, penaltyOn = true))
-        assertEquals(-60, rules.wrong(1.0, 3, penaltyOn = true))
-        assertEquals(-120, rules.wrong(1.0, 2, penaltyOn = true))
+        assertEquals(-53, rules.wrong(1.0, 4, penaltyOn = true))
+        assertEquals(-38, rules.wrong(0.75, 4, penaltyOn = true))
+        assertEquals(-27, rules.wrong(0.5, 4, penaltyOn = true))
+        assertEquals(-18, rules.wrong(0.0, 4, penaltyOn = true))
+        assertEquals(-80, rules.wrong(1.0, 3, penaltyOn = true))
+        assertEquals(-159, rules.wrong(1.0, 2, penaltyOn = true))
     }
 
     @Test

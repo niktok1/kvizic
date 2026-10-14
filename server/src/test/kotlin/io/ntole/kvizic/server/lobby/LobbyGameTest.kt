@@ -53,7 +53,7 @@ class LobbyGameTest {
                 val reveal = ceca.last<ServerMessage.Revealed>().reveal
                 assertEquals(index, reveal.index)
                 assertEquals(
-                    listOf(100, -40, 0),
+                    listOf(100, -53, 0),
                     reveal.results.map { it.points },
                     "right at once first, wrong at once",
                 )
@@ -64,7 +64,7 @@ class LobbyGameTest {
 
             val results = ceca.last<ServerMessage.GameOver>().results
             assertEquals(
-                listOf("ana" to 300, "ceca" to 0, "boris" to -120),
+                listOf("ana" to 300, "ceca" to 0, "boris" to -159),
                 results.standings.map {
                     it.player to
                         it.score
@@ -149,8 +149,8 @@ class LobbyGameTest {
                     .last<ServerMessage.Revealed>()
                     .reveal.results
                     .associate { it.player to it.points }
-            assertEquals(-40, points.getValue("ana"), "at once")
-            assertEquals(-14, points.getValue("boris"), "halfway: 5 + 35 · 0.25, rounded")
+            assertEquals(-53, points.getValue("ana"), "at once")
+            assertEquals(-27, points.getValue("boris"), "halfway: 18 + 35 · 0.25, rounded")
 
             val withoutMinus = LobbyScenario(this, LobbySettingsDto(questionCount = 3, wrongAnswerPenalty = false))
             val dora = withoutMinus.player("dora").join()
@@ -311,7 +311,7 @@ class LobbyGameTest {
                         .reveal.results
                         .single()
                         .points
-                assertEquals(if (count == 2) -120 else -60, points, "a blind hit is likelier, so the minus grows")
+                assertEquals(if (count == 2) -159 else -80, points, "a blind hit is likelier, so the minus grows")
             }
         }
 
