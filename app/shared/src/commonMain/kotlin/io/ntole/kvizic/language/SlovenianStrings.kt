@@ -63,7 +63,7 @@ internal val SlovenianUpdateStrings: UpdateStrings =
         reload = "Osveži",
     )
 
-internal val SlovenianReactionStrings: ReactionStrings = ReactionStrings(react = "Odzovi se")
+internal val SlovenianReactionStrings: ReactionStrings = ReactionStrings(react = "Odzovi se", close = "Zapri")
 
 internal val SlovenianHowToPlayStrings: HowToPlayStrings =
     HowToPlayStrings(
@@ -188,7 +188,6 @@ internal val SlovenianGameStrings: GameStrings =
         reactionOops = "Ups",
         reactionNudge = "Daj, začni!",
         gameStarting = "Igra se začenja",
-        joinNewGame = "V igro",
         spectating = "To igro gledaš, naslednjo pa igraš.",
         onlyHost = "To sme le gostitelj.",
         refused = "To zdaj ne gre.",
@@ -220,7 +219,6 @@ internal val SlovenianGameStrings: GameStrings =
         youWon = "Tvoja zmaga!",
         rightOf = "Pravilno {0} od {1}",
         // The results' two buttons share a row: „Nazaj v sobo“ beside Zapusti is cut there.
-        backToRoom = "V sobo",
         newBest = "Nov rekord!",
         best = "Rekord: {0}",
         endedEarly = "Igra se je predčasno končala.",
@@ -279,5 +277,6 @@ val SlovenianStrings: Strings =
         reactions = SlovenianReactionStrings,
         howToPlay = SlovenianHowToPlayStrings,
         pass = SlovenianPassStrings,
+        results = SlovenianResultsStrings,
         game = SlovenianGameStrings,
     )

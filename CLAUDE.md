@@ -110,8 +110,8 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   (7 with an explanation) → … → results → back to the lobby by hand.
 - **Not back, not in** (the owner, 2026-10-01): whoever is still on the last game's results when the next
   game's first question comes leaves the room (`NOT_BACK`, a normal close; not banned, they may join again),
-  so nobody away holds a seat: an AFK player is out after at most one game. The countdown's „Нова игра почиње
-  — уђи“ is their last call.
+  so nobody away holds a seat: an AFK player is out after at most one game. The countdown shows in the lobby
+  alone; the results give no last call (the owner, 2026-11-27).
 - **Host and vote-kick** (the owner, 2026-10-01; no ready state, no vote to start): the host starts, kicks and
   hands over as before, and a public room's idle host still hands over after 3 min. A public host who never came to their seat (no socket) hands over at once to the first to arrive, and the public list shows only rooms with someone connected (2026-10-05). The rest may **vote a
   member out**, the host included, from the member's seat, while the room waits (never mid-game or in the
@@ -388,7 +388,17 @@ domain a pinned copy of `Country`.
   and the plate goes only to the one of two or more who stayed standing alone at the top (`GameResults.winner`,
   as the server's `won()`): no plate on a tie, for a player left alone, or in solo (2026-10-03). A solo run shows
   its score on flaps with no podium, and a first run sets a best („Рекорд: X“) but beats none
-  (`PersonalBest.beaten`), so never „Нови рекорд!“.
+  (`PersonalBest.beaten`), so never „Нови рекорд!“. **Redone** (the owner, 2026-11-27): a door in the top corner
+  leaves, asking first as over a question, and the foot is one button, „Играј поново“: back to the room, solo
+  too, where a game starts only when the host taps Start. No Home, no share, no word of a game starting. In a
+  room a round button beside it opens the six reactions over the content, the lobby's and the reveal's row
+  (`Emotes`), put away by its ✕ or a tap anywhere else; each bursts over its sender's podium place or board line. Two tabs, Табела and Одговори: the second is
+  the player's own game, a card for each question (their answer, the right one when theirs was not, its points,
+  how many of the room had it right), from `ResultsView.recap`, which the server makes for each reader in their
+  language, at the end and in a snapshot. Only those who stayed stand on the podium; each place and line shows its
+  right answers, and one who left is greyed with a door on the board. The player's chips add the average time of
+  a right answer and the longest run of right answers (`averageRightMs`, `bestStreak`), hidden when the server
+  says 0; `coinsEarned` is the shop's to show. No experience or level-up on the results.
 - **A room is seen before it is joined** (the owner, 2026-10-02): the public list's card (`RoomCard`) shows the room's
   name, or its host's when it has none, and every setting on its chips; the join screen reads the room a code names
   once its six digits are in (`GET /v1/lobbies/{code}`, `RoomPreviewViewModel`) and shows the same card over the
@@ -488,7 +498,7 @@ signing), `server-postgres`, `docker-smoke`, `ios`. Locally:
 `:app:shared:compileKotlinIosSimulatorArm64` and let CI link; Kotlin/Native refuses a comma in a common
 test's name, so compile `compileTestKotlinIosSimulatorArm64` before pushing one. `KVIZIC_DESIGN_DIR=<dir>`
 makes the draw tests write PNGs to look at. The draw tests also draw at a phone's large font, 130%
-(`Density(1f, 1.3f)`): Home, the lobby, the room's dialogs and the reveal; `cutTexts()` finds a text past its
+(`Density(1f, 1.3f)`): Home, the lobby, the room's dialogs, the reveal and the results (in every language); `cutTexts()` finds a text past its
 box, its lines or an ellipsis, capitals included.
 - **A smoke test of the real UI**: run `:server:run` with `QUESTION_SEED_FILE` (the content repo's dev seed)
   and `ALLOWED_WEB_ORIGINS=localhost:8081,127.0.0.1:8081`, serve `:app:webApp:wasmJsBrowserDistribution`'s

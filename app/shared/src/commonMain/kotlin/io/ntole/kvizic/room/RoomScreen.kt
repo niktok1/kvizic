@@ -49,10 +49,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.max
 import io.ntole.kvizic.analytics.tapped
 import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.lobby.Deadline
+import io.ntole.kvizic.core.domain.lobby.FinalStanding
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.GameResults
 import io.ntole.kvizic.core.domain.lobby.Lobby
@@ -61,6 +64,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbyMember
 import io.ntole.kvizic.core.domain.lobby.LobbyRules
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
+import io.ntole.kvizic.core.domain.lobby.RecapQuestion
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.core.domain.topic.Topic
 import io.ntole.kvizic.design.component.ButtonKind
@@ -72,9 +76,11 @@ import io.ntole.kvizic.design.component.FlapSize
 import io.ntole.kvizic.design.component.FlipNumber
 import io.ntole.kvizic.design.component.KvizicIcon
 import io.ntole.kvizic.design.component.KvizicText
+import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.Podium
 import io.ntole.kvizic.design.component.PodiumPlace
 import io.ntole.kvizic.design.component.ReactionBurst
+import io.ntole.kvizic.design.component.RightCount
 import io.ntole.kvizic.design.component.ScoreRow
 import io.ntole.kvizic.design.component.Scoreboard
 import io.ntole.kvizic.design.component.Seat
@@ -85,6 +91,7 @@ import io.ntole.kvizic.design.component.StageDialog
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.WinnerBanner
 import io.ntole.kvizic.design.component.rememberTilePlaces
+import io.ntole.kvizic.design.component.signed
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.SkinMotion
@@ -164,7 +171,7 @@ fun RoomScreen(
                 is GamePhase.Waiting -> {
                     val results = phase.lastResults
                     if (shownMe?.onResults == true && results != null) {
-                        Results(results, shown.lobby, shown.you, newGameStarting = false, actions)
+                        Results(results, shown.lobby, shown.you, actions, bursts, onLeave = { leaving = true })
                     } else {
                         Waiting(shown, countdown = null, bursts, actions, onLeave = { leaving = true }, topics = topics)
                     }
@@ -173,7 +180,7 @@ fun RoomScreen(
                 is GamePhase.Countdown -> {
                     val results = phase.lastResults
                     if (shownMe?.onResults == true && results != null) {
-                        Results(results, shown.lobby, shown.you, newGameStarting = true, actions)
+                        Results(results, shown.lobby, shown.you, actions, bursts, onLeave = { leaving = true })
                     } else {
                         Waiting(
                             shown,
@@ -445,19 +452,7 @@ private fun Waiting(
             }
             Spacer(Modifier.weight(1f))
             if (lobby.kind != LobbyKind.SOLO) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    EMOTES.forEach { reaction ->
-                        StageIconButton(
-                            reaction.icon,
-                            contentDescription = reaction.name(words),
-                            onClick =
-                                tapped(
-                                    "room.reaction",
-                                    mapOf("reaction" to reaction.id),
-                                ) { actions.react(reaction.id) },
-                        )
-                    }
-                }
+                Emotes("room.reaction", Modifier.fillMaxWidth(), onReact = actions.react)
                 Spacer(Modifier.height(space.md))
             }
             if (inviting) {
@@ -631,14 +626,11 @@ private fun Seats(
                                     }
                                 },
                         )
-                        val burst = member?.let { bursts[it.playerId] }
-                        val icon = burst?.let { reactionIcon(it.reaction) }
-                        if (icon != null) {
-                            ReactionBurst(
-                                icon,
-                                burstKey = burst.key,
-                                modifier = Modifier.align(Alignment.TopEnd).offset(x = space.sm, y = -space.xl),
-                                startedAt = burst.at,
+                        member?.let {
+                            BurstOf(
+                                bursts,
+                                it.playerId,
+                                Modifier.align(Alignment.TopEnd).offset(x = space.sm, y = -space.xl),
                             )
                         }
                     }
@@ -806,134 +798,355 @@ private const val TICKS_FROM = 5
 private val TICK = 200.milliseconds
 
 /**
- * A game's end: who won and the podium, the rest of the standings, how the player did, and their own way
- * back to the lobby or out; or, once the host started the next game, the way into it.
+ * A game's end: the way out in its corner; the standings, who won and the podium, or the player's own answers,
+ * a question at a time, from a server that sends them; and the way back to the room, where the host starts the
+ * next game.
  */
 @Composable
 private fun Results(
     results: GameResults,
     lobby: Lobby,
     you: String,
-    newGameStarting: Boolean,
     actions: RoomActions,
+    bursts: Map<String, Burst>,
+    onLeave: () -> Unit,
 ) {
     val words = LocalStrings.current.game
+    val said = LocalStrings.current.results
+    val reactionWords = LocalStrings.current.reactions
     val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
-    // Those who stayed first, whatever an older server ranked them.
-    val ranked = results.standings.sortedWith(compareBy({ !it.finished }, { it.rank }))
     val solo = lobby.kind == LobbyKind.SOLO
-    val seatOf = { playerId: String, fallback: Int -> lobby.member(playerId)?.seat ?: fallback }
+    var answers by rememberSaveable(results.gameId) { mutableStateOf(false) }
+    var reacting by rememberSaveable(results.gameId) { mutableStateOf(false) }
+    val burst: @Composable (String) -> Unit = { id -> BurstOf(bursts, id) }
     Page {
-        Spacer(Modifier.height(space.md))
-        KvizicText(
-            words.gameOver.fill(words.questionCount.of(results.questionCount, language)),
-            Modifier.fillMaxWidth(),
-            style = type.label,
-            color = colors.onPageMuted,
-            textAlign = TextAlign.Center,
-        )
-        // The winner, the podium and the rest stand centred in what the buttons leave; with eight players and
-        // no room they scroll, and the way back stays at the foot.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StageIconButton(
+                KvizicIcons.Leave,
+                contentDescription = words.leave,
+                onClick = tapped("results.leave", onClick = onLeave),
+                kind = ButtonKind.QUIET,
+                small = true,
+            )
+            KvizicText(
+                words.gameOver.fill(words.questionCount.of(results.questionCount, language)),
+                Modifier.weight(1f),
+                style = type.label,
+                color = colors.onPageMuted,
+                textAlign = TextAlign.Center,
+            )
+            // As wide as the way out, so the caption stands in the middle.
+            Spacer(Modifier.width(max(space.button.roundSmall, space.touchTarget)))
+        }
+        if (results.recap.isNotEmpty()) {
+            Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(space.xs)) {
+                Chip(said.standings, selected = !answers, onClick = tapped("results.standings") { answers = false })
+                Chip(said.answers, selected = answers, onClick = tapped("results.answers") { answers = true })
+            }
+        }
+        // What the tab shows stands in what the button leaves; with no room it scrolls, the button at the foot.
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            Column(
-                Modifier.fillMaxWidth().heightIn(min = maxHeight).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.Center,
-            ) {
-                results.winner?.let { winner ->
-                    WinnerBanner(
-                        caption = if (winner.playerId == you) words.youWon else words.winner,
-                        name = shown(winner.name),
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                    )
-                    Spacer(Modifier.height(space.md))
+            if (answers) {
+                Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = space.sm)) {
+                    Recap(results.recap, results.questionCount, solo)
                 }
-                // A solo run has nobody to stand beside: its score, with no podium.
-                if (solo) {
-                    ranked.firstOrNull { it.playerId == you }?.let { own ->
-                        FlipNumber(
-                            own.score,
-                            Modifier.align(Alignment.CenterHorizontally),
-                            size = FlapSize.LARGE,
-                        )
-                    }
-                } else {
-                    Podium(
-                        ranked.take(PODIUM).mapIndexed { i, standing ->
-                            PodiumPlace(
-                                shown(standing.name),
-                                standing.avatar,
-                                seatOf(standing.playerId, i),
-                                standing.score,
-                                standing.level.takeIf { it > 0 },
-                            )
-                        },
-                        Modifier.fillMaxWidth(),
-                    )
-                }
-                val rest = if (solo) emptyList() else ranked.drop(PODIUM)
-                if (rest.isNotEmpty()) {
-                    Spacer(Modifier.height(space.lg))
-                    Scoreboard(
-                        rest.mapIndexed { i, standing ->
-                            ScoreRow(
-                                place = standing.rank,
-                                name = shown(standing.name),
-                                avatarId = standing.avatar,
-                                seat = seatOf(standing.playerId, PODIUM + i),
-                                total = standing.score,
-                                own = standing.playerId == you,
-                            )
-                        },
-                        Modifier.fillMaxWidth(),
-                    )
-                }
-                Spacer(Modifier.height(space.md))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(space.xs),
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
+            } else {
+                Column(
+                    Modifier.fillMaxWidth().heightIn(min = maxHeight).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    results.standings.firstOrNull { it.playerId == you }?.let { own ->
-                        Chip(words.rightOf.fill(own.correct, results.questionCount), tone = ChipTone.GAIN)
-                    }
-                    results.personalBest?.let { best ->
-                        when {
-                            best.beaten -> Chip(words.newBest, icon = KvizicIcons.Crown, tone = ChipTone.ACCENT)
-                            best.isNew -> Chip(words.best.fill(best.score), icon = KvizicIcons.Crown)
-                            else -> Chip(words.best.fill(best.previous ?: best.score), icon = KvizicIcons.Crown)
-                        }
-                    }
+                    Standings(results, lobby, you, burst)
                 }
-                if (results.endedEarly) {
-                    Spacer(Modifier.height(space.sm))
-                    KvizicText(
-                        words.endedEarly,
-                        Modifier.fillMaxWidth(),
-                        style = type.caption,
-                        color = colors.onPageMuted,
-                        textAlign = TextAlign.Center,
-                    )
+            }
+            if (reacting) {
+                // Over what the tab shows, moving none of it; a tap anywhere but on the six puts them away.
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .semantics { contentDescription = reactionWords.close }
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                            onClick = cued(Cue.TAP_SOFT, tapped("results.reactions_close") { reacting = false }),
+                        ),
+                )
+                Panel(Modifier.align(Alignment.BottomCenter).fillMaxWidth(), padding = space.sm) {
+                    Emotes("results.reaction", Modifier.fillMaxWidth(), small = true) { reaction ->
+                        reacting = false
+                        actions.react(reaction)
+                    }
                 }
             }
         }
         Spacer(Modifier.height(space.md))
-        Row(horizontalArrangement = Arrangement.spacedBy(space.md)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(space.md)) {
             StageButton(
-                if (newGameStarting) words.joinNewGame else words.backToRoom,
-                onClick = tapped("results.back_to_room", onClick = actions.backToLobby),
+                said.playAgain,
+                onClick = tapped("results.play_again", onClick = actions.backToLobby),
                 modifier = Modifier.weight(1f),
             )
-            StageButton(
-                words.leave,
-                onClick = tapped("results.leave", onClick = actions.leave),
-                kind = ButtonKind.DARK,
-                icon = KvizicIcons.Leave,
+            // A solo run has nobody to react to.
+            if (!solo) {
+                StageIconButton(
+                    if (reacting) KvizicIcons.Cross else KvizicIcons.Laugh,
+                    contentDescription = if (reacting) reactionWords.close else reactionWords.react,
+                    onClick =
+                        if (reacting) {
+                            tapped("results.reactions_close") { reacting = false }
+                        } else {
+                            tapped("results.reactions") { reacting = true }
+                        },
+                )
+            }
+        }
+    }
+}
+
+/** The six reactions in a row, each a round button that sends its own, its taps named [tap]. */
+@Composable
+internal fun Emotes(
+    tap: String,
+    modifier: Modifier = Modifier,
+    small: Boolean = false,
+    onReact: (String) -> Unit,
+) {
+    val words = LocalStrings.current.game
+    Row(modifier, horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        EMOTES.forEach { reaction ->
+            StageIconButton(
+                reaction.icon,
+                contentDescription = reaction.name(words),
+                onClick = tapped(tap, mapOf("reaction" to reaction.id)) { onReact(reaction.id) },
+                small = small,
             )
         }
     }
 }
+
+/** Player [id]'s last reaction in [bursts], bursting where it is drawn, or nothing for none. */
+@Composable
+internal fun BurstOf(
+    bursts: Map<String, Burst>,
+    id: String,
+    modifier: Modifier = Modifier,
+) {
+    val burst = bursts[id] ?: return
+    val icon = reactionIcon(burst.reaction) ?: return
+    ReactionBurst(icon, burstKey = burst.key, modifier = modifier, startedAt = burst.at)
+}
+
+/**
+ * Who won and the podium of those who stayed to the end, or a solo run's score; the rest of the standings,
+ * those who left last and greyed; and how the player did.
+ */
+@Composable
+private fun ColumnScope.Standings(
+    results: GameResults,
+    lobby: Lobby,
+    you: String,
+    burst: @Composable (String) -> Unit,
+) {
+    val words = LocalStrings.current.game
+    val said = LocalStrings.current.results
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
+    val solo = lobby.kind == LobbyKind.SOLO
+    // Those who stayed first, whatever an older server ranked them; only they stand on the podium.
+    val stayed = results.standings.filter { it.finished }.sortedBy { it.rank }
+    val podium = if (solo) emptyList() else stayed.take(PODIUM)
+    val rest =
+        if (solo) {
+            emptyList()
+        } else {
+            stayed.drop(PODIUM) +
+                results.standings.filterNot { it.finished }.sortedBy { it.rank }
+        }
+    val seatOf = { playerId: String, fallback: Int -> lobby.member(playerId)?.seat ?: fallback }
+    val rightOf = { standing: FinalStanding -> RightCount(standing.correct, said.rightCount.fill(standing.correct)) }
+    val mine = results.standings.firstOrNull { it.playerId == you }
+    results.winner?.let { winner ->
+        WinnerBanner(
+            caption = if (winner.playerId == you) words.youWon else words.winner,
+            name = shown(winner.name),
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Spacer(Modifier.height(space.md))
+    }
+    // A solo run has nobody to stand beside: its score, with no podium.
+    if (solo) {
+        mine?.let { FlipNumber(it.score, Modifier.align(Alignment.CenterHorizontally), size = FlapSize.LARGE) }
+    } else if (podium.isNotEmpty()) {
+        Podium(
+            podium.mapIndexed { i, standing ->
+                PodiumPlace(
+                    shown(standing.name),
+                    standing.avatar,
+                    seatOf(standing.playerId, i),
+                    standing.score,
+                    standing.level.takeIf { it > 0 },
+                    right = rightOf(standing),
+                    id = standing.playerId,
+                )
+            },
+            Modifier.fillMaxWidth(),
+            burst = burst,
+        )
+    }
+    if (rest.isNotEmpty()) {
+        Spacer(Modifier.height(space.lg))
+        Scoreboard(
+            rest.mapIndexed { i, standing ->
+                ScoreRow(
+                    place = standing.rank,
+                    name = shown(standing.name),
+                    avatarId = standing.avatar,
+                    seat = seatOf(standing.playerId, podium.size + i),
+                    total = standing.score,
+                    own = standing.playerId == you,
+                    id = standing.playerId,
+                    right = rightOf(standing),
+                    left = said.outOfGame.takeUnless { standing.finished },
+                )
+            },
+            Modifier.fillMaxWidth(),
+            burst = burst,
+        )
+    }
+    Spacer(Modifier.height(space.md))
+    FlowRow(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(space.xs, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(space.xs),
+    ) {
+        mine?.let { own -> Chip(words.rightOf.fill(own.correct, results.questionCount), tone = ChipTone.GAIN) }
+        mine?.averageRightMs?.takeIf { it > 0 }?.let { ms ->
+            val seconds = tenths(ms, said.decimalSign)
+            Chip(
+                words.seconds.fill(seconds),
+                Modifier.clearAndSetSemantics { contentDescription = said.averageTime.fill(seconds) },
+                icon = KvizicIcons.Bolt,
+            )
+        }
+        // One right answer is no run.
+        mine?.bestStreak?.takeIf { it > 1 }?.let { streak ->
+            Chip(
+                said.streak.fill(streak),
+                Modifier.clearAndSetSemantics { contentDescription = said.streakSaid.fill(streak) },
+                icon = KvizicIcons.Flame,
+            )
+        }
+        results.personalBest?.let { best ->
+            when {
+                best.beaten -> Chip(words.newBest, icon = KvizicIcons.Crown, tone = ChipTone.ACCENT)
+                best.isNew -> Chip(words.best.fill(best.score), icon = KvizicIcons.Crown)
+                else -> Chip(words.best.fill(best.previous ?: best.score), icon = KvizicIcons.Crown)
+            }
+        }
+    }
+    if (results.endedEarly) {
+        Spacer(Modifier.height(space.sm))
+        KvizicText(
+            words.endedEarly,
+            Modifier.fillMaxWidth(),
+            style = type.caption,
+            color = colors.onPageMuted,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/**
+ * The player's own game, a card for each question: the question, their answer, right or wrong or none, the
+ * right one when theirs was not, what it made them, and, in a room, how many of its players had it right.
+ */
+@Composable
+private fun Recap(
+    recap: List<RecapQuestion>,
+    questionCount: Int,
+    solo: Boolean,
+) {
+    val words = LocalStrings.current.game
+    val said = LocalStrings.current.results
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(space.sm)) {
+        recap.forEachIndexed { index, question ->
+            Panel(Modifier.fillMaxWidth(), padding = space.md) {
+                Row(horizontalArrangement = Arrangement.spacedBy(space.sm)) {
+                    KvizicText(
+                        "${index + 1}",
+                        Modifier.clearAndSetSemantics {
+                            contentDescription =
+                                words.questionOf.fill(index + 1, questionCount)
+                        },
+                        style = type.label,
+                        color = colors.onRaisedMuted,
+                    )
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(space.xxs)) {
+                        KvizicText(shown(question.text), style = type.body, color = colors.onRaised)
+                        val picked = question.picked
+                        if (picked == null) {
+                            KvizicText(said.noAnswer, style = type.caption, color = colors.onRaisedMuted)
+                        } else {
+                            val tint = if (question.correct) colors.gain else colors.loss
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(space.xs),
+                            ) {
+                                KvizicIcon(
+                                    if (question.correct) KvizicIcons.Check else KvizicIcons.Cross,
+                                    contentDescription = if (question.correct) words.rightAnswer else words.wrongAnswer,
+                                    tint = tint,
+                                    size = space.icon.small,
+                                )
+                                KvizicText(shown(picked), Modifier.weight(1f), style = type.name, color = tint)
+                            }
+                        }
+                        if (!question.correct) {
+                            KvizicText(
+                                said.answerWas.fill(shown(question.right)),
+                                style = type.caption,
+                                color = colors.onRaisedMuted,
+                            )
+                        }
+                        if (!solo) {
+                            KvizicText(
+                                said.roomRight.fill(question.rightCount, question.playerCount),
+                                style = type.caption,
+                                color = colors.onRaisedMuted,
+                            )
+                        }
+                    }
+                    Chip(
+                        signed(question.points),
+                        tone =
+                            when {
+                                question.points > 0 -> ChipTone.GAIN
+                                question.points < 0 -> ChipTone.LOSS
+                                else -> ChipTone.NEUTRAL
+                            },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** [ms] in seconds to a tenth, [sign] before the tenth: 3240 is 3,2. */
+private fun tenths(
+    ms: Int,
+    sign: String,
+): String {
+    val tenths = (ms + TENTH / 2) / TENTH
+    return "${tenths / 10}$sign${tenths % 10}"
+}
+
+private const val TENTH = 100
 
 /** A room's page: the screen's padding, and its content held to a readable column on a wide window. */
 @Composable

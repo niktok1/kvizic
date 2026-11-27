@@ -4,7 +4,7 @@ import io.ntole.kvizic.language.Language
 import kotlin.test.Test
 
 /**
- * The lobby and the room's dialogs with every word whole ([RoomFitChecks]) in every language but Serbian
+ * The lobby, the room's dialogs and the results with every word whole ([RoomFitChecks]) in every language but Serbian
  * Cyrillic, which [RoomFitDrawTest] draws, on the narrowest phone at the usual font and a large one, and the
  * host's choices about a member on the tablet too, where they stand in a row: a language's long word fails
  * here. The languages are shared out among [SHARDS] classes by their order, one
@@ -29,6 +29,9 @@ abstract class RoomFitLanguagesDrawTest(
     @Test
     fun `every reason to report a question is read whole in the other languages`() =
         languages.forEach { reportWhole(it) }
+
+    @Test
+    fun `the results are whole in the other languages`() = languages.forEach { resultsWhole(it, NARROWEST) }
 
     internal companion object {
         /** Every language [RoomFitDrawTest] does not draw, in [Language]'s order. */

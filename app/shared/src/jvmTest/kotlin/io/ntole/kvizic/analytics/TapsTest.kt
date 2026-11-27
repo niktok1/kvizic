@@ -269,7 +269,17 @@ class TapsTest {
         )
         val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
         assertEquals(
-            setOf("results.back_to_room", "results.leave"),
+            setOf(
+                "results.leave",
+                "results.standings",
+                "results.answers",
+                "results.play_again",
+                "results.reactions",
+                "results.reaction",
+                "results.reactions_close",
+                "room.leave_cancel",
+                "room.leave_confirm",
+            ),
             elementsTapped {
                 RoomScreen(
                     inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members)),

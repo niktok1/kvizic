@@ -61,7 +61,7 @@ internal val MacedonianUpdateStrings: UpdateStrings =
         reload = "Освежи",
     )
 
-internal val MacedonianReactionStrings: ReactionStrings = ReactionStrings(react = "Реагирај")
+internal val MacedonianReactionStrings: ReactionStrings = ReactionStrings(react = "Реагирај", close = "Затвори")
 
 internal val MacedonianHowToPlayStrings: HowToPlayStrings =
     HowToPlayStrings(
@@ -186,7 +186,6 @@ internal val MacedonianGameStrings: GameStrings =
         reactionOops = "Упс",
         reactionNudge = "Ајде, почнувај!",
         gameStarting = "Играта почнува",
-        joinNewGame = "Играј",
         spectating = "Ја гледаш оваа игра, а следната ја играш.",
         onlyHost = "Тоа е само за домаќинот.",
         refused = "Тоа сега не е можно.",
@@ -217,7 +216,6 @@ internal val MacedonianGameStrings: GameStrings =
         winner = "Победник",
         youWon = "Твоја победа!",
         rightOf = "Точно {0} од {1}",
-        backToRoom = "Назад",
         newBest = "Нов рекорд!",
         best = "Рекорд: {0}",
         endedEarly = "Играта е прекината пред крајот.",
@@ -275,5 +273,6 @@ val MacedonianStrings: Strings =
         reactions = MacedonianReactionStrings,
         howToPlay = MacedonianHowToPlayStrings,
         pass = MacedonianPassStrings,
+        results = MacedonianResultsStrings,
         game = MacedonianGameStrings,
     )

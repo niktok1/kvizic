@@ -60,7 +60,7 @@ internal val CroatianUpdateStrings: UpdateStrings =
         reload = "Osvježi",
     )
 
-internal val CroatianReactionStrings: ReactionStrings = ReactionStrings(react = "Reagiraj")
+internal val CroatianReactionStrings: ReactionStrings = ReactionStrings(react = "Reagiraj", close = "Zatvori")
 
 internal val CroatianHowToPlayStrings: HowToPlayStrings =
     HowToPlayStrings(
@@ -183,7 +183,6 @@ internal val CroatianGameStrings: GameStrings =
         reactionOops = "Ups",
         reactionNudge = "Ajde, kreni!",
         gameStarting = "Igra počinje",
-        joinNewGame = "Uđi u igru",
         spectating = "Gledaš ovu igru, a sljedeću igraš.",
         onlyHost = "To može samo domaćin.",
         refused = "To sad nije moguće.",
@@ -214,7 +213,6 @@ internal val CroatianGameStrings: GameStrings =
         winner = "Pobjednik",
         youWon = "Tvoja pobjeda!",
         rightOf = "Točno {0} od {1}",
-        backToRoom = "U sobu",
         newBest = "Novi rekord!",
         best = "Rekord: {0}",
         endedEarly = "Igra je prekinuta prije kraja.",
@@ -272,5 +270,6 @@ val CroatianStrings: Strings =
         reactions = CroatianReactionStrings,
         howToPlay = CroatianHowToPlayStrings,
         pass = CroatianPassStrings,
+        results = CroatianResultsStrings,
         game = CroatianGameStrings,
     )

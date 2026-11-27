@@ -365,23 +365,9 @@ internal fun RevealScreen(
                         }
                     }
                     if (choosing && onReact != null) {
-                        Row(
-                            Modifier.matchParentSize(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            EMOTES.forEach { reaction ->
-                                StageIconButton(
-                                    reaction.icon,
-                                    contentDescription = reaction.name(words),
-                                    onClick =
-                                        tapped("reveal.reaction", mapOf("reaction" to reaction.id)) {
-                                            choosing = false
-                                            onReact(reaction.id)
-                                        },
-                                    small = true,
-                                )
-                            }
+                        Emotes("reveal.reaction", Modifier.matchParentSize(), small = true) { reaction ->
+                            choosing = false
+                            onReact(reaction)
                         }
                     }
                 }
@@ -456,11 +442,7 @@ internal fun RevealScreen(
                     reorderKey = reveal.questionId,
                     timeLeft = phase.next::fractionLeft,
                     timeDescription = (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
-                    burst = { id ->
-                        val burst = bursts[id]
-                        val icon = burst?.let { reactionIcon(it.reaction) }
-                        if (icon != null) ReactionBurst(icon, burstKey = burst.key, startedAt = burst.at)
-                    },
+                    burst = { id -> BurstOf(bursts, id) },
                 )
             },
         )

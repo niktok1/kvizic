@@ -90,9 +90,10 @@ class RoomRevealDrawTest : RoomStills() {
     }
 
     @Test
-    fun `the results crown the winner and give the player their way back`() {
+    fun `the results crown the winner, recall the player's answers and give their way back`() {
         eachSkin { skin ->
-            val words = stringsOf(Language.DEFAULT).game
+            val strings = stringsOf(Language.DEFAULT)
+            val words = strings.game
             val back = mutableListOf<String>()
             val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
             val state = inLobby(GamePhase.Waiting(RESULTS), lobby = lobby(members = members))
@@ -100,15 +101,41 @@ class RoomRevealDrawTest : RoomStills() {
                 skin,
                 "results",
                 state,
-                RoomActions(backToLobby = { back += "back" }, leave = { back += "leave" }),
+                RoomActions(
+                    backToLobby = { back += "back" },
+                    start = { back += "start" },
+                    leave = { back += "leave" },
+                    react = { back += it },
+                ),
             ) { scene ->
                 val shown = scene.everyText()
-                listOf(words.winner, "Нина", words.rightOf.fill(7, 10), words.backToRoom, words.leave).forEach {
-                    assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown")
-                }
-                scene.tap(words.backToRoom)
+                listOf(
+                    words.winner,
+                    "Нина",
+                    words.rightOf.fill(7, 10),
+                    words.seconds.fill("3,2"),
+                    strings.results.streak.fill(5),
+                    strings.results.playAgain,
+                ).forEach { assertTrue(it in shown, "${skin.id}: \"$it\" is not in $shown") }
+                scene.tap(strings.results.answers)
+                write("room-${skin.id}-results-answers", scene.renderSettled())
+                val answers = scene.everyText()
+                val recap = RESULTS.recap
+                listOf(
+                    recap[0].text,
+                    recap[1].picked,
+                    strings.results.answerWas.fill(recap[1].right),
+                    strings.results.noAnswer,
+                ).forEach { assertTrue(it in answers, "${skin.id}: \"$it\" is not in $answers") }
+                scene.tap(strings.reactions.react)
+                write("room-${skin.id}-results-reactions", scene.renderSettled())
+                val names = scene.descriptions()
+                EMOTES.forEach { assertTrue(it.name(words) in names, "${skin.id}: no ${it.id} in $names") }
+                scene.tap(EMOTES.first().name(words))
+                scene.tap(strings.results.playAgain)
             }
-            assertEquals(listOf("back"), back, skin.id)
+            assertEquals(listOf(EMOTES.first().id, "back"), back, "${skin.id}: a reaction, then back to the room")
+            draw(skin, "results-burst", state, bursts = mapOf("nina" to Burst("fire", 1)), millis = 400) {}
         }
     }
 
@@ -121,7 +148,7 @@ class RoomRevealDrawTest : RoomStills() {
             draw(skin, "results-levels", state) { scene ->
                 val shown = scene.everyText()
                 assertTrue(
-                    stringsOf(Language.DEFAULT).game.backToRoom in shown,
+                    stringsOf(Language.DEFAULT).results.playAgain in shown,
                     "${skin.id}: these are not the results",
                 )
                 listOf("12", "7", "24").forEach { assertTrue(it in shown, "${skin.id}: no badge shows $it: $shown") }
@@ -161,7 +188,14 @@ class RoomRevealDrawTest : RoomStills() {
                 assertFalse(words.winner in shown, "${skin.id}: $shown")
                 assertTrue(longest in shown, "${skin.id}: the longest name is cut: $shown")
                 // Nothing is pushed off the phone: the way back stands whole at the foot.
-                val back = scene.nodes().single { words.backToRoom in it.texts }.boundsInRoot
+                val back =
+                    scene
+                        .nodes()
+                        .single {
+                            stringsOf(
+                                Language.DEFAULT,
+                            ).results.playAgain in it.texts
+                        }.boundsInRoot
                 assertTrue(back.height > 0 && back.bottom <= HEIGHT, "${skin.id}: the way back is at $back")
                 val name = scene.nodes().first { longest in it.texts }.boundsInRoot
                 assertTrue(name.width > 0 && name.right <= WIDTH, "${skin.id}: the winner's name is at $name")
@@ -214,12 +248,12 @@ class RoomRevealDrawTest : RoomStills() {
     }
 
     @Test
-    fun `a new game starting while the player looks at the results lets them in`() {
-        val words = stringsOf(Language.DEFAULT).game
+    fun `a new game starting keeps the player on the results, with their way back`() {
+        val words = stringsOf(Language.DEFAULT).results
         val members = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
         val state = inLobby(GamePhase.Countdown(deadline(5.seconds()), RESULTS), lobby = lobby(members = members))
         draw(Skins.Default, "results-new-game", state) { scene ->
-            assertTrue(words.joinNewGame in scene.everyText(), "${scene.everyText()}")
+            assertTrue(words.playAgain in scene.everyText(), "${scene.everyText()}")
         }
     }
 }

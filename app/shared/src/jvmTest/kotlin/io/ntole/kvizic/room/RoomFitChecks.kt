@@ -4,7 +4,9 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.SemanticsActions
 import io.ntole.kvizic.core.domain.lobby.GamePhase
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
+import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
+import io.ntole.kvizic.core.domain.lobby.PersonalBest
 import io.ntole.kvizic.core.domain.report.QuestionReportReason
 import io.ntole.kvizic.cutTexts
 import io.ntole.kvizic.everyText
@@ -17,6 +19,7 @@ import io.ntole.kvizic.texts
 import org.jetbrains.skia.Image
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The lobby and the room's dialogs with every word whole, in every skin, in a language, at the sizes a test
@@ -108,6 +111,57 @@ abstract class RoomFitChecks : RoomStills() {
                     val shown = scene.everyText()
                     dialog.forEach { assertTrue(it in shown, "$where: no \"$it\" in $shown") }
                     assertEquals(emptyList(), scene.cutTexts().filter { it in dialog }, "$where: cut")
+                }
+            }
+        }
+    }
+
+    /**
+     * The results whole, the standings and the player's own answers, at each of [sizes]: a room's, as its next game's
+     * countdown runs in the lobby, and a solo run's, with its best.
+     */
+    protected fun resultsWhole(
+        language: Language,
+        sizes: List<Pair<Int, Float>>,
+    ) {
+        eachSkin { skin ->
+            val said = stringsOf(language).results
+            val onResults = MEMBERS.map { if (it.playerId == YOU) it.copy(onResults = true) else it }
+            val solo =
+                RESULTS.copy(
+                    standings = RESULTS.standings.filter { it.playerId == YOU },
+                    personalBest = PersonalBest(score = 1488, previous = 1210, isNew = true),
+                )
+            val cases =
+                listOf(
+                    "new-game" to
+                        inLobby(GamePhase.Countdown(deadline(5.seconds), RESULTS), lobby = lobby(members = onResults)),
+                    "solo" to
+                        inLobby(
+                            GamePhase.Waiting(solo),
+                            lobby =
+                                lobby(
+                                    members = onResults.filter { it.playerId == YOU },
+                                    host = YOU,
+                                    kind = LobbyKind.SOLO,
+                                ),
+                        ),
+                )
+            sizes.forEach { (width, fontScale) ->
+                cases.forEach { (case, state) ->
+                    val where = "$language, ${skin.id}, $case at $width, $fontScale"
+                    val name = still("fit-results-$case-$width-$fontScale", language)
+                    draw(skin, name, state, width = width, fontScale = fontScale, language = language) { scene ->
+                        assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
+                        val play = scene.nodes().single { said.playAgain in it.texts }.boundsInRoot
+                        assertTrue(
+                            play.bottom <= HEIGHT,
+                            "$where: the way to the next game runs off the screen at $play",
+                        )
+                        scene.tap(said.answers)
+                        write("room-${skin.id}-$name-answers", scene.renderSettled())
+                        assertEquals(emptyList(), scene.cutTexts(), "$where, the answers: cut")
+                    }
                 }
             }
         }

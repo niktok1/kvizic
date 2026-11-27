@@ -4,7 +4,7 @@ import io.ntole.kvizic.language.Language
 import kotlin.test.Test
 
 /**
- * The lobby and the room's dialogs with every word whole ([RoomFitChecks]) in Serbian Cyrillic, the source, in
+ * The lobby, the room's dialogs and the results with every word whole ([RoomFitChecks]) in Serbian Cyrillic, the source, in
  * every skin, on the phones and the tablet the game was tried on (393 and 800 wide) and on the narrowest at a
  * phone's large font.
  */
@@ -22,6 +22,9 @@ class RoomFitDrawTest : RoomFitChecks() {
 
     @Test
     fun `every reason to report a question is read whole on the narrowest phone`() = reportWhole(Language.DEFAULT)
+
+    @Test
+    fun `the results are whole on the narrowest phone`() = resultsWhole(Language.DEFAULT, NARROWEST)
 
     private companion object {
         /** The phone the chips were crushed on, the narrowest, and the narrowest at a large font. */

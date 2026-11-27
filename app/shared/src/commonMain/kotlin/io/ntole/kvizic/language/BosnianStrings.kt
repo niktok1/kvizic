@@ -60,7 +60,7 @@ internal val BosnianUpdateStrings: UpdateStrings =
         reload = "Osvježi",
     )
 
-internal val BosnianReactionStrings: ReactionStrings = ReactionStrings(react = "Reaguj")
+internal val BosnianReactionStrings: ReactionStrings = ReactionStrings(react = "Reaguj", close = "Zatvori")
 
 internal val BosnianHowToPlayStrings: HowToPlayStrings =
     HowToPlayStrings(
@@ -183,7 +183,6 @@ internal val BosnianGameStrings: GameStrings =
         reactionOops = "Ups",
         reactionNudge = "Hajde, počni!",
         gameStarting = "Igra počinje",
-        joinNewGame = "Nova igra počinje — uđi",
         spectating = "Gledaš ovu igru, a sljedeću igraš.",
         onlyHost = "To može samo voditelj.",
         refused = "To sada nije moguće.",
@@ -214,7 +213,6 @@ internal val BosnianGameStrings: GameStrings =
         winner = "Pobjednik",
         youWon = "Tvoja pobjeda!",
         rightOf = "Tačno {0} od {1}",
-        backToRoom = "Nazad u sobu",
         newBest = "Novi rekord!",
         best = "Rekord: {0}",
         endedEarly = "Igra je prekinuta prije kraja.",
@@ -272,5 +270,6 @@ val BosnianStrings: Strings =
         reactions = BosnianReactionStrings,
         howToPlay = BosnianHowToPlayStrings,
         pass = BosnianPassStrings,
+        results = BosnianResultsStrings,
         game = BosnianGameStrings,
     )

@@ -12,6 +12,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyMember
 import io.ntole.kvizic.core.domain.lobby.LobbySessionState
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.QuestionKind
+import io.ntole.kvizic.core.domain.lobby.RecapQuestion
 import io.ntole.kvizic.core.domain.lobby.Reveal
 import io.ntole.kvizic.core.domain.lobby.Standing
 import io.ntole.kvizic.core.domain.topic.Topic
@@ -136,11 +137,25 @@ internal val RESULTS =
         standings =
             listOf(
                 FinalStanding("nina", "Нина", "fox", 1612, 8, 1, true, 12),
-                FinalStanding(YOU, "Марко", "hedgehog", 1488, 7, 2, true, 7),
+                FinalStanding(YOU, "Марко", "hedgehog", 1488, 7, 2, true, 7, averageRightMs = 3_240, bestStreak = 5),
                 FinalStanding("bojan", "Бојан", "bear", 1210, 6, 3, true, 24),
                 FinalStanding("sova", "Мудра Сова", "owl", 980, 5, 4, true),
                 FinalStanding("roda", "Тиха Рода", "stork", 655, 3, 5, false),
             ),
         endedEarly = false,
         personalBest = null,
+        recap =
+            listOf(
+                RecapQuestion("Која река протиче кроз Нови Сад?", "Дунав", "Дунав", true, 88, 4, 5),
+                RecapQuestion(
+                    "Који српски писац је добио Нобелову награду за књижевност и која је његова најпознатија књига?",
+                    "Иво Андрић, „На Дрини ћуприја“",
+                    "Меша Селимовић, „Дервиш и смрт“",
+                    false,
+                    -25,
+                    3,
+                    5,
+                ),
+                RecapQuestion("У ком граду је Калемегдан?", "Београд", null, false, 0, 5, 5),
+            ),
     )
