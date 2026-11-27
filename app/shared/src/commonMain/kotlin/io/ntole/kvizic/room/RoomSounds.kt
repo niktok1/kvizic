@@ -249,7 +249,7 @@ internal fun RoomSounds(
     }
     val phase = state.phase
     if (phase is GamePhase.Answering) {
-        val answered by rememberUpdatedState(phase.myPick != null)
+        val answered by rememberUpdatedState(phase.myPick != null || phase.passed)
         LaunchedEffect(phase.gameId, phase.question.index) {
             sounding(phase.deadline::remaining, motion.warnSeconds, { answered }, cues)
         }

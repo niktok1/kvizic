@@ -43,19 +43,21 @@ class RoomScreenDrawTest : RoomStills() {
     }
 
     @Test
-    fun `an answer tapped is sent, and the strip shows who the question still waits for`() {
+    fun `an answer tapped is sent, and the strip shows who else the question waits for and the pass`() {
         eachSkin { skin ->
             val words = stringsOf(Language.DEFAULT).game
             val answers = mutableListOf<Int>()
-            draw(skin, "answering", inLobby(answering()), RoomActions(answer = { answers += it })) { scene ->
+            val actions = RoomActions(answer = { answers += it }, pass = { answers += -1 })
+            draw(skin, "answering", inLobby(answering()), actions) { scene ->
                 OPTIONS.forEach { assertTrue(it in scene.everyText(), "${skin.id}: $it") }
                 val waiting = scene.descriptions().single { it.startsWith(words.waitingFor.fill("")) }
-                // The player, Нина and Тиха Рода have not answered; Сова and Бојан have.
-                listOf("Нина", "Марко", "Тиха Рода").forEach { assertTrue(it in waiting, "${skin.id}: $waiting") }
-                assertFalse("Бојан" in waiting, "${skin.id}: $waiting")
+                // Нина and Тиха Рода have not answered; Сова and Бојан have; the player's place is the pass.
+                listOf("Нина", "Тиха Рода").forEach { assertTrue(it in waiting, "${skin.id}: $waiting") }
+                listOf("Бојан", "Марко").forEach { assertFalse(it in waiting, "${skin.id}: $waiting") }
+                scene.tap(stringsOf(Language.DEFAULT).pass.dontKnow)
                 scene.tap(OPTIONS[2])
             }
-            assertEquals(listOf(2), answers, skin.id)
+            assertEquals(listOf(-1, 2), answers, skin.id)
         }
     }
 

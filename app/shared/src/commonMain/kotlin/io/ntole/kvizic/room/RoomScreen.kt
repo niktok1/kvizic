@@ -105,6 +105,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @Immutable
 class RoomActions(
     val answer: (Int) -> Unit = {},
+    /** Passes the question asked now: the player does not know. */
+    val pass: () -> Unit = {},
     val start: () -> Unit = {},
     val openSettings: () -> Unit = {},
     val chooseDifficulty: (LobbyDifficulty) -> Unit = {},

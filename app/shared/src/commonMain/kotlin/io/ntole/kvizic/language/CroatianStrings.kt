@@ -271,5 +271,6 @@ val CroatianStrings: Strings =
         updateScreen = CroatianUpdateStrings,
         reactions = CroatianReactionStrings,
         howToPlay = CroatianHowToPlayStrings,
+        pass = CroatianPassStrings,
         game = CroatianGameStrings,
     )

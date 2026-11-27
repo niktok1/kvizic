@@ -50,6 +50,8 @@ data class Strings(
     val reactions: ReactionStrings,
     /** The words of the How to play cards. */
     val howToPlay: HowToPlayStrings,
+    /** The words of the button that passes a question. */
+    val pass: PassStrings,
     /** The game's own words, from Home to the results. */
     val game: GameStrings,
 ) {
@@ -76,6 +78,7 @@ data class Strings(
             updateScreen = updateScreen.map(transform),
             reactions = reactions.map(transform),
             howToPlay = howToPlay.map(transform),
+            pass = pass.map(transform),
             game = game.map(transform),
         )
 }
@@ -99,6 +102,7 @@ val SerbianCyrillicStrings: Strings =
         updateScreen = SerbianCyrillicUpdateStrings,
         reactions = SerbianCyrillicReactionStrings,
         howToPlay = SerbianCyrillicHowToPlayStrings,
+        pass = SerbianCyrillicPassStrings,
         game = SerbianCyrillicGameStrings,
     )
 
@@ -123,6 +127,7 @@ val EnglishStrings: Strings =
         updateScreen = EnglishUpdateStrings,
         reactions = EnglishReactionStrings,
         howToPlay = EnglishHowToPlayStrings,
+        pass = EnglishPassStrings,
         game = EnglishGameStrings,
     )
 

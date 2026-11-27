@@ -213,6 +213,8 @@ class RoomViewModel(
 
     fun answer(option: Int) = session.answer(option)
 
+    fun pass() = session.pass()
+
     fun start() = session.start()
 
     fun updateSettings(settings: LobbySettings) = session.updateSettings(settings)

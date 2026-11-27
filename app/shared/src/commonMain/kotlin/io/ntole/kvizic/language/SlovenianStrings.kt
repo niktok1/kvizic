@@ -278,5 +278,6 @@ val SlovenianStrings: Strings =
         updateScreen = SlovenianUpdateStrings,
         reactions = SlovenianReactionStrings,
         howToPlay = SlovenianHowToPlayStrings,
+        pass = SlovenianPassStrings,
         game = SlovenianGameStrings,
     )

@@ -425,6 +425,7 @@ private fun Room(
         actions =
             RoomActions(
                 answer = room::answer,
+                pass = room::pass,
                 start = room::start,
                 openSettings = onSettings,
                 chooseDifficulty = { level -> room.updateSettings(state.lobby.settings.copy(difficulty = level)) },

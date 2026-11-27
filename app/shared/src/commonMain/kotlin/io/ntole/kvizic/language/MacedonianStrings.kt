@@ -274,5 +274,6 @@ val MacedonianStrings: Strings =
         updateScreen = MacedonianUpdateStrings,
         reactions = MacedonianReactionStrings,
         howToPlay = MacedonianHowToPlayStrings,
+        pass = MacedonianPassStrings,
         game = MacedonianGameStrings,
     )

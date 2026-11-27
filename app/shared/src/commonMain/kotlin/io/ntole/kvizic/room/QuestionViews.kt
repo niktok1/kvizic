@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -124,6 +125,7 @@ internal fun QuestionScreen(
         }
     val playing = state.you in players
     val myPick = answering?.myPick
+    val passed = answering?.passed == true
     val picks: Map<String, Int> =
         answering?.let { if (myPick != null) it.picks + (state.you to myPick) else it.picks }.orEmpty()
     val answer = tappedAt("question.answer", withLockInFeedback(actions.answer))
@@ -151,12 +153,12 @@ internal fun QuestionScreen(
                 List(question.optionCount) { i ->
                     when {
                         answering == null -> AnswerTileState.DIMMED
-                        myPick == null -> AnswerTileState.IDLE
+                        myPick == null && !passed -> AnswerTileState.IDLE
                         i == myPick -> AnswerTileState.LOCKED_IN
                         else -> AnswerTileState.DIMMED
                     }
                 },
-            onPick = if (answering != null && playing && myPick == null) answer else null,
+            onPick = if (answering != null && playing && myPick == null && !passed) answer else null,
             stateDescriptions = List(question.optionCount) { i -> if (i == myPick) words.yourAnswer else null },
             pickers =
                 if (picks.isEmpty()) {
@@ -169,36 +171,49 @@ internal fun QuestionScreen(
             placesKey = gameId to question.index,
         )
         Spacer(Modifier.height(space.md))
-        Strip {
-            when {
-                answering == null -> {
-                    KvizicText(
-                        words.answersComing,
-                        style = type.caption,
-                        color = colors.onRaisedMuted,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(space.sm)) {
+            Strip(Modifier.weight(1f)) {
+                when {
+                    answering == null -> {
+                        KvizicText(
+                            words.answersComing,
+                            style = type.caption,
+                            color = colors.onRaisedMuted,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
 
-                playing -> {
-                    val answered = answering?.answered.orEmpty()
-                    val waiting = players.filter { it !in answered && it != state.you.takeIf { myPick != null } }
-                    val members = waiting.mapNotNull { lobby.member(it) }.sortedBy { it.seat }
-                    WaitingFor(
-                        members.map { AvatarChip(it.avatar, it.seat) },
-                        Modifier.fillMaxWidth(),
-                        contentDescription = words.waitingFor.fill(members.joinToString { shownIn(it.name, language) }),
-                    )
-                }
+                    playing -> {
+                        val answered = answering?.answered.orEmpty()
+                        val waiting = players.filter { it !in answered && it != state.you }
+                        val members = waiting.mapNotNull { lobby.member(it) }.sortedBy { it.seat }
+                        WaitingFor(
+                            members.map { AvatarChip(it.avatar, it.seat) },
+                            Modifier.fillMaxWidth(),
+                            contentDescription =
+                                words.waitingFor.fill(
+                                    members.joinToString { shownIn(it.name, language) },
+                                ),
+                        )
+                    }
 
-                else -> {
-                    KvizicText(
-                        words.spectating,
-                        style = type.caption,
-                        color = colors.onRaisedMuted,
-                        textAlign = TextAlign.Center,
-                    )
+                    else -> {
+                        KvizicText(
+                            words.spectating,
+                            style = type.caption,
+                            color = colors.onRaisedMuted,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
+            }
+            if (answering != null && playing && myPick == null && !passed) {
+                StageIconButton(
+                    KvizicIcons.Skip,
+                    contentDescription = LocalStrings.current.pass.dontKnow,
+                    onClick = tapped("question.pass", onClick = actions.pass),
+                    square = true,
+                )
             }
         }
     }
@@ -573,9 +588,12 @@ private fun QuestionCard(
 
 /** The strip under the answers, as tall whatever it holds. */
 @Composable
-private fun Strip(content: @Composable () -> Unit) {
+private fun Strip(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     val space = KvizicTheme.space
-    Panel(Modifier.fillMaxWidth(), padding = space.md) {
+    Panel(modifier.fillMaxWidth(), padding = space.md) {
         // As tall with words in it as with the avatars of those waited for, so nothing over it moves.
         Box(Modifier.fillMaxWidth().heightIn(min = space.avatar.xs), contentAlignment = Alignment.Center) { content() }
     }

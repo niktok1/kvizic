@@ -235,7 +235,7 @@ class TapsTest {
         )
         assertEquals(
             // Leaving mid-game asks first, as anywhere in the room.
-            setOf("question.leave", "question.answer", "room.leave_cancel", "room.leave_confirm"),
+            setOf("question.leave", "question.answer", "question.pass", "room.leave_cancel", "room.leave_confirm"),
             elementsTapped {
                 RoomScreen(
                     inLobby(answering()),

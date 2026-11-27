@@ -126,6 +126,12 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
 - **Read time**: 1.5 s + 45 ms a character, at most 7 s (the longest question reads in 6.9 s).
 - Answers: 2 to 4 per question, never hard-coded to 4. One locked answer each; a player sees the others'
   picks once locked in. The question ends early once everyone it waits for has answered.
+- **A pass, „Не знам“** (the owner, 2026-11-27): a player who does not know passes the question, final as a
+  lock-in, 0 points as silence, and the question waits for them no more; they see the picks as a lock-in does.
+  Solo has it, and it shows with the minus on or off. On the wire it is an answer whose option is
+  `Answer.PASS` (-1): a server from before refuses it (`INVALID_OPTION`), and a client from before draws a
+  passer's `PickView` on no tile. It counts as a silence for `MeasuredDifficulty`, never as an answer in the
+  tallies, and the reveal shows it as no answer.
 - **Scoring**, max 100: right `50 + 40·f` plus +10/+5/+2 for the first three right; wrong `−(18 + 35·f²)`
   (−18 to −53), scaled for fewer answers; none 0; the minus can be turned off per room. `f` is the time
   left when the answer lands, less min(RTT, 300 ms). **The floor is set so a blind guess never pays on
@@ -336,8 +342,10 @@ domain a pinned copy of `Country`.
   before the recalled question and the board fade in, so no part is ever drawn twice (the owner, 2026-10-02:
   the two layouts crossfading read as a flicker); each new question comes in from the side like the next
   card. Times are skin motion tokens (`stage`, `tileAppear`, `tileStagger`); nothing replays after a rotation.
-- **Waiting strip**: an hourglass and the avatars of those the question still waits for, the player among
-  them until they answer; no words, no count.
+- **Waiting strip**: an hourglass and the avatars of those the question still waits for; no words, no count.
+  The player is not among them: until they answer, a square button as tall as the strip, with the skip icon and no
+  word, stands beside it, which gives it room, and passes (§7, the owner's pick of square over round,
+  2026-11-27); once they are done the strip takes the width again.
 - **The lobby counts in no words** (the owner, 2026-10-01): the seats show who is in and how many more fit,
   an empty seat a person's outline, the host by a crown above the avatar's head, the player's own seat lit in
   the accent (`PanelKind.OWN`), one still on the results greyed with an hourglass; what a seat shows so, a

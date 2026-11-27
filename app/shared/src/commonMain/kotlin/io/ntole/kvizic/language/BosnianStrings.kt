@@ -271,5 +271,6 @@ val BosnianStrings: Strings =
         updateScreen = BosnianUpdateStrings,
         reactions = BosnianReactionStrings,
         howToPlay = BosnianHowToPlayStrings,
+        pass = BosnianPassStrings,
         game = BosnianGameStrings,
     )
