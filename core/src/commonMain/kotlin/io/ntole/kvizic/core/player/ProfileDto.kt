@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * server generated for them. [country] is the one the server last heard from them, none before it has.
  * [coins] is what their games earned less what the shop took, [items] what they own from the shop, and
  * [frameId], [titleId] and [crownId] the frame, the title and the host crown of those they wear, none for none.
+ * [achievements] are every achievement on offer and those they earned, each earning the title it names.
  */
 @Serializable
 public data class ProfileDto(
@@ -25,6 +26,7 @@ public data class ProfileDto(
     public val frameId: String? = null,
     public val titleId: String? = null,
     public val crownId: String? = null,
+    public val achievements: List<AchievementDto> = emptyList(),
 )
 
 /**
