@@ -141,5 +141,9 @@ internal fun ErrorCode.toDomain(): DomainError =
 
         ErrorCode.TOPIC_NOT_FOUND -> GameError.TOPIC_NOT_FOUND
 
+        ErrorCode.ITEM_NOT_FOUND -> GameError.ITEM_NOT_FOUND
+
+        ErrorCode.NOT_ENOUGH_COINS -> GameError.NOT_ENOUGH_COINS
+
         ErrorCode.UNKNOWN -> CoreError.UNKNOWN
     }

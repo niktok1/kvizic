@@ -55,4 +55,10 @@ public object AnalyticsProperty {
 
     /** Whether a game was a solo run. */
     public const val SOLO: String = "solo"
+
+    /** A shop item's id. */
+    public const val ITEM: String = "item"
+
+    /** What a shop item cost, in coins. */
+    public const val PRICE: String = "price"
 }

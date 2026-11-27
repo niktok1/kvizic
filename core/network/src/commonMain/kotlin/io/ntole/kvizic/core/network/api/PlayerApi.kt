@@ -6,8 +6,11 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ntole.kvizic.core.api.KvizicApi
+import io.ntole.kvizic.core.player.BuyItemRequest
 import io.ntole.kvizic.core.player.ProfileDto
 import io.ntole.kvizic.core.player.SetAvatarRequest
+import io.ntole.kvizic.core.player.SetWornRequest
+import io.ntole.kvizic.core.player.ShopDto
 
 /** The session player's own endpoints. Each goes with the session's bearer, which the Auth plugin attaches. */
 public class PlayerApi(
@@ -19,6 +22,19 @@ public class PlayerApi(
     /** Picks [avatarId], one of the game's avatars, answered with the profile as it then stands. */
     public suspend fun setAvatar(avatarId: String): ProfileDto =
         client.post(KvizicApi.Paths.MY_AVATAR) { setBody(SetAvatarRequest(avatarId)) }.body()
+
+    /** What the shop sells. */
+    public suspend fun shop(): ShopDto = client.get(KvizicApi.Paths.SHOP).body()
+
+    /** Buys [itemId] with coins, answered with the profile as it then stands. */
+    public suspend fun buy(itemId: String): ProfileDto =
+        client.post(KvizicApi.Paths.SHOP_ITEMS) { setBody(BuyItemRequest(itemId)) }.body()
+
+    /** Puts on [frameId] and [titleId], answered with the profile as it then stands. */
+    public suspend fun wear(
+        frameId: String?,
+        titleId: String?,
+    ): ProfileDto = client.post(KvizicApi.Paths.MY_WORN) { setBody(SetWornRequest(frameId, titleId)) }.body()
 
     /**
      * Deletes the account of the player the bearer names, for good, answered 204. An expired access token

@@ -51,6 +51,8 @@ class ErrorMapperTest {
             ErrorCode.WRONG_STATUS to (409 to GameError.WRONG_STATUS),
             ErrorCode.TOPIC_EXISTS to (409 to GameError.TOPIC_EXISTS),
             ErrorCode.TOPIC_NOT_FOUND to (404 to GameError.TOPIC_NOT_FOUND),
+            ErrorCode.ITEM_NOT_FOUND to (404 to GameError.ITEM_NOT_FOUND),
+            ErrorCode.NOT_ENOUGH_COINS to (409 to GameError.NOT_ENOUGH_COINS),
             ErrorCode.UNKNOWN to (418 to CoreError.UNKNOWN),
         )
 

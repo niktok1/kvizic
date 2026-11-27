@@ -5,7 +5,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Reading the profile and picking an avatar each ensure a session before they ask the server. */
+/** Reading the profile, picking an avatar and the shop's calls each ensure a session before they ask the server. */
 class PlayerUseCasesTest {
     private val calls = mutableListOf<String>()
     private val players = FakePlayers(calls)
@@ -29,6 +29,21 @@ class PlayerUseCasesTest {
             assertEquals("owl", profile.avatarId)
         }
 
+    @Test
+    fun `the shop is read and an item bought and worn once a session is ensured`() =
+        runTest {
+            val shopping = Shopping(players, session)
+            shopping.items()
+            shopping.buy("frame.bulbs")
+            val profile = shopping.wear("frame.bulbs", null)
+
+            assertEquals(
+                listOf("ensure", "shop", "ensure", "buy frame.bulbs", "ensure", "wear frame.bulbs null"),
+                calls,
+            )
+            assertEquals("frame.bulbs", profile.frameId)
+        }
+
     private class FakePlayers(
         private val calls: MutableList<String>,
     ) : PlayerRepository {
@@ -40,6 +55,24 @@ class PlayerUseCasesTest {
         override suspend fun setAvatar(avatarId: String): Profile {
             calls += "setAvatar $avatarId"
             return PROFILE.copy(avatarId = avatarId)
+        }
+
+        override suspend fun shop(): List<ShopItem> {
+            calls += "shop"
+            return emptyList()
+        }
+
+        override suspend fun buy(itemId: String): Profile {
+            calls += "buy $itemId"
+            return PROFILE.copy(items = listOf(itemId))
+        }
+
+        override suspend fun wear(
+            frameId: String?,
+            titleId: String?,
+        ): Profile {
+            calls += "wear $frameId $titleId"
+            return PROFILE.copy(frameId = frameId, titleId = titleId)
         }
     }
 

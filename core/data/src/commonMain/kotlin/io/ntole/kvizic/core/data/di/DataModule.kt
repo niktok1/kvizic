@@ -21,6 +21,7 @@ import io.ntole.kvizic.core.domain.moderation.ModerationRepository
 import io.ntole.kvizic.core.domain.player.GetProfile
 import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.SetAvatar
+import io.ntole.kvizic.core.domain.player.Shopping
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
@@ -156,6 +157,7 @@ public fun gameDataModule(
 
         factory { GetProfile(players = get(), session = get()) }
         factory { SetAvatar(players = get(), session = get()) }
+        factory { Shopping(players = get(), session = get()) }
         factory { GetTopics(topics = get()) }
         factory { ReportQuestion(reports = get(), session = get()) }
     }

@@ -123,6 +123,8 @@ internal fun MemberView.toDomain(): LobbyMember =
         kickVotesNeeded = kickVotesNeeded,
         kickVotedByYou = kickVoted,
         level = level,
+        frame = frame,
+        title = title,
     )
 
 internal fun LobbyView.toDomain(): Lobby {

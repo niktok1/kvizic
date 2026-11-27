@@ -5,10 +5,14 @@ import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.domain.player.ShopItem
+import io.ntole.kvizic.core.domain.player.ShopItemKind
 import io.ntole.kvizic.core.player.PlayerLevelDto
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
+import io.ntole.kvizic.core.player.ShopItemDto
 import io.ntole.kvizic.core.player.NameSource as WireNameSource
+import io.ntole.kvizic.core.player.ShopItemKind as WireShopItemKind
 
 /** DTO to domain translation for a profile: the only place a `ProfileDto` and a `Profile` meet. */
 internal fun ProfileDto.toDomain(): Profile =
@@ -20,6 +24,24 @@ internal fun ProfileDto.toDomain(): Profile =
         playGamesLinked = playGamesLinked,
         stats = stats.toDomain(),
         level = level.toDomain(),
+        coins = coins,
+        items = items,
+        frameId = frameId,
+        titleId = titleId,
+    )
+
+internal fun ShopItemDto.toDomain(): ShopItem =
+    ShopItem(
+        id = id,
+        kind =
+            when (kind) {
+                WireShopItemKind.AVATAR -> ShopItemKind.AVATAR
+                WireShopItemKind.FRAME -> ShopItemKind.FRAME
+                WireShopItemKind.TITLE -> ShopItemKind.TITLE
+                WireShopItemKind.UNKNOWN -> ShopItemKind.OTHER
+            },
+        price = price,
+        names = names,
     )
 
 internal fun PlayerLevelDto.toDomain(): PlayerLevel =

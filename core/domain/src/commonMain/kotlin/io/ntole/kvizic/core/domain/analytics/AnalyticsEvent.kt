@@ -54,6 +54,12 @@ public object AnalyticsEvent {
     /** The player deleted their account, and plays on as a fresh guest. */
     public const val ACCOUNT_DELETED: String = "account_deleted"
 
+    /** The player bought [AnalyticsProperty.ITEM] in the shop for [AnalyticsProperty.PRICE] coins. */
+    public const val ITEM_BOUGHT: String = "item_bought"
+
+    /** The player put on [AnalyticsProperty.ITEM], an item of theirs from the shop. */
+    public const val ITEM_EQUIPPED: String = "item_equipped"
+
     /** The player took a seat in a room, [AnalyticsProperty.WAY]: `quick_play`, `solo`, `create` or `join`. */
     public const val ROOM_ENTERED: String = "room_entered"
 

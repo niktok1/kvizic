@@ -99,4 +99,10 @@ public enum class GameError : DomainError {
 
     /** A topic no topic has the id of. */
     TOPIC_NOT_FOUND,
+
+    /** The shop sells nothing under that id, or no longer. */
+    ITEM_NOT_FOUND,
+
+    /** The player has fewer coins than the item costs. */
+    NOT_ENOUGH_COINS,
 }
