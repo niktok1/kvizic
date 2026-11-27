@@ -58,6 +58,27 @@ public data class FinalStanding(
     val finished: Boolean,
     /** Their level with this game counted, or 0 where the server did not say. */
     val level: Int = 0,
+    /** The average time of their right answers, or 0 for none or where the server did not say. */
+    val averageRightMs: Int = 0,
+    /** The most right answers they gave in a row, or 0 where the server did not say. */
+    val bestStreak: Int = 0,
+    /** The coins the game paid them, or 0 for none. */
+    val coinsEarned: Int = 0,
+)
+
+/**
+ * One question of the player's own game: its [text], the [right] answer, the one they [picked] (null for
+ * none), whether it was [correct] and the [points] it made them; [rightCount] of the game's [playerCount]
+ * players had it right.
+ */
+public data class RecapQuestion(
+    val text: String,
+    val right: String,
+    val picked: String?,
+    val correct: Boolean,
+    val points: Int,
+    val rightCount: Int,
+    val playerCount: Int,
 )
 
 /** A solo run's score against the player's best before it. */
@@ -77,6 +98,8 @@ public data class GameResults(
     val standings: List<FinalStanding>,
     val endedEarly: Boolean,
     val personalBest: PersonalBest?,
+    /** The player's own game, a question at a time; empty from a server that does not send it. */
+    val recap: List<RecapQuestion> = emptyList(),
 ) {
     /**
      * Who won, as the server counts a win: the one of two or more who stayed to the end who stands alone

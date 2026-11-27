@@ -158,7 +158,8 @@ public data class StandingView(
 
 /**
  * A finished game. Each standing carries the name and avatar, since a player may have left by the time
- * someone looks at the results. [personalBest] only on a solo run.
+ * someone looks at the results. [personalBest] only on a solo run. [recap] is the reader's own game, made
+ * for each reader in their language: one entry for each question revealed, none for a reader who did not play.
  */
 @Serializable
 public data class ResultsView(
@@ -167,6 +168,23 @@ public data class ResultsView(
     public val standings: List<FinalStandingView>,
     public val endedEarly: Boolean = false,
     public val personalBest: PersonalBestView? = null,
+    public val recap: List<RecapQuestionView> = emptyList(),
+)
+
+/**
+ * One question of a reader's game: its [text], the [right] answer, the reader's [picked] one (null for
+ * none), whether it was [correct] and the [points] it made them; [rightCount] of the game's [playerCount]
+ * players then had it right.
+ */
+@Serializable
+public data class RecapQuestionView(
+    public val text: String,
+    public val right: String,
+    public val picked: String? = null,
+    public val correct: Boolean = false,
+    public val points: Int = 0,
+    public val rightCount: Int = 0,
+    public val playerCount: Int = 0,
 )
 
 @Serializable
@@ -181,6 +199,12 @@ public data class FinalStandingView(
     public val finished: Boolean = true,
     /** The player's level with this game counted, 0 when the server does not say. */
     public val level: Int = 0,
+    /** The average time of the player's right answers, 0 for none or when the server does not say. */
+    public val averageRightMs: Int = 0,
+    /** The most right answers the player gave in a row, 0 when the server does not say. */
+    public val bestStreak: Int = 0,
+    /** The coins this game paid the player, 0 for none. */
+    public val coinsEarned: Int = 0,
 )
 
 @Serializable

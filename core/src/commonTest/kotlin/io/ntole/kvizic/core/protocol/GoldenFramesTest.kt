@@ -42,6 +42,8 @@ class GoldenFramesTest {
             """{"t":"over","v":15,"results":{"gameId":"g1","questionCount":10,"standings":[{"player":"p1","name":"Ана","avatar":"fox","score":900,"correct":8,"rank":1,"finished":true,"level":12}]}}""",
             // Since 2026-11-27: a player who passed, among the picks.
             """{"t":"picks","v":16,"index":2,"picks":[{"player":"p1","option":1},{"player":"p2","option":-1}]}""",
+            // Since 2026-11-27: a standing's speed, streak and coins, and each reader's own game.
+            """{"t":"over","v":17,"results":{"gameId":"g2","questionCount":2,"standings":[{"player":"p1","name":"Ана","avatar":"fox","score":180,"correct":2,"rank":1,"finished":true,"level":12,"averageRightMs":3200,"bestStreak":2,"coinsEarned":30}],"endedEarly":false,"recap":[{"text":"?","right":"Дунав","picked":"Сава","correct":false,"points":-25,"rightCount":1,"playerCount":2}]}}""",
         )
 
     private val v1ClientFrames =
@@ -101,6 +103,31 @@ class GoldenFramesTest {
         assertEquals(
             ClientMessage.Answer(id = 9, question = 2, option = ClientMessage.Answer.PASS),
             ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames.last { """"t":"answer"""" in it }),
+        )
+    }
+
+    @Test
+    fun resultsFromBeforeTheRecapSayNothingOfItAndOnesSinceDo() {
+        fun results(frame: String) =
+            (ProtocolJson.decodeFromString(ServerMessage.serializer(), frame) as ServerMessage.GameOver).results
+
+        val (before, since) = v1ServerFrames.filter { """"t":"over"""" in it }.map(::results)
+        val old = before.standings.single()
+        assertEquals(Triple(0, 0, 0), Triple(old.averageRightMs, old.bestStreak, old.coinsEarned))
+        assertEquals(emptyList(), before.recap)
+        val new = since.standings.single()
+        assertEquals(Triple(3200, 2, 30), Triple(new.averageRightMs, new.bestStreak, new.coinsEarned))
+        assertEquals(
+            RecapQuestionView(
+                "?",
+                right = "Дунав",
+                picked = "Сава",
+                correct = false,
+                points = -25,
+                rightCount = 1,
+                playerCount = 2,
+            ),
+            since.recap.single(),
         )
     }
 

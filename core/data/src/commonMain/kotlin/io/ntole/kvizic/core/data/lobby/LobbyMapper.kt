@@ -18,6 +18,7 @@ import io.ntole.kvizic.core.domain.lobby.PersonalBest
 import io.ntole.kvizic.core.domain.lobby.PublicLobbies
 import io.ntole.kvizic.core.domain.lobby.PublicLobby
 import io.ntole.kvizic.core.domain.lobby.QuestionKind
+import io.ntole.kvizic.core.domain.lobby.RecapQuestion
 import io.ntole.kvizic.core.domain.lobby.RefusalReason
 import io.ntole.kvizic.core.domain.lobby.Reveal
 import io.ntole.kvizic.core.domain.lobby.Standing
@@ -35,6 +36,7 @@ import io.ntole.kvizic.core.protocol.MemberView
 import io.ntole.kvizic.core.protocol.PhaseView
 import io.ntole.kvizic.core.protocol.PickView
 import io.ntole.kvizic.core.protocol.QuestionView
+import io.ntole.kvizic.core.protocol.RecapQuestionView
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ResultsView
 import io.ntole.kvizic.core.protocol.RevealView
@@ -172,7 +174,7 @@ internal fun RevealView.toDomain(): Reveal =
     )
 
 internal fun FinalStandingView.toDomain(): FinalStanding =
-    FinalStanding(player, name, avatar, score, correct, rank, finished, level)
+    FinalStanding(player, name, avatar, score, correct, rank, finished, level, averageRightMs, bestStreak, coinsEarned)
 
 internal fun ResultsView.toDomain(): GameResults =
     GameResults(
@@ -181,7 +183,11 @@ internal fun ResultsView.toDomain(): GameResults =
         standings = standings.map { it.toDomain() },
         endedEarly = endedEarly,
         personalBest = personalBest?.let { PersonalBest(it.score, it.previous, it.isNew) },
+        recap = recap.map { it.toDomain() },
     )
+
+internal fun RecapQuestionView.toDomain(): RecapQuestion =
+    RecapQuestion(text, right, picked, correct, points, rightCount, playerCount)
 
 internal fun deadline(
     at: ComparableTimeMark,
