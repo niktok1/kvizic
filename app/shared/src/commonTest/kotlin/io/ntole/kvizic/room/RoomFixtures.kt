@@ -137,7 +137,19 @@ internal val RESULTS =
         standings =
             listOf(
                 FinalStanding("nina", "Нина", "fox", 1612, 8, 1, true, 12),
-                FinalStanding(YOU, "Марко", "hedgehog", 1488, 7, 2, true, 7, averageRightMs = 3_240, bestStreak = 5),
+                FinalStanding(
+                    YOU,
+                    "Марко",
+                    "hedgehog",
+                    1488,
+                    7,
+                    2,
+                    true,
+                    7,
+                    averageRightMs = 3_240,
+                    bestStreak = 5,
+                    coinsEarned = 30,
+                ),
                 FinalStanding("bojan", "Бојан", "bear", 1210, 6, 3, true, 24),
                 FinalStanding("sova", "Мудра Сова", "owl", 980, 5, 4, true),
                 FinalStanding("roda", "Тиха Рода", "stork", 655, 3, 5, false),

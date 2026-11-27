@@ -12,6 +12,7 @@ import io.ntole.kvizic.core.domain.player.PlayerRepository
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.player.SetAvatar
+import io.ntole.kvizic.core.domain.player.ShopItem
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
@@ -451,6 +452,15 @@ class HomeViewModelTest {
             avatar = avatarId
             return profileOf(session.player.value ?: error("no session"), name)
         }
+
+        override suspend fun shop(): List<ShopItem> = error("Home has no shop")
+
+        override suspend fun buy(itemId: String): Profile = error("Home has no shop")
+
+        override suspend fun wear(
+            frameId: String?,
+            titleId: String?,
+        ): Profile = error("Home has no shop")
 
         private fun profileOf(
             player: String,

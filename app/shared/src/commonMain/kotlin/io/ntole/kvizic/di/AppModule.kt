@@ -20,6 +20,7 @@ import io.ntole.kvizic.room.PublicRoomsViewModel
 import io.ntole.kvizic.room.RoomPreviewViewModel
 import io.ntole.kvizic.room.RoomViewModel
 import io.ntole.kvizic.services.AppServices
+import io.ntole.kvizic.shop.ShopViewModel
 import io.ntole.kvizic.sound.SoundViewModel
 import kotlinx.coroutines.MainScope
 import org.koin.core.context.startKoin
@@ -35,6 +36,7 @@ import kotlin.time.TimeSource
 internal fun uiModule(): Module =
     module {
         viewModelOf(::HomeViewModel)
+        viewModelOf(::ShopViewModel)
         viewModelOf(::AboutViewModel)
         viewModelOf(::LanguageViewModel)
         viewModelOf(::CountryViewModel)

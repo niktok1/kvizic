@@ -81,6 +81,9 @@ import io.ntole.kvizic.settings.AppSettingsScreen
 import io.ntole.kvizic.share.InviteLink
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
+import io.ntole.kvizic.shop.ShopActions
+import io.ntole.kvizic.shop.ShopScreen
+import io.ntole.kvizic.shop.ShopViewModel
 import io.ntole.kvizic.sound.ProvideCues
 import io.ntole.kvizic.sound.SoundViewModel
 import io.ntole.kvizic.theme.GameTheme
@@ -201,6 +204,11 @@ private fun Screens(usage: UsageTracker) {
                 Below { Profile() }
             }
 
+            Screen.Shop -> {
+                BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.economy.shop)
+                Below { Shop() }
+            }
+
             Screen.Join -> {
                 BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.game.joinByCode)
                 Below { Join(room) }
@@ -266,6 +274,7 @@ private fun Home(
                 solo = room::solo,
                 settings = { open(Screen.Settings) },
                 profile = { open(Screen.Profile) },
+                shop = { open(Screen.Shop) },
                 playGames = viewModel::linkPlayGames,
                 dismissPlayGamesFailure = viewModel::dismissPlayGamesFailure,
                 retry = viewModel::retry,
@@ -301,6 +310,23 @@ private fun PollWhileShown(poll: suspend () -> Unit) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val latest by rememberUpdatedState(poll)
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { latest() } }
+}
+
+/** The shop, read each time it is shown. */
+@Composable
+private fun Shop() {
+    val viewModel = koinViewModel<ShopViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(viewModel) { viewModel.shown() }
+    ShopScreen(
+        state,
+        ShopActions(
+            select = viewModel::select,
+            act = viewModel::act,
+            retry = viewModel::shown,
+            dismissFailure = viewModel::dismissFailure,
+        ),
+    )
 }
 
 /** The player's profile, read as Home reads it, and their avatar picked, sent at once when it is left. */

@@ -41,6 +41,7 @@ import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
+import io.ntole.kvizic.language.avatarName
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.language.playGamesFailureText
@@ -75,7 +76,8 @@ fun ProfileScreen(
             LoadingSpinner(name = strings.loading, modifier = Modifier.padding(space.xl))
             return@Box
         }
-        val pick = tappedAt("profile.avatar") { index -> onPick(AvatarArt.DRAWN[index]) }
+        val avatars = AvatarArt.DRAWN.filter { it !in AvatarArt.SHOP || it in profile.items }
+        val pick = tappedAt("profile.avatar") { index -> onPick(avatars[index]) }
         Column(
             Modifier
                 .widthIn(max = space.contentWidth)
@@ -148,14 +150,14 @@ fun ProfileScreen(
                     color = colors.loss,
                 )
             }
-            AvatarArt.DRAWN.withIndex().chunked(AVATARS_A_ROW).forEach { row ->
+            avatars.withIndex().chunked(AVATARS_A_ROW).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     row.forEach { (index, id) ->
                         val chosen = id == (state.changingAvatar ?: profile.avatarId)
                         Panel(
                             Modifier
                                 .semantics(mergeDescendants = true) {
-                                    contentDescription = words.avatarNames.getOrElse(index) { id }
+                                    contentDescription = strings.avatarName(id)
                                     selected = chosen
                                 }.clickable(role = Role.Button, onClick = cued(Cue.TAP_SOFT) { pick(index) }),
                             kind = if (chosen) PanelKind.PLAIN else PanelKind.EMPTY,

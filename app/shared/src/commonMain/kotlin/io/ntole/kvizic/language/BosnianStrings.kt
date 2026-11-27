@@ -272,4 +272,5 @@ val BosnianStrings: Strings =
         pass = BosnianPassStrings,
         results = BosnianResultsStrings,
         game = BosnianGameStrings,
+        economy = BosnianEconomyStrings,
     )

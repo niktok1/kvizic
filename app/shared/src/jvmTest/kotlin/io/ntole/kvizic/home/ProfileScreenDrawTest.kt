@@ -12,6 +12,7 @@ import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.avatar.AvatarArt
+import io.ntole.kvizic.design.avatar.FrameArt
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.everyText
 import io.ntole.kvizic.language.Language
@@ -34,7 +35,18 @@ class ProfileScreenDrawTest {
     fun `the profile shows the player's stats and names every avatar`() {
         Language.entries.forEach { language ->
             val words = stringsOf(language).game
-            assertEquals(AvatarArt.DRAWN.size, words.avatarNames.size, "$language: an animal's name for each avatar")
+            assertEquals(
+                AvatarArt.DRAWN.size - AvatarArt.SHOP.size,
+                words.avatarNames.size,
+                "$language: an animal's name for each avatar",
+            )
+            val economy = stringsOf(language).economy
+            assertEquals(
+                AvatarArt.SHOP.size,
+                economy.animalNames.size,
+                "$language: a name for each animal the shop sells",
+            )
+            assertEquals(FrameArt.DRAWN.size, economy.frameNames.size, "$language: a name for each frame")
             val scene = scene(language)
             try {
                 write("profile-${language.name.lowercase()}") { scene.renderSettled() }

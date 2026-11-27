@@ -670,6 +670,8 @@ private fun occupantOf(
         // A count is the same in every language, so it is no string of theirs.
         votes = if (member.kickVotes > 0) "${member.kickVotes}/${member.kickVotesNeeded}" else null,
         votesDescription = votesLine(member),
+        frame = member.frame.ifEmpty { null },
+        title = member.title.ifEmpty { null }?.let { shown(it) },
     )
 }
 
@@ -1037,6 +1039,15 @@ private fun ColumnScope.Standings(
                 said.streak.fill(streak),
                 Modifier.clearAndSetSemantics { contentDescription = said.streakSaid.fill(streak) },
                 icon = KvizicIcons.Flame,
+            )
+        }
+        mine?.coinsEarned?.takeIf { it > 0 }?.let { coins ->
+            Chip(
+                "+" +
+                    LocalStrings.current.economy.coins
+                        .of(coins, LocalLanguage.current),
+                icon = KvizicIcons.Coin,
+                tone = ChipTone.ACCENT,
             )
         }
         results.personalBest?.let { best ->

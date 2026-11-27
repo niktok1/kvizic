@@ -28,6 +28,8 @@ import io.ntole.kvizic.core.domain.lobby.PublicLobby
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.domain.player.ShopItem
+import io.ntole.kvizic.core.domain.player.ShopItemKind
 import io.ntole.kvizic.core.domain.topic.TopicGroup
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.sound.Cue
@@ -60,6 +62,9 @@ import io.ntole.kvizic.room.lobby
 import io.ntole.kvizic.room.revealing
 import io.ntole.kvizic.settings.AppSettingsScreen
 import io.ntole.kvizic.settle
+import io.ntole.kvizic.shop.ShopActions
+import io.ntole.kvizic.shop.ShopScreen
+import io.ntole.kvizic.shop.ShopState
 import io.ntole.kvizic.texts
 import io.ntole.kvizic.theme.GameTheme
 import io.ntole.kvizic.update.UpdateButton
@@ -100,7 +105,7 @@ class TapsTest {
             )
         // The player's own line opens their profile, once there is a player to show.
         assertEquals(
-            buttons + "home.profile",
+            buttons + "home.profile" + "home.shop",
             elementsTapped { HomeScreen(HomeState(profile = PROFILE), HomeActions()) },
         )
         assertEquals(
@@ -108,7 +113,7 @@ class TapsTest {
             elementsTapped { HomeScreen(HomeState(failure = HomeFailure(CoreError.NETWORK)), HomeActions()) },
         )
         assertEquals(
-            buttons + "home.profile" + "home.exit_ok" + "home.failure_ok",
+            buttons + "home.profile" + "home.shop" + "home.exit_ok" + "home.failure_ok",
             elementsTapped {
                 HomeScreen(
                     HomeState(profile = PROFILE),
@@ -120,7 +125,7 @@ class TapsTest {
         )
         // A guest is offered Save progress beside their level, and told why a sign-in failed.
         assertEquals(
-            buttons + "home.profile" + "home.play_games" + "home.play_games_failure_ok",
+            buttons + "home.profile" + "home.shop" + "home.play_games" + "home.play_games_failure_ok",
             elementsTapped {
                 HomeScreen(
                     HomeState(
@@ -370,6 +375,43 @@ class TapsTest {
         assertEquals(
             setOf("how_to_play.skip", "how_to_play.play"),
             elementsTapped { HowToPlayScreen({}, {}, firstCard = 2) },
+        )
+    }
+
+    @Test
+    fun `every tap in the shop is reported`() {
+        val owner = PROFILE.copy(coins = 100, items = listOf("frame.double", "title.lucky"), frameId = "frame.double")
+        val items =
+            listOf(
+                ShopItem("frame.double", ShopItemKind.FRAME, 50),
+                ShopItem("frame.dashes", ShopItemKind.FRAME, 100),
+                ShopItem("title.lucky", ShopItemKind.TITLE, 30, mapOf("sr-Cyrl" to "Срећна рука")),
+            )
+        val shown = { selected: String? -> ShopState(items, owner, selected) }
+        mapOf(
+            null to emptySet(),
+            "frame.dashes" to setOf("shop.buy"),
+            "frame.double" to setOf("shop.take_off"),
+            "title.lucky" to setOf("shop.wear"),
+        ).forEach { (selected, button) ->
+            assertEquals(
+                setOf("shop.item") + button,
+                elementsTapped { ShopScreen(shown(selected), ShopActions()) },
+                "$selected",
+            )
+        }
+        assertEquals(
+            setOf("shop.item", "shop.failure_ok"),
+            elementsTapped {
+                ShopScreen(
+                    ShopState(items, owner, failure = HomeFailure(CoreError.NETWORK)),
+                    ShopActions(),
+                )
+            },
+        )
+        assertEquals(
+            setOf("shop.try_again"),
+            elementsTapped { ShopScreen(ShopState(failure = HomeFailure(CoreError.NETWORK)), ShopActions()) },
         )
     }
 

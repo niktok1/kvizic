@@ -49,6 +49,7 @@ import io.ntole.kvizic.room.EntryWay
 import io.ntole.kvizic.room.entryFailureText
 import io.ntole.kvizic.room.exitText
 import io.ntole.kvizic.room.shown
+import io.ntole.kvizic.shop.Balance
 
 /** Where the counts on Home come from: how many play and look for a game, and how many rooms are open. */
 @Immutable
@@ -68,6 +69,7 @@ class HomeActions(
     val solo: () -> Unit = {},
     val settings: () -> Unit = {},
     val profile: () -> Unit = {},
+    val shop: () -> Unit = {},
     val playGames: () -> Unit = {},
     val dismissPlayGamesFailure: () -> Unit = {},
     val retry: () -> Unit = {},
@@ -77,7 +79,7 @@ class HomeActions(
 
 /**
  * Home, multiplayer first: the player, read from the server ([state]), with a guest's Save progress beside
- * their level, the fallback when Play Games did not sign them in by itself, the game's sign, Quick play the
+ * their level and their coins, the way to the shop, the fallback when Play Games did not sign them in by itself, the game's sign, Quick play the
  * largest, with how many play and look for a game ([counts]), a room of the player's own and a code under
  * it, the public rooms, and a small solo last. [entry] is a seat being taken from here, which turns the
  * buttons off, or why it could not be; [exit] why the last room let the player go, until it is taken down.
@@ -164,6 +166,9 @@ fun HomeScreen(
                             )
                         }
                     }
+                }
+                state.profile?.let { profile ->
+                    Balance(profile.coins, onClick = tapped("home.shop", onClick = actions.shop))
                 }
                 StageIconButton(
                     KvizicIcons.Sliders,

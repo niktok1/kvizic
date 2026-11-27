@@ -275,4 +275,5 @@ val MacedonianStrings: Strings =
         pass = MacedonianPassStrings,
         results = MacedonianResultsStrings,
         game = MacedonianGameStrings,
+        economy = MacedonianEconomyStrings,
     )
