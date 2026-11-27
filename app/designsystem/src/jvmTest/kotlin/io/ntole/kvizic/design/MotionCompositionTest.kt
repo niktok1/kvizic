@@ -3,6 +3,7 @@ package io.ntole.kvizic.design
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -15,16 +16,26 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import io.ntole.kvizic.design.component.AnswerTile
 import io.ntole.kvizic.design.component.AnswerTileState
+import io.ntole.kvizic.design.component.CardStackArt
+import io.ntole.kvizic.design.component.ClockArt
 import io.ntole.kvizic.design.component.CodeDisplay
 import io.ntole.kvizic.design.component.FlipNumber
+import io.ntole.kvizic.design.component.GaugeArt
+import io.ntole.kvizic.design.component.PenaltyArt
 import io.ntole.kvizic.design.component.QuestionTimer
 import io.ntole.kvizic.design.component.ReactionBurst
+import io.ntole.kvizic.design.component.RoundTableArt
+import io.ntole.kvizic.design.component.SettingBubble
 import io.ntole.kvizic.design.component.Spinner
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.component.StageButton
+import io.ntole.kvizic.design.component.StepKey
+import io.ntole.kvizic.design.component.TileSwitch
 import io.ntole.kvizic.design.component.TimerPhase
+import io.ntole.kvizic.design.component.VisibilityArt
 import io.ntole.kvizic.design.component.Wordmark
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicSkin
@@ -92,6 +103,44 @@ class MotionCompositionTest {
             }) {
                 step("a score flapping on", start = { score = 1_328 }, millis = LONG)
                 step("a code flapping on", start = { code = "107364" }, millis = LONG)
+            }
+        }
+    }
+
+    @Test
+    fun `a setting's tile moves to its new value and composes nothing past it`() {
+        Skins.ALL.forEach { skin ->
+            var step by mutableIntStateOf(1)
+            var on by mutableStateOf(false)
+            var explained by mutableStateOf<Int?>(null)
+            motion(skin, {
+                Box(Modifier.fillMaxSize()) {
+                    Row {
+                        CardStackArt(step * 5, 5, 20)
+                        ClockArt(10 + step * 5)
+                        GaugeArt(step, 4)
+                        RoundTableArt(step + 2, 8)
+                        VisibilityArt(on)
+                        PenaltyArt(on)
+                    }
+                    TileSwitch(on, {}, "Јавна", Modifier.align(Alignment.Center))
+                    StepKey({}, {}, "мање", "више", Modifier.align(Alignment.BottomCenter))
+                    explained?.let {
+                        SettingBubble(
+                            "Време",
+                            "15 с",
+                            it,
+                            3,
+                            Dp.Hairline,
+                            {},
+                            Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
+                }
+            }) {
+                step("a step up", start = { step = 3 }, millis = LONG)
+                step("a switch flipped", start = { on = true }, millis = LONG)
+                step("a bubble coming in", start = { explained = 1 }, millis = LONG)
             }
         }
     }
