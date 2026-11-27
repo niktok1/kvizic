@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +64,10 @@ import kotlin.math.roundToInt
  *
  * [timeLeft], when given, is the share of the time left to what comes next, drawn as a line draining along
  * the board's foot, in the draw alone; [timeDescription] is what a screen reader hears of it.
+ *
+ * [burst], when given, stands over each line's avatar by its [ScoreRow.id], a player's reaction bursting
+ * there: it follows its line as it slides and shows only while the line is in sight, free to rise past the
+ * board's edge.
  */
 @Composable
 fun StandingsBoard(
@@ -71,6 +76,7 @@ fun StandingsBoard(
     reorderKey: Any? = null,
     timeLeft: (() -> Float)? = null,
     timeDescription: String? = null,
+    burst: (@Composable (id: String) -> Unit)? = null,
 ) {
     val skin = KvizicTheme.skin
     val space = skin.space
@@ -100,27 +106,77 @@ fun StandingsBoard(
         }
         if (own >= 0) scroll.animateScrollTo(metrics.centring(own, scroll.viewportSize))
     }
-    Panel(modifier, padding = space.md) {
-        Column {
-            Box(Modifier.weight(1f, fill = false).verticalScroll(scroll)) {
-                val gap = space.sm
-                Layout(
-                    content = {
-                        rows.forEach { row -> key(row.id) { ScoreLine(row, showMove = moved, slide = slide) } }
-                    },
-                    measurePolicy =
-                        remember(rows, metrics, slide, gap) {
-                            LinesPolicy(gap, metrics) { i -> rows[i] to slide.value }
+    Box(modifier, propagateMinConstraints = true) {
+        Panel(padding = space.md) {
+            Column {
+                Box(Modifier.weight(1f, fill = false).verticalScroll(scroll)) {
+                    val gap = space.sm
+                    Layout(
+                        content = {
+                            rows.forEach { row -> key(row.id) { ScoreLine(row, showMove = moved, slide = slide) } }
                         },
-                )
+                        measurePolicy =
+                            remember(rows, metrics, slide, gap) {
+                                LinesPolicy(gap, metrics) { i -> rows[i] to slide.value }
+                            },
+                    )
+                }
+                if (timeLeft != null) {
+                    Spacer(Modifier.height(space.sm))
+                    TimeLine(timeLeft, timeDescription, Modifier.fillMaxWidth().height(space.xs))
+                }
             }
-            if (timeLeft != null) {
-                Spacer(Modifier.height(space.sm))
-                TimeLine(timeLeft, timeDescription, Modifier.fillMaxWidth().height(space.xs))
+        }
+        if (burst != null) LineBursts(rows, burst, slide, scroll, metrics, Modifier.matchParentSize())
+    }
+}
+
+@Composable
+private fun LineBursts(
+    rows: List<ScoreRow>,
+    burst: @Composable (id: String) -> Unit,
+    slide: Animatable<Float, *>,
+    scroll: ScrollState,
+    metrics: BoardMetrics,
+    modifier: Modifier,
+) {
+    val space = KvizicTheme.space
+    val inset = space.md
+    val gap = space.sm
+    val avatar = inset + (placeColumn() + gap) * 2 + space.sizeOf(AvatarSize.XS) / 2
+    Layout(
+        content = { rows.forEach { row -> key(row.id) { Box { burst(row.id) } } } },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val bursts = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
+        layout(constraints.minWidth, constraints.minHeight) {
+            val half = (metrics.pitch - gap.roundToPx()) / 2
+            bursts.forEachIndexed { i, placeable ->
+                val middle = lineTop(i, rows[i], rows.size, slide.value, metrics.pitch) + half - scroll.value
+                if (middle in 0..scroll.viewportSize) {
+                    placeable.place(
+                        avatar.roundToPx() - placeable.width / 2,
+                        inset.roundToPx() + middle - placeable.height / 2,
+                    )
+                }
             }
         }
     }
 }
+
+private fun lineTop(
+    index: Int,
+    row: ScoreRow,
+    count: Int,
+    slid: Float,
+    pitch: Int,
+): Int {
+    val from = (index + row.moved).coerceIn(0, count - 1)
+    return ((from + (index - from) * slid) * pitch).roundToInt()
+}
+
+@Composable
+private fun placeColumn(): Dp = KvizicTheme.space.lg * LocalDensity.current.fontScale
 
 /**
  * The board's lines one under another, [gap] apart, each placed between where it stood and where it stands by
@@ -144,10 +200,8 @@ private class LinesPolicy(
         return layout(constraints.maxWidth, height) {
             lines.forEachIndexed { i, line ->
                 val (row, p) = at(i)
-                val from = (i + row.moved).coerceIn(0, lines.lastIndex)
-                val y = ((from + (i - from) * p) * pitch).roundToInt()
                 // The player's own line slides over the others.
-                line.place(0, y, zIndex = if (row.own) 1f else 0f)
+                line.place(0, lineTop(i, row, lines.size, p, pitch), zIndex = if (row.own) 1f else 0f)
             }
         }
     }
@@ -198,7 +252,7 @@ internal fun ScoreLine(
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
     // The place's and the move's columns hold words, so they widen with the font a phone sets.
-    val column = space.lg * LocalDensity.current.fontScale
+    val column = placeColumn()
     Row(
         modifier =
             Modifier
