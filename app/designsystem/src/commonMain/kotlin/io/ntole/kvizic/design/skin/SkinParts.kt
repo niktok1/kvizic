@@ -180,7 +180,10 @@ interface TimerPart {
 }
 
 interface AvatarPart {
-    /** Under the animal, over this scope: the disc and the seat's ring. */
+    /**
+     * Under the animal, over this scope: the disc, in a deep shade of the [seat]'s colour so the animal stands
+     * out on it and two of the same animal are told apart, and the plain ring everybody wears.
+     */
     fun DrawScope.drawUnder(
         seat: Color,
         dimmed: Boolean,

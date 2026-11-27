@@ -24,4 +24,5 @@ internal val BuzzersSkin: Skin =
         parts = BuzzersParts,
         backdrop = BuzzersBackdrop,
         avatarPalette = BuzzersAvatars,
+        metals = BuzzersMetals,
     )

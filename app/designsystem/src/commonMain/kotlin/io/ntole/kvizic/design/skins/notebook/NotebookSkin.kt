@@ -29,6 +29,7 @@ internal val NotebookSkin: Skin =
         parts = NotebookParts,
         backdrop = NotebookBackdrop,
         avatarPalette = NotebookAvatars,
+        metals = NotebookMetals,
     )
 
 /** Squared paper: a light blue grid, and the red margin line down the left of the page. */

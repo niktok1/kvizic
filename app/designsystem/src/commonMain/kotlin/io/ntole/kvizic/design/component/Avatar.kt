@@ -11,8 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.contentDescription
@@ -21,19 +25,20 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import io.ntole.kvizic.design.avatar.AvatarArt
+import io.ntole.kvizic.design.avatar.CrownArt
 import io.ntole.kvizic.design.avatar.FrameArt
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.SkinSpace
 
 /**
- * A member's avatar: the animal of [avatarId] (a silhouette for one this build has not drawn), framed in
- * the colour of their [seat], and, for the room's [host], a crown above its head. [order] marks
- * the member's place among the first to answer right, on a badge of its own. [level] is the member's level,
- * on a badge at the bottom end, in the skin's secondary colours; the room's seats and the podium show it, a
- * line of a board is too small to. [frame] is one the member wears round it in place of the seat's plain ring
- * ([FrameArt]); one this build does not draw shows the plain ring. [dimmed] greys it out: a member who has not
- * answered yet.
+ * A member's avatar: the animal of [avatarId] (a silhouette for one this build has not drawn), on a disc in a
+ * deep shade of the colour of their [seat], in the plain ring everybody wears, and, for the room's [host], a
+ * crown above its head. [order] marks the member's place among the first to answer right, on a badge of its own.
+ * [level] is the member's level, on a badge at the bottom end, in the skin's secondary colours; the room's seats
+ * and the podium show it, a line of a board is too small to. [frame] is one the member wears in place of the
+ * plain ring ([FrameArt]), and [crown] one a host wears in place of the plain crown ([CrownArt]); one this build
+ * does not draw shows the plain one. [dimmed] greys it out: a member who has not answered yet.
  * [contentDescription] names the member to a screen reader.
  */
 @Composable
@@ -46,6 +51,7 @@ fun Avatar(
     order: Int? = null,
     level: Int? = null,
     frame: String? = null,
+    crown: String? = null,
     dimmed: Boolean = false,
     contentDescription: String? = null,
 ) {
@@ -74,22 +80,32 @@ fun Avatar(
         Spacer(
             Modifier.matchParentSize().drawBehind {
                 with(part) { drawOver(seatColor, dimmed) }
-                if (frame != null) {
-                    val ring = if (dimmed) skin.colors.bulbOff else seatColor
-                    with(FrameArt) { drawFrame(frame, part.artInset.toPx(), ring, skin.avatarPalette) }
+                if (frame != null && FrameArt.isDrawn(frame)) {
+                    greyedIf(dimmed) {
+                        with(FrameArt) { drawFrame(frame, part.artInset.toPx(), skin.metals, skin.avatarPalette.ink) }
+                    }
                 }
             },
         )
         if (host) {
             // A crown worn above the head, over the avatar's top edge, so nothing crowds the face.
-            val crown = whole * CROWN_FRACTION
-            KvizicIcon(
-                KvizicIcons.Crown,
-                contentDescription = null,
-                tint = part.hostCrown,
-                size = crown,
-                modifier = Modifier.align(Alignment.TopCenter).offset(y = -crown * CROWN_LIFT),
-            )
+            val worn = whole * CROWN_FRACTION
+            val above = Modifier.align(Alignment.TopCenter).offset(y = -worn * CROWN_LIFT)
+            if (crown != null && CrownArt.isDrawn(crown)) {
+                Spacer(
+                    above.size(worn).drawBehind {
+                        with(CrownArt) { drawCrown(crown, skin.metals, skin.avatarPalette.ink) }
+                    },
+                )
+            } else {
+                KvizicIcon(
+                    KvizicIcons.Crown,
+                    contentDescription = null,
+                    tint = part.hostCrown,
+                    size = worn,
+                    modifier = above,
+                )
+            }
         }
         if (level != null) {
             // The same badge as the host's, wider for two digits, with a number on it.
@@ -212,6 +228,25 @@ internal fun SkinSpace.sizeOf(size: AvatarSize): Dp =
 /** A member who has not answered yet: their avatar drained of colour and faded. */
 private val Greyed = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
 private const val DIMMED_ALPHA = 0.55f
+
+private val GreyedLayer by lazy {
+    Paint().apply {
+        colorFilter = Greyed
+        alpha = DIMMED_ALPHA
+    }
+}
+
+private fun DrawScope.greyedIf(
+    dimmed: Boolean,
+    draw: DrawScope.() -> Unit,
+) {
+    if (!dimmed) return draw()
+    drawIntoCanvas { canvas ->
+        canvas.saveLayer(size.toRect(), GreyedLayer)
+        draw()
+        canvas.restore()
+    }
+}
 
 /** The host's crown: its size as a share of the avatar's, and how much of it stands above the avatar's top edge. */
 private const val CROWN_FRACTION = 0.42f

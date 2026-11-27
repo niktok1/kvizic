@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.ntole.kvizic.design.component.AnswerTileState
@@ -239,9 +240,10 @@ internal object BuzzersParts : SkinParts {
                 dimmed: Boolean,
             ) {
                 val radius = size.minDimension / 2
+                val disc = if (dimmed) BuzzersAvatars.disc else lerp(seat, Ink, 0.62f)
                 drawCircle(Ink, radius)
-                drawCircle(if (dimmed) colors.bulbOff else seat, radius - ink.toPx())
-                drawCircle(BuzzersAvatars.disc, radius - ink.toPx() - space.avatar.ring.toPx())
+                drawCircle(if (dimmed) colors.bulbOff else BuzzersAvatars.ring, radius - ink.toPx())
+                drawCircle(disc, radius - ink.toPx() - space.avatar.ring.toPx())
             }
 
             override fun DrawScope.drawOver(

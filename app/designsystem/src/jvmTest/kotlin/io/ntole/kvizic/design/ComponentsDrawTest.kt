@@ -31,6 +31,7 @@ import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
 import io.ntole.kvizic.design.component.ChipTone
 import io.ntole.kvizic.design.component.CodeDisplay
+import io.ntole.kvizic.design.component.Ducat
 import io.ntole.kvizic.design.component.FlapSize
 import io.ntole.kvizic.design.component.FlipNumber
 import io.ntole.kvizic.design.component.KvizicIcon
@@ -235,6 +236,21 @@ class ComponentsDrawTest {
                             }
                         }
                     }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(space.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        listOf(space.icon.small, space.icon.medium, space.button.roundSmall).forEach { Ducat(it) }
+                        Panel(padding = space.sm) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(space.xs),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Ducat(space.icon.small)
+                                KvizicText("120")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -291,7 +307,7 @@ class ComponentsDrawTest {
                 "Flame" to KvizicIcons.Flame,
                 "ThumbUp" to KvizicIcons.ThumbUp,
                 "Skip" to KvizicIcons.Skip,
-                "Coin" to KvizicIcons.Coin,
+                "Store" to KvizicIcons.Store,
             )
 
         val EXPECTED =

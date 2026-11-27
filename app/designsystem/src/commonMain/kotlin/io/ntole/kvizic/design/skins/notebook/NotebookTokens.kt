@@ -10,6 +10,8 @@ import androidx.compose.ui.unit.sp
 import io.ntole.kvizic.design.skin.AvatarPalette
 import io.ntole.kvizic.design.skin.DepthDirection
 import io.ntole.kvizic.design.skin.FontRole
+import io.ntole.kvizic.design.skin.Metal
+import io.ntole.kvizic.design.skin.Metals
 import io.ntole.kvizic.design.skin.SkinColors
 import io.ntole.kvizic.design.skin.SkinDepth
 import io.ntole.kvizic.design.skin.SkinMotion
@@ -187,9 +189,23 @@ internal val NotebookAvatars =
         tanDark = Color(0xFFB9895C),
         grey = Color(0xFFB4B9C6),
         greyDark = Color(0xFF7C8396),
+        black = Color(0xFF3A3D4A),
         gold = Color(0xFFFFD43B),
         green = Color(0xFF9BD27A),
         greenDark = Color(0xFF5E9442),
         disc = Card,
         silhouette = Color(0xFFCDD2DC),
+        ring = Pencil,
+    )
+
+internal val NotebookMetals =
+    Metals(
+        iron = Metal(face = Color(0xFF6B717A), shade = Color(0xFF393D44)),
+        bronze = Metal(face = Color(0xFFD79A62), shade = Color(0xFF8E5530)),
+        silver = Metal(face = Color(0xFFD3D8E0), shade = Color(0xFF8D95A3)),
+        gold = Metal(face = Color(0xFFFFD447), shade = Color(0xFFC08A1A)),
+        platinum = Metal(face = Color(0xFFCFEDE8), shade = Color(0xFF5E9E98)),
+        diamond = Metal(face = Color(0xFFAEE3FF), shade = Color(0xFF3F87DB)),
+        gem = Color(0xFFE5484D),
+        shine = Card,
     )

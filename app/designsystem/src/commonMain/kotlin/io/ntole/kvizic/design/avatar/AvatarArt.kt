@@ -6,12 +6,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathBuilder
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 import io.ntole.kvizic.design.skin.AvatarPalette
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * The avatars, drawn by hand on a 48 by 48 grid: an animal's head, facing out, in flat colours under a
@@ -38,15 +40,20 @@ object AvatarArt {
     const val BEE: String = "bee"
     const val CAT: String = "cat"
     const val EAGLE: String = "eagle"
-    const val BOAR: String = "boar"
-    const val BEAVER: String = "beaver"
-    const val JACKAL: String = "jackal"
+    const val PANTHER: String = "panther"
+    const val CROCODILE: String = "crocodile"
+    const val SHARK: String = "shark"
+    const val TIGER: String = "tiger"
+    const val LION: String = "lion"
 
     /** What any avatar this build has no drawing for draws as: a head, two ears, no face. */
     const val SILHOUETTE: String = "silhouette"
 
-    /** The avatars bought with coins in the shop, never handed out: a player picks one only once it is theirs. */
-    val SHOP: List<String> = listOf(EAGLE, BOAR, BEAVER, JACKAL)
+    /**
+     * The avatars bought with coins in the shop, never handed out, the cheapest first: a player picks one only once
+     * it is theirs. Predators all, each unlike any of the free ones.
+     */
+    val SHOP: List<String> = listOf(EAGLE, PANTHER, CROCODILE, SHARK, TIGER, LION)
 
     /** The avatars this build draws, beside the silhouette: the sixteen handed out, then the [SHOP]'s. */
     val DRAWN: List<String> =
@@ -99,9 +106,11 @@ object AvatarArt {
                 BEE -> bee(palette)
                 CAT -> cat(palette)
                 EAGLE -> eagle(palette)
-                BOAR -> boar(palette)
-                BEAVER -> beaver(palette)
-                JACKAL -> jackal(palette)
+                PANTHER -> panther(palette)
+                CROCODILE -> crocodile(palette)
+                SHARK -> shark(palette)
+                TIGER -> tiger(palette)
+                LION -> lion(palette)
                 else -> silhouette(palette)
             }
         }
@@ -660,130 +669,321 @@ object AvatarArt {
         close()
     }
 
-    private fun boar(p: AvatarPalette): ImageVector =
-        art("boar") {
-            shape(p.brownDark, p.ink) {
-                moveTo(18f, 13f)
-                lineTo(19.4f, 6.6f)
-                lineTo(21.8f, 11f)
-                lineTo(24f, 4.8f)
-                lineTo(26.2f, 11f)
-                lineTo(28.6f, 6.6f)
-                lineTo(30f, 13f)
-                close()
-            }
-            shape(p.brownDark, p.ink) { triangle(9.6f, 21f, 3.6f, 8.4f, 18f, 13.4f) }
-            shape(p.tanDark) { triangle(9.8f, 16.6f, 7.4f, 11.6f, 13.6f, 13.8f) }
-            shape(p.brownDark, p.ink) { triangle(38.4f, 21f, 44.4f, 8.4f, 30f, 13.4f) }
-            shape(p.tanDark) { triangle(38.2f, 16.6f, 40.6f, 11.6f, 34.4f, 13.8f) }
-            shape(p.brownDark, p.ink) {
-                moveTo(24f, 11f)
-                curveTo(33.5f, 11f, 40.5f, 15.5f, 40.5f, 23.5f)
-                curveTo(40.5f, 31f, 35f, 36f, 31f, 39f)
-                lineTo(17f, 39f)
-                curveTo(13f, 36f, 7.5f, 31f, 7.5f, 23.5f)
-                curveTo(7.5f, 15.5f, 14.5f, 11f, 24f, 11f)
-                close()
-            }
-            eyes(p, y = 23f, apart = 7.4f, radius = 2f)
+    private fun panther(p: AvatarPalette): ImageVector =
+        art("panther") {
             listOf(1f, -1f).forEach { side ->
-                shape(p.cream, p.ink, width = THIN) {
-                    moveTo(MIDDLE - side * 5.6f, 40.2f)
-                    curveTo(MIDDLE - side * 10f, 40f, MIDDLE - side * 12.6f, 36.4f, MIDDLE - side * 12.4f, 30.6f)
-                    curveTo(MIDDLE - side * 10.6f, 34.2f, MIDDLE - side * 8.6f, 35.8f, MIDDLE - side * 5.8f, 36.4f)
+                shape(p.black, p.ink) {
+                    moveTo(MIDDLE - side * 15.8f, 22f)
+                    curveTo(MIDDLE - side * 17.4f, 14f, MIDDLE - side * 15f, 8.2f, MIDDLE - side * 11.4f, 8.2f)
+                    curveTo(MIDDLE - side * 8f, 8.2f, MIDDLE - side * 5f, 10.6f, MIDDLE - side * 3.4f, 13.6f)
+                    close()
+                }
+                shape(p.greyDark) {
+                    moveTo(MIDDLE - side * 13.4f, 17.4f)
+                    curveTo(MIDDLE - side * 14f, 13.6f, MIDDLE - side * 13f, 11.4f, MIDDLE - side * 11.2f, 11.4f)
+                    curveTo(MIDDLE - side * 9.6f, 11.4f, MIDDLE - side * 8f, 12.6f, MIDDLE - side * 7f, 14.2f)
                     close()
                 }
             }
-            shape(p.tan, p.ink) { ellipse(24f, 34.6f, 8f, 6f) }
-            shape(p.ink) { ellipse(21.2f, 34.6f, 1.4f, 2.1f) }
-            shape(p.ink) { ellipse(26.8f, 34.6f, 1.4f, 2.1f) }
-        }
-
-    private fun beaver(p: AvatarPalette): ImageVector =
-        art("beaver") {
-            listOf(12f, 36f).forEach { x ->
-                shape(p.brown, p.ink) { circle(x, 15f, 3.8f) }
-                shape(p.brownDark) { circle(x, 15f, 1.8f) }
+            shape(p.greyDark, p.ink) { pantherHead() }
+            group(scaleX = PANTHER_SHEEN, scaleY = PANTHER_SHEEN, pivotX = MIDDLE, pivotY = 30f) {
+                shape(p.black) { pantherHead() }
             }
-            shape(p.brown, p.ink) {
-                moveTo(24f, 10f)
-                curveTo(33.5f, 10f, 39.5f, 16f, 40f, 24f)
-                curveTo(40.6f, 32.5f, 36.5f, 40.5f, 24f, 40.5f)
-                curveTo(11.5f, 40.5f, 7.4f, 32.5f, 8f, 24f)
-                curveTo(8.5f, 16f, 14.5f, 10f, 24f, 10f)
+            shape(p.greyDark) {
+                moveTo(MIDDLE, 27.4f)
+                curveTo(28.6f, 27.4f, 32.4f, 29.6f, 32.4f, 33.4f)
+                curveTo(32.4f, 37.4f, 28.4f, 40.2f, MIDDLE, 40.2f)
+                curveTo(19.6f, 40.2f, 15.6f, 37.4f, 15.6f, 33.4f)
+                curveTo(15.6f, 29.6f, 19.4f, 27.4f, MIDDLE, 27.4f)
                 close()
             }
-            shape(p.tan) { circle(19.4f, 31f, 5.6f) }
-            shape(p.tan) { circle(28.6f, 31f, 5.6f) }
-            eyes(p, y = 21.5f, apart = 7.2f, radius = 2.2f)
-            shape(p.orange, p.ink, width = THIN) {
-                moveTo(20.6f, 33.4f)
-                lineTo(27.4f, 33.4f)
-                lineTo(27.4f, 40.4f)
-                quadTo(27.4f, 42f, 25.8f, 42f)
-                lineTo(22.2f, 42f)
-                quadTo(20.6f, 42f, 20.6f, 40.4f)
+            listOf(1f, -1f).forEach { side ->
+                shape(p.green, p.ink, width = THIN) {
+                    moveTo(MIDDLE - side * 13.2f, 21.6f)
+                    quadTo(MIDDLE - side * 8.4f, 18.6f, MIDDLE - side * 3.4f, 23.4f)
+                    quadTo(MIDDLE - side * 8.6f, 27.4f, MIDDLE - side * 13.2f, 21.6f)
+                    close()
+                }
+                shape(p.ink) { ellipse(MIDDLE - side * 8f, 22.9f, 1.1f, 2.3f) }
+                shape(p.cream) { circle(MIDDLE - side * 9.2f, 21.9f, 0.7f) }
+                shape(p.cream, p.ink, width = FINE) {
+                    triangle(MIDDLE - side * 5.6f, 35.8f, MIDDLE - side * 2.4f, 35.8f, MIDDLE - side * 4f, 40.6f)
+                }
+            }
+            shape(p.ink) {
+                moveTo(20.4f, 28.4f)
+                lineTo(27.6f, 28.4f)
+                quadTo(26.4f, 31.8f, MIDDLE, 32.2f)
+                quadTo(21.6f, 31.8f, 20.4f, 28.4f)
+                close()
+            }
+            line(p.ink, THIN) {
+                moveTo(MIDDLE, 32.2f)
+                verticalLineTo(34.4f)
+                moveTo(18.6f, 35.2f)
+                quadTo(21.6f, 37f, MIDDLE, 34.4f)
+                quadTo(26.4f, 37f, 29.4f, 35.2f)
+            }
+        }
+
+    private fun PathBuilder.pantherHead() {
+        moveTo(MIDDLE, 11.8f)
+        curveTo(33.4f, 11.8f, 40.4f, 16.4f, 41f, 24f)
+        curveTo(41.4f, 30.4f, 37.8f, 35f, 33f, 38.2f)
+        curveTo(30.4f, 40.2f, 27.4f, 42f, MIDDLE, 42f)
+        curveTo(20.6f, 42f, 17.6f, 40.2f, 15f, 38.2f)
+        curveTo(10.2f, 35f, 6.6f, 30.4f, 7f, 24f)
+        curveTo(7.6f, 16.4f, 14.6f, 11.8f, MIDDLE, 11.8f)
+        close()
+    }
+
+    private fun crocodile(p: AvatarPalette): ImageVector =
+        art("crocodile") {
+            listOf(CROCODILE_EYE_LEFT, CROCODILE_EYE_RIGHT).forEach { x ->
+                shape(p.green, p.ink) { circle(x, CROCODILE_EYE_Y, CROCODILE_BUMP) }
+            }
+            shape(p.green, p.ink) { crocodileHead() }
+            listOf(1f, -1f).forEach { side ->
+                CROCODILE_TEETH.forEach { y ->
+                    val edge = MIDDLE - side * (7.2f + (39f - y) * 0.16f)
+                    shape(p.cream, p.ink, width = FINE) {
+                        triangle(edge, y - 2f, edge, y + 2f, edge - side * 3.8f, y + 1.6f)
+                    }
+                }
+            }
+            line(p.ink, THIN) {
+                moveTo(12.4f, 28.6f)
+                curveTo(14.4f, 30f, 15.6f, 31.4f, 16f, 33f)
+                moveTo(35.6f, 28.6f)
+                curveTo(33.6f, 30f, 32.4f, 31.4f, 32f, 33f)
+            }
+            listOf(CROCODILE_SCUTES_HIGH to 2f, CROCODILE_SCUTES_LOW to 1.5f).forEach { (row, size) ->
+                row.forEach { (x, y) -> shape(p.greenDark) { ellipse(x, y, size, size * 0.75f) } }
+            }
+            listOf(21.4f, 26.6f).forEach { x -> shape(p.ink) { ellipse(x, 41.4f, 1.2f, 1.6f) } }
+            listOf(CROCODILE_EYE_LEFT, CROCODILE_EYE_RIGHT).forEach { x ->
+                shape(p.gold, p.ink, width = THIN) { circle(x, CROCODILE_EYE_Y, CROCODILE_EYE) }
+                shape(p.ink) { ellipse(x, CROCODILE_EYE_Y + 0.4f, 0.9f, 2.6f) }
+                shape(p.cream) { circle(x + GLINT_X, CROCODILE_EYE_Y + 0.6f, GLINT * 0.8f) }
+                shape(p.green, p.ink, width = THIN) {
+                    moveTo(x - CROCODILE_LID, CROCODILE_EYE_Y - 1.2f)
+                    quadTo(x, CROCODILE_EYE_Y - CROCODILE_EYE * 2.4f, x + CROCODILE_LID, CROCODILE_EYE_Y - 1.2f)
+                    close()
+                }
+            }
+        }
+
+    private fun PathBuilder.crocodileHead() {
+        moveTo(6f, 22f)
+        curveTo(6f, 16f, 13f, 13.4f, MIDDLE, 13.4f)
+        curveTo(35f, 13.4f, 42f, 16f, 42f, 22f)
+        curveTo(42f, 26.6f, 37.4f, 28.4f, 34f, 30.4f)
+        curveTo(32f, 31.8f, 31.8f, 34.6f, 31.6f, 38.6f)
+        curveTo(31.4f, 44f, 28.4f, 45.8f, MIDDLE, 45.8f)
+        curveTo(19.6f, 45.8f, 16.6f, 44f, 16.4f, 38.6f)
+        curveTo(16.2f, 34.6f, 16f, 31.8f, 14f, 30.4f)
+        curveTo(10.6f, 28.4f, 6f, 26.6f, 6f, 22f)
+        close()
+    }
+
+    private fun shark(p: AvatarPalette): ImageVector =
+        art("shark") {
+            shape(p.greyDark, p.ink) {
+                moveTo(19.4f, 13f)
+                curveTo(22f, 9f, 24.6f, 5f, 28.4f, 1.8f)
+                curveTo(28.6f, 6f, 29.4f, 9.6f, 31f, 13f)
+                close()
+            }
+            shape(p.grey) { sharkHead() }
+            shape(p.cream) {
+                moveTo(6.6f, 27.4f)
+                quadTo(24f, 22.6f, 41.4f, 27.4f)
+                curveTo(40f, 36f, 33f, 41.6f, 24f, 41.6f)
+                curveTo(15f, 41.6f, 8f, 36f, 6.6f, 27.4f)
+                close()
+            }
+            line(p.ink, LINE) { sharkHead() }
+            shape(p.ink) {
+                moveTo(11.4f, 29.6f)
+                quadTo(24f, 26.4f, 36.6f, 29.6f)
+                quadTo(33f, 38.6f, 24f, 38.6f)
+                quadTo(15f, 38.6f, 11.4f, 29.6f)
+                close()
+            }
+            shape(p.blush) {
+                moveTo(17f, 36.4f)
+                quadTo(24f, 33.4f, 31f, 36.4f)
+                quadTo(28f, 38.6f, 24f, 38.6f)
+                quadTo(20f, 38.6f, 17f, 36.4f)
+                close()
+            }
+            shape(p.cream) {
+                SHARK_TEETH.forEach { x ->
+                    val y = 28.2f + (x - MIDDLE) * (x - MIDDLE) * 0.0105f
+                    triangle(x - 1.5f, y, x + 1.5f, y, x, y + 3.2f)
+                }
+            }
+            line(p.greyDark, THIN) {
+                listOf(1f, -1f).forEach { side ->
+                    listOf(0f, 2.4f).forEach { step ->
+                        moveTo(MIDDLE - side * (16.4f - step), 21.6f + step)
+                        quadTo(MIDDLE - side * (15f - step), 24.4f + step, MIDDLE - side * (16f - step), 27f + step)
+                    }
+                }
+            }
+            listOf(1f, -1f).forEach { side ->
+                shape(p.ink) { circle(MIDDLE - side * 10.2f, 21f, 2.1f) }
+                shape(p.cream) { circle(MIDDLE - side * 10.2f + 0.7f, 20.3f, 0.7f) }
+            }
+        }
+
+    private fun PathBuilder.sharkHead() {
+        moveTo(24f, 9.6f)
+        curveTo(35f, 9.6f, 42f, 17f, 42f, 26f)
+        curveTo(42f, 35f, 34f, 41.6f, 24f, 41.6f)
+        curveTo(14f, 41.6f, 6f, 35f, 6f, 26f)
+        curveTo(6f, 17f, 13f, 9.6f, 24f, 9.6f)
+        close()
+    }
+
+    private fun tiger(p: AvatarPalette): ImageVector =
+        art("tiger") {
+            listOf(TIGER_EAR_LEFT, TIGER_EAR_RIGHT).forEach { x ->
+                shape(p.orange, p.ink) { circle(x, TIGER_EAR_Y, TIGER_EAR) }
+                shape(p.cream) { circle(x, TIGER_EAR_Y + 0.6f, TIGER_EAR_INSIDE) }
+            }
+            shape(p.orange) { tigerHead() }
+            shape(p.cream) {
+                moveTo(8.6f, 29.6f)
+                curveTo(13f, 28.4f, 18f, 29f, 24f, 31.6f)
+                curveTo(30f, 29f, 35f, 28.4f, 39.4f, 29.6f)
+                curveTo(37f, 37.6f, 31f, 42.6f, 24f, 42.6f)
+                curveTo(17f, 42.6f, 11f, 37.6f, 8.6f, 29.6f)
+                close()
+            }
+            shape(p.ink) {
+                wedge(24f, 11.2f, 3.4f, 24f, 18.4f)
+                wedge(18.6f, 12f, 2.6f, 20.2f, 16.6f)
+                wedge(29.4f, 12f, 2.6f, 27.8f, 16.6f)
+                listOf(1f, -1f).forEach { side ->
+                    wedge(MIDDLE - side * 17.2f, 22.4f, 2.6f, MIDDLE - side * 11.6f, 24.2f)
+                    wedge(MIDDLE - side * 17.6f, 27.4f, 2.6f, MIDDLE - side * 12.4f, 28.4f)
+                    wedge(MIDDLE - side * 15f, 34.6f, 2.2f, MIDDLE - side * 11.6f, 33.4f)
+                }
+            }
+            line(p.ink, LINE) { tigerHead() }
+            listOf(1f, -1f).forEach { side ->
+                shape(p.cream) { ellipse(MIDDLE - side * 7f, 20.6f, 2.6f, 1.6f) }
+                shape(p.gold) { circle(MIDDLE - side * 7f, 24.6f, 2.6f) }
+                shape(p.ink) { circle(MIDDLE - side * 7f, 24.8f, 1.4f) }
+                shape(p.cream) { circle(MIDDLE - side * 7f + 0.8f, 24f, 0.6f) }
+            }
+            shape(p.blush, p.ink, width = THIN) {
+                moveTo(20.8f, 30.2f)
+                lineTo(27.2f, 30.2f)
+                quadTo(26f, 33f, 24f, 33.4f)
+                quadTo(22f, 33f, 20.8f, 30.2f)
                 close()
             }
             line(p.ink, THIN) {
                 moveTo(24f, 33.4f)
-                lineTo(24f, 42f)
-                moveTo(18.4f, 32.2f)
-                quadTo(21.2f, 34.2f, 24f, 32.4f)
-                quadTo(26.8f, 34.2f, 29.6f, 32.2f)
-            }
-            shape(p.ink) {
-                moveTo(19.8f, 27.2f)
-                curveTo(19.8f, 25.2f, 28.2f, 25.2f, 28.2f, 27.2f)
-                curveTo(28.2f, 29.4f, 25.6f, 30.8f, 24f, 30.8f)
-                curveTo(22.4f, 30.8f, 19.8f, 29.4f, 19.8f, 27.2f)
-                close()
+                verticalLineTo(35.4f)
+                moveTo(20.4f, 36.2f)
+                quadTo(22.4f, 37.6f, 24f, 35.4f)
+                quadTo(25.6f, 37.6f, 27.6f, 36.2f)
             }
         }
 
-    private fun jackal(p: AvatarPalette): ImageVector =
-        art("jackal") {
-            shape(p.tan, p.ink) { triangle(11.6f, 20f, 13f, 1.4f, 21.6f, 13f) }
-            shape(p.cream) { triangle(14f, 16.4f, 14.6f, 6.6f, 18.8f, 13.6f) }
-            shape(p.tan, p.ink) { triangle(36.4f, 20f, 35f, 1.4f, 26.4f, 13f) }
-            shape(p.cream) { triangle(34f, 16.4f, 33.4f, 6.6f, 29.2f, 13.6f) }
-            shape(p.tan) { jackalHead() }
-            shape(p.tanDark) {
-                moveTo(16f, 12.6f)
-                curveTo(19f, 11.4f, 29f, 11.4f, 32f, 12.6f)
-                curveTo(29f, 15f, 26.4f, 19f, 24f, 30f)
-                curveTo(21.6f, 19f, 19f, 15f, 16f, 12.6f)
+    private fun PathBuilder.tigerHead() {
+        moveTo(24f, 10.4f)
+        curveTo(33.6f, 10.4f, 39.4f, 15f, 40.4f, 21.6f)
+        lineTo(44.6f, 26.6f)
+        lineTo(40.6f, 27.8f)
+        lineTo(43.4f, 32.6f)
+        lineTo(38.6f, 33f)
+        curveTo(35.6f, 39.4f, 30.4f, 42.8f, 24f, 42.8f)
+        curveTo(17.6f, 42.8f, 12.4f, 39.4f, 9.4f, 33f)
+        lineTo(4.6f, 32.6f)
+        lineTo(7.4f, 27.8f)
+        lineTo(3.4f, 26.6f)
+        lineTo(7.6f, 21.6f)
+        curveTo(8.6f, 15f, 14.4f, 10.4f, 24f, 10.4f)
+        close()
+    }
+
+    private fun PathBuilder.wedge(
+        x: Float,
+        y: Float,
+        width: Float,
+        tipX: Float,
+        tipY: Float,
+    ) {
+        val along = tipX - x to tipY - y
+        val length = sqrt(along.first * along.first + along.second * along.second)
+        val across = -along.second / length * width / 2 to along.first / length * width / 2
+        moveTo(x + across.first, y + across.second)
+        lineTo(tipX, tipY)
+        lineTo(x - across.first, y - across.second)
+        close()
+    }
+
+    private fun lion(p: AvatarPalette): ImageVector =
+        art("lion") {
+            shape(p.orangeDark, p.ink) { mane() }
+            listOf(LION_EAR_LEFT, LION_EAR_RIGHT).forEach { x ->
+                shape(p.tan, p.ink) { circle(x, LION_EAR_Y, LION_EAR) }
+                shape(p.tanDark) { circle(x, LION_EAR_Y, LION_EAR_INSIDE) }
+            }
+            shape(p.tan, p.ink) {
+                moveTo(24f, 13.4f)
+                curveTo(31.6f, 13.4f, 36.4f, 18.6f, 36.4f, 25.6f)
+                curveTo(36.4f, 33.6f, 31.4f, 39.6f, 24f, 39.6f)
+                curveTo(16.6f, 39.6f, 11.6f, 33.6f, 11.6f, 25.6f)
+                curveTo(11.6f, 18.6f, 16.4f, 13.4f, 24f, 13.4f)
                 close()
             }
-            shape(p.cream) {
-                moveTo(12f, 26f)
-                curveTo(15.5f, 29.5f, 20f, 30f, 24f, 32.4f)
-                curveTo(28f, 30f, 32.5f, 29.5f, 36f, 26f)
-                curveTo(35f, 30f, 32.5f, 32f, 30.4f, 34f)
-                curveTo(28.4f, 36f, 26.6f, 41.4f, 24f, 45f)
-                curveTo(21.4f, 41.4f, 19.6f, 36f, 17.6f, 34f)
-                curveTo(15.5f, 32f, 13f, 30f, 12f, 26f)
+            shape(p.cream) { circle(20.8f, 32.4f, 4f) }
+            shape(p.cream) { circle(27.2f, 32.4f, 4f) }
+            shape(p.cream) { circle(MIDDLE, 35.6f, 3.2f) }
+            listOf(1f, -1f).forEach { side ->
+                shape(p.gold) { circle(MIDDLE - side * 5.8f, 24.4f, 2.4f) }
+                shape(p.ink) { circle(MIDDLE - side * 5.8f, 24.6f, 1.3f) }
+                shape(p.cream) { circle(MIDDLE - side * 5.8f + 0.7f, 23.8f, 0.55f) }
+            }
+            line(p.tanDark, THIN) {
+                moveTo(22.8f, 20.2f)
+                lineTo(23.2f, 22.4f)
+                moveTo(25.2f, 20.2f)
+                lineTo(24.8f, 22.4f)
+            }
+            shape(p.brownDark, p.ink, width = THIN) {
+                moveTo(21f, 28.4f)
+                lineTo(27f, 28.4f)
+                quadTo(26f, 31.2f, 24f, 31.6f)
+                quadTo(22f, 31.2f, 21f, 28.4f)
                 close()
             }
-            line(p.ink, LINE) { jackalHead() }
-            eyes(p, y = 23f, apart = 6.4f, radius = 2f)
-            shape(p.ink) {
-                moveTo(21.8f, 39.6f)
-                curveTo(21.8f, 38.4f, 26.2f, 38.4f, 26.2f, 39.6f)
-                curveTo(26.2f, 41f, 24.8f, 42.4f, 24f, 42.4f)
-                curveTo(23.2f, 42.4f, 21.8f, 41f, 21.8f, 39.6f)
-                close()
+            line(p.ink, THIN) {
+                moveTo(24f, 31.6f)
+                verticalLineTo(33.4f)
+                moveTo(20.6f, 34.4f)
+                quadTo(22.4f, 35.6f, 24f, 33.4f)
+                quadTo(25.6f, 35.6f, 27.4f, 34.4f)
             }
         }
 
-    private fun PathBuilder.jackalHead() {
-        moveTo(24f, 11f)
-        curveTo(32f, 11f, 37.4f, 14.6f, 37.4f, 21.6f)
-        curveTo(37.4f, 27.4f, 33.4f, 31f, 30.4f, 34f)
-        curveTo(28.4f, 36f, 26.6f, 41.4f, 24f, 45f)
-        curveTo(21.4f, 41.4f, 19.6f, 36f, 17.6f, 34f)
-        curveTo(14.6f, 31f, 10.6f, 27.4f, 10.6f, 21.6f)
-        curveTo(10.6f, 14.6f, 16f, 11f, 24f, 11f)
+    private fun PathBuilder.mane() {
+        for (i in 0..MANE_TUFTS) {
+            val angle = 2 * PI * i / MANE_TUFTS - PI / 2
+            val x = MIDDLE + MANE_INNER * cos(angle).toFloat()
+            val y = MANE_Y + MANE_INNER * sin(angle).toFloat()
+            if (i == 0) {
+                moveTo(x, y)
+            } else {
+                val tip = angle - PI / MANE_TUFTS
+                quadTo(MIDDLE + MANE_OUTER * cos(tip).toFloat(), MANE_Y + MANE_OUTER * sin(tip).toFloat(), x, y)
+            }
+        }
         close()
     }
 
@@ -898,6 +1098,7 @@ object AvatarArt {
     private const val MIDDLE = GRID / 2
     private const val LINE = 2.4f
     private const val THIN = 1.7f
+    private const val FINE = 0.9f
     private const val ANTLER = 3.2f
     private const val HALF_TURN = 180.0
     private const val EYE_TALL = 1.2f
@@ -928,4 +1129,34 @@ object AvatarArt {
     private const val BEAR_EAR_Y = 12.5f
     private const val BEAR_EAR = 6.5f
     private const val BEAR_EAR_INSIDE = 3.3f
+
+    private const val PANTHER_SHEEN = 0.92f
+
+    private const val CROCODILE_EYE_LEFT = 15f
+    private const val CROCODILE_EYE_RIGHT = 33f
+    private const val CROCODILE_EYE_Y = 14.2f
+    private const val CROCODILE_BUMP = 5.4f
+    private const val CROCODILE_EYE = 3.4f
+    private const val CROCODILE_LID = 3.7f
+    private val CROCODILE_TEETH = listOf(32f, 36.2f, 40.4f)
+    private val CROCODILE_SCUTES_HIGH = listOf(18.8f to 19.6f, MIDDLE to 18.8f, 29.2f to 19.6f)
+    private val CROCODILE_SCUTES_LOW = listOf(21.2f to 24.4f, 26.8f to 24.4f)
+
+    private val SHARK_TEETH = listOf(14.6f, 18.4f, 22.1f, 25.9f, 29.6f, 33.4f)
+
+    private const val TIGER_EAR_LEFT = 11.4f
+    private const val TIGER_EAR_RIGHT = 36.6f
+    private const val TIGER_EAR_Y = 13.4f
+    private const val TIGER_EAR = 5.2f
+    private const val TIGER_EAR_INSIDE = 2.6f
+
+    private const val LION_EAR_LEFT = 15.4f
+    private const val LION_EAR_RIGHT = 32.6f
+    private const val LION_EAR_Y = 14.6f
+    private const val LION_EAR = 3.8f
+    private const val LION_EAR_INSIDE = 1.9f
+    private const val MANE_TUFTS = 15
+    private const val MANE_Y = 25.4f
+    private const val MANE_INNER = 17.4f
+    private const val MANE_OUTER = 25.4f
 }

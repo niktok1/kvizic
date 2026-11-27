@@ -53,8 +53,8 @@ fun Panel(
 }
 
 /**
- * A small label on a pill, of [tone], with an [icon] before it: a setting, a topic, points won. With an
- * [onClick] it is a button, of a touch target's height at the least, and [selected] marks it chosen, which a
+ * A small label on a pill, of [tone], with an [icon] before it, or a [leading] drawing in its place (a coin): a
+ * setting, a topic, points won. With an [onClick] it is a button, of a touch target's height at the least, and [selected] marks it chosen, which a
  * screen reader is told.
  */
 @Composable
@@ -65,6 +65,7 @@ fun Chip(
     tone: ChipTone = ChipTone.NEUTRAL,
     selected: Boolean = false,
     onClick: (() -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     val skin = KvizicTheme.skin
     val space = skin.space
@@ -102,6 +103,7 @@ fun Chip(
                     if (icon != null) {
                         KvizicIcon(icon, contentDescription = null, size = space.icon.small, tintInDraw = content)
                     }
+                    leading?.invoke()
                     KvizicText(text, style = KvizicTheme.type.chip, maxLines = 1, colorInDraw = content)
                 }
             }

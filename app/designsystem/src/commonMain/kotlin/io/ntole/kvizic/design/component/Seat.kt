@@ -51,9 +51,10 @@ data class SeatOccupant(
      */
     val votes: String? = null,
     val votesDescription: String? = null,
-    /** The avatar frame they wear, by its id, and their title's words: none for none. */
+    /** The avatar frame and the host crown they wear, by their ids, and their title's words: none for none. */
     val frame: String? = null,
     val title: String? = null,
+    val crown: String? = null,
 )
 
 /**
@@ -118,6 +119,7 @@ fun Seat(
                     host = occupant.host,
                     level = occupant.level,
                     frame = occupant.frame,
+                    crown = occupant.crown,
                     dimmed = occupant.away,
                 )
                 Spacer(Modifier.height(space.xs))

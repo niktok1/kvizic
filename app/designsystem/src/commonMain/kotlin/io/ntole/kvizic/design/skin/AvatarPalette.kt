@@ -23,12 +23,19 @@ data class AvatarPalette(
     val tanDark: Color,
     val grey: Color,
     val greyDark: Color,
+    /** A black panther's fur: darker than [greyDark], lighter than [ink], so its lines still show. */
+    val black: Color,
     /** An owl's eyes, a bee, and whatever else of an animal shines. */
     val gold: Color,
     /** A frog, a tortoise. */
     val green: Color,
     val greenDark: Color,
-    /** The disc behind the animal, and the silhouette drawn for an avatar this build cannot draw. */
+    /**
+     * The disc behind the animal of one who is away, whose seat's colour it no longer shows, and the silhouette
+     * drawn for an avatar this build cannot draw.
+     */
     val disc: Color,
     val silhouette: Color,
+    /** The plain ring round every avatar, the same for everybody, until a frame from the shop replaces it. */
+    val ring: Color,
 )

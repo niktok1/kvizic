@@ -8,7 +8,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import io.ntole.kvizic.design.skin.AvatarPalette
+import io.ntole.kvizic.design.skin.Metal
+import io.ntole.kvizic.design.skin.Metals
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
@@ -16,137 +17,179 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * The frames an avatar may wear in place of its seat's plain ring, by id, drawn by hand round the avatar's
- * edge in the seat's colour, with the ink and the cream of the skin's [AvatarPalette], so one set of drawings
- * wears every skin. A frame stays inside the avatar's box and never moves the animal; any other id, a newer
- * server's, draws no frame.
+ * The frames an avatar may wear in place of the plain ring everybody has, by id: a ladder of metals, each richer
+ * than the one before, drawn by hand round the avatar's edge in the skin's [Metals] and its ink, so one set of
+ * drawings wears every skin. Iron is a plain dark ring, bronze is riveted, silver engraved, gold set with gems,
+ * platinum wreathed in laurels, and diamond cut in facets under a crest. A frame stays inside the avatar's box and
+ * never moves the animal; any other id, a newer server's, draws nothing, so the plain ring shows.
  */
 object FrameArt {
-    const val DOUBLE: String = "frame.double"
-    const val DASHES: String = "frame.dashes"
-    const val BULBS: String = "frame.bulbs"
-    const val STARS: String = "frame.stars"
-    const val RAYS: String = "frame.rays"
-    const val LAUREL: String = "frame.laurel"
+    const val IRON: String = "frame.iron"
+    const val BRONZE: String = "frame.bronze"
+    const val SILVER: String = "frame.silver"
+    const val GOLD: String = "frame.gold"
+    const val PLATINUM: String = "frame.platinum"
+    const val DIAMOND: String = "frame.diamond"
 
-    /** The frames this build draws. */
-    val DRAWN: List<String> = listOf(DOUBLE, DASHES, BULBS, STARS, RAYS, LAUREL)
+    /** The frames this build draws, from the cheapest to the richest. */
+    val DRAWN: List<String> = listOf(IRON, BRONZE, SILVER, GOLD, PLATINUM, DIAMOND)
 
     /** Whether [id] has a drawing of its own here. */
     fun isDrawn(id: String): Boolean = id in DRAWN
 
     /**
-     * Frame [id] round the edge of this scope, an avatar's box: over the [band], in pixels, its ring takes, and on
-     * a large avatar a little more, in [seat] and [palette]'s ink and cream. Nothing for an id not drawn here.
+     * Frame [id] round the edge of this scope, an avatar's box: over the [band], in pixels, its plain ring takes,
+     * and on a large avatar a little more, in [metals] edged in [ink]. Nothing for an id not drawn here.
      */
     fun DrawScope.drawFrame(
         id: String,
         band: Float,
-        seat: Color,
-        palette: AvatarPalette,
+        metals: Metals,
+        ink: Color,
     ) {
         val outer = size.minDimension / 2
-        val ring = Ring(outer, max(band, outer * WIDE), seat, palette.ink, palette.cream)
+        val ring = Ring(outer, max(band, outer * WIDE), metals, ink)
         when (id) {
-            DOUBLE -> double(ring)
-            DASHES -> dashes(ring)
-            BULBS -> bulbs(ring)
-            STARS -> stars(ring)
-            RAYS -> rays(ring)
-            LAUREL -> laurel(ring)
+            IRON -> iron(ring)
+            BRONZE -> bronze(ring)
+            SILVER -> silver(ring)
+            GOLD -> gold(ring)
+            PLATINUM -> platinum(ring)
+            DIAMOND -> diamond(ring)
         }
     }
 
     private class Ring(
         val outer: Float,
         val width: Float,
-        val seat: Color,
+        val metals: Metals,
         val ink: Color,
-        val light: Color,
     ) {
         val middle: Float = outer - width / 2
         val inner: Float = outer - width
         val line: Float = width * OUTLINE
+        val metal: Float = width - line * 2
 
         fun count(step: Float): Int = max(LEAST, (2 * PI * middle / step).roundToInt())
     }
 
-    private fun DrawScope.housing(ring: Ring) = drawCircle(ring.ink, ring.middle, style = Stroke(ring.width))
-
-    private fun DrawScope.double(ring: Ring) {
-        housing(ring)
-        val rim = Stroke(ring.width * DOUBLE_RIM)
-        drawCircle(ring.seat, ring.outer - ring.width * DOUBLE_OUTER, style = rim)
-        drawCircle(ring.seat, ring.outer - ring.width * DOUBLE_INNER, style = rim)
+    private fun DrawScope.band(
+        ring: Ring,
+        metal: Metal,
+    ) {
+        drawCircle(ring.ink, ring.middle, style = Stroke(ring.width))
+        drawCircle(metal.face, ring.middle, style = Stroke(ring.metal))
+        val bevel = ring.metal * BEVEL
+        drawCircle(metal.shade, ring.inner + ring.line + bevel / 2, style = Stroke(bevel))
     }
 
-    private fun DrawScope.dashes(ring: Ring) {
-        housing(ring)
-        val dashes = ring.count(ring.width * DASH_STEP)
-        val pen = ring.width * DASH_WIDTH
-        val cap = degrees(pen / 2 / ring.middle)
-        val step = FULL_TURN / dashes
-        val corner = center - Offset(ring.middle, ring.middle)
-        val across = Size(ring.middle * 2, ring.middle * 2)
-        repeat(dashes) { i ->
-            drawArc(
-                ring.seat,
-                startAngle = i * step + cap - QUARTER_TURN,
-                sweepAngle = step * DASH_SHARE - cap * 2,
-                useCenter = false,
-                topLeft = corner,
-                size = across,
-                style = Stroke(pen, cap = StrokeCap.Round),
+    private fun DrawScope.gloss(
+        ring: Ring,
+        strength: Float,
+    ) {
+        val radius = ring.middle + ring.metal * GLOSS_OUT
+        drawArc(
+            ring.metals.shine.copy(alpha = strength),
+            startAngle = GLOSS_FROM,
+            sweepAngle = GLOSS_SWEEP,
+            useCenter = false,
+            topLeft = center - Offset(radius, radius),
+            size = Size(radius * 2, radius * 2),
+            style = Stroke(ring.metal * GLOSS_WIDTH, cap = StrokeCap.Round),
+        )
+    }
+
+    private fun DrawScope.iron(ring: Ring) {
+        band(ring, ring.metals.iron)
+        gloss(ring, DULL)
+    }
+
+    private fun DrawScope.bronze(ring: Ring) {
+        val bronze = ring.metals.bronze
+        band(ring, bronze)
+        gloss(ring, DULL)
+        repeat(RIVETS) { i ->
+            val at = point(ring.middle, i * FULL_TURN / RIVETS + HALF_STEP * FULL_TURN / RIVETS)
+            val radius = ring.width * RIVET
+            drawCircle(ring.ink, radius + ring.line / 2, at)
+            drawCircle(bronze.shade, radius, at)
+            drawCircle(bronze.face, radius * RIVET_DOME, at - Offset(radius, radius) * RIVET_LIT)
+            drawCircle(ring.metals.shine, radius * GLINT, at - Offset(radius, radius) * GLINT_AT)
+        }
+    }
+
+    private fun DrawScope.silver(ring: Ring) {
+        val silver = ring.metals.silver
+        band(ring, silver)
+        rope(ring, silver.shade)
+        gloss(ring, POLISHED)
+    }
+
+    private fun DrawScope.rope(
+        ring: Ring,
+        color: Color,
+    ) {
+        val twists = ring.count(ring.width * TWIST_STEP)
+        val lean = degrees(ring.width * TWIST_LEAN / ring.middle)
+        val reach = ring.metal * TWIST_REACH
+        repeat(twists) { i ->
+            val angle = i * FULL_TURN / twists
+            drawLine(
+                color,
+                point(ring.middle + reach, angle - lean),
+                point(ring.middle - reach, angle + lean),
+                strokeWidth = ring.width * TWIST_PEN,
+                cap = StrokeCap.Round,
             )
         }
     }
 
-    private fun DrawScope.bulbs(ring: Ring) {
-        housing(ring)
-        val bulbs = ring.count(ring.width * BULB_STEP)
-        val radius = ring.width * BULB
-        repeat(bulbs) { i ->
-            val at = point(ring.middle, i * FULL_TURN / bulbs)
-            drawCircle(ring.seat, radius, at)
-            drawCircle(ring.ink, radius, at, style = Stroke(radius * BULB_RIM))
-            drawCircle(ring.light, radius * GLINT, at - Offset(radius * GLINT_AT, radius * GLINT_AT))
+    private fun DrawScope.gold(ring: Ring) {
+        val gold = ring.metals.gold
+        band(ring, gold)
+        beads(ring, gold.face)
+        gloss(ring, POLISHED)
+        gems(ring, gold, ring.metals.gem, GEMS)
+    }
+
+    private fun DrawScope.beads(
+        ring: Ring,
+        color: Color,
+    ) {
+        val beads = ring.count(ring.width * BEAD_STEP)
+        val at = ring.inner + ring.line + ring.metal * BEVEL / 2
+        repeat(beads) { i -> drawCircle(color, ring.width * BEAD, point(at, i * FULL_TURN / beads)) }
+    }
+
+    private fun DrawScope.gems(
+        ring: Ring,
+        setting: Metal,
+        stone: Color,
+        angles: List<Float>,
+    ) {
+        val radius = ring.width * GEM
+        angles.forEach { angle ->
+            val at = point(ring.middle, angle)
+            drawCircle(ring.ink, radius + ring.line / 2, at)
+            drawCircle(setting.shade, radius, at)
+            drawCircle(stone, radius * GEM_STONE, at)
+            drawCircle(ring.metals.shine, radius * GLINT, at - Offset(radius, radius) * GLINT_AT)
         }
     }
 
-    private fun DrawScope.stars(ring: Ring) {
-        housing(ring)
-        val stars = ring.count(ring.width * STAR_STEP)
-        repeat(stars) { i ->
-            val angle = i * FULL_TURN / stars - QUARTER_TURN
-            drawPath(star(point(ring.middle, angle), ring.width * STAR, angle), ring.seat)
-        }
+    private fun DrawScope.platinum(ring: Ring) {
+        val platinum = ring.metals.platinum
+        band(ring, platinum)
+        rope(ring, platinum.shade)
+        gloss(ring, POLISHED)
+        laurels(ring, platinum)
+        gems(ring, platinum, ring.metals.gem, TOP_AND_FOOT)
     }
 
-    private fun DrawScope.rays(ring: Ring) {
-        housing(ring)
-        val base = ring.outer - ring.width * RAY_BASE
-        drawCircle(ring.seat, (ring.inner + base) / 2, style = Stroke(base - ring.inner))
-        val rays = ring.count(ring.width * RAY_STEP) / 2 * 2
-        val half = FULL_TURN / rays * RAY_SPREAD
-        repeat(rays) { i ->
-            val angle = i * FULL_TURN / rays - QUARTER_TURN
-            val tip = if (i % 2 == 0) ring.outer else ring.outer - ring.width * RAY_SHORT
-            val from = point(base - ring.line, angle - half)
-            val to = point(base - ring.line, angle + half)
-            val end = point(tip, angle)
-            val ray =
-                Path().apply {
-                    moveTo(from.x, from.y)
-                    lineTo(end.x, end.y)
-                    lineTo(to.x, to.y)
-                    close()
-                }
-            drawPath(ray, ring.seat)
-        }
-    }
-
-    private fun DrawScope.laurel(ring: Ring) {
-        housing(ring)
+    private fun DrawScope.laurels(
+        ring: Ring,
+        metal: Metal,
+    ) {
         val spread = degrees(ring.width * LEAF_LENGTH / ring.middle)
         val pairs = max(LEAST_LEAVES, ((LAUREL_TO - LAUREL_FROM) / spread * LEAF_DENSITY).roundToInt())
         val pen = Stroke(ring.line, join = StrokeJoin.Round)
@@ -154,14 +197,112 @@ object FrameArt {
             repeat(pairs) { k ->
                 val angle = QUARTER_TURN + side * (LAUREL_FROM + (LAUREL_TO - LAUREL_FROM) * k / pairs)
                 val base = point(ring.middle, angle)
-                listOf(1f, -1f).forEach { outwards ->
-                    val tip = point(ring.middle + outwards * ring.width * LEAF_TILT, angle + side * spread)
+                listOf(LEAF_OUT, -LEAF_IN).forEach { tilt ->
+                    val tip = point(ring.middle + tilt * ring.width, angle + side * spread)
                     val leaf = leaf(base, tip, ring.width * LEAF_WIDTH)
-                    drawPath(leaf, ring.seat)
+                    drawPath(leaf, metal.face)
+                    drawLine(metal.shade, base, tip, strokeWidth = ring.line, cap = StrokeCap.Round)
                     drawPath(leaf, ring.ink, style = pen)
                 }
             }
         }
+    }
+
+    private fun DrawScope.diamond(ring: Ring) {
+        val diamond = ring.metals.diamond
+        facets(ring, diamond)
+        laurels(ring, diamond)
+        gems(ring, diamond, ring.metals.gem, FOOT)
+        SPARKLES.forEach { angle -> sparkle(point(ring.middle, angle), ring.width * SPARKLE, ring.metals.shine) }
+        crest(ring, diamond)
+    }
+
+    private fun DrawScope.facets(
+        ring: Ring,
+        diamond: Metal,
+    ) {
+        drawCircle(ring.ink, ring.middle, style = Stroke(ring.width))
+        drawCircle(diamond.face, ring.middle, style = Stroke(ring.metal))
+        val facets = ring.count(ring.width * FACET_STEP) / 2 * 2
+        val outside = ring.outer - ring.line
+        val inside = ring.inner + ring.line
+        val step = FULL_TURN / facets
+        repeat(facets) { i ->
+            val from = point(inside, i * step)
+            val to = point(inside, (i + 1) * step)
+            val tip = point(outside, (i + HALF_STEP) * step)
+            drawPath(triangle(from, to, tip), diamond.shade)
+            if (i % 2 == 0) {
+                drawPath(triangle(tip, point(outside, (i + 1) * step), to), ring.metals.shine.copy(alpha = FACET_LIGHT))
+            }
+        }
+    }
+
+    private fun DrawScope.sparkle(
+        at: Offset,
+        reach: Float,
+        color: Color,
+    ) {
+        val path =
+            Path().apply {
+                repeat(SPARKLE_POINTS * 2) { k ->
+                    val length = if (k % 2 == 0) reach else reach * SPARKLE_WAIST
+                    val point = at + polar(length, k * FULL_TURN / (SPARKLE_POINTS * 2))
+                    if (k == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
+                }
+                close()
+            }
+        drawPath(path, color)
+    }
+
+    private fun DrawScope.crest(
+        ring: Ring,
+        diamond: Metal,
+    ) {
+        val top = center.y - ring.outer + ring.line
+        val x = center.x
+        val w = ring.outer * WIDE
+        val girdle = top + w * CREST_GIRDLE
+        val culet = top + w * CREST_DEPTH
+        val table = w * CREST_TABLE
+        val half = w * CREST_HALF
+        listOf(1f, -1f).forEach { side ->
+            val wing =
+                Path().apply {
+                    moveTo(x + side * half * WING_FROM, girdle)
+                    quadraticTo(x + side * half * WING_BEND, top, x + side * half * WING_TIP, top + w * WING_TIP_DROP)
+                    quadraticTo(
+                        x + side * half * WING_BEND,
+                        girdle + w * WING_FOOT,
+                        x + side * half * WING_FROM,
+                        culet - w,
+                    )
+                    close()
+                }
+            drawPath(wing, diamond.shade)
+            drawPath(wing, ring.ink, style = Stroke(ring.line, join = StrokeJoin.Round))
+        }
+        val stone =
+            Path().apply {
+                moveTo(x - table, top)
+                lineTo(x + table, top)
+                lineTo(x + half, girdle)
+                lineTo(x, culet)
+                lineTo(x - half, girdle)
+                close()
+            }
+        drawPath(stone, diamond.face)
+        drawPath(triangle(Offset(x - half, girdle), Offset(x, girdle), Offset(x, culet)), diamond.shade)
+        drawPath(
+            triangle(Offset(x - table, top), Offset(x - half, girdle), Offset(x - table / 2, girdle)),
+            diamond.shade,
+        )
+        drawPath(
+            triangle(Offset(x + table / 2, top), Offset(x + table, top), Offset(x + half, girdle)),
+            ring.metals.shine,
+        )
+        drawLine(ring.ink, Offset(x - half, girdle), Offset(x + half, girdle), strokeWidth = ring.line / 2)
+        drawPath(stone, ring.ink, style = Stroke(ring.line, join = StrokeJoin.Round))
     }
 
     private fun DrawScope.point(
@@ -179,17 +320,15 @@ object FrameArt {
 
     private fun degrees(radians: Float): Float = (radians * HALF_TURN / PI).toFloat()
 
-    private fun star(
-        at: Offset,
-        reach: Float,
-        degrees: Float,
+    private fun triangle(
+        a: Offset,
+        b: Offset,
+        c: Offset,
     ): Path =
         Path().apply {
-            val corners = STAR_POINTS * 2
-            repeat(corners) { k ->
-                val point = at + polar(if (k % 2 == 0) reach else reach * STAR_INNER, degrees + k * FULL_TURN / corners)
-                if (k == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y)
-            }
+            moveTo(a.x, a.y)
+            lineTo(b.x, b.y)
+            lineTo(c.x, c.y)
             close()
         }
 
@@ -212,40 +351,64 @@ object FrameArt {
     private const val FULL_TURN = 360f
     private const val HALF_TURN = 180.0
     private const val QUARTER_TURN = 90f
+    private const val HALF_STEP = 0.5f
     private const val LEAST = 6
 
     private const val WIDE = 0.17f
-    private const val OUTLINE = 0.16f
+    private const val OUTLINE = 0.13f
+    private const val BEVEL = 0.38f
 
-    private const val DOUBLE_RIM = 0.3f
-    private const val DOUBLE_OUTER = 0.29f
-    private const val DOUBLE_INNER = 0.71f
+    private const val GLOSS_OUT = 0.18f
+    private const val GLOSS_FROM = 195f
+    private const val GLOSS_SWEEP = 60f
+    private const val GLOSS_WIDTH = 0.28f
+    private const val DULL = 0.3f
+    private const val POLISHED = 0.75f
 
-    private const val DASH_STEP = 2.2f
-    private const val DASH_WIDTH = 0.55f
-    private const val DASH_SHARE = 0.55f
-
-    private const val BULB_STEP = 1.5f
-    private const val BULB = 0.4f
-    private const val BULB_RIM = 0.22f
+    private const val RIVETS = 8
+    private const val RIVET = 0.26f
+    private const val RIVET_DOME = 0.62f
+    private const val RIVET_LIT = 0.18f
     private const val GLINT = 0.3f
-    private const val GLINT_AT = 0.32f
+    private const val GLINT_AT = 0.35f
 
-    private const val STAR_STEP = 1.2f
-    private const val STAR = 0.5f
-    private const val STAR_INNER = 0.48f
-    private const val STAR_POINTS = 5
+    private const val TWIST_STEP = 0.75f
+    private const val TWIST_LEAN = 0.22f
+    private const val TWIST_REACH = 0.36f
+    private const val TWIST_PEN = 0.11f
 
-    private const val RAY_BASE = 0.62f
-    private const val RAY_STEP = 1.1f
-    private const val RAY_SPREAD = 0.3f
-    private const val RAY_SHORT = 0.22f
+    private const val BEAD_STEP = 0.7f
+    private const val BEAD = 0.09f
 
-    private const val LEAF_LENGTH = 1.4f
+    private const val GEM = 0.4f
+    private const val GEM_STONE = 0.7f
+    private val GEMS = listOf(0f, 90f, 180f, 270f)
+    private val TOP_AND_FOOT = listOf(90f, 270f)
+    private val FOOT = listOf(90f)
+
+    private const val LEAF_LENGTH = 1.6f
     private const val LEAF_WIDTH = 0.5f
-    private const val LEAF_TILT = 0.3f
-    private const val LEAF_DENSITY = 1.3f
+    private const val LEAF_OUT = 0.3f
+    private const val LEAF_IN = 0.75f
+    private const val LEAF_DENSITY = 1.15f
     private const val LEAST_LEAVES = 3
-    private const val LAUREL_FROM = 14f
-    private const val LAUREL_TO = 140f
+    private const val LAUREL_FROM = 22f
+    private const val LAUREL_TO = 128f
+
+    private const val FACET_STEP = 1.3f
+    private const val FACET_LIGHT = 0.55f
+    private const val SPARKLE = 0.55f
+    private const val SPARKLE_WAIST = 0.28f
+    private const val SPARKLE_POINTS = 4
+    private val SPARKLES = listOf(315f, 150f, 30f)
+
+    private const val CREST_GIRDLE = 0.7f
+    private const val CREST_DEPTH = 2.3f
+    private const val CREST_TABLE = 0.7f
+    private const val CREST_HALF = 1.15f
+    private const val WING_FROM = 0.8f
+    private const val WING_BEND = 1.8f
+    private const val WING_TIP = 2.4f
+    private const val WING_TIP_DROP = 0.35f
+    private const val WING_FOOT = 0.35f
 }

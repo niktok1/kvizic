@@ -17,6 +17,8 @@ import io.ntole.kvizic.design.skin.FlapSizes
 import io.ntole.kvizic.design.skin.FontRole
 import io.ntole.kvizic.design.skin.IconSizes
 import io.ntole.kvizic.design.skin.LogoSizes
+import io.ntole.kvizic.design.skin.Metal
+import io.ntole.kvizic.design.skin.Metals
 import io.ntole.kvizic.design.skin.PodiumSizes
 import io.ntole.kvizic.design.skin.SeatSizes
 import io.ntole.kvizic.design.skin.SkinColors
@@ -265,9 +267,23 @@ internal val BuzzersAvatars =
         tanDark = Color(0xFF9C6B3C),
         grey = Color(0xFF8C8794),
         greyDark = Color(0xFF55505D),
+        black = Color(0xFF2A2631),
         gold = Color(0xFFF5C234),
         green = Color(0xFF6DBE45),
         greenDark = Color(0xFF3E7A23),
         disc = Color(0xFF2B2530),
         silhouette = Color(0xFF6A6372),
+        ring = Color(0xFF7A7482),
+    )
+
+internal val BuzzersMetals =
+    Metals(
+        iron = Metal(face = Color(0xFF50565E), shade = Color(0xFF282B30)),
+        bronze = Metal(face = Color(0xFFC98A52), shade = Color(0xFF7A4724)),
+        silver = Metal(face = Color(0xFFC8CDD5), shade = Color(0xFF7E8693)),
+        gold = Metal(face = Color(0xFFF7C948), shade = Color(0xFFB07A16)),
+        platinum = Metal(face = Color(0xFFD6F1EC), shade = Color(0xFF5FA39D)),
+        diamond = Metal(face = Color(0xFFA6E1FF), shade = Color(0xFF3D86E0)),
+        gem = Color(0xFFE8344E),
+        shine = Color(0xFFFFFBF0),
     )

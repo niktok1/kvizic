@@ -26,6 +26,7 @@ data class Skin(
     val parts: SkinParts,
     val backdrop: Backdrop,
     val avatarPalette: AvatarPalette,
+    val metals: Metals,
 ) {
     /** This skin with its display face swapped for [face], to compare faces in one look. */
     fun withDisplay(face: Face): Skin = copy(fonts = fonts.copy(display = face))

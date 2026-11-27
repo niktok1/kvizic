@@ -1,7 +1,6 @@
 package io.ntole.kvizic.design.icon
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -568,18 +567,40 @@ object KvizicIcons {
         }
     }
 
-    /** A coin, its rim round its face and a glint on the face: the дукат, a player's coins. */
-    val Coin: ImageVector by lazy {
-        icon("Coin") {
-            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
-                circle(x = 12f, y = 12f, radius = 9.5f)
-                circle(x = 12f, y = 12f, radius = 7.9f)
-                circle(x = 12f, y = 12f, radius = 6.7f)
-                moveTo(7.2f, 10.7f)
-                arcTo(5f, 5f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 10.7f, y1 = 7.2f)
-                lineTo(11.1f, 8.5f)
-                arcTo(3.6f, 3.6f, 0f, isMoreThanHalf = false, isPositiveArc = false, x1 = 8.5f, y1 = 11.1f)
+    /** A shop's front under a striped awning, its door in the middle: the shop, Дућан. */
+    val Store: ImageVector by lazy {
+        icon("Store") {
+            path(fill = SolidColor(Color.Black)) {
+                moveTo(5f, 3.5f)
+                horizontalLineTo(8.5f)
+                lineTo(7.5f, 9f)
+                arcTo(2.25f, 2.25f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 3f, y1 = 9f)
                 close()
+                moveTo(12f, 3.5f)
+                horizontalLineTo(15.5f)
+                lineTo(16.5f, 9f)
+                arcTo(2.25f, 2.25f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 12f, y1 = 9f)
+                close()
+            }
+            outline {
+                moveTo(5f, 3.5f)
+                horizontalLineTo(19f)
+                lineTo(21f, 9f)
+                arcTo(2.25f, 2.25f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 16.5f, y1 = 9f)
+                arcTo(2.25f, 2.25f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 12f, y1 = 9f)
+                arcTo(2.25f, 2.25f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 7.5f, y1 = 9f)
+                arcTo(2.25f, 2.25f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 3f, y1 = 9f)
+                close()
+                moveTo(5f, 12.5f)
+                verticalLineTo(20.5f)
+                moveTo(19f, 12.5f)
+                verticalLineTo(20.5f)
+                moveTo(3f, 20.5f)
+                horizontalLineTo(21f)
+                moveTo(10f, 20.5f)
+                verticalLineTo(15.5f)
+                horizontalLineTo(14f)
+                verticalLineTo(20.5f)
             }
         }
     }

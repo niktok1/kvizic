@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.ntole.kvizic.design.component.AnswerTileState
@@ -339,16 +340,18 @@ internal object NotebookParts : SkinParts {
                 seat: Color,
                 dimmed: Boolean,
             ) {
-                drawPath(circleWobble(size.minDimension / 2 - space.strokeThin.toPx(), seat.hashCode()), Card)
+                val disc = if (dimmed) NotebookAvatars.disc else lerp(seat, Ballpoint, 0.3f)
+                val ring = size.minDimension / 2 - space.avatar.ring.toPx() / 2 - space.xxs.toPx() / 2
+                drawPath(circleWobble(ring, seat.hashCode()), disc)
             }
 
             override fun DrawScope.drawOver(
                 seat: Color,
                 dimmed: Boolean,
             ) {
-                // A marker ring in the seat's colour, drawn round the animal twice, as a hand would.
+                // A marker ring in plain grey, drawn round the animal twice, as a hand would.
                 val ring = size.minDimension / 2 - space.avatar.ring.toPx() / 2 - space.xxs.toPx() / 2
-                val marker = if (dimmed) colors.bulbOff else seat
+                val marker = if (dimmed) colors.bulbOff else NotebookAvatars.ring
                 val pen = Stroke(width = space.avatar.ring.toPx(), cap = StrokeCap.Round)
                 drawPath(circleWobble(ring, seat.hashCode()), marker, style = pen)
             }
