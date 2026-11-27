@@ -113,8 +113,9 @@ public sealed interface GamePhase {
     ) : GamePhase
 
     /**
-     * The answers are open until [deadline]. [myPick] is this player's locked answer, [picks] what the
-     * others picked, seen only once this player has answered, and [answered] who has, which everyone sees.
+     * The answers are open until [deadline]. [myPick] is this player's locked answer, [passed] whether they
+     * said they do not know instead, [picks] what the others picked, seen only once this player has answered
+     * or passed, and [answered] who has answered or passed, which everyone sees.
      */
     public data class Answering(
         val gameId: String,
@@ -126,6 +127,7 @@ public sealed interface GamePhase {
         val myPick: Int?,
         val picks: Map<String, Int>,
         val standings: List<Standing>,
+        val passed: Boolean = false,
     ) : GamePhase
 
     /** The right answer and the points, until the next question, or the results, at [next]. */

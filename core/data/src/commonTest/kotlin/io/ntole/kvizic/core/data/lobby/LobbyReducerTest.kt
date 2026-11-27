@@ -5,6 +5,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
 import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.lobby.Visibility
+import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.PhaseView
 import io.ntole.kvizic.core.protocol.PickView
 import io.ntole.kvizic.core.protocol.ServerMessage
@@ -155,6 +156,12 @@ class LobbyReducerTest {
         clock += 1_500.milliseconds
         assertEquals(2_500.milliseconds, phase.deadline.remaining())
         assertEquals("game-1", model.game?.gameId)
+    }
+
+    @Test
+    fun `a snapshot of a pass is a pass and never an answer`() {
+        val phase = assertIs<GamePhase.Answering>(start(answering(yourPick = ClientMessage.Answer.PASS)).phase)
+        assertEquals(true to null, phase.passed to phase.myPick)
     }
 
     @Test

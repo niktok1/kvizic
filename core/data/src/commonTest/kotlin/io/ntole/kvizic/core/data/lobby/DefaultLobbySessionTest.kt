@@ -522,6 +522,27 @@ class DefaultLobbySessionTest {
         }
 
     @Test
+    fun `a pass shows at once and takes no answer after it and keeps passes off the tiles`() =
+        runTest {
+            val harness = Harness(this)
+            val socket = harness.inLobby(answering(index = 0))
+            harness.lobby.pass()
+            harness.lobby.answer(1)
+            harness.settle()
+            val shown = assertIs<GamePhase.Answering>(harness.inLobbyState().phase)
+            assertEquals(true to null, shown.passed to shown.myPick)
+            assertEquals(listOf(ClientMessage.Answer.PASS), socket.sentOf<ClientMessage.Answer>().map { it.option })
+
+            val picks = listOf(PickView("guest1", ClientMessage.Answer.PASS), PickView("guest2", 0))
+            socket.push(ServerMessage.Picks(2, 0, picks))
+            harness.settle()
+            val phase = assertIs<GamePhase.Answering>(harness.inLobbyState().phase)
+            assertEquals(mapOf("guest2" to 0), phase.picks)
+            assertEquals(setOf("guest1", "guest2"), phase.answered)
+            assertEquals(true to null, phase.passed to phase.myPick)
+        }
+
+    @Test
     fun `others' picks show once this player has answered`() =
         runTest {
             val harness = Harness(this)

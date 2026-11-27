@@ -26,12 +26,14 @@ import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.lobby.PublicLobbyDto
 import io.ntole.kvizic.core.lobby.Visibility
 import io.ntole.kvizic.core.protocol.AnswerResultView
+import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.CloseCodes
 import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.FinalStandingView
 import io.ntole.kvizic.core.protocol.LobbyView
 import io.ntole.kvizic.core.protocol.MemberView
 import io.ntole.kvizic.core.protocol.PhaseView
+import io.ntole.kvizic.core.protocol.PickView
 import io.ntole.kvizic.core.protocol.QuestionView
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ResultsView
@@ -152,6 +154,9 @@ internal fun StandingView.toDomain(): Standing = Standing(player, score, rank, c
 
 internal fun AnswerResultView.toDomain(): AnswerResult = AnswerResult(player, option, points, timeMs, order)
 
+internal fun List<PickView>.toDomain(): Map<String, Int> =
+    filter { it.option != ClientMessage.Answer.PASS }.associate { it.player to it.option }
+
 internal fun RevealView.toDomain(): Reveal =
     Reveal(
         index = index,
@@ -214,9 +219,10 @@ internal fun PhaseView.toDomain(at: ComparableTimeMark): GamePhase? =
                 options = options,
                 deadline = deadline(at, remainingMs, durationMs),
                 answered = answered.toSet(),
-                myPick = yourPick,
-                picks = picks.associate { it.player to it.option },
+                myPick = yourPick?.takeIf { it != ClientMessage.Answer.PASS },
+                picks = picks.toDomain(),
                 standings = standings.map { it.toDomain() },
+                passed = yourPick == ClientMessage.Answer.PASS,
             )
         }
 

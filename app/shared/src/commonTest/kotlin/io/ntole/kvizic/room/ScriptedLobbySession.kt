@@ -69,6 +69,10 @@ class ScriptedLobbySession : LobbySession {
         commands += "answer $option"
     }
 
+    override fun pass() {
+        commands += "pass"
+    }
+
     override fun start() {
         commands += "start"
     }

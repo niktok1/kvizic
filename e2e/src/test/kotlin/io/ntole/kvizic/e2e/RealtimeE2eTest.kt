@@ -181,6 +181,25 @@ class RealtimeE2eTest {
         }
 
     @Test
+    fun `a pass ends the question long before its clock and scores nothing`(): Unit =
+        runBlocking {
+            val server = server()
+            val ana = player("ana", server)
+            val boris = player("boris", server)
+            lobbyOf(ana, boris)
+            ana.lobby.start()
+
+            val asked = ana.awaitAnswering(0)
+            boris.awaitAnswering(0)
+            ana.lobby.answer(rightOf(asked))
+            boris.lobby.pass()
+
+            val revealed = ana.awaitPhase(3.seconds, "the reveal before the clock") { it is GamePhase.Revealing }
+            val him = (revealed as GamePhase.Revealing).reveal.results.first { it.playerId == boris.id }
+            assertEquals(null to 0, him.option to him.points)
+        }
+
+    @Test
     fun `a player whose network drops mid-question comes back and their answer counts`(): Unit =
         runBlocking {
             val server = server()

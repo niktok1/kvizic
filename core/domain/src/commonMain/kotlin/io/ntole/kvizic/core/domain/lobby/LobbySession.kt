@@ -151,6 +151,9 @@ public interface LobbySession {
     /** Locks in [option] for the question asked now; shows at once, and is sent again if the connection drops. */
     public fun answer(option: Int)
 
+    /** Says the player does not know the question asked now: no points, and the room waits for them no more. */
+    public fun pass()
+
     public fun start()
 
     public fun updateSettings(settings: LobbySettings)

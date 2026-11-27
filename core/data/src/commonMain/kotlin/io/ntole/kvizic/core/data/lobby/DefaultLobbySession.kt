@@ -180,12 +180,17 @@ public class DefaultLobbySession(
         stay.job = scope.launch(confined) { run(stay, ticket) }
     }
 
-    override fun answer(option: Int): Unit =
+    override fun answer(option: Int): Unit = lockIn(option)
+
+    override fun pass(): Unit = lockIn(ClientMessage.Answer.PASS)
+
+    private fun lockIn(option: Int): Unit =
         onConfined {
             val stay = membership ?: return@onConfined
             val shown = mutableState.value as? LobbySessionState.InLobby ?: return@onConfined
             val answering = shown.phase as? GamePhase.Answering ?: return@onConfined
-            if (answering.myPick != null || option !in answering.options.indices) return@onConfined
+            if (answering.myPick != null || answering.passed) return@onConfined
+            if (option != ClientMessage.Answer.PASS && option !in answering.options.indices) return@onConfined
             stay.pending = PendingAnswer(answering.question.index, option)
             publish(stay)
             stay.live?.let { live ->
@@ -500,7 +505,7 @@ public class DefaultLobbySession(
                 stay.pending = null
             }
 
-            answering.myPick != null -> {
+            answering.myPick != null || answering.passed -> {
                 stay.pending = null
             }
 
@@ -520,12 +525,11 @@ public class DefaultLobbySession(
         val phase =
             when (val phase = model.phase) {
                 is GamePhase.Answering -> {
-                    if (pending != null && phase.myPick == null &&
-                        phase.question.index == pending.index
-                    ) {
-                        phase.copy(myPick = pending.option)
-                    } else {
-                        phase
+                    when {
+                        pending == null || phase.myPick != null || phase.passed -> phase
+                        phase.question.index != pending.index -> phase
+                        pending.option == ClientMessage.Answer.PASS -> phase.copy(passed = true)
+                        else -> phase.copy(myPick = pending.option)
                     }
                 }
 

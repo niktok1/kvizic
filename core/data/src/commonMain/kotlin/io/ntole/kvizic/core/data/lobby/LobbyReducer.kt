@@ -7,6 +7,8 @@ import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbyMember
 import io.ntole.kvizic.core.domain.lobby.LobbyVisibility
 import io.ntole.kvizic.core.domain.lobby.Standing
+import io.ntole.kvizic.core.protocol.ClientMessage
+import io.ntole.kvizic.core.protocol.PickView
 import io.ntole.kvizic.core.protocol.ServerMessage
 import kotlin.time.ComparableTimeMark
 
@@ -166,14 +168,15 @@ internal object LobbyReducer {
             is ServerMessage.Picks -> {
                 val answering = model.phase as? GamePhase.Answering ?: return null
                 if (answering.question.index != change.index) return null
-                val picks = change.picks.associate { it.player to it.option }
+                val picks = change.picks.toDomain()
                 model.copy(
                     phase =
                         answering.copy(
                             picks = picks,
-                            answered = answering.answered + picks.keys,
+                            answered = answering.answered + change.picks.map { it.player },
                             myPick =
                                 picks[model.you] ?: answering.myPick,
+                            passed = answering.passed || PickView(model.you, ClientMessage.Answer.PASS) in change.picks,
                         ),
                 )
             }
