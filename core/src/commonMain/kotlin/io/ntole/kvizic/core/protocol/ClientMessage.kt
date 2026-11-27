@@ -41,14 +41,25 @@ public sealed interface ClientMessage {
     @SerialName("resync")
     public data object Resync : ClientMessage
 
-    /** Locks in [option] (its position in the order the answers were sent) for question [question]. */
+    /**
+     * Locks in [option] (its position in the order the answers were sent) for question [question], or, with
+     * [PASS], says the player does not know: no points, and the question waits for them no more.
+     */
     @Serializable
     @SerialName("answer")
     public data class Answer(
         public val id: Int,
         public val question: Int,
         public val option: Int,
-    ) : ClientMessage
+    ) : ClientMessage {
+        public companion object {
+            /**
+             * The option of a pass, which is no answer's position. A server from before passes refuses it as
+             * `INVALID_OPTION`, and a client from before draws a [PickView] of it on no answer.
+             */
+            public const val PASS: Int = -1
+        }
+    }
 
     /** One of [Reactions.ALL]. */
     @Serializable

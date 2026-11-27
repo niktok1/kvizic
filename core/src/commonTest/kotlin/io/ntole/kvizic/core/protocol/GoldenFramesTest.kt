@@ -40,6 +40,8 @@ class GoldenFramesTest {
             // Since 2026-10-02: a member's level, and a final standing's.
             """{"t":"member","v":14,"member":{"player":"p3","name":"Нина","avatar":"owl","seat":2,"connected":true,"onResults":false,"playing":false,"kickVotes":0,"kickVotesNeeded":0,"kickVoted":false,"level":7}}""",
             """{"t":"over","v":15,"results":{"gameId":"g1","questionCount":10,"standings":[{"player":"p1","name":"Ана","avatar":"fox","score":900,"correct":8,"rank":1,"finished":true,"level":12}]}}""",
+            // Since 2026-11-27: a player who passed, among the picks.
+            """{"t":"picks","v":16,"index":2,"picks":[{"player":"p1","option":1},{"player":"p2","option":-1}]}""",
         )
 
     private val v1ClientFrames =
@@ -59,6 +61,8 @@ class GoldenFramesTest {
             """{"t":"vote_kick","id":8}""",
             // Since 2026-10-13: the player's UI language, which the questions are read in.
             """{"t":"hello","ticket":"t","protocol":1,"platform":"android","build":101,"language":"hr"}""",
+            // Since 2026-11-27: a pass.
+            """{"t":"answer","id":9,"question":2,"option":-1}""",
         )
 
     @Test
@@ -94,6 +98,10 @@ class GoldenFramesTest {
         val answer = ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames[3])
         assertIs<ClientMessage.Answer>(answer)
         assertEquals(ClientMessage.Answer(id = 1, question = 2, option = 3), answer)
+        assertEquals(
+            ClientMessage.Answer(id = 9, question = 2, option = ClientMessage.Answer.PASS),
+            ProtocolJson.decodeFromString(ClientMessage.serializer(), v1ClientFrames.last { """"t":"answer"""" in it }),
+        )
     }
 
     @Test
