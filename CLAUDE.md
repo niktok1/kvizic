@@ -240,7 +240,9 @@ the shop, **Дућан** (Dućan; Trgovina in Slovenian, Дуќан in Macedonia
   `pack_seed.py`) seeds only an in-memory H2, a local run's, and the server refuses one beside `DATABASE_URL`.
 - **Publishing drafts**: `KVIZIC_ADMIN_TOKEN=… ./publish.py dev drafts/*.json` in the content repo checks them,
   imports them (25 a request, a known key a duplicate) and approves the drafts it brought; `--import-only`
-  leaves them to review in the moderation app.
+  leaves them to review in the moderation app. **A round is one run, with no review** (the owner, 2026-11-27):
+  the content repo's `plan.py` and `round.workflow.js` plan from the bank's gaps, write, dedup, translate, check
+  and publish to dev and prod. A review is for questions sent in from outside, which none are yet.
 - **The moderation app** (`:app:adminApp`, `KVIZIC_ENV=dev ./gradlew :app:adminApp:run`, or the web page
   built with `-Pkvizic.env`): the token is typed and held in memory only, a wrong one forgotten at once (ten
   a minute lock the address out). Review shows one draft at a time, A approves, R rejects with a reason
@@ -292,8 +294,8 @@ domain a pinned copy of `Country`.
   (2026-10-14), to be played on dev before the reviewers sign off: a prod release before then puts the gate
   back (R). No flags or country chips in rooms yet. In Macedonian the game is „Квизиќ“.
 - **No moderation-app work this round**: `publish.py` approves what it imports; countries and translations go
-  live through `localize.py` (`/v1/admin/question-localizations`) with no review status, reviewed in the content
-  repo through the native reviewers' sheets.
+  live through `localize.py` (`/v1/admin/question-localizations`) with no review status, and since 2026-11-27
+  with no review at all (§8).
 
 ## 9. The client
 
