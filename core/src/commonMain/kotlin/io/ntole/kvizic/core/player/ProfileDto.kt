@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
  * The bearer's own profile: the name and avatar other players see, and their stats. [displayName] is
  * the Play Games name when they signed in with Play Games ([nameSource]), otherwise the nickname the
  * server generated for them. [country] is the one the server last heard from them, none before it has.
+ * [coins] is what their games earned less what the shop took, [items] what they own from the shop, and
+ * [frameId] and [titleId] the frame and the title of those they wear, none for none.
  */
 @Serializable
 public data class ProfileDto(
@@ -18,6 +20,10 @@ public data class ProfileDto(
     public val level: PlayerLevelDto = PlayerLevelDto(),
     public val stats: PlayerStatsDto = PlayerStatsDto(),
     public val country: Country? = null,
+    public val coins: Int = 0,
+    public val items: List<String> = emptyList(),
+    public val frameId: String? = null,
+    public val titleId: String? = null,
 )
 
 /**

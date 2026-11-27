@@ -82,5 +82,11 @@ public enum class ErrorCode {
     /** A topic no topic has the id of. 404. */
     TOPIC_NOT_FOUND,
 
+    /** The shop sells nothing under that id, or no longer. 404. */
+    ITEM_NOT_FOUND,
+
+    /** The player has fewer coins than the item costs. 409. */
+    NOT_ENOUGH_COINS,
+
     UNKNOWN,
 }

@@ -35,6 +35,18 @@ public object KvizicApi {
         /** POST a `SetAvatarRequest`: picks the player's avatar, answered with the `ProfileDto`. */
         public const val MY_AVATAR: String = "/$VERSION/me/avatar"
 
+        /** POST a `SetWornRequest`: the frame and the title the player wears, answered with the `ProfileDto`. */
+        public const val MY_WORN: String = "/$VERSION/me/worn"
+
+        /** GET: what the shop sells and for how much, a `ShopDto`. */
+        public const val SHOP: String = "/$VERSION/shop"
+
+        /**
+         * POST a `BuyItemRequest`: buys the item for coins, answered with the `ProfileDto`; one owned already
+         * costs nothing. NOT_ENOUGH_COINS, or ITEM_NOT_FOUND for an item the shop does not sell.
+         */
+        public const val SHOP_ITEMS: String = "/$VERSION/shop/items"
+
         /** POST, no body: deletes the bearer's account and everything of theirs, answered 204. */
         public const val ME_DELETION: String = "/$VERSION/me/deletion"
 
