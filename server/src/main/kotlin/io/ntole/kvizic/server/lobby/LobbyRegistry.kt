@@ -5,6 +5,7 @@ import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.protocol.LeaveReason
 import io.ntole.kvizic.server.admin.LiveCounts
 import io.ntole.kvizic.server.plugins.ApiFailure
+import io.ntole.kvizic.server.rules.CoinRules
 import io.ntole.kvizic.server.rules.ScoringRules
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +50,7 @@ class LobbyRegistry(
     private val results: ResultSink,
     private val topics: () -> Set<String>,
     private val random: Random = Random.Default,
+    private val coins: CoinRules = CoinRules.DEFAULT,
 ) {
     val tickets = Tickets(timeSource, timings.ticketTtl)
 
@@ -292,6 +294,7 @@ class LobbyRegistry(
                         knownTopics = topics,
                         random = random,
                         events = events,
+                        coins = coins,
                     ),
             )
         lobbies[lobby.id] = lobby

@@ -47,6 +47,7 @@ import io.ntole.kvizic.server.realtime.PlaySockets
 import io.ntole.kvizic.server.realtime.playRoutes
 import io.ntole.kvizic.server.report.reportAdminRoutes
 import io.ntole.kvizic.server.report.reportRoutes
+import io.ntole.kvizic.server.shop.shopRoutes
 import io.ntole.kvizic.server.topic.TopicCatalog
 import io.ntole.kvizic.server.topic.topicAdminRoutes
 import io.ntole.kvizic.server.topic.topicRoutes
@@ -127,6 +128,7 @@ fun Application.kvizicModule(
             questions = parts.questions ?: DbQuestionSource(db, localShare = config.localShare),
             results = parts.results ?: ResultWriter(db, background, log),
             topics = { topics.ids },
+            coins = game.coins,
         )
     registry.start()
     val sockets = PlaySockets(registry, game.timings, game.limits, config.minClientVersions, watchdog = lobbies)
@@ -167,6 +169,7 @@ fun Application.kvizicModule(
         )
         playGamesRoutes(db, tokens, config, playGames, notifier)
         playerRoutes(db, playerDeleted = { playerId -> sessionEnded(playerId, null) })
+        shopRoutes(db)
         topicRoutes(db)
         lobbyRoutes(
             db = db,

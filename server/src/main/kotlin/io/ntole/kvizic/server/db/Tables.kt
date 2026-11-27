@@ -107,6 +107,13 @@ object Profiles : Table("profiles") {
     /** Experience earned in finished games in a room, none in solo (`Levels`). */
     val xp = integer("xp").default(0)
 
+    /** Coins earned in finished games in a room (`CoinRules`), less what the shop took. */
+    val coins = integer("coins").default(0)
+
+    /** The frame and the title the player wears, items of theirs from the shop; null for none. */
+    val frameId = varchar("frame_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
+    val titleId = varchar("title_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
+
     /** The best solo run at medium, and when: every run was medium before V5, so V1's columns hold it. */
     val soloBestScore = integer("solo_best_score").nullable()
     val soloBestAt = long("solo_best_at").nullable()
@@ -353,6 +360,9 @@ object MatchPlayers : Table("match_players") {
     /** False for a player who left before the end. */
     val finished = bool("finished")
 
+    /** What the game paid them in coins. */
+    val coins = integer("coins").default(0)
+
     override val primaryKey = PrimaryKey(matchId, playerId)
 
     init {
@@ -415,6 +425,16 @@ object Reports : Table("reports") {
     }
 }
 
+/** What players bought in the shop, and for how much: one row an item, so an item is never bought twice. */
+object PlayerItems : Table("player_items") {
+    val playerId = varchar("player_id", 36).references(Players.id, onDelete = ReferenceOption.CASCADE)
+    val itemId = varchar("item_id", KvizicApi.Limits.MAX_ID_LENGTH)
+    val pricePaid = integer("price_paid")
+    val boughtAt = long("bought_at")
+
+    override val primaryKey = PrimaryKey(playerId, itemId)
+}
+
 /** Every table, in an order a create can follow. */
 val appTables: Array<Table> =
     arrayOf(
@@ -439,4 +459,5 @@ val appTables: Array<Table> =
         QuestionOptionTranslations,
         TopicNames,
         TopicGroupNames,
+        PlayerItems,
     )

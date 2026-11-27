@@ -79,6 +79,18 @@ class LobbyLevelsTest {
                         it.level
                 },
             )
+            assertEquals(
+                mapOf("ana" to 20, "boris" to 0, "ceca" to 0),
+                results.standings.associate { it.player to it.coinsEarned },
+                "the winner earns 10 for each of the two others",
+            )
+            assertEquals(
+                listOf(20, 0, 0),
+                lobby.records
+                    .single()
+                    .players
+                    .map { it.coins },
+            )
             val told = ceca.all<ServerMessage.MemberUpdated>().associate { it.member.player to it.member.level }
             assertEquals(mapOf("ana" to 3, "boris" to 2, "ceca" to 2), told)
             lobby.assertInvariants()

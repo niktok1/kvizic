@@ -28,6 +28,8 @@ data class PlayerRecord(
     val rank: Int,
     val finished: Boolean,
     val won: Boolean,
+    /** What the game paid them in coins. */
+    val coins: Int = 0,
 )
 
 /**

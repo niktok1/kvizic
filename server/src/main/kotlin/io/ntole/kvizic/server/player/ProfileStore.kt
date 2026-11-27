@@ -7,6 +7,7 @@ import io.ntole.kvizic.server.auth.IdentityStore
 import io.ntole.kvizic.server.db.PlayerTopicStats
 import io.ntole.kvizic.server.db.Players
 import io.ntole.kvizic.server.db.Profiles
+import io.ntole.kvizic.server.shop.ShopStore
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -46,6 +47,10 @@ object ProfileStore {
             playGamesLinked = IdentityStore.isLinked(playerId),
             country = row[Players.country],
             level = PlayerLevelDto(number = level.number, xpIntoLevel = level.into, xpForLevel = level.span),
+            coins = row[Profiles.coins],
+            items = ShopStore.owned(playerId),
+            frameId = row[Profiles.frameId],
+            titleId = row[Profiles.titleId],
             stats =
                 PlayerStatsDto(
                     gamesPlayed = row[Profiles.gamesPlayed],
@@ -68,6 +73,9 @@ object ProfileStore {
             Players.country,
             Profiles.avatarId,
             Profiles.xp,
+            Profiles.coins,
+            Profiles.frameId,
+            Profiles.titleId,
             Profiles.gamesPlayed,
             Profiles.gamesWon,
             Profiles.answersGiven,

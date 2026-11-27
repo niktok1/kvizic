@@ -99,6 +99,7 @@ class ResultWriter(
             this[MatchPlayers.answered] = player.answered
             this[MatchPlayers.standing] = player.rank
             this[MatchPlayers.finished] = player.finished
+            this[MatchPlayers.coins] = player.coins
         }
         MatchQuestions.batchInsert(
             record.questions.withIndex().filter {
@@ -122,6 +123,7 @@ class ResultWriter(
                 } else if (player.finished) {
                     row[xp] = xp + Levels.award(player.correct, player.won)
                 }
+                if (player.coins > 0) row[coins] = coins + player.coins
             }
             if (record.kind == LobbyKind.SOLO && player.finished) {
                 // A compare-and-set: only a better run at the same level replaces its best.

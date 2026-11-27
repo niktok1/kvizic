@@ -162,6 +162,43 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   bank is short of takes the nearest. A public list's card names it in a word, unless medium; the lobby always does. A solo run keeps its
   format but its level, picked in its room, and each level keeps its own best (V5; medium in V1's columns).
 
+## 7a. Coins and the shop
+
+The owner, 2026-11-27. Players earn coins, **дукати** (cekini in Slovenian), in a room's games and spend them in
+the shop, **Дућан** (Dućan; Trgovina in Slovenian, Дуќан in Macedonian). Not „поени“, which is a game's score.
+
+- **No real money now** (maybe in the far future): no Play Billing, no store product ids, and never a sale on iOS
+  without Apple's in-app purchase. Nothing random is sold, no loot boxes. Coins have no money value and cannot be
+  traded between players.
+- **Earning is the server's alone** (`CoinRules`), so a change is never a client release. `COIN_PAY` (a Render
+  variable, `ServerConfig.parseCoinPay`) is what each place earns for each other finisher, first place first:
+  unset is `10`, so the winner of a room of two earns 10 and of eight 70; `10,5` would pay second place too; `0`
+  pays nothing. Only those who stayed to the end earn, never in solo. **Tied players split** what their places
+  pay, rounded down. No anti-farming yet (the owner: maybe later): two idle phones that tie 0:0 split 10.
+  `Lobby.finishGame` works it out beside the experience, `FinalStandingView.coinsEarned` shows it to the room,
+  and `ResultWriter` adds it in the game's transaction (`profiles.coins`, and `match_players.coins` beside the
+  standing, so every coin earned is kept with its game).
+- **The shop** (`Shop`, server code): six avatar frames (50 to 800), eight titles (30 to 150) and four animals
+  (eagle, wild boar, beaver, jackal; 300 to 500). The sixteen free avatars stay free. Prices, titles and what is
+  on sale change on the server alone; a client hides a frame or an animal it has no drawing for, so a new one
+  goes on sale after a release draws it. A title's words are server data in every content language and English;
+  the room sends each reader the words in their language (`MemberView.title`).
+- **Buying** (`ShopStore`, V13): the player's row is locked first, as the writer locks it, then one
+  compare-and-set takes the price (`coins >= price`), and `player_items`' key refuses a second row, so an item is
+  never paid twice; one owned already costs nothing. `player_items` keeps what it cost. Wearing (`/v1/me/worn`)
+  takes a frame and a title the player owns; a bought animal is worn as any avatar (`/v1/me/avatar` takes it once
+  owned). The room shows the frame on a seat's avatar and the title under the name (`MemberView.frame`, `title`),
+  never on the podium (the owner chose "just the coins earned" for the results).
+- **The client**: Home's balance (a coin and the count, `Balance`) opens Дућан (`ShopScreen`): the player as they
+  would look with the item selected, the frames, titles and animals, and one button that buys (the price and a
+  coin, no verb), puts on or takes off. The profile's picker shows the free avatars and those bought. Words are
+  `EconomyStrings`, in all six languages. Analytics: `item_bought` (`item`, `price`) and `item_equipped` (`item`).
+- **Guests can lose coins**: a reinstall, cleared data or 90 days away loses a guest's account; iOS and the web
+  have no sign-in. „Сачувај напредак“ is the nudge. The terms and the privacy page say nothing of coins yet: the
+  production session writes them before this ships to production.
+- **Later** (the owner's list): host crowns, a win celebration on the results, the Notebook skin once there is a
+  skin picker, extra reactions (with the chat work); never jokers or anything that buys a win.
+
 ## 8. Questions
 
 - **Limits** (`KvizicApi.Limits`, decided 2026-10-01): a question at most **120** characters, an answer

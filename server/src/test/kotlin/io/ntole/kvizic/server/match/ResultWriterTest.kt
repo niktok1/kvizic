@@ -63,7 +63,16 @@ class ResultWriterTest {
         kind: LobbyKind = LobbyKind.PRIVATE,
         players: List<PlayerRecord> =
             listOf(
-                PlayerRecord("ana", score = 170, correct = 2, answered = 2, rank = 1, finished = true, won = true),
+                PlayerRecord(
+                    "ana",
+                    score = 170,
+                    correct = 2,
+                    answered = 2,
+                    rank = 1,
+                    finished = true,
+                    won = true,
+                    coins = 10,
+                ),
                 PlayerRecord("boris", score = -12, correct = 0, answered = 1, rank = 2, finished = true, won = false),
             ),
         spectators: List<String> = listOf("ceca"),
@@ -123,6 +132,15 @@ class ResultWriterTest {
             assertEquals(1, ana[Profiles.gamesWon])
             assertEquals(2, ana[Profiles.answersGiven])
             assertEquals(2, ana[Profiles.answersCorrect])
+            assertEquals(10, ana[Profiles.coins])
+            assertEquals(
+                listOf("ana" to 10, "boris" to 0),
+                MatchPlayers
+                    .selectAll()
+                    .map {
+                        it[MatchPlayers.playerId] to it[MatchPlayers.coins]
+                    }.sortedBy { it.first },
+            )
             val ceca = Profiles.selectAll().where { Profiles.playerId eq "ceca" }.single()
             assertEquals(0, ceca[Profiles.gamesPlayed], "a spectator played nothing")
 
@@ -175,7 +193,8 @@ class ResultWriterTest {
             (1..8).map { async { db.query { writer.write(game()) } } }.awaitAll()
         }
         read {
-            assertEquals(8, Profiles.selectAll().where { Profiles.playerId eq "ana" }.single()[Profiles.gamesPlayed])
+            val ana = Profiles.selectAll().where { Profiles.playerId eq "ana" }.single()
+            assertEquals(8 to 80, ana[Profiles.gamesPlayed] to ana[Profiles.coins])
             assertEquals(
                 8,
                 QuestionStats.selectAll().where { QuestionStats.questionId eq "q1" }.single()[QuestionStats.timesShown],

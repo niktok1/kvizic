@@ -114,5 +114,9 @@ class ApiFailure(
             ApiFailure(HttpStatusCode.Conflict, ErrorCode.TOPIC_EXISTS, "a topic is $id already")
 
         fun topicNotFound(id: String) = ApiFailure(HttpStatusCode.NotFound, ErrorCode.TOPIC_NOT_FOUND, "no topic $id")
+
+        fun itemNotFound(id: String) = ApiFailure(HttpStatusCode.NotFound, ErrorCode.ITEM_NOT_FOUND, "no item $id")
+
+        fun notEnoughCoins() = ApiFailure(HttpStatusCode.Conflict, ErrorCode.NOT_ENOUGH_COINS, "not enough coins")
     }
 }

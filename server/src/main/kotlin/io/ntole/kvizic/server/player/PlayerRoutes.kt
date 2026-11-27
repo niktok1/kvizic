@@ -17,10 +17,11 @@ import io.ntole.kvizic.server.plugins.ApiFailure
 import io.ntole.kvizic.server.plugins.RouteLimit
 import io.ntole.kvizic.server.plugins.rateLimit
 import io.ntole.kvizic.server.plugins.receiveOrReject
+import io.ntole.kvizic.server.shop.ShopStore
 
 /**
- * "Me" is whoever the bearer names: their profile, their avatar and deleting their account. A deletion
- * calls [playerDeleted] once committed, which closes the player's live sockets.
+ * "Me" is whoever the bearer names: their profile, their avatar, free or bought, and deleting their account. A
+ * deletion calls [playerDeleted] once committed, which closes the player's live sockets.
  */
 fun Route.playerRoutes(
     db: Db,
@@ -40,10 +41,13 @@ fun Route.playerRoutes(
             post(KvizicApi.Paths.MY_AVATAR) {
                 val playerId = call.authenticatedPlayerId()
                 val body = call.receiveOrReject<SetAvatarRequest>("avatar")
-                if (body.avatarId !in Avatars.ALL) throw ApiFailure.invalidAvatar()
+                if (body.avatarId !in Avatars.ALL && body.avatarId !in Avatars.SHOP) throw ApiFailure.invalidAvatar()
 
                 val profile =
                     db.query {
+                        if (body.avatarId in Avatars.SHOP && !ShopStore.owns(playerId, body.avatarId)) {
+                            throw ApiFailure.invalidAvatar()
+                        }
                         if (!PlayerStore.setAvatar(
                                 playerId,
                                 body.avatarId,

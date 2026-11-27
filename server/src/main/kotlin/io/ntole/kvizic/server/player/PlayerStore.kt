@@ -33,6 +33,9 @@ object PlayerStore {
         val avatarId: String,
         /** What they have earned in games, which their level is worked out from. */
         val xp: Int = 0,
+        /** The frame and the title they wear from the shop, none for none. */
+        val frameId: String? = null,
+        val titleId: String? = null,
     )
 
     /**
@@ -110,8 +113,15 @@ object PlayerStore {
     fun find(id: String): Player? =
         Players
             .join(Profiles, JoinType.INNER, Players.id, Profiles.playerId)
-            .select(Players.id, Players.displayName, Players.nameSource, Profiles.avatarId, Profiles.xp)
-            .where { Players.id eq id }
+            .select(
+                Players.id,
+                Players.displayName,
+                Players.nameSource,
+                Profiles.avatarId,
+                Profiles.xp,
+                Profiles.frameId,
+                Profiles.titleId,
+            ).where { Players.id eq id }
             .limit(1)
             .firstOrNull()
             ?.let { row ->
@@ -121,6 +131,8 @@ object PlayerStore {
                     nameSource = row[Players.nameSource],
                     avatarId = row[Profiles.avatarId],
                     xp = row[Profiles.xp],
+                    frameId = row[Profiles.frameId],
+                    titleId = row[Profiles.titleId],
                 )
             }
 
@@ -135,7 +147,7 @@ object PlayerStore {
         }
     }
 
-    /** Gives [id] the avatar [avatarId], one of `Avatars.ALL`, and returns whether there was such a player. */
+    /** Gives [id] the avatar [avatarId], free or theirs, and returns whether there was such a player. */
     fun setAvatar(
         id: String,
         avatarId: String,

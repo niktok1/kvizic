@@ -4,6 +4,7 @@ import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.server.auth.PlayGamesClient
 import io.ntole.kvizic.server.lobby.LobbyLimits
 import io.ntole.kvizic.server.player.OpenedNotice
+import io.ntole.kvizic.server.rules.CoinRules
 
 /**
  * Everything the server reads from the environment.
@@ -195,6 +196,7 @@ data class ServerConfig(
                 commit = env("RENDER_GIT_COMMIT")?.trim()?.takeIf { it.isNotEmpty() },
                 game =
                     GameConfig(
+                        coins = parseCoinPay(env("COIN_PAY")),
                         limits =
                             LobbyLimits.DEFAULT.copy(
                                 maxSocketsPerAddress = parseMaxSocketsPerAddress(env("MAX_SOCKETS_PER_ADDRESS")),
@@ -260,6 +262,22 @@ data class ServerConfig(
                 "DRAIN_SECONDS is \"$raw\"; expected a whole number of seconds from 0 to $MAX_DRAIN_SECONDS."
             }
             return seconds
+        }
+
+        /**
+         * `COIN_PAY`: what each place of a room's game earns for each other finisher, first place first,
+         * comma-separated, such as `10,5`; `0` pays nothing, unset or blank the default. Anything else fails at
+         * boot, naming the variable.
+         */
+        internal fun parseCoinPay(raw: String?): CoinRules {
+            val trimmed = raw?.trim().orEmpty()
+            if (trimmed.isEmpty()) return CoinRules.DEFAULT
+            val pay = trimmed.split(',').map { it.trim().toIntOrNull() }
+            require(pay.all { it != null && it >= 0 }) {
+                "COIN_PAY is \"$raw\"; expected whole numbers from 0, comma-separated, first place first, " +
+                    "or unset for ${CoinRules.DEFAULT.pay.joinToString(",")}."
+            }
+            return CoinRules(pay.filterNotNull())
         }
 
         /**

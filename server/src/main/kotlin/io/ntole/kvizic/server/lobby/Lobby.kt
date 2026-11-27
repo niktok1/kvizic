@@ -27,11 +27,13 @@ import io.ntole.kvizic.core.protocol.StandingView
 import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.region.Country
 import io.ntole.kvizic.server.player.Levels
+import io.ntole.kvizic.server.rules.CoinRules
 import io.ntole.kvizic.server.rules.ScoringRules
 import io.ntole.kvizic.server.rules.Tally
 import io.ntole.kvizic.server.rules.answerTime
 import io.ntole.kvizic.server.rules.fractionLeft
 import io.ntole.kvizic.server.rules.rank
+import io.ntole.kvizic.server.shop.Shop
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
@@ -68,6 +70,7 @@ class LobbyEnvironment(
     val wallClock: () -> Long = System::currentTimeMillis,
     val newId: () -> String = { UUID.randomUUID().toString() },
     val events: LobbyEvents = LobbyEvents.NONE,
+    val coins: CoinRules = CoinRules.DEFAULT,
 )
 
 /** What a lobby tells its registry. Called on the lobby's loop, so it must return at once. */
@@ -287,7 +290,7 @@ class Lobby(
                     existing.sessionId = seat.sessionId
                     // Wherever they sit down from now, a rejoin included, is the country they play from.
                     existing.country = seat.country
-                    updateIdentity(existing, seat.name, seat.avatar, seat.xp)
+                    updateIdentity(existing, seat)
                     if (existing.connection ==
                         null
                     ) {
@@ -317,6 +320,8 @@ class Lobby(
                             avatar = seat.avatar,
                             xp = seat.xp,
                             country = seat.country,
+                            frame = seat.frame,
+                            titleId = seat.titleId,
                             order = nextOrder++,
                             seat = freeSeat(),
                             activeAt = now(),
@@ -1087,6 +1092,7 @@ class Lobby(
                     .filter { (tally, _) -> tally.playerId !in game.left }
                     .associate { (tally, rank) -> tally.playerId to Levels.award(tally.correct, won(tally, rank)) }
             }
+        val coins = if (kind == LobbyKind.SOLO) emptyMap() else env.coins.earned(ahead)
         val standings =
             ranked.map { (tally, rank) ->
                 val shown = game.shown[tally.playerId]
@@ -1101,6 +1107,7 @@ class Lobby(
                     level = shown?.let { Levels.of(it.xp + (earned[tally.playerId] ?: 0)).number } ?: 0,
                     averageRightMs = if (tally.correct > 0) (tally.correctTimeMs / tally.correct).toInt() else 0,
                     bestStreak = tally.bestStreak,
+                    coinsEarned = coins[tally.playerId] ?: 0,
                 )
             }
         val personalBest =
@@ -1132,6 +1139,7 @@ class Lobby(
                             rank = rank,
                             finished = finished,
                             won = won(tally, rank),
+                            coins = coins[tally.playerId] ?: 0,
                         )
                     },
                 questions = game.records.toList(),
@@ -1233,15 +1241,20 @@ class Lobby(
 
     private fun updateIdentity(
         member: Member,
-        name: String,
-        avatar: String,
-        xp: Int,
+        seat: Seat,
     ) {
-        val levelChanged = Levels.of(member.xp).number != Levels.of(xp).number
-        member.xp = xp
-        if (member.name == name && member.avatar == avatar && !levelChanged) return
-        member.name = name
-        member.avatar = avatar
+        val levelChanged = Levels.of(member.xp).number != Levels.of(seat.xp).number
+        member.xp = seat.xp
+        val same =
+            member.name == seat.name &&
+                member.avatar == seat.avatar &&
+                member.frame == seat.frame &&
+                member.titleId == seat.titleId
+        if (same && !levelChanged) return
+        member.name = seat.name
+        member.avatar = seat.avatar
+        member.frame = seat.frame
+        member.titleId = seat.titleId
         if (member.announced) changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
     }
 
@@ -1403,6 +1416,8 @@ class Lobby(
             avatar = member.avatar,
             seat = member.seat,
             level = Levels.of(member.xp).number,
+            frame = member.frame,
+            title = Shop.titleIn(member.titleId, reader.language),
             connected = member.connection != null,
             onResults = member.onResults,
             playing = game != null && member.playerId in game.players && member.playerId !in game.left,
@@ -1570,6 +1585,9 @@ class Lobby(
         var xp: Int,
         /** Where they play from, as their latest seat-taking said: what the lobby's questions are picked by. */
         var country: Country,
+        /** The frame and the title they wear, as their latest seat-taking said. */
+        var frame: String,
+        var titleId: String,
         val order: Long,
         val seat: Int,
         var activeAt: ComparableTimeMark,

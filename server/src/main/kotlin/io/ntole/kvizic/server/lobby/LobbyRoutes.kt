@@ -60,7 +60,16 @@ fun Route.lobbyRoutes(
                     if (country != null) PlayerStore.setCountry(playerId, country)
                 }
             } ?: throw ApiFailure.unauthorized("unknown player")
-        return Seat(playerId, sessionId, player.displayName, player.avatarId, player.xp, country ?: Country.RS)
+        return Seat(
+            playerId = playerId,
+            sessionId = sessionId,
+            name = player.displayName,
+            avatar = player.avatarId,
+            xp = player.xp,
+            country = country ?: Country.RS,
+            frame = player.frameId.orEmpty(),
+            titleId = player.titleId.orEmpty(),
+        )
     }
 
     fun Joined.ticket() =
