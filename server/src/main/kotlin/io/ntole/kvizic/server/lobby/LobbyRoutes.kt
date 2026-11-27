@@ -69,6 +69,7 @@ fun Route.lobbyRoutes(
             country = country ?: Country.RS,
             frame = player.frameId.orEmpty(),
             titleId = player.titleId.orEmpty(),
+            crown = player.crownId.orEmpty(),
         )
     }
 

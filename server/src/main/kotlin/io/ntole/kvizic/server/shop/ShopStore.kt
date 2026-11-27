@@ -65,15 +65,18 @@ object ShopStore {
             .map { it[PlayerItems.itemId] }
 
     /**
-     * Puts [frameId] and [titleId] on [playerId], each a frame or a title of theirs, or none: false when there
-     * is no such player. One they do not own, or of another kind, is a request no client sends.
+     * Puts [frameId], [titleId] and [crownId] on [playerId], each a frame, a title or a host crown of theirs, or
+     * none: false when there is no such player. One they do not own, or of another kind, is a request no client
+     * sends.
      */
     fun wear(
         playerId: String,
         frameId: String?,
         titleId: String?,
+        crownId: String?,
     ): Boolean {
-        listOf(frameId to ShopItemKind.FRAME, titleId to ShopItemKind.TITLE).forEach { (id, kind) ->
+        val worn = listOf(frameId to ShopItemKind.FRAME, titleId to ShopItemKind.TITLE, crownId to ShopItemKind.CROWN)
+        worn.forEach { (id, kind) ->
             if (id != null && (Shop.item(id)?.kind != kind || !owns(playerId, id))) {
                 throw ApiFailure.validation("not a $kind of theirs: $id")
             }
@@ -81,6 +84,7 @@ object ShopStore {
         return Profiles.update({ Profiles.playerId eq playerId }) { row ->
             row[Profiles.frameId] = frameId
             row[Profiles.titleId] = titleId
+            row[Profiles.crownId] = crownId
         } > 0
     }
 }

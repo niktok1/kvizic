@@ -183,26 +183,38 @@ the shop, **Дућан** (Dućan; Trgovina in Slovenian, Дуќан in Macedonia
   `Lobby.finishGame` works it out beside the experience, `FinalStandingView.coinsEarned` shows it to the room,
   and `ResultWriter` adds it in the game's transaction (`profiles.coins`, and `match_players.coins` beside the
   standing, so every coin earned is kept with its game).
-- **The shop** (`Shop`, server code): six avatar frames (50 to 800), eight titles (30 to 150) and four animals
-  (eagle, wild boar, beaver, jackal; 300 to 500). The sixteen free avatars stay free. Prices, titles and what is
-  on sale change on the server alone; a client hides a frame or an animal it has no drawing for, so a new one
-  goes on sale after a release draws it. A title's words are server data in every content language and English;
-  the room sends each reader the words in their language (`MemberView.title`).
+- **The shop** (`Shop`, server code; the owner's redesign, 2026-11-27): frames and host crowns, each a ladder like
+  League of Legends' borders where every next one looks richer (iron, bronze, silver, gold, platinum, diamond;
+  frames 100 to 4 000, crowns 80 to 3 200), and six predators (eagle, panther, crocodile, shark, tiger, lion;
+  300 to 800). Everybody starts the same: a plain gray ring and the plain crown, free; the seat's colour fills the
+  disc behind the animal, so two players with the same one are still told apart. The sixteen free avatars stay
+  free. **Prices change with no code change**: `SHOP_PRICES` (a Render variable, `id=price` comma-separated,
+  `ServerConfig.parseShopPrices`) overrides any item's price, and an id the shop does not sell fails at boot
+  (`Shop.priced`). A client hides an item it has no drawing for, so a new one goes on sale after a release draws
+  it. **Titles are no longer sold** (the owner: earned through achievements, its own session): `Shop.TITLES` keeps
+  their words in every content language and English, and the room sends each reader the words in their language
+  (`MemberView.title`). V15 paid back what the first catalogue sold (the titles, six older frames, boar, beaver
+  and jackal; dev alone had them) and took it off.
 - **Buying** (`ShopStore`, V13): the player's row is locked first, as the writer locks it, then one
   compare-and-set takes the price (`coins >= price`), and `player_items`' key refuses a second row, so an item is
   never paid twice; one owned already costs nothing. `player_items` keeps what it cost. Wearing (`/v1/me/worn`)
-  takes a frame and a title the player owns; a bought animal is worn as any avatar (`/v1/me/avatar` takes it once
-  owned). The room shows the frame on a seat's avatar and the title under the name (`MemberView.frame`, `title`),
-  never on the podium (the owner chose "just the coins earned" for the results).
-- **The client**: Home's balance (a coin and the count, `Balance`) opens Дућан (`ShopScreen`): the player as they
-  would look with the item selected, the frames, titles and animals, and one button that buys (the price and a
-  coin, no verb), puts on or takes off. The profile's picker shows the free avatars and those bought. Words are
-  `EconomyStrings`, in all six languages. Analytics: `item_bought` (`item`, `price`) and `item_equipped` (`item`).
+  takes a frame, a title and a crown the player owns (V15, `profiles.crown_id`); a bought animal is worn as any
+  avatar (`/v1/me/avatar` takes it once owned). The room shows the frame on a seat's avatar, the crown over a
+  host's head and the title under the name (`MemberView.frame`, `crown`, `title`), never on the podium (the
+  owner chose "just the coins earned" for the results).
+- **The client**: Home's storefront button (`KvizicIcons.Store`), the balance under it, opens Дућан
+  (`ShopScreen`, the owner's pick of three mockups): a stage where the player stands on a pedestal wearing what
+  they try on, the tabs as raised keys (Оквири, Круне, Звери; a shared segmented control is coming from the room
+  settings' work), the open tab's items in a row from the plain one to the richest, and one button that buys (the
+  price and a ducat, no verb), puts on or takes off. The coin is a **ducat** (`Ducat`): gold in its own tones, a
+  beaded rim and the game's К, never tinted. The profile's picker shows the free avatars and those bought. Words
+  are `EconomyStrings`, in all six languages. Analytics: `item_bought` (`item`, `price`) and `item_equipped`
+  (`item`).
 - **Guests can lose coins**: a reinstall, cleared data or 90 days away loses a guest's account; iOS and the web
   have no sign-in. „Сачувај напредак“ is the nudge. The terms and the privacy page say nothing of coins yet: the
   production session writes them before this ships to production.
-- **Later** (the owner's list): host crowns, a win celebration on the results, the Notebook skin once there is a
-  skin picker, extra reactions (with the chat work); never jokers or anything that buys a win.
+- **Later** (the owner's list): a win celebration on the results, the Notebook skin once there is a skin picker,
+  extra reactions (with the chat work); never jokers or anything that buys a win.
 
 ## 8. Questions
 

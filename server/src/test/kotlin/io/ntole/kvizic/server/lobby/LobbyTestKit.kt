@@ -182,9 +182,10 @@ internal class TestPlayer(
     var country: Country = Country.RS,
     /** The content language their sockets' hellos say they read. */
     var language: String = ContentLanguages.SERBIAN,
-    /** The frame and the title their seat-takings say they wear. */
+    /** The frame, the title and the host crown their seat-takings say they wear. */
     var frame: String = "",
     var titleId: String = "",
+    var crown: String = "",
 ) {
     var connection: TestConnection? = null
         private set
@@ -208,7 +209,10 @@ internal class TestPlayer(
         val reply = CompletableDeferred<ReserveResult>()
         check(
             scenario.lobby.send(
-                LobbyCommand.Reserve(Seat(id, sessionId, "Играч $id", avatar, xp, country, frame, titleId), reply),
+                LobbyCommand.Reserve(
+                    Seat(id, sessionId, "Играч $id", avatar, xp, country, frame, titleId, crown),
+                    reply,
+                ),
             ),
         )
         scenario.settle()

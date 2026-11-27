@@ -38,21 +38,24 @@ class LobbyLanguagesTest {
     }
 
     @Test
-    fun `a seat's title reads in each reader's language, its frame the same for all`() =
+    fun `a seat's title reads in each reader's language, its frame and crown the same for all`() =
         runTest {
             val lobby = LobbyScenario(this)
             val ana =
                 lobby
                     .player("ana")
                     .also {
-                        it.frame = "frame.bulbs"
+                        it.frame = "frame.gold"
                         it.titleId = "title.lucky"
+                        it.crown = "crown.gold"
                     }.join()
             val boris = lobby.reader("boris", language = ContentLanguages.CROATIAN).join()
 
             fun TestPlayer.seen() = checkNotNull(lastSnapshot()).lobby.members.first { it.player == "ana" }
-            assertEquals("frame.bulbs" to "Срећна рука", ana.seen().let { it.frame to it.title })
-            assertEquals("frame.bulbs" to "Sretna ruka", boris.seen().let { it.frame to it.title })
+
+            fun TestPlayer.worn() = seen().let { listOf(it.frame, it.title, it.crown) }
+            assertEquals(listOf("frame.gold", "Срећна рука", "crown.gold"), ana.worn())
+            assertEquals(listOf("frame.gold", "Sretna ruka", "crown.gold"), boris.worn())
         }
 
     @Test

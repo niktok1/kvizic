@@ -322,6 +322,7 @@ class Lobby(
                             country = seat.country,
                             frame = seat.frame,
                             titleId = seat.titleId,
+                            crown = seat.crown,
                             order = nextOrder++,
                             seat = freeSeat(),
                             activeAt = now(),
@@ -1249,12 +1250,14 @@ class Lobby(
             member.name == seat.name &&
                 member.avatar == seat.avatar &&
                 member.frame == seat.frame &&
-                member.titleId == seat.titleId
+                member.titleId == seat.titleId &&
+                member.crown == seat.crown
         if (same && !levelChanged) return
         member.name = seat.name
         member.avatar = seat.avatar
         member.frame = seat.frame
         member.titleId = seat.titleId
+        member.crown = seat.crown
         if (member.announced) changed { v, reader -> ServerMessage.MemberUpdated(v, viewOf(member, reader)) }
     }
 
@@ -1418,6 +1421,7 @@ class Lobby(
             level = Levels.of(member.xp).number,
             frame = member.frame,
             title = Shop.titleIn(member.titleId, reader.language),
+            crown = member.crown,
             connected = member.connection != null,
             onResults = member.onResults,
             playing = game != null && member.playerId in game.players && member.playerId !in game.left,
@@ -1585,9 +1589,10 @@ class Lobby(
         var xp: Int,
         /** Where they play from, as their latest seat-taking said: what the lobby's questions are picked by. */
         var country: Country,
-        /** The frame and the title they wear, as their latest seat-taking said. */
+        /** The frame, the title and the host crown they wear, as their latest seat-taking said. */
         var frame: String,
         var titleId: String,
+        var crown: String,
         val order: Long,
         val seat: Int,
         var activeAt: ComparableTimeMark,

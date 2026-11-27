@@ -9,6 +9,7 @@ import io.ntole.kvizic.core.api.KvizicApi
 import io.ntole.kvizic.core.player.BuyItemRequest
 import io.ntole.kvizic.core.player.SetWornRequest
 import io.ntole.kvizic.core.player.ShopDto
+import io.ntole.kvizic.core.player.ShopItemDto
 import io.ntole.kvizic.server.auth.JWT_AUTH
 import io.ntole.kvizic.server.auth.authenticatedPlayerId
 import io.ntole.kvizic.server.db.Db
@@ -18,21 +19,25 @@ import io.ntole.kvizic.server.plugins.RouteLimit
 import io.ntole.kvizic.server.plugins.rateLimit
 import io.ntole.kvizic.server.plugins.receiveOrReject
 
-/** The shop: what it sells, buying with coins, and wearing what was bought. Each change answers the profile. */
+/**
+ * The shop: what it sells, [items] at their prices, buying with coins, and wearing what was bought. Each change
+ * answers the profile.
+ */
 fun Route.shopRoutes(
     db: Db,
+    items: List<ShopItemDto>,
     clock: () -> Long = System::currentTimeMillis,
 ) {
     authenticate(JWT_AUTH) {
         rateLimit(RouteLimit.ME) {
-            get(KvizicApi.Paths.SHOP) { call.respond(ShopDto(Shop.ITEMS)) }
+            get(KvizicApi.Paths.SHOP) { call.respond(ShopDto(items)) }
         }
 
         rateLimit(RouteLimit.AVATARS) {
             post(KvizicApi.Paths.SHOP_ITEMS) {
                 val playerId = call.authenticatedPlayerId()
                 val id = call.receiveOrReject<BuyItemRequest>("item").itemId
-                val item = Shop.item(id) ?: throw ApiFailure.itemNotFound(id)
+                val item = items.firstOrNull { it.id == id } ?: throw ApiFailure.itemNotFound(id)
                 val profile =
                     db.query {
                         ShopStore.buy(playerId, item, clock())
@@ -46,7 +51,7 @@ fun Route.shopRoutes(
                 val body = call.receiveOrReject<SetWornRequest>("worn")
                 val profile =
                     db.query {
-                        if (!ShopStore.wear(playerId, body.frameId, body.titleId)) {
+                        if (!ShopStore.wear(playerId, body.frameId, body.titleId, body.crownId)) {
                             throw ApiFailure.unauthorized("unknown player")
                         }
                         ProfileStore.of(playerId)

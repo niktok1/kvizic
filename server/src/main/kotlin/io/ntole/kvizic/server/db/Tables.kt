@@ -110,9 +110,10 @@ object Profiles : Table("profiles") {
     /** Coins earned in finished games in a room (`CoinRules`), less what the shop took. */
     val coins = integer("coins").default(0)
 
-    /** The frame and the title the player wears, items of theirs from the shop; null for none. */
+    /** The frame, the title and the host crown the player wears, items of theirs; null for none. */
     val frameId = varchar("frame_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
     val titleId = varchar("title_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
+    val crownId = varchar("crown_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
 
     /** The best solo run at medium, and when: every run was medium before V5, so V1's columns hold it. */
     val soloBestScore = integer("solo_best_score").nullable()

@@ -79,8 +79,8 @@ sealed interface LobbyCommand {
 
 /**
  * Who a reservation is for, the name and avatar the lobby shows for them, the experience their level is,
- * the [country] they play from, which the questions are picked by, and the [frame] and the title ([titleId])
- * they wear, none for none.
+ * the [country] they play from, which the questions are picked by, and the [frame], the title ([titleId]) and
+ * the host [crown] they wear, none for none.
  */
 data class Seat(
     val playerId: String,
@@ -91,6 +91,7 @@ data class Seat(
     val country: Country = Country.RS,
     val frame: String = "",
     val titleId: String = "",
+    val crown: String = "",
 )
 
 sealed interface ReserveResult {

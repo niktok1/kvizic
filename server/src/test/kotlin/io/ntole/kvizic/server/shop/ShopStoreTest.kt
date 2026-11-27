@@ -16,6 +16,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -48,10 +49,10 @@ class ShopStoreTest {
     private fun profile() =
         read {
             Profiles
-                .select(Profiles.coins, Profiles.frameId, Profiles.titleId)
+                .select(Profiles.coins, Profiles.frameId, Profiles.titleId, Profiles.crownId)
                 .where { Profiles.playerId eq "ana" }
                 .single()
-                .let { Triple(it[Profiles.coins], it[Profiles.frameId], it[Profiles.titleId]) }
+                .let { listOf(it[Profiles.coins], it[Profiles.frameId], it[Profiles.titleId], it[Profiles.crownId]) }
         }
 
     private fun paid() =
@@ -64,12 +65,12 @@ class ShopStoreTest {
     @Test
     fun `a buy takes the price once, and one the coins do not cover takes nothing`() {
         give(120)
-        buy("frame.dashes")
-        buy("frame.dashes")
-        assertEquals(ErrorCode.NOT_ENOUGH_COINS, failure { buy("frame.double") })
+        buy("frame.iron")
+        buy("frame.iron")
+        assertEquals(ErrorCode.NOT_ENOUGH_COINS, failure { buy("crown.iron") })
 
-        assertEquals(20, profile().first)
-        assertEquals(mapOf("frame.dashes" to 100), paid())
+        assertEquals(20, profile().first())
+        assertEquals(mapOf("frame.iron" to 100), paid())
         read { AccountDeletion.delete("ana") }
         assertEquals(emptyMap(), paid(), "what a player bought goes with their account")
     }
@@ -85,25 +86,40 @@ class ShopStoreTest {
                 }.awaitAll()
         }
 
-        val left = profile().first
+        val left = profile().first() as Int
         assertTrue(left >= 0, "$left left")
         assertEquals(150, left + paid().values.sum())
     }
 
     @Test
-    fun `only a frame and a title of theirs are worn`() {
-        give(200)
-        buy("frame.double")
-        buy("title.lucky")
-
-        assertTrue(read { ShopStore.wear("ana", "frame.double", "title.lucky") })
-        assertEquals(Triple(120, "frame.double", "title.lucky"), profile())
-        val refused = listOf("frame.dashes" to null, "title.lucky" to null, null to "frame.double", null to "no.such")
-        refused.forEach { (frame, title) ->
-            val code = failure { read { ShopStore.wear("ana", frame, title) } }
-            assertEquals(ErrorCode.VALIDATION_FAILED, code, "$frame $title")
+    fun `only a frame, a title and a crown of theirs are worn`() {
+        give(300)
+        buy("frame.iron")
+        buy("crown.iron")
+        read {
+            PlayerItems.insert {
+                it[playerId] = "ana"
+                it[itemId] = "title.lucky"
+                it[pricePaid] = 30
+                it[boughtAt] = 1
+            }
         }
-        read { ShopStore.wear("ana", null, null) }
-        assertEquals(Triple(120, null, null), profile())
+
+        assertTrue(read { ShopStore.wear("ana", "frame.iron", "title.lucky", "crown.iron") })
+        assertEquals(listOf(120, "frame.iron", "title.lucky", "crown.iron"), profile())
+        val refused =
+            listOf(
+                Triple("frame.bronze", null, null),
+                Triple("crown.iron", null, null),
+                Triple(null, "frame.iron", null),
+                Triple(null, null, "frame.iron"),
+                Triple(null, "no.such", null),
+            )
+        refused.forEach { (frame, title, crown) ->
+            val code = failure { read { ShopStore.wear("ana", frame, title, crown) } }
+            assertEquals(ErrorCode.VALIDATION_FAILED, code, "$frame $title $crown")
+        }
+        read { ShopStore.wear("ana", null, null, null) }
+        assertEquals(listOf(120, null, null, null), profile())
     }
 }

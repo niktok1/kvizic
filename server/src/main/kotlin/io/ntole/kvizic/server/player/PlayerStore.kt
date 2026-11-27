@@ -33,9 +33,10 @@ object PlayerStore {
         val avatarId: String,
         /** What they have earned in games, which their level is worked out from. */
         val xp: Int = 0,
-        /** The frame and the title they wear from the shop, none for none. */
+        /** The frame, the title and the host crown they wear, none for none. */
         val frameId: String? = null,
         val titleId: String? = null,
+        val crownId: String? = null,
     )
 
     /**
@@ -121,6 +122,7 @@ object PlayerStore {
                 Profiles.xp,
                 Profiles.frameId,
                 Profiles.titleId,
+                Profiles.crownId,
             ).where { Players.id eq id }
             .limit(1)
             .firstOrNull()
@@ -133,6 +135,7 @@ object PlayerStore {
                     xp = row[Profiles.xp],
                     frameId = row[Profiles.frameId],
                     titleId = row[Profiles.titleId],
+                    crownId = row[Profiles.crownId],
                 )
             }
 

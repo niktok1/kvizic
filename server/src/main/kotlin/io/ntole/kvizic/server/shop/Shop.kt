@@ -6,21 +6,28 @@ import io.ntole.kvizic.core.player.ShopItemKind
 import io.ntole.kvizic.core.region.ContentLanguages
 
 /**
- * What the shop sells, in the order it shows them: frames and avatars, which the client draws, and titles,
- * words in every content language and English. A price or a title changes here with no client release; a
- * client hides an item it has no drawing for, so a new frame or avatar goes on sale once a release draws it.
+ * What the shop sells, in the order it shows them: frames and host crowns, each a ladder from iron to diamond,
+ * and the predators, all drawn by the client, which hides an item it has no drawing for, so a new one goes on
+ * sale once a release draws it. `SHOP_PRICES` sets any price on a server ([priced]).
  */
 object Shop {
     private val TITLE_LANGUAGES = ContentLanguages.ALL + "en"
+    private val TIERS = listOf("iron", "bronze", "silver", "gold", "platinum", "diamond")
 
     val ITEMS: List<ShopItemDto> =
+        TIERS.zip(listOf(100, 250, 500, 1_000, 2_000, 4_000)) { tier, price ->
+            ShopItemDto("frame.$tier", ShopItemKind.FRAME, price)
+        } +
+            TIERS.zip(listOf(80, 200, 400, 800, 1_600, 3_200)) { tier, price ->
+                ShopItemDto("crown.$tier", ShopItemKind.CROWN, price)
+            } +
+            Avatars.SHOP.zip(listOf(300, 400, 500, 600, 700, 800)) { id, price ->
+                ShopItemDto(id, ShopItemKind.AVATAR, price)
+            }
+
+    /** The titles, no longer sold (the owner, 2026-11-27: earned, not bought); one bought before is still worn. */
+    val TITLES: List<ShopItemDto> =
         listOf(
-            frame("frame.double", 50),
-            frame("frame.dashes", 100),
-            frame("frame.bulbs", 200),
-            frame("frame.stars", 300),
-            frame("frame.rays", 500),
-            frame("frame.laurel", 800),
             title(
                 "title.lucky",
                 30,
@@ -56,12 +63,19 @@ object Shop {
                 "Encyclopedia",
             ),
             title("title.legend", 150, "Легенда", "Legenda", "Legenda", "Legenda", "Легенда", "Legend"),
-        ) + Avatars.SHOP.zip(listOf(300, 350, 400, 500)) { id, price -> ShopItemDto(id, ShopItemKind.AVATAR, price) }
+        )
 
-    private val byId = ITEMS.associateBy { it.id }
+    private val byId = (ITEMS + TITLES).associateBy { it.id }
 
-    /** The item [id], or null for one the shop does not sell. */
+    /** The item [id], sold or a title, or null for none. */
     fun item(id: String): ShopItemDto? = byId[id]
+
+    /** [ITEMS] with [prices] in place of their own, by id. An id the shop does not sell fails at boot. */
+    fun priced(prices: Map<String, Int>): List<ShopItemDto> {
+        val unknown = prices.keys - ITEMS.map { it.id }.toSet()
+        require(unknown.isEmpty()) { "SHOP_PRICES names what the shop does not sell: $unknown" }
+        return ITEMS.map { item -> prices[item.id]?.let { item.copy(price = it) } ?: item }
+    }
 
     /** The words of the title [id] for a reader of the content language [lang], the nearest there are; none for none. */
     fun titleIn(
@@ -71,11 +85,6 @@ object Shop {
         val names = item(id)?.takeIf { it.kind == ShopItemKind.TITLE }?.names ?: return ""
         return ContentLanguages.chain(lang).firstNotNullOfOrNull { names[it] }.orEmpty()
     }
-
-    private fun frame(
-        id: String,
-        price: Int,
-    ) = ShopItemDto(id, ShopItemKind.FRAME, price)
 
     private fun title(
         id: String,

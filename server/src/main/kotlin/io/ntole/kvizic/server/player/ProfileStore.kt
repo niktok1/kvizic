@@ -51,6 +51,7 @@ object ProfileStore {
             items = ShopStore.owned(playerId),
             frameId = row[Profiles.frameId],
             titleId = row[Profiles.titleId],
+            crownId = row[Profiles.crownId],
             stats =
                 PlayerStatsDto(
                     gamesPlayed = row[Profiles.gamesPlayed],
@@ -77,6 +78,7 @@ object ProfileStore {
             Profiles.coins,
             Profiles.frameId,
             Profiles.titleId,
+            Profiles.crownId,
             Profiles.gamesPlayed,
             Profiles.gamesWon,
             Profiles.answersGiven,

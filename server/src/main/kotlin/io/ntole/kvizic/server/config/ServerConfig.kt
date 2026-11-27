@@ -107,6 +107,8 @@ data class ServerConfig(
      * blank, 0 taking none on purpose, local questions then coming only as they fall.
      */
     val localShare: Double = DEFAULT_LOCAL_SHARE,
+    /** Prices the shop sells at in place of its own, by item id, from `SHOP_PRICES`; none for its own. */
+    val shopPrices: Map<String, Int> = emptyMap(),
     /** The game's own timings, limits and scoring. */
     val game: GameConfig = GameConfig(),
     /**
@@ -193,6 +195,7 @@ data class ServerConfig(
                 questionSeedFile = parseQuestionSeedFile(env("QUESTION_SEED_FILE"), databaseUrl),
                 drainSeconds = parseDrainSeconds(env("DRAIN_SECONDS")),
                 localShare = parseLocalShare(env("LOCAL_SHARE")),
+                shopPrices = parseShopPrices(env("SHOP_PRICES")),
                 commit = env("RENDER_GIT_COMMIT")?.trim()?.takeIf { it.isNotEmpty() },
                 game =
                     GameConfig(
@@ -278,6 +281,20 @@ data class ServerConfig(
                     "or unset for ${CoinRules.DEFAULT.pay.joinToString(",")}."
             }
             return CoinRules(pay.filterNotNull())
+        }
+
+        /**
+         * `SHOP_PRICES`: items' prices in place of the shop's own, `id=price` comma-separated, such as
+         * `frame.gold=800,eagle=500`; unset or blank is none. Anything else fails at boot, naming the variable.
+         */
+        internal fun parseShopPrices(raw: String?): Map<String, Int> {
+            val trimmed = raw?.trim().orEmpty()
+            if (trimmed.isEmpty()) return emptyMap()
+            val pairs = trimmed.split(',').map { it.split('=').map(String::trim) }
+            require(pairs.all { it.size == 2 && it[0].isNotEmpty() && (it[1].toIntOrNull() ?: -1) >= 0 }) {
+                "SHOP_PRICES is \"$raw\"; expected id=price pairs, comma-separated, each price a whole number from 0."
+            }
+            return pairs.associate { (id, price) -> id to price.toInt() }
         }
 
         /**
