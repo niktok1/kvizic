@@ -249,6 +249,8 @@ class TapsTest {
             setOf(
                 "question.leave",
                 "reveal.report",
+                "reveal.reactions",
+                "reveal.reaction",
                 "report.reason",
                 "report.cancel",
                 "room.leave_cancel",

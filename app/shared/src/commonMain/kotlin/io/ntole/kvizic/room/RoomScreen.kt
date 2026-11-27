@@ -198,6 +198,8 @@ fun RoomScreen(
                         onLeave = { leaving = true },
                         places = places,
                         stage = this,
+                        bursts = bursts,
+                        onReact = actions.react.takeIf { shown.lobby.kind != LobbyKind.SOLO },
                     )
                 }
             }

@@ -46,6 +46,8 @@ data class Strings(
     val settingsScreen: SettingsScreenStrings,
     /** The words of the screen shown once the server serves this build nothing more. */
     val updateScreen: UpdateStrings,
+    /** The words of the reactions sent from a question's reveal. */
+    val reactions: ReactionStrings,
     /** The game's own words, from Home to the results. */
     val game: GameStrings,
 ) {
@@ -70,6 +72,7 @@ data class Strings(
             aboutScreen = aboutScreen.map(transform),
             settingsScreen = settingsScreen.map(transform),
             updateScreen = updateScreen.map(transform),
+            reactions = reactions.map(transform),
             game = game.map(transform),
         )
 }
@@ -91,6 +94,7 @@ val SerbianCyrillicStrings: Strings =
         aboutScreen = SerbianCyrillicAboutStrings,
         settingsScreen = SerbianCyrillicSettingsScreenStrings,
         updateScreen = SerbianCyrillicUpdateStrings,
+        reactions = SerbianCyrillicReactionStrings,
         game = SerbianCyrillicGameStrings,
     )
 
@@ -113,6 +117,7 @@ val EnglishStrings: Strings =
         aboutScreen = EnglishAboutStrings,
         settingsScreen = EnglishSettingsScreenStrings,
         updateScreen = EnglishUpdateStrings,
+        reactions = EnglishReactionStrings,
         game = EnglishGameStrings,
     )
 

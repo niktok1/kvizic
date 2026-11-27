@@ -14,6 +14,7 @@ import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.language.stringsOf
 import io.ntole.kvizic.nodes
+import io.ntole.kvizic.renderSettled
 import io.ntole.kvizic.tap
 import io.ntole.kvizic.texts
 import kotlin.test.Test
@@ -46,6 +47,24 @@ class RoomRevealDrawTest : RoomStills() {
                     right.config.getOrElse(SemanticsProperties.StateDescription) { "" },
                     skin.id,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `a player reacts from the reveal, and a reaction bursts over its sender's line on the board`() {
+        val strings = stringsOf(Language.DEFAULT)
+        val bursts = mapOf(MEMBERS.first { it.playerId != YOU }.playerId to Burst("fire", 1))
+        eachSkin { skin ->
+            draw(skin, "reveal-burst", inLobby(revealing()), bursts = bursts, millis = 400) {}
+            val sent = mutableListOf<String>()
+            draw(skin, "reveal-react", inLobby(revealing()), RoomActions(react = { sent += it })) { scene ->
+                scene.tap(strings.reactions.react)
+                write("room-${skin.id}-reveal-react-open", scene.renderSettled())
+                EMOTES.forEach { assertTrue(it.name(strings.game) in scene.descriptions(), "${skin.id}: ${it.id}") }
+                scene.tap(strings.game.reactionFire)
+                assertEquals(listOf("fire"), sent, skin.id)
+                assertTrue(strings.reactions.react in scene.descriptions(), "${skin.id}: still open once sent")
             }
         }
     }

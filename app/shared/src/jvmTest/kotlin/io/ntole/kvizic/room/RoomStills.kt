@@ -10,10 +10,12 @@ import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.design.skin.Skin
 import io.ntole.kvizic.design.skin.Skins
 import io.ntole.kvizic.language.Language
+import io.ntole.kvizic.passTime
 import io.ntole.kvizic.renderSettled
 import io.ntole.kvizic.theme.GameTheme
 import org.jetbrains.skia.Image
 import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * The room drawn off screen, in a skin and a language, Serbian Cyrillic unless one is named, on a small phone,
@@ -32,6 +34,8 @@ abstract class RoomStills {
         topics: List<Topic> = TOPICS,
         width: Int = WIDTH,
         note: RoomNote? = null,
+        bursts: Map<String, Burst> = emptyMap(),
+        millis: Long? = null,
         height: Int = HEIGHT,
         fontScale: Float = 1f,
         language: Language = Language.DEFAULT,
@@ -41,12 +45,19 @@ abstract class RoomStills {
             ImageComposeScene(width = width, height = height, density = Density(1f, fontScale)) {
                 GameTheme(language, skin) {
                     Stage(Modifier.fillMaxSize()) {
-                        RoomScreen(state, topics, note = note, bursts = emptyMap(), actions = actions)
+                        RoomScreen(state, topics, note = note, bursts = bursts, actions = actions)
                     }
                 }
             }
         try {
-            write("room-${skin.id}-$name", scene.renderSettled())
+            val image =
+                if (millis == null) {
+                    scene.renderSettled()
+                } else {
+                    scene.passTime(millis)
+                    scene.render(millis.milliseconds.inWholeNanoseconds)
+                }
+            write("room-${skin.id}-$name", image)
             check(scene)
         } finally {
             scene.close()

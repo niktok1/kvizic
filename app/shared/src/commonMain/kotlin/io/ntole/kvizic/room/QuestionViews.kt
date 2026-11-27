@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -57,6 +58,7 @@ import io.ntole.kvizic.design.component.Panel
 import io.ntole.kvizic.design.component.PanelKind
 import io.ntole.kvizic.design.component.QuestionText
 import io.ntole.kvizic.design.component.QuestionTimer
+import io.ntole.kvizic.design.component.ReactionBurst
 import io.ntole.kvizic.design.component.ScoreRow
 import io.ntole.kvizic.design.component.StageIconButton
 import io.ntole.kvizic.design.component.StandingsBoard
@@ -221,8 +223,11 @@ internal fun RevealScreen(
     onLeave: () -> Unit = {},
     places: TilePlaces? = null,
     stage: AnimatedVisibilityScope? = null,
+    bursts: Map<String, Burst> = emptyMap(),
+    onReact: ((String) -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
+    val reactionWords = LocalStrings.current.reactions
     val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -276,58 +281,93 @@ internal fun RevealScreen(
             sliver = space.xs,
             modifier = Modifier.weight(1f),
             panel = {
-                Panel(Modifier.fillMaxWidth().then(afterTheAnswers), kind = PanelKind.SCREEN, padding = space.lg) {
-                    Box {
-                        Column(
-                            Modifier.padding(horizontal = space.lg),
-                            verticalArrangement = Arrangement.spacedBy(space.sm),
-                        ) {
-                            val explanation = reveal.explanation
-                            if (explanation == null) {
-                                QuestionText(
-                                    shown(reveal.text),
-                                    Modifier.fillMaxWidth(),
-                                    recap = true,
-                                    textAlign = TextAlign.Center,
-                                )
-                            } else {
-                                // With an explanation to read, the question it explains, read whole a moment
-                                // ago, is recalled in a line or two, and a screen reader still hears it whole.
-                                KvizicText(
-                                    shown(reveal.text),
-                                    Modifier.fillMaxWidth(),
-                                    style = type.bodyStrong,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = RECAP_LINES,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                var choosing by rememberSaveable(reveal.questionId) { mutableStateOf(false) }
+                Box(Modifier.fillMaxWidth().then(afterTheAnswers)) {
+                    Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
+                        Box(if (choosing) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier) {
+                            Column(
+                                Modifier.padding(horizontal = space.lg),
+                                verticalArrangement = Arrangement.spacedBy(space.sm),
+                            ) {
+                                val explanation = reveal.explanation
+                                if (explanation == null) {
+                                    QuestionText(
+                                        shown(reveal.text),
+                                        Modifier.fillMaxWidth(),
+                                        recap = true,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                } else {
+                                    // With an explanation to read, the question it explains, read whole a moment
+                                    // ago, is recalled in a line or two, and a screen reader still hears it whole.
+                                    KvizicText(
+                                        shown(reveal.text),
+                                        Modifier.fillMaxWidth(),
+                                        style = type.bodyStrong,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = RECAP_LINES,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                reveal.explanation?.let { explanation ->
+                                    // In a few lines at most: a large font gives back what it must of its size, down to
+                                    // the caption's at the usual font, for the answers and the board to keep their room.
+                                    val caption = type.caption.style.fontSize
+                                    KvizicText(
+                                        shown(explanation),
+                                        style = setSmallerTogether(type.caption),
+                                        color = colors.onRaisedMuted,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = EXPLANATION_LINES,
+                                        autoSize =
+                                            TextAutoSize.StepBased(
+                                                minFontSize = (caption.value / LocalDensity.current.fontScale).sp,
+                                                maxFontSize = caption,
+                                            ),
+                                    )
+                                }
                             }
-                            reveal.explanation?.let { explanation ->
-                                // In a few lines at most: a large font gives back what it must of its size, down to
-                                // the caption's at the usual font, for the answers and the board to keep their room.
-                                val caption = type.caption.style.fontSize
-                                KvizicText(
-                                    shown(explanation),
-                                    style = setSmallerTogether(type.caption),
-                                    color = colors.onRaisedMuted,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = EXPLANATION_LINES,
-                                    autoSize =
-                                        TextAutoSize.StepBased(
-                                            minFontSize = (caption.value / LocalDensity.current.fontScale).sp,
-                                            maxFontSize = caption,
-                                        ),
+                            StageIconButton(
+                                KvizicIcons.Flag,
+                                contentDescription = words.reportQuestion,
+                                onClick = tapped("reveal.report") { onReport(reveal.questionId) },
+                                modifier = Modifier.align(Alignment.TopEnd).offset(x = space.md, y = -space.md),
+                                kind = ButtonKind.QUIET,
+                                small = true,
+                                enabled = !choosing,
+                            )
+                            if (onReact != null) {
+                                StageIconButton(
+                                    KvizicIcons.Laugh,
+                                    contentDescription = reactionWords.react,
+                                    onClick = tapped("reveal.reactions") { choosing = true },
+                                    modifier = Modifier.align(Alignment.TopStart).offset(x = -space.md, y = -space.md),
+                                    kind = ButtonKind.QUIET,
+                                    small = true,
+                                    enabled = !choosing,
                                 )
                             }
                         }
-                        StageIconButton(
-                            KvizicIcons.Flag,
-                            contentDescription = words.reportQuestion,
-                            onClick = tapped("reveal.report") { onReport(reveal.questionId) },
-                            modifier = Modifier.align(Alignment.TopEnd).offset(x = space.md, y = -space.md),
-                            kind = ButtonKind.QUIET,
-                            small = true,
-                        )
+                    }
+                    if (choosing && onReact != null) {
+                        Row(
+                            Modifier.matchParentSize(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            EMOTES.forEach { reaction ->
+                                StageIconButton(
+                                    reaction.icon,
+                                    contentDescription = reaction.name(words),
+                                    onClick =
+                                        tapped("reveal.reaction", mapOf("reaction" to reaction.id)) {
+                                            choosing = false
+                                            onReact(reaction.id)
+                                        },
+                                    small = true,
+                                )
+                            }
+                        }
                     }
                 }
             },
@@ -401,6 +441,11 @@ internal fun RevealScreen(
                     reorderKey = reveal.questionId,
                     timeLeft = phase.next::fractionLeft,
                     timeDescription = (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
+                    burst = { id ->
+                        val burst = bursts[id]
+                        val icon = burst?.let { reactionIcon(it.reaction) }
+                        if (icon != null) ReactionBurst(icon, burstKey = burst.key, startedAt = burst.at)
+                    },
                 )
             },
         )

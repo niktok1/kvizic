@@ -60,6 +60,8 @@ internal val BosnianUpdateStrings: UpdateStrings =
         reload = "Osvježi",
     )
 
+internal val BosnianReactionStrings: ReactionStrings = ReactionStrings(react = "Reaguj")
+
 internal val BosnianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Brza igra",
@@ -251,5 +253,6 @@ val BosnianStrings: Strings =
         aboutScreen = BosnianAboutStrings,
         settingsScreen = BosnianSettingsScreenStrings,
         updateScreen = BosnianUpdateStrings,
+        reactions = BosnianReactionStrings,
         game = BosnianGameStrings,
     )

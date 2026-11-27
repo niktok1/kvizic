@@ -61,6 +61,8 @@ internal val MacedonianUpdateStrings: UpdateStrings =
         reload = "Освежи",
     )
 
+internal val MacedonianReactionStrings: ReactionStrings = ReactionStrings(react = "Реагирај")
+
 internal val MacedonianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Брза игра",
@@ -253,5 +255,6 @@ val MacedonianStrings: Strings =
         aboutScreen = MacedonianAboutStrings,
         settingsScreen = MacedonianSettingsScreenStrings,
         updateScreen = MacedonianUpdateStrings,
+        reactions = MacedonianReactionStrings,
         game = MacedonianGameStrings,
     )

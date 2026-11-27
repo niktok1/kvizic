@@ -386,6 +386,13 @@ domain a pinned copy of `Country`.
   stays for leaving. The lobby's emotes are the regular round buttons, not the small ones.
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,
   a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
+- **Reactions on the reveal** (the owner, 2026-11-27): a small round button in the recalled question's corner,
+  opposite the report flag, opens the six over that panel, whose size stays. Sending one closes them, and so does
+  the next question. A reaction bursts over its sender's avatar on the board (`StandingsBoard`'s `burst`), rising
+  past the board's edge, while that line is in sight. None while a question is read or answered, since a
+  reaction could tell a pick: the server drops them then, and the nudge once a game is on. The results get them
+  too (the owner, 2026-11-27), from a round button beside the main one, built with the results screen; the
+  reveal then moves onto the same control. None in solo. Free text chat comes later, as a release of its own (§13).
 - **Sound** (the owner, 2026-10-02): a skin part like motion, never a library. `SkinSound` names the bank a skin
   plays from (`files/sound/<bank>/<cue>.wav`, one WAV for each `Cue`), so wearing another skin is playing from
   another bank and nothing else knows: `SoundEngine` is one object that follows `KvizicTheme.skin.sound`
@@ -495,6 +502,10 @@ box, its lines or an ellipsis, capitals included.
   (about 26 px short) and is left out whole; it shows on 375×667 and 360×760. To show it: the tiles' letter
   mark and least answer size stop growing with the font, or the recap gives some back, or the explanation
   drops to 3 lines at a large font. Answers at the wire's 60 characters are not whole at 130% either.
+- **Free text chat** (the owner, 2026-11-27: later), in the lobby, a release of its own. It needs a filter in five
+  languages, reporting and blocking a player, a moderation-app tab, terms accepted before the first message and
+  someone who reads the reports. Before it ships, Play's Data safety (Messages), the content rating, the listing's
+  „No chat“ line in five languages and the privacy and terms pages are redone; on iOS, Apple's guideline 1.2.
 - `design-tests` hung on CI with four test JVMs (2026-10-02: no output for 29 min, cancelled at the job's
   limit; it passes locally in 42 s), and passed in one. Four again, with `DesignShotsTest` split: if it
   hangs again, the job's thread dumps say where.

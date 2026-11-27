@@ -60,6 +60,8 @@ internal val CroatianUpdateStrings: UpdateStrings =
         reload = "Osvježi",
     )
 
+internal val CroatianReactionStrings: ReactionStrings = ReactionStrings(react = "Reagiraj")
+
 internal val CroatianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Brza igra",
@@ -251,5 +253,6 @@ val CroatianStrings: Strings =
         aboutScreen = CroatianAboutStrings,
         settingsScreen = CroatianSettingsScreenStrings,
         updateScreen = CroatianUpdateStrings,
+        reactions = CroatianReactionStrings,
         game = CroatianGameStrings,
     )
