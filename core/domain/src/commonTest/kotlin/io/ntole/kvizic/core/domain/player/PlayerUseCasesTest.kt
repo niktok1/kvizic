@@ -35,10 +35,10 @@ class PlayerUseCasesTest {
             val shopping = Shopping(players, session)
             shopping.items()
             shopping.buy("frame.bulbs")
-            val profile = shopping.wear("frame.bulbs", null)
+            val profile = shopping.wear("frame.bulbs", null, "crown.gold")
 
             assertEquals(
-                listOf("ensure", "shop", "ensure", "buy frame.bulbs", "ensure", "wear frame.bulbs null"),
+                listOf("ensure", "shop", "ensure", "buy frame.bulbs", "ensure", "wear frame.bulbs null crown.gold"),
                 calls,
             )
             assertEquals("frame.bulbs", profile.frameId)
@@ -70,9 +70,10 @@ class PlayerUseCasesTest {
         override suspend fun wear(
             frameId: String?,
             titleId: String?,
+            crownId: String?,
         ): Profile {
-            calls += "wear $frameId $titleId"
-            return PROFILE.copy(frameId = frameId, titleId = titleId)
+            calls += "wear $frameId $titleId $crownId"
+            return PROFILE.copy(frameId = frameId, titleId = titleId, crownId = crownId)
         }
     }
 

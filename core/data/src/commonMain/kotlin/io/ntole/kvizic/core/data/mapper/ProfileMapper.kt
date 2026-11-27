@@ -28,6 +28,7 @@ internal fun ProfileDto.toDomain(): Profile =
         items = items,
         frameId = frameId,
         titleId = titleId,
+        crownId = crownId,
     )
 
 internal fun ShopItemDto.toDomain(): ShopItem =
@@ -38,6 +39,7 @@ internal fun ShopItemDto.toDomain(): ShopItem =
                 WireShopItemKind.AVATAR -> ShopItemKind.AVATAR
                 WireShopItemKind.FRAME -> ShopItemKind.FRAME
                 WireShopItemKind.TITLE -> ShopItemKind.TITLE
+                WireShopItemKind.CROWN -> ShopItemKind.CROWN
                 WireShopItemKind.UNKNOWN -> ShopItemKind.OTHER
             },
         price = price,

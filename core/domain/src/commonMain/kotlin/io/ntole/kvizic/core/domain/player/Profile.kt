@@ -13,7 +13,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
  * otherwise the nickname the server generated. [avatarId] names one of the game's avatars, which the
  * client draws; an id this build has no drawing for is still a player's avatar, shown as a silhouette.
  * [coins] is what their games earned less what the shop took, [items] the shop's items they own, and
- * [frameId] and [titleId] the frame and the title of those they wear, none for none.
+ * [frameId], [titleId] and [crownId] the frame, the title and the host crown of those they wear, none for none.
  */
 public data class Profile(
     public val playerId: String,
@@ -27,6 +27,7 @@ public data class Profile(
     public val items: List<String> = emptyList(),
     public val frameId: String? = null,
     public val titleId: String? = null,
+    public val crownId: String? = null,
 )
 
 /** Where a player's shown name comes from. */

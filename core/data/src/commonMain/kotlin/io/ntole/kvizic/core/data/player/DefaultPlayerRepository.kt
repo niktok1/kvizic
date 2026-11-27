@@ -30,5 +30,6 @@ public class DefaultPlayerRepository(
     override suspend fun wear(
         frameId: String?,
         titleId: String?,
-    ): Profile = session.withSessionRecovery { api.wear(frameId, titleId) }.toDomain()
+        crownId: String?,
+    ): Profile = session.withSessionRecovery { api.wear(frameId, titleId, crownId) }.toDomain()
 }

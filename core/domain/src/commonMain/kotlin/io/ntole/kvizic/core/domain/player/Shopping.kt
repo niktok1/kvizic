@@ -23,8 +23,9 @@ public class Shopping(
     public suspend fun wear(
         frameId: String?,
         titleId: String?,
+        crownId: String?,
     ): Profile {
         session.ensure()
-        return players.wear(frameId, titleId)
+        return players.wear(frameId, titleId, crownId)
     }
 }

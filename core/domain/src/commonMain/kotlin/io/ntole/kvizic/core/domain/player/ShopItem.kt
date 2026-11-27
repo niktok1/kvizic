@@ -16,6 +16,7 @@ public enum class ShopItemKind {
     AVATAR,
     FRAME,
     TITLE,
+    CROWN,
 
     /** A kind this build cannot show, which a newer server may sell. */
     OTHER,

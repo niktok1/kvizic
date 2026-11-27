@@ -31,11 +31,12 @@ public interface PlayerRepository {
     public suspend fun buy(itemId: String): Profile
 
     /**
-     * Puts on [frameId] and [titleId], each one the player owns or none, and returns the profile as it then
-     * stands. @throws io.ntole.kvizic.core.domain.error.KvizicException on any failure.
+     * Puts on [frameId], [titleId] and [crownId], each one the player owns or none, and returns the profile as it
+     * then stands. @throws io.ntole.kvizic.core.domain.error.KvizicException on any failure.
      */
     public suspend fun wear(
         frameId: String?,
         titleId: String?,
+        crownId: String?,
     ): Profile
 }

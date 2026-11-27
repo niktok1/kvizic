@@ -127,6 +127,7 @@ internal fun MemberView.toDomain(): LobbyMember =
         level = level,
         frame = frame,
         title = title,
+        crown = crown,
     )
 
 internal fun LobbyView.toDomain(): Lobby {

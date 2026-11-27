@@ -30,11 +30,12 @@ public class PlayerApi(
     public suspend fun buy(itemId: String): ProfileDto =
         client.post(KvizicApi.Paths.SHOP_ITEMS) { setBody(BuyItemRequest(itemId)) }.body()
 
-    /** Puts on [frameId] and [titleId], answered with the profile as it then stands. */
+    /** Puts on [frameId], [titleId] and [crownId], answered with the profile as it then stands. */
     public suspend fun wear(
         frameId: String?,
         titleId: String?,
-    ): ProfileDto = client.post(KvizicApi.Paths.MY_WORN) { setBody(SetWornRequest(frameId, titleId)) }.body()
+        crownId: String?,
+    ): ProfileDto = client.post(KvizicApi.Paths.MY_WORN) { setBody(SetWornRequest(frameId, titleId, crownId)) }.body()
 
     /**
      * Deletes the account of the player the bearer names, for good, answered 204. An expired access token

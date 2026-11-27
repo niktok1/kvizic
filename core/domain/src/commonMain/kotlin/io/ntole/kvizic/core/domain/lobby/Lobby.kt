@@ -43,9 +43,10 @@ public data class LobbyMember(
     val kickVotedByYou: Boolean = false,
     /** Their level in the game, or 0 where the server did not say. */
     val level: Int = 0,
-    /** The id of the avatar frame they wear, and their title's words, each empty for none. */
+    /** The id of the avatar frame they wear, their title's words, and the crown they wear as host, each empty for none. */
     val frame: String = "",
     val title: String = "",
+    val crown: String = "",
 )
 
 /** A lobby as it stands. */
