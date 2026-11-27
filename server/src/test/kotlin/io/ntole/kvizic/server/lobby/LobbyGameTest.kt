@@ -1,10 +1,12 @@
 package io.ntole.kvizic.server.lobby
 
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
+import io.ntole.kvizic.core.protocol.ClientMessage
 import io.ntole.kvizic.core.protocol.CloseCodes
 import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.LeaveReason
 import io.ntole.kvizic.core.protocol.PhaseView
+import io.ntole.kvizic.core.protocol.Reactions
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ServerMessage
 import kotlinx.coroutines.test.runTest
@@ -85,6 +87,25 @@ class LobbyGameTest {
                     .mapValues { it.value.correct },
             )
             lobby.assertInvariants()
+        }
+
+    @Test
+    fun `no reaction while a question is read or answered, and no nudge once the game is on`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            lobby.startGame(ana)
+            boris.say(ClientMessage.React("bravo"))
+            lobby.openAnswers(0)
+            ana.answerRight()
+            ana.say(ClientMessage.React("wow"))
+            assertTrue(boris.all<ServerMessage.Reacted>().isEmpty(), "a reaction could tell a pick")
+
+            boris.answerRight()
+            boris.say(ClientMessage.React(Reactions.NUDGE))
+            boris.say(ClientMessage.React("fire"))
+            assertEquals(listOf("fire"), ana.all<ServerMessage.Reacted>().map { it.reaction }, "the reveal takes them")
         }
 
     @Test

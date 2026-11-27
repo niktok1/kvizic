@@ -529,10 +529,17 @@ class Lobby(
         member: Member,
         reaction: String,
     ) {
-        if (reaction !in Reactions.ALL || !member.reactions.take(now())) return
+        if (reaction !in Reactions.ALL || !takesNow(reaction) || !member.reactions.take(now())) return
         val reacted = ServerMessage.Reacted(member.playerId, reaction)
         members.values.filter { it.announced }.forEach { send(it, reacted) }
     }
+
+    private fun takesNow(reaction: String): Boolean =
+        when (val current = phase) {
+            is Phase.Waiting -> true
+            is Phase.Countdown -> reaction != Reactions.NUDGE
+            is Phase.Playing -> reaction != Reactions.NUDGE && current.game.step == Step.REVEALING
+        }
 
     private fun presence(message: ServerMessage.Presence) {
         if (message == lastPresence) return
