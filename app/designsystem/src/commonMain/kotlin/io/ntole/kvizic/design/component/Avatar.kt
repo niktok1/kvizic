@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.max
 import io.ntole.kvizic.design.avatar.AvatarArt
+import io.ntole.kvizic.design.avatar.FrameArt
 import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.skin.SkinSpace
@@ -30,7 +31,9 @@ import io.ntole.kvizic.design.skin.SkinSpace
  * the colour of their [seat], and, for the room's [host], a crown above its head. [order] marks
  * the member's place among the first to answer right, on a badge of its own. [level] is the member's level,
  * on a badge at the bottom end, in the skin's secondary colours; the room's seats and the podium show it, a
- * line of a board is too small to. [dimmed] greys it out: a member who has not answered yet.
+ * line of a board is too small to. [frame] is one the member wears round it in place of the seat's plain ring
+ * ([FrameArt]); one this build does not draw shows the plain ring. [dimmed] greys it out: a member who has not
+ * answered yet.
  * [contentDescription] names the member to a screen reader.
  */
 @Composable
@@ -42,6 +45,7 @@ fun Avatar(
     host: Boolean = false,
     order: Int? = null,
     level: Int? = null,
+    frame: String? = null,
     dimmed: Boolean = false,
     contentDescription: String? = null,
 ) {
@@ -67,7 +71,15 @@ fun Avatar(
             colorFilter = if (dimmed) Greyed else null,
             alpha = if (dimmed) DIMMED_ALPHA else 1f,
         )
-        Spacer(Modifier.matchParentSize().drawBehind { with(part) { drawOver(seatColor, dimmed) } })
+        Spacer(
+            Modifier.matchParentSize().drawBehind {
+                with(part) { drawOver(seatColor, dimmed) }
+                if (frame != null) {
+                    val ring = if (dimmed) skin.colors.bulbOff else seatColor
+                    with(FrameArt) { drawFrame(frame, part.artInset.toPx(), ring, skin.avatarPalette) }
+                }
+            },
+        )
         if (host) {
             // A crown worn above the head, over the avatar's top edge, so nothing crowds the face.
             val crown = whole * CROWN_FRACTION

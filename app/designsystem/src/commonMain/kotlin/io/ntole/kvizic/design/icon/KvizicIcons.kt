@@ -1,6 +1,7 @@
 package io.ntole.kvizic.design.icon
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -562,6 +563,22 @@ object KvizicIcons {
                 lineTo(20.6f, 18.6f)
                 curveTo(20.4f, 19.7f, 19.5f, 20.5f, 18.4f, 20.5f)
                 lineTo(8f, 20.5f)
+                close()
+            }
+        }
+    }
+
+    /** A coin, its rim round its face and a glint on the face: the дукат, a player's coins. */
+    val Coin: ImageVector by lazy {
+        icon("Coin") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(x = 12f, y = 12f, radius = 9.5f)
+                circle(x = 12f, y = 12f, radius = 7.9f)
+                circle(x = 12f, y = 12f, radius = 6.7f)
+                moveTo(7.2f, 10.7f)
+                arcTo(5f, 5f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 10.7f, y1 = 7.2f)
+                lineTo(11.1f, 8.5f)
+                arcTo(3.6f, 3.6f, 0f, isMoreThanHalf = false, isPositiveArc = false, x1 = 8.5f, y1 = 11.1f)
                 close()
             }
         }

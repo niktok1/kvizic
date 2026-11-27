@@ -291,6 +291,7 @@ class ComponentsDrawTest {
                 "Flame" to KvizicIcons.Flame,
                 "ThumbUp" to KvizicIcons.ThumbUp,
                 "Skip" to KvizicIcons.Skip,
+                "Coin" to KvizicIcons.Coin,
             )
 
         val EXPECTED =

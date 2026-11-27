@@ -51,11 +51,14 @@ data class SeatOccupant(
      */
     val votes: String? = null,
     val votesDescription: String? = null,
+    /** The avatar frame they wear, by its id, and their title's words: none for none. */
+    val frame: String? = null,
+    val title: String? = null,
 )
 
 /**
- * A lobby's seat: its [occupant]'s avatar and name, greyed while they are away, their
- * [SeatOccupant.status] under it, and lit when it is the player's own; or, empty, an outlined well with
+ * A lobby's seat: its [occupant]'s avatar in their frame and name, greyed while they are away, their
+ * [SeatOccupant.status] under it, else their title, and lit when it is the player's own; or, empty, an outlined well with
  * the shape of a person in it, which [emptyDescription] names to a screen reader. Votes to put the occupant
  * out show under the name, a chip in the loss tone. [onClick] makes it a button, a host's way to a member;
  * [contentDescription] says the seat to a screen reader, after the occupant's [SeatOccupant.badge].
@@ -114,6 +117,7 @@ fun Seat(
                     size = AvatarSize.MD,
                     host = occupant.host,
                     level = occupant.level,
+                    frame = occupant.frame,
                     dimmed = occupant.away,
                 )
                 Spacer(Modifier.height(space.xs))
@@ -128,13 +132,17 @@ fun Seat(
                         Chip(votes, icon = KvizicIcons.Boot, tone = ChipTone.LOSS)
                     }
                 } else {
-                    occupant.status?.let { status ->
+                    val status = occupant.status
+                    val title = occupant.title
+                    if (status != null) {
                         KvizicIcon(
                             status,
                             contentDescription = null,
                             tint = colors.onPageAccent,
                             size = space.icon.small,
                         )
+                    } else if (title != null) {
+                        KvizicText(title, style = type.caption, color = colors.onRaisedMuted, maxLines = 1)
                     }
                 }
             }

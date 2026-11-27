@@ -18,7 +18,7 @@ import kotlin.math.sin
  * bold ink line, so each reads at the smallest size a lobby strip draws it. Each is built in a skin's
  * [AvatarPalette], so one set of drawings wears every skin.
  *
- * All sixteen of the game's are drawn; any other id, a newer server's, draws as [SILHOUETTE].
+ * All sixteen of the game's are drawn, and the [SHOP]'s; any other id, a newer server's, draws as [SILHOUETTE].
  */
 object AvatarArt {
     const val FOX: String = "fox"
@@ -37,11 +37,18 @@ object AvatarArt {
     const val FROG: String = "frog"
     const val BEE: String = "bee"
     const val CAT: String = "cat"
+    const val EAGLE: String = "eagle"
+    const val BOAR: String = "boar"
+    const val BEAVER: String = "beaver"
+    const val JACKAL: String = "jackal"
 
     /** What any avatar this build has no drawing for draws as: a head, two ears, no face. */
     const val SILHOUETTE: String = "silhouette"
 
-    /** The avatars this build draws, beside the silhouette. */
+    /** The avatars bought with coins in the shop, never handed out: a player picks one only once it is theirs. */
+    val SHOP: List<String> = listOf(EAGLE, BOAR, BEAVER, JACKAL)
+
+    /** The avatars this build draws, beside the silhouette: the sixteen handed out, then the [SHOP]'s. */
     val DRAWN: List<String> =
         listOf(
             FOX,
@@ -60,7 +67,7 @@ object AvatarArt {
             FROG,
             BEE,
             CAT,
-        )
+        ) + SHOP
 
     /** Whether [id] has a drawing of its own here. */
     fun isDrawn(id: String): Boolean = id in DRAWN
@@ -91,6 +98,10 @@ object AvatarArt {
                 FROG -> frog(palette)
                 BEE -> bee(palette)
                 CAT -> cat(palette)
+                EAGLE -> eagle(palette)
+                BOAR -> boar(palette)
+                BEAVER -> beaver(palette)
+                JACKAL -> jackal(palette)
                 else -> silhouette(palette)
             }
         }
@@ -579,6 +590,202 @@ object AvatarArt {
                 lineTo(41.5f, 35.4f)
             }
         }
+
+    private fun eagle(p: AvatarPalette): ImageVector =
+        art("eagle") {
+            shape(p.brown) { eagleHead() }
+            shape(p.tan) {
+                moveTo(7.6f, 19f)
+                curveTo(8.5f, 11.5f, 15f, 6.5f, 24f, 6.5f)
+                curveTo(33f, 6.5f, 39.5f, 11.5f, 40.4f, 19f)
+                curveTo(35.5f, 15.4f, 29.5f, 14.6f, 24f, 17f)
+                curveTo(18.5f, 14.6f, 12.5f, 15.4f, 7.6f, 19f)
+                close()
+            }
+            line(p.ink, LINE) { eagleHead() }
+            listOf(MIDDLE - 7.6f, MIDDLE + 7.6f).forEach { x ->
+                shape(p.gold) { circle(x, 23f, 3f) }
+                shape(p.ink) { circle(x, 23.2f, 1.6f) }
+            }
+            line(p.ink, LINE) {
+                moveTo(11.6f, 18.8f)
+                lineTo(21.4f, 21.6f)
+                moveTo(36.4f, 18.8f)
+                lineTo(26.6f, 21.6f)
+            }
+            shape(p.gold, p.ink) {
+                moveTo(19.2f, 25.4f)
+                curveTo(20.6f, 23.6f, 27.4f, 23.6f, 28.8f, 25.4f)
+                curveTo(30.4f, 29f, 29.6f, 34f, 26.8f, 38f)
+                curveTo(25.8f, 39.4f, 24.8f, 40.8f, 24f, 42f)
+                curveTo(23.2f, 40.8f, 22.2f, 39.4f, 21.2f, 38f)
+                curveTo(18.4f, 34f, 17.6f, 29f, 19.2f, 25.4f)
+                close()
+            }
+            shape(p.greyDark) {
+                moveTo(21.4f, 36f)
+                curveTo(22.8f, 36.8f, 25.2f, 36.8f, 26.6f, 36f)
+                curveTo(25.8f, 38.6f, 24.8f, 40.6f, 24f, 41.4f)
+                curveTo(23.2f, 40.6f, 22.2f, 38.6f, 21.4f, 36f)
+                close()
+            }
+            line(p.ink, THIN) {
+                moveTo(18.6f, 30f)
+                lineTo(15.4f, 31.6f)
+                moveTo(29.4f, 30f)
+                lineTo(32.6f, 31.6f)
+            }
+        }
+
+    private fun PathBuilder.eagleHead() {
+        moveTo(24f, 6.5f)
+        curveTo(34f, 6.5f, 41f, 13.5f, 41f, 23f)
+        lineTo(44.5f, 30.5f)
+        lineTo(39.8f, 30.4f)
+        lineTo(41.6f, 37.6f)
+        lineTo(36.4f, 35.4f)
+        lineTo(35.6f, 42.6f)
+        lineTo(30.8f, 38.8f)
+        lineTo(28.4f, 45.4f)
+        lineTo(24f, 41f)
+        lineTo(19.6f, 45.4f)
+        lineTo(17.2f, 38.8f)
+        lineTo(12.4f, 42.6f)
+        lineTo(11.6f, 35.4f)
+        lineTo(6.4f, 37.6f)
+        lineTo(8.2f, 30.4f)
+        lineTo(3.5f, 30.5f)
+        lineTo(7f, 23f)
+        curveTo(7f, 13.5f, 14f, 6.5f, 24f, 6.5f)
+        close()
+    }
+
+    private fun boar(p: AvatarPalette): ImageVector =
+        art("boar") {
+            shape(p.brownDark, p.ink) {
+                moveTo(18f, 13f)
+                lineTo(19.4f, 6.6f)
+                lineTo(21.8f, 11f)
+                lineTo(24f, 4.8f)
+                lineTo(26.2f, 11f)
+                lineTo(28.6f, 6.6f)
+                lineTo(30f, 13f)
+                close()
+            }
+            shape(p.brownDark, p.ink) { triangle(9.6f, 21f, 3.6f, 8.4f, 18f, 13.4f) }
+            shape(p.tanDark) { triangle(9.8f, 16.6f, 7.4f, 11.6f, 13.6f, 13.8f) }
+            shape(p.brownDark, p.ink) { triangle(38.4f, 21f, 44.4f, 8.4f, 30f, 13.4f) }
+            shape(p.tanDark) { triangle(38.2f, 16.6f, 40.6f, 11.6f, 34.4f, 13.8f) }
+            shape(p.brownDark, p.ink) {
+                moveTo(24f, 11f)
+                curveTo(33.5f, 11f, 40.5f, 15.5f, 40.5f, 23.5f)
+                curveTo(40.5f, 31f, 35f, 36f, 31f, 39f)
+                lineTo(17f, 39f)
+                curveTo(13f, 36f, 7.5f, 31f, 7.5f, 23.5f)
+                curveTo(7.5f, 15.5f, 14.5f, 11f, 24f, 11f)
+                close()
+            }
+            eyes(p, y = 23f, apart = 7.4f, radius = 2f)
+            listOf(1f, -1f).forEach { side ->
+                shape(p.cream, p.ink, width = THIN) {
+                    moveTo(MIDDLE - side * 5.6f, 40.2f)
+                    curveTo(MIDDLE - side * 10f, 40f, MIDDLE - side * 12.6f, 36.4f, MIDDLE - side * 12.4f, 30.6f)
+                    curveTo(MIDDLE - side * 10.6f, 34.2f, MIDDLE - side * 8.6f, 35.8f, MIDDLE - side * 5.8f, 36.4f)
+                    close()
+                }
+            }
+            shape(p.tan, p.ink) { ellipse(24f, 34.6f, 8f, 6f) }
+            shape(p.ink) { ellipse(21.2f, 34.6f, 1.4f, 2.1f) }
+            shape(p.ink) { ellipse(26.8f, 34.6f, 1.4f, 2.1f) }
+        }
+
+    private fun beaver(p: AvatarPalette): ImageVector =
+        art("beaver") {
+            listOf(12f, 36f).forEach { x ->
+                shape(p.brown, p.ink) { circle(x, 15f, 3.8f) }
+                shape(p.brownDark) { circle(x, 15f, 1.8f) }
+            }
+            shape(p.brown, p.ink) {
+                moveTo(24f, 10f)
+                curveTo(33.5f, 10f, 39.5f, 16f, 40f, 24f)
+                curveTo(40.6f, 32.5f, 36.5f, 40.5f, 24f, 40.5f)
+                curveTo(11.5f, 40.5f, 7.4f, 32.5f, 8f, 24f)
+                curveTo(8.5f, 16f, 14.5f, 10f, 24f, 10f)
+                close()
+            }
+            shape(p.tan) { circle(19.4f, 31f, 5.6f) }
+            shape(p.tan) { circle(28.6f, 31f, 5.6f) }
+            eyes(p, y = 21.5f, apart = 7.2f, radius = 2.2f)
+            shape(p.orange, p.ink, width = THIN) {
+                moveTo(20.6f, 33.4f)
+                lineTo(27.4f, 33.4f)
+                lineTo(27.4f, 40.4f)
+                quadTo(27.4f, 42f, 25.8f, 42f)
+                lineTo(22.2f, 42f)
+                quadTo(20.6f, 42f, 20.6f, 40.4f)
+                close()
+            }
+            line(p.ink, THIN) {
+                moveTo(24f, 33.4f)
+                lineTo(24f, 42f)
+                moveTo(18.4f, 32.2f)
+                quadTo(21.2f, 34.2f, 24f, 32.4f)
+                quadTo(26.8f, 34.2f, 29.6f, 32.2f)
+            }
+            shape(p.ink) {
+                moveTo(19.8f, 27.2f)
+                curveTo(19.8f, 25.2f, 28.2f, 25.2f, 28.2f, 27.2f)
+                curveTo(28.2f, 29.4f, 25.6f, 30.8f, 24f, 30.8f)
+                curveTo(22.4f, 30.8f, 19.8f, 29.4f, 19.8f, 27.2f)
+                close()
+            }
+        }
+
+    private fun jackal(p: AvatarPalette): ImageVector =
+        art("jackal") {
+            shape(p.tan, p.ink) { triangle(11.6f, 20f, 13f, 1.4f, 21.6f, 13f) }
+            shape(p.cream) { triangle(14f, 16.4f, 14.6f, 6.6f, 18.8f, 13.6f) }
+            shape(p.tan, p.ink) { triangle(36.4f, 20f, 35f, 1.4f, 26.4f, 13f) }
+            shape(p.cream) { triangle(34f, 16.4f, 33.4f, 6.6f, 29.2f, 13.6f) }
+            shape(p.tan) { jackalHead() }
+            shape(p.tanDark) {
+                moveTo(16f, 12.6f)
+                curveTo(19f, 11.4f, 29f, 11.4f, 32f, 12.6f)
+                curveTo(29f, 15f, 26.4f, 19f, 24f, 30f)
+                curveTo(21.6f, 19f, 19f, 15f, 16f, 12.6f)
+                close()
+            }
+            shape(p.cream) {
+                moveTo(12f, 26f)
+                curveTo(15.5f, 29.5f, 20f, 30f, 24f, 32.4f)
+                curveTo(28f, 30f, 32.5f, 29.5f, 36f, 26f)
+                curveTo(35f, 30f, 32.5f, 32f, 30.4f, 34f)
+                curveTo(28.4f, 36f, 26.6f, 41.4f, 24f, 45f)
+                curveTo(21.4f, 41.4f, 19.6f, 36f, 17.6f, 34f)
+                curveTo(15.5f, 32f, 13f, 30f, 12f, 26f)
+                close()
+            }
+            line(p.ink, LINE) { jackalHead() }
+            eyes(p, y = 23f, apart = 6.4f, radius = 2f)
+            shape(p.ink) {
+                moveTo(21.8f, 39.6f)
+                curveTo(21.8f, 38.4f, 26.2f, 38.4f, 26.2f, 39.6f)
+                curveTo(26.2f, 41f, 24.8f, 42.4f, 24f, 42.4f)
+                curveTo(23.2f, 42.4f, 21.8f, 41f, 21.8f, 39.6f)
+                close()
+            }
+        }
+
+    private fun PathBuilder.jackalHead() {
+        moveTo(24f, 11f)
+        curveTo(32f, 11f, 37.4f, 14.6f, 37.4f, 21.6f)
+        curveTo(37.4f, 27.4f, 33.4f, 31f, 30.4f, 34f)
+        curveTo(28.4f, 36f, 26.6f, 41.4f, 24f, 45f)
+        curveTo(21.4f, 41.4f, 19.6f, 36f, 17.6f, 34f)
+        curveTo(14.6f, 31f, 10.6f, 27.4f, 10.6f, 21.6f)
+        curveTo(10.6f, 14.6f, 16f, 11f, 24f, 11f)
+        close()
+    }
 
     private fun silhouette(p: AvatarPalette): ImageVector =
         art("silhouette") {
