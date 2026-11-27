@@ -82,6 +82,7 @@ internal fun BankStatus.toWire(): QuestionStatus? =
 
 internal fun Difficulty.toDomain(): QuestionDifficulty =
     when (this) {
+        Difficulty.VERY_EASY -> QuestionDifficulty.VERY_EASY
         Difficulty.EASY -> QuestionDifficulty.EASY
         Difficulty.MEDIUM -> QuestionDifficulty.MEDIUM
         Difficulty.HARD -> QuestionDifficulty.HARD
@@ -90,6 +91,7 @@ internal fun Difficulty.toDomain(): QuestionDifficulty =
 
 internal fun QuestionDifficulty.toWire(): Difficulty =
     when (this) {
+        QuestionDifficulty.VERY_EASY -> Difficulty.VERY_EASY
         QuestionDifficulty.EASY -> Difficulty.EASY
         QuestionDifficulty.MEDIUM -> Difficulty.MEDIUM
         QuestionDifficulty.HARD -> Difficulty.HARD
@@ -177,6 +179,7 @@ internal fun AdminAccountDto.toDomain(): AccountSummary =
         soloRuns = stats.soloRuns,
         soloBest =
             SoloBest(
+                veryEasy = stats.soloBestVeryEasyScore,
                 easy = stats.soloBestEasyScore,
                 medium = stats.soloBestScore,
                 hard = stats.soloBestHardScore,

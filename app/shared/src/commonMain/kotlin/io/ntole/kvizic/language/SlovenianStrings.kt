@@ -143,6 +143,7 @@ internal val SlovenianGameStrings: GameStrings =
         anyone = "Vsi",
         wrongAnswerPenalty = "Minus za napačen odgovor",
         difficulty = "Težavnost",
+        veryEasy = "Zelo lahko",
         easy = "Lahko",
         medium = "Srednje",
         hard = "Težko",

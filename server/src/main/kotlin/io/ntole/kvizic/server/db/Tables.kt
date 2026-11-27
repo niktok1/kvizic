@@ -117,6 +117,8 @@ object Profiles : Table("profiles") {
     /** The best solo run at medium, and when: every run was medium before V5, so V1's columns hold it. */
     val soloBestScore = integer("solo_best_score").nullable()
     val soloBestAt = long("solo_best_at").nullable()
+    val soloBestVeryEasyScore = integer("solo_best_very_easy_score").nullable()
+    val soloBestVeryEasyAt = long("solo_best_very_easy_at").nullable()
     val soloBestEasyScore = integer("solo_best_easy_score").nullable()
     val soloBestEasyAt = long("solo_best_easy_at").nullable()
     val soloBestHardScore = integer("solo_best_hard_score").nullable()
@@ -127,6 +129,7 @@ object Profiles : Table("profiles") {
     /** The columns of the best solo run at [level] and of when it was: medium's for a level with no name. */
     fun soloBest(level: Difficulty): Pair<Column<Int?>, Column<Long?>> =
         when (level) {
+            Difficulty.VERY_EASY -> soloBestVeryEasyScore to soloBestVeryEasyAt
             Difficulty.EASY -> soloBestEasyScore to soloBestEasyAt
             Difficulty.HARD -> soloBestHardScore to soloBestHardAt
             Difficulty.MEDIUM, Difficulty.UNKNOWN -> soloBestScore to soloBestAt

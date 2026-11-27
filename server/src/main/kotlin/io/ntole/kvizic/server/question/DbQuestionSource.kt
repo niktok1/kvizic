@@ -401,8 +401,9 @@ class DbQuestionSource(
 
     private fun rampOrder(difficulty: Difficulty): Int =
         when (difficulty) {
-            Difficulty.EASY -> 0
-            Difficulty.MEDIUM, Difficulty.UNKNOWN -> 1
-            Difficulty.HARD -> 2
+            Difficulty.VERY_EASY -> 0
+            Difficulty.EASY -> 1
+            Difficulty.MEDIUM, Difficulty.UNKNOWN -> 2
+            Difficulty.HARD -> 3
         }
 }

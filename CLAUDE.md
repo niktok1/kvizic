@@ -148,7 +148,7 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   experience into its members as it ends, so a seat's level moves at once; sitting down again reads it afresh.
   Levels are for nothing yet but to show: Home's caption and bar, the account's, a seat's and the podium's badge.
   Games and wins stay in the account's statistics only.
-- Settings: questions 5/10/15/20, time 10/15/20/30 s, topics (none = Све), difficulty Лако/Средње/Тешко,
+- Settings: questions 5/10/15/20, time 10/15/20/30 s, topics (none = Све), difficulty Врло лако/Лако/Средње/Тешко,
   seats 2–8, private or public, minus on/off. Codes are 6 digits, not reused for 30 min; a per-address guard
   stops guessing. The host changes them in the lobby alone, from its chips: never during a game, nor from
   the results (the owner, 2026-10-01).
@@ -161,6 +161,11 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   what comes first: a game asks an unseen question off its level before a seen one on it, and a level the
   bank is short of takes the nearest. A public list's card names it in a word, unless medium; the lobby always does. A solo run keeps its
   format but its level, picked in its room, and each level keeps its own best (V5; medium in V1's columns).
+- **Врло лако** (the owner, 2026-11-27, after players of 13 found Лако hard): a fourth level below Лако, 70%
+  very easy and 30% easy, the other three unchanged. Its questions are what a 13-year-old there knows
+  (`STYLE.md`), never named or marketed as for children: Play's audience stays 13+. An older build shows it as
+  Средње, and its host's edit of any chip sets the room to Средње, so `MIN_CLIENT_VERSION_ANDROID` goes up once
+  the build that knows it is on every track. Its solo best is V14's.
 
 ## 7a. Coins and the shop
 
@@ -223,10 +228,11 @@ the shop, **Дућан** (Dućan; Trgovina in Slovenian, Дуќан in Macedonia
   The settings show the topics picked in a few words („Спорт, Музика +3“), which open the picker: a search by
   any part of a name in either script with no accents needed, the groups opened and closed by their names,
   each with a chip for the whole group, counts, and thin topics greyed.
-- **Difficulty** (2026-10-01): three levels. The author's is a prior worth 40 players; a question plays at
+- **Difficulty** (2026-10-01): three levels, four since 2026-11-27. The author's is a prior worth 40 players; a question plays at
   the level its players measure (`MeasuredDifficulty`): the share right of those it waited for, a silence
   counted as not knowing, above what a guess among its answers gets. Read when a game is picked and by the
-  moderation app ("plays hard"), never stored; a game runs from easy to hard by it.
+  moderation app ("plays hard"), never stored; a game runs from easy to hard by it. Only its author makes a
+  question very easy: the adults' answers say nothing of a 13-year-old's, so they can only make one harder.
 - The admin routes import, edit, approve, retire and export; three wrong-answer reports suspend a question.
   **Dev keeps its bank in a database of its own** (the owner, 2026-10-14): `kvizic_dev`, with a role of its own, on
   the `kvizic-postgres` instance, so what is published there outlasts deploys and spin-downs. A seed

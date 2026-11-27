@@ -132,14 +132,15 @@ class DifficultyMix(
 
     companion object {
         /** The levels, from easy to hard. */
-        val LEVELS: List<Difficulty> = listOf(Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD)
+        val LEVELS: List<Difficulty> = listOf(Difficulty.VERY_EASY, Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD)
 
         /** Each level's share of a game, in percent, by [LEVELS], for each level a host may choose. */
         val SHARES: Map<Difficulty, List<Int>> =
             mapOf(
-                Difficulty.EASY to listOf(60, 30, 10),
-                Difficulty.MEDIUM to listOf(20, 60, 20),
-                Difficulty.HARD to listOf(10, 30, 60),
+                Difficulty.VERY_EASY to listOf(70, 30, 0, 0),
+                Difficulty.EASY to listOf(0, 60, 30, 10),
+                Difficulty.MEDIUM to listOf(0, 20, 60, 20),
+                Difficulty.HARD to listOf(0, 10, 30, 60),
             )
 
         private const val PERCENT = 100

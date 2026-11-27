@@ -21,6 +21,7 @@ public enum class QuestionStatus {
 /** How hard a question is: the author's guess, until enough answers measure it. */
 @Serializable
 public enum class Difficulty {
+    VERY_EASY,
     EASY,
     MEDIUM,
     HARD,

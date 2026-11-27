@@ -62,6 +62,7 @@ public data class PlayerStatsDto(
     public val soloRuns: Int = 0,
     /** The best solo run at medium: every run was medium once, and a build before levels shows it alone. */
     public val soloBestScore: Int? = null,
+    public val soloBestVeryEasyScore: Int? = null,
     public val soloBestEasyScore: Int? = null,
     public val soloBestHardScore: Int? = null,
 )

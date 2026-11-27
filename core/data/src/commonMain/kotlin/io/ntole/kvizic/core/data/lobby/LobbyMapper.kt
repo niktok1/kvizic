@@ -61,6 +61,7 @@ internal fun LobbySettingsDto.toDomain(): LobbySettings =
         wrongAnswerPenalty = wrongAnswerPenalty,
         difficulty =
             when (difficulty) {
+                Difficulty.VERY_EASY -> LobbyDifficulty.VERY_EASY
                 Difficulty.EASY -> LobbyDifficulty.EASY
                 Difficulty.HARD -> LobbyDifficulty.HARD
                 Difficulty.MEDIUM, Difficulty.UNKNOWN -> LobbyDifficulty.MEDIUM
@@ -78,6 +79,7 @@ internal fun LobbySettings.toDto(): LobbySettingsDto =
         wrongAnswerPenalty = wrongAnswerPenalty,
         difficulty =
             when (difficulty) {
+                LobbyDifficulty.VERY_EASY -> Difficulty.VERY_EASY
                 LobbyDifficulty.EASY -> Difficulty.EASY
                 LobbyDifficulty.MEDIUM -> Difficulty.MEDIUM
                 LobbyDifficulty.HARD -> Difficulty.HARD

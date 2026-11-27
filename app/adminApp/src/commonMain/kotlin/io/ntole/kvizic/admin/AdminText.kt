@@ -81,6 +81,7 @@ internal fun BankStatus.word(): String =
 
 internal fun QuestionDifficulty.word(): String =
     when (this) {
+        QuestionDifficulty.VERY_EASY -> "Very easy"
         QuestionDifficulty.EASY -> "Easy"
         QuestionDifficulty.MEDIUM -> "Medium"
         QuestionDifficulty.HARD -> "Hard"

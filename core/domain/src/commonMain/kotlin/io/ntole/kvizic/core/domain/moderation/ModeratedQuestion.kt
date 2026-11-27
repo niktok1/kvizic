@@ -19,6 +19,7 @@ public enum class BankStatus {
 
 /** How hard a question is: its author's guess, until enough answers measure it. */
 public enum class QuestionDifficulty {
+    VERY_EASY,
     EASY,
     MEDIUM,
     HARD,

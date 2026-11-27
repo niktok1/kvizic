@@ -137,6 +137,7 @@ internal val CroatianGameStrings: GameStrings =
         anyone = "Svi",
         wrongAnswerPenalty = "Minus za netočan odgovor",
         difficulty = "Težina",
+        veryEasy = "Vrlo lako",
         easy = "Lako",
         medium = "Srednje",
         hard = "Teško",

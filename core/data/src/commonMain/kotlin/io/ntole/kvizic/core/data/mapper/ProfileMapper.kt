@@ -64,6 +64,7 @@ internal fun PlayerStatsDto.toDomain(): PlayerStats =
         soloRuns = soloRuns,
         soloBests =
             listOfNotNull(
+                soloBestVeryEasyScore?.let { LobbyDifficulty.VERY_EASY to it },
                 soloBestEasyScore?.let { LobbyDifficulty.EASY to it },
                 soloBestScore?.let { LobbyDifficulty.MEDIUM to it },
                 soloBestHardScore?.let { LobbyDifficulty.HARD to it },

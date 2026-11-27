@@ -7,7 +7,9 @@ import io.ntole.kvizic.core.question.Difficulty
  * asked, a silence counted as not knowing, the share who got it right is set against the share a guess
  * would get among its answers, so a true/false question is not easy for being a coin's toss. The author's
  * level stands for [PRIOR_PLAYERS] players at its typical share, so a room's answers move it a little and
- * many rooms' decide it. Read when a game is picked and when the moderator looks; never stored.
+ * many rooms' decide it. Only its author makes a question very easy, for players of 13 whom the adults'
+ * answers say nothing of: one written so plays very easy while it measures easy or easier. Read when a game
+ * is picked and when the moderator looks; never stored.
  */
 object MeasuredDifficulty {
     /** How many players' worth the author's level weighs. */
@@ -20,6 +22,7 @@ object MeasuredDifficulty {
     /** Each level's typical share above a guess, as far from the thresholds on either side. */
     private val TYPICAL =
         mapOf(
+            Difficulty.VERY_EASY to 0.9,
             Difficulty.EASY to 0.75,
             Difficulty.MEDIUM to 0.45,
             Difficulty.HARD to 0.15,
@@ -47,7 +50,7 @@ object MeasuredDifficulty {
             }
         val measured = (skill * asked + typical * PRIOR_PLAYERS) / (asked + PRIOR_PLAYERS)
         return when {
-            measured >= EASY_FROM -> Difficulty.EASY
+            measured >= EASY_FROM -> if (authored == Difficulty.VERY_EASY) Difficulty.VERY_EASY else Difficulty.EASY
             measured < HARD_BELOW -> Difficulty.HARD
             else -> Difficulty.MEDIUM
         }

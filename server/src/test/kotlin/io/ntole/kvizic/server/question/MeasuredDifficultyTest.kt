@@ -32,6 +32,14 @@ class MeasuredDifficultyTest {
     }
 
     @Test
+    fun `only its author makes a question very easy, and its players can make it harder`() {
+        assertEquals(Difficulty.VERY_EASY, level(Difficulty.VERY_EASY, answered = 8, correct = 2))
+        assertEquals(Difficulty.MEDIUM, level(Difficulty.VERY_EASY, answered = 200, correct = 110))
+        assertEquals(Difficulty.HARD, level(Difficulty.VERY_EASY, answered = 200, correct = 50))
+        assertEquals(Difficulty.EASY, level(Difficulty.EASY, answered = 200, correct = 200))
+    }
+
+    @Test
     fun `a silence counts as not knowing`() {
         assertEquals(Difficulty.EASY, level(Difficulty.MEDIUM, answered = 100, correct = 90))
         assertEquals(Difficulty.HARD, level(Difficulty.MEDIUM, answered = 100, correct = 90, unanswered = 150))

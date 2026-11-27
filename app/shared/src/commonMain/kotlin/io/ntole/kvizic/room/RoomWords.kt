@@ -251,6 +251,7 @@ internal fun topicNameOf(
 /** The name of [level], as the settings' chips have it. */
 internal fun GameStrings.levelName(level: LobbyDifficulty): String =
     when (level) {
+        LobbyDifficulty.VERY_EASY -> veryEasy
         LobbyDifficulty.EASY -> easy
         LobbyDifficulty.MEDIUM -> medium
         LobbyDifficulty.HARD -> hard

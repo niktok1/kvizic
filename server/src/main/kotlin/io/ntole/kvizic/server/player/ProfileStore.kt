@@ -60,6 +60,7 @@ object ProfileStore {
                     bestTopicId = bestTopic,
                     soloRuns = row[Profiles.soloRuns],
                     soloBestScore = row[Profiles.soloBestScore],
+                    soloBestVeryEasyScore = row[Profiles.soloBestVeryEasyScore],
                     soloBestEasyScore = row[Profiles.soloBestEasyScore],
                     soloBestHardScore = row[Profiles.soloBestHardScore],
                 ),
@@ -82,6 +83,7 @@ object ProfileStore {
             Profiles.answersCorrect,
             Profiles.soloRuns,
             Profiles.soloBestScore,
+            Profiles.soloBestVeryEasyScore,
             Profiles.soloBestEasyScore,
             Profiles.soloBestHardScore,
         ).where { Players.id eq playerId }

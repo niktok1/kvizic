@@ -224,6 +224,7 @@ internal object AccountAdmin {
                     answersCorrect = this[Profiles.answersCorrect],
                     soloRuns = this[Profiles.soloRuns],
                     soloBestScore = this[Profiles.soloBestScore],
+                    soloBestVeryEasyScore = this[Profiles.soloBestVeryEasyScore],
                     soloBestEasyScore = this[Profiles.soloBestEasyScore],
                     soloBestHardScore = this[Profiles.soloBestHardScore],
                 ),

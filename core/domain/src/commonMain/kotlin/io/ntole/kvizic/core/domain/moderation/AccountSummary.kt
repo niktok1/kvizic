@@ -52,6 +52,7 @@ public data class AccountSummary(
 
 /** The best solo score at each level, null for a level not played. */
 public data class SoloBest(
+    public val veryEasy: Int? = null,
     public val easy: Int? = null,
     public val medium: Int? = null,
     public val hard: Int? = null,

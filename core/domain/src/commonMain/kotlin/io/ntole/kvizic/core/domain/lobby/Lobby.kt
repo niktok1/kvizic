@@ -7,7 +7,7 @@ public enum class LobbyVisibility { PRIVATE, PUBLIC }
 public enum class LobbyKind { PRIVATE, PUBLIC, SOLO }
 
 /** The level most of a game's questions are at, the levels beside it for the rest: a mix, not a filter. */
-public enum class LobbyDifficulty { EASY, MEDIUM, HARD }
+public enum class LobbyDifficulty { VERY_EASY, EASY, MEDIUM, HARD }
 
 /**
  * What the host picked: how many questions and how long each, which topics (none for all of them), how

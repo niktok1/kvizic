@@ -140,6 +140,7 @@ internal val MacedonianGameStrings: GameStrings =
         anyone = "Сите",
         wrongAnswerPenalty = "Минус за погрешен одговор",
         difficulty = "Тежина",
+        veryEasy = "Многу лесно",
         easy = "Лесно",
         medium = "Средно",
         hard = "Тешко",

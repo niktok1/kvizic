@@ -91,6 +91,7 @@ internal fun AccountDetailCard(
             KvizicText(statsOf(player), style = type.body)
             KvizicText(
                 "${player.xp} experience · solo ${player.soloRuns} runs, best " +
+                    "very easy ${player.soloBest.veryEasy ?: "–"}, " +
                     "easy ${player.soloBest.easy ?: "–"}, medium ${player.soloBest.medium ?: "–"}, " +
                     "hard ${player.soloBest.hard ?: "–"}",
                 style = type.caption,

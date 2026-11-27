@@ -137,6 +137,7 @@ internal val BosnianGameStrings: GameStrings =
         anyone = "Svi",
         wrongAnswerPenalty = "Minus za netačan odgovor",
         difficulty = "Težina",
+        veryEasy = "Vrlo lako",
         easy = "Lako",
         medium = "Srednje",
         hard = "Teško",

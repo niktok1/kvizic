@@ -5,6 +5,7 @@ import io.ntole.kvizic.core.question.Difficulty
 import io.ntole.kvizic.core.question.Difficulty.EASY
 import io.ntole.kvizic.core.question.Difficulty.HARD
 import io.ntole.kvizic.core.question.Difficulty.MEDIUM
+import io.ntole.kvizic.core.question.Difficulty.VERY_EASY
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,9 +15,10 @@ import kotlin.test.assertTrue
 class DifficultyMixTest {
     private val mix = DifficultyMix(Random(7))
 
-    /** Questions named for their level: `e1` is easy, `m2` medium, `h3` hard. */
+    /** Questions named for their level: `v1` is very easy, `e1` easy, `m2` medium, `h3` hard. */
     private fun levelOf(id: String) =
         when (id.first()) {
+            'v' -> VERY_EASY
             'e' -> EASY
             'm' -> MEDIUM
             else -> HARD
@@ -31,10 +33,11 @@ class DifficultyMixTest {
 
     @Test
     fun `a game is mostly at the level chosen and the rest beside it`() {
-        assertEquals(mapOf(EASY to 6, MEDIUM to 3, HARD to 1), mix.quotas(EASY, 10))
-        assertEquals(mapOf(EASY to 2, MEDIUM to 6, HARD to 2), mix.quotas(MEDIUM, 10))
-        assertEquals(mapOf(EASY to 1, MEDIUM to 3, HARD to 6), mix.quotas(HARD, 10))
-        assertEquals(mapOf(EASY to 4, MEDIUM to 12, HARD to 4), mix.quotas(MEDIUM, 20))
+        assertEquals(mapOf(VERY_EASY to 7, EASY to 3, MEDIUM to 0, HARD to 0), mix.quotas(VERY_EASY, 10))
+        assertEquals(mapOf(VERY_EASY to 0, EASY to 6, MEDIUM to 3, HARD to 1), mix.quotas(EASY, 10))
+        assertEquals(mapOf(VERY_EASY to 0, EASY to 2, MEDIUM to 6, HARD to 2), mix.quotas(MEDIUM, 10))
+        assertEquals(mapOf(VERY_EASY to 0, EASY to 1, MEDIUM to 3, HARD to 6), mix.quotas(HARD, 10))
+        assertEquals(mapOf(VERY_EASY to 0, EASY to 4, MEDIUM to 12, HARD to 4), mix.quotas(MEDIUM, 20))
         assertEquals(mix.quotas(MEDIUM, 10), mix.quotas(Difficulty.UNKNOWN, 10), "no level is medium")
     }
 
@@ -42,7 +45,10 @@ class DifficultyMixTest {
     fun `a share that does not come out whole falls at random among the largest remainders`() {
         val easyFives = (1..200).map { mix.quotas(EASY, 5) }.toSet()
         assertEquals(
-            setOf(mapOf(EASY to 3, MEDIUM to 2, HARD to 0), mapOf(EASY to 3, MEDIUM to 1, HARD to 1)),
+            setOf(
+                mapOf(VERY_EASY to 0, EASY to 3, MEDIUM to 2, HARD to 0),
+                mapOf(VERY_EASY to 0, EASY to 3, MEDIUM to 1, HARD to 1),
+            ),
             easyFives,
         )
         KvizicApi.Limits.QUESTION_COUNTS.forEach { count ->
@@ -75,6 +81,11 @@ class DifficultyMixTest {
     fun `a level the tier lacks takes the nearest it has`() {
         val tier = questions('e', 10) + questions('m', 10)
         assertEquals(mapOf(EASY to 1, MEDIUM to 9), levels(mix.pick(listOf(tier), 10, HARD, ::levelOf)))
+        assertEquals(
+            mapOf(VERY_EASY to 3, EASY to 7),
+            levels(mix.pick(listOf(questions('v', 3) + tier), 10, VERY_EASY, ::levelOf)),
+            "a very easy game short of very easy questions takes easy ones",
+        )
     }
 
     @Test
@@ -84,10 +95,13 @@ class DifficultyMixTest {
 
     @Test
     fun `a game's second part wants what its first left of each level`() {
-        assertEquals(mapOf(EASY to 1, MEDIUM to 5, HARD to 2), mix.remaining(MEDIUM, 10, listOf(EASY, MEDIUM)))
+        assertEquals(
+            mapOf(VERY_EASY to 0, EASY to 1, MEDIUM to 5, HARD to 2),
+            mix.remaining(MEDIUM, 10, listOf(EASY, MEDIUM)),
+        )
         assertEquals(mix.quotas(HARD, 10), mix.remaining(HARD, 10, emptyList()), "nothing taken")
         assertEquals(
-            mapOf(EASY to 0, MEDIUM to 0, HARD to 0),
+            mapOf(VERY_EASY to 0, EASY to 0, MEDIUM to 0, HARD to 0),
             mix.remaining(EASY, 2, listOf(HARD, HARD)),
             "nothing left",
         )
@@ -96,7 +110,10 @@ class DifficultyMixTest {
     @Test
     fun `a first part that took more of a level than the game wants leaves the farthest levels fewer`() {
         // At hard, 10 want 1 easy, 3 medium and 6 hard; 3 easy taken leave 7 to the medium and the hard.
-        assertEquals(mapOf(EASY to 0, MEDIUM to 1, HARD to 6), mix.remaining(HARD, 10, listOf(EASY, EASY, EASY)))
+        assertEquals(
+            mapOf(VERY_EASY to 0, EASY to 0, MEDIUM to 1, HARD to 6),
+            mix.remaining(HARD, 10, listOf(EASY, EASY, EASY)),
+        )
         KvizicApi.Limits.QUESTION_COUNTS.forEach { count ->
             DifficultyMix.LEVELS.forEach { chosen ->
                 (0..count).forEach { taken ->
