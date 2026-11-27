@@ -62,6 +62,22 @@ internal val BosnianUpdateStrings: UpdateStrings =
 
 internal val BosnianReactionStrings: ReactionStrings = ReactionStrings(react = "Reaguj")
 
+internal val BosnianHowToPlayStrings: HowToPlayStrings =
+    HowToPlayStrings(
+        title = "Kako se igra",
+        skip = "Preskoči",
+        next = "Dalje",
+        play = "Igraj",
+        questionTitle = "Isto pitanje za sve",
+        questionBody = "Prvo pročitaj, pa biraj dok traje vrijeme. Kad odabereš odgovor, vidiš šta su drugi izabrali.",
+        pointsTitle = "Brzo i tačno",
+        pointsBody = "Brži odgovor donosi više bodova, netačan oduzima bodove. Ako ne znaš, preskoči.",
+        roomsTitle = "Gdje igrati",
+        roomsBody =
+            "Brza igra te odmah vodi u sobu s drugima. Napravi svoju sobu za društvo i pošalji im ko\u0302d. " +
+                "Solo je za vježbu. Nema drugih u sobi? Možeš početi i bez njih.",
+    )
+
 internal val BosnianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Brza igra",
@@ -254,5 +270,6 @@ val BosnianStrings: Strings =
         settingsScreen = BosnianSettingsScreenStrings,
         updateScreen = BosnianUpdateStrings,
         reactions = BosnianReactionStrings,
+        howToPlay = BosnianHowToPlayStrings,
         game = BosnianGameStrings,
     )

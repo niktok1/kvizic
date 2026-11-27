@@ -38,6 +38,7 @@ import io.ntole.kvizic.home.HomeFailure
 import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeState
 import io.ntole.kvizic.home.ProfileScreen
+import io.ntole.kvizic.howtoplay.HowToPlayScreen
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.nodes
@@ -169,7 +170,7 @@ class TapsTest {
     @Test
     fun `every tap on the Settings screen is reported`() {
         assertEquals(
-            setOf("settings.sound", "settings.language", "settings.country", "settings.about"),
+            setOf("settings.sound", "settings.language", "settings.country", "settings.how_to_play", "settings.about"),
             elementsTapped { AppSettingsScreen() },
         )
     }
@@ -350,6 +351,15 @@ class TapsTest {
             elementsTapped {
                 ProfileScreen(HomeState(profile = PROFILE, playGamesAvailable = true), TOPICS, onPick = {})
             },
+        )
+    }
+
+    @Test
+    fun `every tap on the How to play cards is reported`() {
+        assertEquals(setOf("how_to_play.skip", "how_to_play.next"), elementsTapped { HowToPlayScreen({}, {}) })
+        assertEquals(
+            setOf("how_to_play.skip", "how_to_play.play"),
+            elementsTapped { HowToPlayScreen({}, {}, firstCard = 2) },
         )
     }
 

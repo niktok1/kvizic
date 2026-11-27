@@ -12,6 +12,7 @@ import io.ntole.kvizic.core.network.SessionStore
 import io.ntole.kvizic.core.network.analytics.PostHogConfig
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.home.HomeViewModel
+import io.ntole.kvizic.howtoplay.HowToPlayViewModel
 import io.ntole.kvizic.language.LanguageViewModel
 import io.ntole.kvizic.region.CountryViewModel
 import io.ntole.kvizic.region.RegionStore
@@ -38,6 +39,7 @@ internal fun uiModule(): Module =
         viewModelOf(::LanguageViewModel)
         viewModelOf(::CountryViewModel)
         viewModelOf(::SoundViewModel)
+        viewModelOf(::HowToPlayViewModel)
         viewModelOf(::RoomViewModel)
         viewModelOf(::PublicRoomsViewModel)
         viewModelOf(::RoomPreviewViewModel)

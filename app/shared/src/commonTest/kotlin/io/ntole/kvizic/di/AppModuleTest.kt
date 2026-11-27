@@ -16,6 +16,7 @@ import io.ntole.kvizic.core.network.SessionStore
 import io.ntole.kvizic.core.network.TokenStorage
 import io.ntole.kvizic.core.network.environment.KvizicEnvironment
 import io.ntole.kvizic.home.HomeViewModel
+import io.ntole.kvizic.howtoplay.HowToPlayViewModel
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LanguageViewModel
 import io.ntole.kvizic.region.CountryViewModel
@@ -72,6 +73,7 @@ class AppModuleTest {
         koin.get<AboutViewModel>()
         koin.get<LanguageViewModel>()
         koin.get<CountryViewModel>()
+        koin.get<HowToPlayViewModel>()
         // What App asks for before any screen: whether the server refused this build, the analytics and
         // their tracker, and the About screen's version and account id.
         koin.get<AppUpdate>()

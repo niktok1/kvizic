@@ -53,7 +53,8 @@ import io.ntole.kvizic.region.RegionLanguages
  * - under it, only where [country] reads two scripts, Serbia's and Montenegro's Serbian and Bosnia's Bosnian
  *   (Latin) or Serbian (Cyrillic): Ћирилица and Latinica on two chips, each written in itself, [language] the
  *   one picked, among those [offered] (`Language.OFFERED`);
- * - and a way to the About screen, [onAbout], where what the game keeps of the player is.
+ * - a way to the How to play cards, [onHowToPlay], and to the About screen, [onAbout], where what the game keeps of
+ *   the player is.
  *
  * No row has a heading. A row too long for the width goes on to the next line. It scrolls, its content held to a
  * readable column on a wide window.
@@ -67,6 +68,7 @@ fun AppSettingsScreen(
     onLanguageChange: (Language) -> Unit = {},
     country: Country = Country.RS,
     onCountryChange: (Country) -> Unit = {},
+    onHowToPlay: () -> Unit = {},
     onAbout: () -> Unit = {},
     offered: List<Language> = Language.OFFERED,
 ) {
@@ -148,6 +150,13 @@ fun AppSettingsScreen(
             }
 
             Divider()
+            StageButton(
+                strings.howToPlay.title,
+                onClick = tapped("settings.how_to_play", onClick = onHowToPlay),
+                kind = ButtonKind.SECONDARY,
+                size = ButtonSize.SMALL,
+                modifier = Modifier.fillMaxWidth(),
+            )
             StageButton(
                 strings.aboutScreen.title,
                 onClick = tapped("settings.about", onClick = onAbout),

@@ -48,6 +48,8 @@ data class Strings(
     val updateScreen: UpdateStrings,
     /** The words of the reactions sent from a question's reveal. */
     val reactions: ReactionStrings,
+    /** The words of the How to play cards. */
+    val howToPlay: HowToPlayStrings,
     /** The game's own words, from Home to the results. */
     val game: GameStrings,
 ) {
@@ -73,6 +75,7 @@ data class Strings(
             settingsScreen = settingsScreen.map(transform),
             updateScreen = updateScreen.map(transform),
             reactions = reactions.map(transform),
+            howToPlay = howToPlay.map(transform),
             game = game.map(transform),
         )
 }
@@ -95,6 +98,7 @@ val SerbianCyrillicStrings: Strings =
         settingsScreen = SerbianCyrillicSettingsScreenStrings,
         updateScreen = SerbianCyrillicUpdateStrings,
         reactions = SerbianCyrillicReactionStrings,
+        howToPlay = SerbianCyrillicHowToPlayStrings,
         game = SerbianCyrillicGameStrings,
     )
 
@@ -118,6 +122,7 @@ val EnglishStrings: Strings =
         settingsScreen = EnglishSettingsScreenStrings,
         updateScreen = EnglishUpdateStrings,
         reactions = EnglishReactionStrings,
+        howToPlay = EnglishHowToPlayStrings,
         game = EnglishGameStrings,
     )
 

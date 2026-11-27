@@ -65,6 +65,23 @@ internal val SlovenianUpdateStrings: UpdateStrings =
 
 internal val SlovenianReactionStrings: ReactionStrings = ReactionStrings(react = "Odzovi se")
 
+internal val SlovenianHowToPlayStrings: HowToPlayStrings =
+    HowToPlayStrings(
+        title = "Kako igrati",
+        skip = "Preskoči",
+        next = "Naprej",
+        play = "Igraj",
+        questionTitle = "Isto vprašanje za vse",
+        questionBody =
+            "Najprej preberi, nato izbiraj, dokler teče čas. Ko izbereš odgovor, vidiš, kaj so izbrali drugi.",
+        pointsTitle = "Hitro in pravilno",
+        pointsBody = "Hitrejši odgovor prinese več točk, napačen jih odvzame. Če ne veš, preskoči.",
+        roomsTitle = "Kje igrati",
+        roomsBody =
+            "Hitra igra te takoj pripelje v\u00A0sobo z\u00A0drugimi. Ustvari svojo sobo za prijatelje in jim " +
+                "pošlji kodo. Solo je za vajo. V\u00A0sobi ni nikogar drugega? Začneš lahko tudi brez njih.",
+    )
+
 internal val SlovenianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Hitra igra",
@@ -260,5 +277,6 @@ val SlovenianStrings: Strings =
         settingsScreen = SlovenianSettingsScreenStrings,
         updateScreen = SlovenianUpdateStrings,
         reactions = SlovenianReactionStrings,
+        howToPlay = SlovenianHowToPlayStrings,
         game = SlovenianGameStrings,
     )

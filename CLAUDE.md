@@ -247,7 +247,7 @@ domain a pinned copy of `Country`.
 - Screens (`Screen`): Home (multiplayer first), Join (keypad), PublicRooms (polled every 5 s; Home's
   counts every 10 s), NewRoom and RoomSettings (one `SettingsScreen`), Room (the lobby and the whole game,
   by `GamePhase`), Settings (the app's: the Sound switch, the region, a globe and six flags with Ћирилица or Latinica under those that read
-  both (§8a), and a way to About; `AppSettingsScreen`, apart from a room's), About
+  both (§8a), and ways to How to play and About; `AppSettingsScreen`, apart from a room's), HowToPlay, About
   (version, legal pages, licences and the fonts' OFL, each text a tap away, and last what is kept of the player, under „Подаци“: Statistics, the account's
   id and its deletion), Update. Home's
   sliders button opens Settings. The navigator follows the room: in one, the room over Home; out, Home,
@@ -276,6 +276,14 @@ domain a pinned copy of `Country`.
   background with Compose's frame callback queued and no vsync to run it, so taps were heard and drew nothing
   for up to half a minute; one more frame callback ran it. For 5 s after every start the activity asks for an
   empty frame each 100 ms (`FrameNudge`), on every device: it is unknown which others do this, and it costs a tick.
+- **How to play** (the owner, 2026-11-27): three cards, swiped or stepped through (`HowToPlayScreen`): a question
+  read, then answered, the others' picks seen once locked in; the points and the minus; Quick play, a room of one's
+  own and solo, and that a player alone may start. A new install opens on them over Home (`HowToPlayViewModel.due`:
+  no `kvizic.how_to_play` kept and no session stored, so a player from before never sees them unasked), so the
+  guest is made, and Play Games asked, only once Home shows; a held seat or a room's link opens the room over them,
+  as from any screen. Kept as seen once shown; Settings' „Како се игра“ opens them again. Skip goes back, Play goes
+  Home. The Serbian words are the owner's; hr, bs, sl and mk await their native reviewers. No name step, no
+  analytics question, no country check, no tips in the room.
 
 ## 10. Design system decisions
 

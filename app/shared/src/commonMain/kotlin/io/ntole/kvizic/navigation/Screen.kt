@@ -18,6 +18,9 @@ sealed class Screen(
     /** What the player sets: the game's sound, and a way to About. */
     data object Settings : Screen("settings")
 
+    /** How the game is played, on cards: over Home at a new install's first launch, and from Settings. */
+    data object HowToPlay : Screen("how_to_play")
+
     /** The player's profile: their stats, and their avatar picked. */
     data object Profile : Screen("profile")
 
@@ -46,9 +49,7 @@ sealed class Screen(
         // Listed on each call, not kept in a property: the companion's properties are set up with the class,
         // before the objects are when one of them is used first, so a kept list could hold nulls.
         fun ofKey(key: String): Screen? =
-            listOf(Home, About, Settings, Profile, Join, PublicRooms, NewRoom, Room, RoomSettings, Update).firstOrNull {
-                it.key ==
-                    key
-            }
+            listOf(Home, About, Settings, HowToPlay, Profile, Join, PublicRooms, NewRoom, Room, RoomSettings, Update)
+                .firstOrNull { it.key == key }
     }
 }

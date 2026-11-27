@@ -54,6 +54,8 @@ import io.ntole.kvizic.home.HomeScreen
 import io.ntole.kvizic.home.HomeViewModel
 import io.ntole.kvizic.home.Notice
 import io.ntole.kvizic.home.ProfileScreen
+import io.ntole.kvizic.howtoplay.HowToPlayScreen
+import io.ntole.kvizic.howtoplay.HowToPlayViewModel
 import io.ntole.kvizic.language.Language
 import io.ntole.kvizic.language.LanguageViewModel
 import io.ntole.kvizic.language.LocalStrings
@@ -148,7 +150,11 @@ private fun Page(content: @Composable () -> Unit) {
  */
 @Composable
 private fun Screens(usage: UsageTracker) {
-    val navigator = rememberSaveable(saver = Navigator.Saver) { Navigator() }
+    val howToPlay = koinViewModel<HowToPlayViewModel>()
+    val navigator =
+        rememberSaveable(saver = Navigator.Saver) {
+            Navigator().apply { if (howToPlay.due) open(Screen.HowToPlay) }
+        }
     val room = koinViewModel<RoomViewModel>()
     val roomState by room.state.collectAsStateWithLifecycle()
     val entry by room.entry.collectAsStateWithLifecycle()
@@ -177,7 +183,17 @@ private fun Screens(usage: UsageTracker) {
 
             Screen.Settings -> {
                 BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.settingsScreen.title)
-                Below { Settings(onAbout = { navigator.open(Screen.About) }) }
+                Below {
+                    Settings(
+                        onHowToPlay = { navigator.open(Screen.HowToPlay) },
+                        onAbout = { navigator.open(Screen.About) },
+                    )
+                }
+            }
+
+            Screen.HowToPlay -> {
+                LaunchedEffect(howToPlay) { howToPlay.shown() }
+                HowToPlayScreen(onSkip = { navigator.back() }, onPlay = { navigator.open(Screen.Home) })
             }
 
             Screen.Profile -> {
@@ -540,10 +556,14 @@ private fun About(onDeleted: () -> Unit) {
 /**
  * The Settings screen: the Sound switch, the one [SoundViewModel] keeps, the game's language, the one the app's
  * [LanguageViewModel] keeps and shows the game in, the country the player plays from, the one [CountryViewModel]
- * keeps and the server is told of, and a way to the About screen, [onAbout].
+ * keeps and the server is told of, and the ways to the How to play cards, [onHowToPlay], and the About screen,
+ * [onAbout].
  */
 @Composable
-private fun Settings(onAbout: () -> Unit) {
+private fun Settings(
+    onHowToPlay: () -> Unit,
+    onAbout: () -> Unit,
+) {
     val sounds = koinViewModel<SoundViewModel>()
     val soundOn by sounds.enabled.collectAsStateWithLifecycle()
     val languages = koinViewModel<LanguageViewModel>()
@@ -557,6 +577,7 @@ private fun Settings(onAbout: () -> Unit) {
         onLanguageChange = languages::select,
         country = country,
         onCountryChange = countries::select,
+        onHowToPlay = onHowToPlay,
         onAbout = onAbout,
     )
 }

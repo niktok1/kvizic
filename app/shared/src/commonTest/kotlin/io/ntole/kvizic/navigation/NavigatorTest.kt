@@ -3,6 +3,7 @@ package io.ntole.kvizic.navigation
 import androidx.compose.runtime.saveable.SaverScope
 import io.ntole.kvizic.navigation.Screen.About
 import io.ntole.kvizic.navigation.Screen.Home
+import io.ntole.kvizic.navigation.Screen.HowToPlay
 import io.ntole.kvizic.navigation.Screen.Settings
 import io.ntole.kvizic.navigation.Screen.Update
 import kotlin.test.Test
@@ -112,12 +113,12 @@ class NavigatorTest {
     @Test
     fun `each screen's key is its own`() {
         assertEquals(
-            listOf("home", "about", "settings", "update"),
-            listOf(Home, About, Settings, Update).map { it.key },
+            listOf("home", "about", "settings", "how_to_play", "update"),
+            listOf(Home, About, Settings, HowToPlay, Update).map { it.key },
         )
         assertEquals(
-            listOf(Home, About, Settings, Update),
-            listOf("home", "about", "settings", "update").map(Screen::ofKey),
+            listOf(Home, About, Settings, HowToPlay, Update),
+            listOf("home", "about", "settings", "how_to_play", "update").map(Screen::ofKey),
         )
     }
 
@@ -130,7 +131,7 @@ class NavigatorTest {
 
     @Test
     fun `a seat taken from any screen opens the room over Home`() {
-        listOf(Screen.Home, Screen.Join, Screen.PublicRooms, Screen.NewRoom).forEach { from ->
+        listOf(Screen.Home, HowToPlay, Screen.Join, Screen.PublicRooms, Screen.NewRoom).forEach { from ->
             val navigator = Navigator()
             navigator.open(from)
 

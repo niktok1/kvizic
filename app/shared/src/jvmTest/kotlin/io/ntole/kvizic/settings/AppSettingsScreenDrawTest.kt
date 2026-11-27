@@ -38,13 +38,19 @@ import kotlin.test.assertTrue
  */
 class AppSettingsScreenDrawTest {
     @Test
-    fun `the screen shows the sound switch, the flags, Serbia's two scripts and the way to About`() {
+    fun `the screen shows the sound switch, the flags, Serbia's two scripts and the ways to How to play and About`() {
         Language.entries.forEach { language ->
             val strings = stringsOf(language)
             val scene = scene(language)
             try {
                 assertEquals(
-                    listOf(strings.settingsScreen.sound, CYRILLIC, LATIN, strings.aboutScreen.title),
+                    listOf(
+                        strings.settingsScreen.sound,
+                        CYRILLIC,
+                        LATIN,
+                        strings.howToPlay.title,
+                        strings.aboutScreen.title,
+                    ),
                     scene.everyText(),
                     "$language",
                 )

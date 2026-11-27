@@ -62,6 +62,22 @@ internal val CroatianUpdateStrings: UpdateStrings =
 
 internal val CroatianReactionStrings: ReactionStrings = ReactionStrings(react = "Reagiraj")
 
+internal val CroatianHowToPlayStrings: HowToPlayStrings =
+    HowToPlayStrings(
+        title = "Kako se igra",
+        skip = "Preskoči",
+        next = "Dalje",
+        play = "Igraj",
+        questionTitle = "Isto pitanje za sve",
+        questionBody = "Prvo pročitaj, pa biraj dok traje vrijeme. Kad odabereš odgovor, vidiš što su drugi odabrali.",
+        pointsTitle = "Brzo i točno",
+        pointsBody = "Brži odgovor donosi više bodova, netočan oduzima bodove. Ako ne znaš, preskoči.",
+        roomsTitle = "Gdje igrati",
+        roomsBody =
+            "Brza igra te odmah vodi u sobu s drugima. Napravi svoju sobu za društvo i pošalji im ko\u0302d. " +
+                "Solo je za vježbu. Nema drugih u sobi? Možeš početi i bez njih.",
+    )
+
 internal val CroatianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Brza igra",
@@ -254,5 +270,6 @@ val CroatianStrings: Strings =
         settingsScreen = CroatianSettingsScreenStrings,
         updateScreen = CroatianUpdateStrings,
         reactions = CroatianReactionStrings,
+        howToPlay = CroatianHowToPlayStrings,
         game = CroatianGameStrings,
     )

@@ -63,6 +63,23 @@ internal val MacedonianUpdateStrings: UpdateStrings =
 
 internal val MacedonianReactionStrings: ReactionStrings = ReactionStrings(react = "Реагирај")
 
+internal val MacedonianHowToPlayStrings: HowToPlayStrings =
+    HowToPlayStrings(
+        title = "Како се игра",
+        skip = "Прескокни",
+        next = "Следно",
+        play = "Играј",
+        questionTitle = "Исто прашање за сите",
+        questionBody =
+            "Прво прочитај, потоа избирај додека трае времето. Кога ќе избереш одговор, ќе видиш што избраа другите.",
+        pointsTitle = "Брзо и точно",
+        pointsBody = "Побрзиот одговор носи повеќе поени, погрешниот одзема поени. Ако не знаеш, прескокни.",
+        roomsTitle = "Каде да играш",
+        roomsBody =
+            "Брза игра веднаш те носи во соба со други. Направи своја соба за пријателите и испрати им го кодот. " +
+                "Соло е за вежбање. Нема други во собата? Можеш да започнеш и без нив.",
+    )
+
 internal val MacedonianGameStrings: GameStrings =
     GameStrings(
         quickPlay = "Брза игра",
@@ -256,5 +273,6 @@ val MacedonianStrings: Strings =
         settingsScreen = MacedonianSettingsScreenStrings,
         updateScreen = MacedonianUpdateStrings,
         reactions = MacedonianReactionStrings,
+        howToPlay = MacedonianHowToPlayStrings,
         game = MacedonianGameStrings,
     )
