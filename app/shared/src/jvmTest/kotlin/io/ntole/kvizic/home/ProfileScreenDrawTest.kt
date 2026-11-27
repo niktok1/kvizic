@@ -12,6 +12,7 @@ import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.avatar.AvatarArt
+import io.ntole.kvizic.design.avatar.CrownArt
 import io.ntole.kvizic.design.avatar.FrameArt
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.everyText
@@ -46,7 +47,8 @@ class ProfileScreenDrawTest {
                 economy.animalNames.size,
                 "$language: a name for each animal the shop sells",
             )
-            assertEquals(FrameArt.DRAWN.size, economy.frameNames.size, "$language: a name for each frame")
+            assertEquals(FrameArt.DRAWN.size, economy.tiers.size, "$language: a name for each frame")
+            assertEquals(CrownArt.DRAWN.size, economy.tiers.size, "$language: a name for each crown")
             val scene = scene(language)
             try {
                 write("profile-${language.name.lowercase()}") { scene.renderSettled() }

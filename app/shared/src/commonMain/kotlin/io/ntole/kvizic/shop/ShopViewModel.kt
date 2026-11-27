@@ -21,11 +21,13 @@ import kotlinx.coroutines.launch
 
 /**
  * What the shop shows: the [items] it sells, the player's [profile] with their coins and what they own and wear,
- * the item [selected] and tried on, whether a read or a buy is in flight ([busy]), and why the last failed.
+ * the [tab] open, the item [selected] in it and tried on ([PLAIN] for the plain frame or crown everyone has),
+ * whether a read or a buy is in flight ([busy]), and why the last failed.
  */
 data class ShopState(
     val items: List<ShopItem> = emptyList(),
     val profile: Profile? = null,
+    val tab: ShopItemKind = ShopItemKind.FRAME,
     val selected: String? = null,
     val busy: Boolean = false,
     val failure: HomeFailure? = null,
@@ -37,6 +39,7 @@ data class ShopState(
     val action: ShopAction?
         get() {
             val profile = profile ?: return null
+            if (selected == PLAIN) return ShopAction.Wear.takeIf { profile.worn(tab) != null }
             val item = selectedItem ?: return null
             return when {
                 item.id !in profile.items -> {
@@ -55,6 +58,11 @@ data class ShopState(
                 }
             }
         }
+
+    companion object {
+        /** The plain frame or crown, which everybody has: none worn. */
+        const val PLAIN: String = ""
+    }
 }
 
 /** What the shop's button does: buys for a price, of which the player lacks [Buy.missing], or puts on or takes off. */
@@ -69,18 +77,22 @@ sealed interface ShopAction {
     data object TakeOff : ShopAction
 }
 
-/** Whether the player wears [item]: as their avatar, frame or title. */
-fun Profile.wears(item: ShopItem): Boolean =
-    when (item.kind) {
-        ShopItemKind.AVATAR -> avatarId == item.id
-        ShopItemKind.FRAME -> frameId == item.id
-        ShopItemKind.TITLE -> titleId == item.id
-        ShopItemKind.OTHER -> false
+/** The id of what the player wears of [kind]: their avatar, frame, crown or title, none for the plain one. */
+fun Profile.worn(kind: ShopItemKind): String? =
+    when (kind) {
+        ShopItemKind.AVATAR -> avatarId
+        ShopItemKind.FRAME -> frameId
+        ShopItemKind.CROWN -> crownId
+        ShopItemKind.TITLE -> titleId
+        ShopItemKind.OTHER -> null
     }
 
+/** Whether the player wears [item]. */
+fun Profile.wears(item: ShopItem): Boolean = worn(item.kind) == item.id
+
 /**
- * The shop: what it sells and the player's profile, read each time it is shown ([shown]), an item selected and
- * tried on, then bought, put on or taken off with one button ([act]), one request at a time. A failure is
+ * The shop: what it sells and the player's profile, read each time it is shown ([shown]), a tab opened
+ * ([selectTab]), an item in it tried on ([select]), then bought, put on or taken off with one button ([act]), one request at a time. A failure is
  * reported to [analytics] and shown until the next try.
  */
 class ShopViewModel(
@@ -101,19 +113,26 @@ class ShopViewModel(
             mutableState.update { it.copy(items = items, profile = profile) }
         }
 
-    /** The item [id] is tried on. */
+    /** The tab of [kind] is opened, nothing in it tried on yet. */
+    fun selectTab(kind: ShopItemKind) = mutableState.update { it.copy(tab = kind, selected = null, failure = null) }
+
+    /** The item [id], or [ShopState.PLAIN], is tried on. */
     fun select(id: String) = mutableState.update { it.copy(selected = id, failure = null) }
 
     /** The button: buys the item selected, or puts it on, or takes it off. */
     fun act() {
         val state = mutableState.value
         val profile = state.profile ?: return
-        val item = state.selectedItem ?: return
         val action = state.action ?: return
+        val item = state.selectedItem
         run(BUY) {
             val after =
-                when (action) {
-                    is ShopAction.Buy -> {
+                when {
+                    item == null -> {
+                        profile.wearing(state.tab, null)
+                    }
+
+                    action is ShopAction.Buy -> {
                         shopping.buy(item.id).also {
                             analytics.track(
                                 AnalyticsEvent.ITEM_BOUGHT,
@@ -122,17 +141,14 @@ class ShopViewModel(
                         }
                     }
 
-                    ShopAction.Wear -> {
-                        profile.putOn(item).also {
+                    action == ShopAction.Wear -> {
+                        profile.wearing(item.kind, item.id).also {
                             analytics.track(AnalyticsEvent.ITEM_EQUIPPED, mapOf(AnalyticsProperty.ITEM to item.id))
                         }
                     }
 
-                    ShopAction.TakeOff -> {
-                        when (item.kind) {
-                            ShopItemKind.FRAME -> shopping.wear(null, profile.titleId)
-                            else -> shopping.wear(profile.frameId, null)
-                        }
+                    else -> {
+                        profile.wearing(item.kind, null)
                     }
                 }
             mutableState.update { it.copy(profile = after) }
@@ -142,11 +158,16 @@ class ShopViewModel(
     /** The failure is taken down. */
     fun dismissFailure() = mutableState.update { it.copy(failure = null) }
 
-    private suspend fun Profile.putOn(item: ShopItem): Profile =
-        when (item.kind) {
-            ShopItemKind.AVATAR -> setAvatar(item.id)
-            ShopItemKind.FRAME -> shopping.wear(item.id, titleId)
-            ShopItemKind.TITLE -> shopping.wear(frameId, item.id)
+    /** The profile with [id] worn as its [kind], none for the plain one; an avatar is never none. */
+    private suspend fun Profile.wearing(
+        kind: ShopItemKind,
+        id: String?,
+    ): Profile =
+        when (kind) {
+            ShopItemKind.AVATAR -> id?.let { setAvatar(it) } ?: this
+            ShopItemKind.FRAME -> shopping.wear(id, titleId, crownId)
+            ShopItemKind.CROWN -> shopping.wear(frameId, titleId, id)
+            ShopItemKind.TITLE -> shopping.wear(frameId, id, crownId)
             ShopItemKind.OTHER -> this
         }
 

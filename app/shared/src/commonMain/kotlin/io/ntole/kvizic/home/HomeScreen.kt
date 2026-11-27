@@ -168,7 +168,18 @@ fun HomeScreen(
                     }
                 }
                 state.profile?.let { profile ->
-                    Balance(profile.coins, onClick = tapped("home.shop", onClick = actions.shop))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(space.xxs),
+                    ) {
+                        StageIconButton(
+                            KvizicIcons.Store,
+                            contentDescription = strings.economy.shop,
+                            onClick = tapped("home.shop", onClick = actions.shop),
+                            small = true,
+                        )
+                        Balance(profile.coins)
+                    }
                 }
                 StageIconButton(
                     KvizicIcons.Sliders,

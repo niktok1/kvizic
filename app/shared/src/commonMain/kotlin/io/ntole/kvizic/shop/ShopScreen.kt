@@ -1,6 +1,8 @@
 package io.ntole.kvizic.shop
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,14 +34,15 @@ import io.ntole.kvizic.analytics.tappedAt
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.player.ShopItem
 import io.ntole.kvizic.core.domain.player.ShopItemKind
-import io.ntole.kvizic.core.domain.region.ContentLanguages
 import io.ntole.kvizic.design.avatar.AvatarArt
+import io.ntole.kvizic.design.avatar.CrownArt
 import io.ntole.kvizic.design.avatar.FrameArt
 import io.ntole.kvizic.design.component.Avatar
 import io.ntole.kvizic.design.component.AvatarSize
 import io.ntole.kvizic.design.component.ButtonKind
+import io.ntole.kvizic.design.component.ButtonSize
 import io.ntole.kvizic.design.component.Chip
-import io.ntole.kvizic.design.component.ChipTone
+import io.ntole.kvizic.design.component.Ducat
 import io.ntole.kvizic.design.component.KvizicIcon
 import io.ntole.kvizic.design.component.KvizicText
 import io.ntole.kvizic.design.component.Panel
@@ -49,28 +53,31 @@ import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.cued
 import io.ntole.kvizic.home.Notice
-import io.ntole.kvizic.language.Language
+import io.ntole.kvizic.language.EconomyStrings
 import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.loading.LoadingSpinner
-import io.ntole.kvizic.room.nameIn
-import io.ntole.kvizic.room.shown
 
 /** What the shop's buttons do. */
 @Immutable
 class ShopActions(
+    val selectTab: (ShopItemKind) -> Unit = {},
     val select: (String) -> Unit = {},
     val act: () -> Unit = {},
     val retry: () -> Unit = {},
     val dismissFailure: () -> Unit = {},
 )
 
+/** The shop's tabs, in their order. */
+private val TABS = listOf(ShopItemKind.FRAME, ShopItemKind.CROWN, ShopItemKind.AVATAR)
+
 /**
- * The shop: the player as they would look with the item selected on, their coins and how coins are earned, then
- * the frames, titles and animals it sells that this build can show, each with its price, or marked as the player's
- * or worn, and at the foot the one button that buys, puts on or takes off the item selected.
+ * The shop: a stage where the player stands on a pedestal wearing what they try on, a crown over their head while
+ * the crowns are open; the tabs as raised keys; the open tab's items in a row, from the plain one everybody has
+ * to the richest, each with its price or marked as the player's; and the one button that buys, puts on or takes
+ * off the item tried on.
  */
 @Composable
 fun ShopScreen(
@@ -99,9 +106,9 @@ fun ShopScreen(
             }
             return@Box
         }
-        val sold = state.items.filter { it.isShown() }
-        val selected = state.selectedItem
-        val pick = tappedAt("shop.item") { index -> actions.select(sold[index].id) }
+        val plain = listOf(ShopState.PLAIN).filter { state.tab != ShopItemKind.AVATAR }
+        val shown = plain + state.items.filter { it.kind == state.tab && it.isDrawn() }.map { it.id }
+        val pick = tappedAt("shop.item") { index -> actions.select(shown[index]) }
         Column(
             Modifier
                 .widthIn(max = space.contentWidth)
@@ -114,45 +121,40 @@ fun ShopScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(space.md),
             ) {
-                val tried = { kind: ShopItemKind -> selected?.takeIf { it.kind == kind }?.id }
-                Avatar(
-                    tried(ShopItemKind.AVATAR) ?: profile.avatarId,
-                    seat = 0,
-                    size = AvatarSize.XL,
-                    frame = tried(ShopItemKind.FRAME) ?: profile.frameId,
-                )
-                KvizicText(shown(profile.displayName), style = type.headline, textAlign = TextAlign.Center)
-                (selected?.takeIf { it.kind == ShopItemKind.TITLE } ?: sold.firstOrNull { it.id == profile.titleId })
-                    ?.let { KvizicText(titleOf(it), style = type.bodyStrong, color = colors.onPageAccent) }
-                Balance(profile.coins)
+                ShopStage(state, profile)
                 KvizicText(
                     words.howToEarn,
                     style = type.caption,
                     color = colors.onPageMuted,
                     textAlign = TextAlign.Center,
                 )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(space.xs, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(space.xs),
+                ) {
+                    TABS.forEach { kind ->
+                        StageButton(
+                            words.tabOf(kind),
+                            onClick = tapped("shop.tab") { actions.selectTab(kind) },
+                            modifier = Modifier.semantics { selected = kind == state.tab },
+                            kind = if (kind == state.tab) ButtonKind.PRIMARY else ButtonKind.DARK,
+                            size = ButtonSize.SMALL,
+                        )
+                    }
+                }
                 if (failure != null) {
                     Notice(
                         strings.failureText(failure.error, failure.retryAfter),
                         onDismiss = tapped("shop.failure_ok", onClick = actions.dismissFailure),
                     )
                 }
-                listOf(
-                    ShopItemKind.FRAME to words.frames,
-                    ShopItemKind.TITLE to words.titles,
-                    ShopItemKind.AVATAR to words.animals,
-                ).forEach { (kind, heading) ->
-                    val ofKind = sold.withIndex().filter { it.value.kind == kind }
-                    if (ofKind.isEmpty()) return@forEach
-                    KvizicText(heading, Modifier.fillMaxWidth(), style = type.label, color = colors.onPageMuted)
-                    FlowRow(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(space.sm, Alignment.CenterHorizontally),
-                        verticalArrangement = Arrangement.spacedBy(space.sm),
-                    ) {
-                        ofKind.forEach { (index, item) ->
-                            ItemTile(item, profile, chosen = item.id == state.selected, onClick = { pick(index) })
-                        }
+                val next = state.items.firstOrNull { it.kind == state.tab && it.id !in profile.items }?.id
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(space.sm),
+                ) {
+                    shown.forEachIndexed { index, id ->
+                        ItemCard(id, state, profile, next = id == next, onClick = { pick(index) })
                     }
                 }
             }
@@ -161,38 +163,50 @@ fun ShopScreen(
     }
 }
 
-/** A balance: a coin and how many, in the accent, said in words to a screen reader; [onClick] makes it a button. */
+/** The player on a pedestal, wearing what they try on, with its name under them. */
 @Composable
-fun Balance(
-    coins: Int,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+private fun ShopStage(
+    state: ShopState,
+    profile: Profile,
 ) {
     val words = LocalStrings.current.economy
-    val said = words.coins.of(coins, LocalLanguage.current)
-    val tap = onClick?.let { cued(Cue.TAP_SOFT, it) }
-    Box(
-        modifier.clearAndSetSemantics {
-            contentDescription = if (tap != null) "${words.shop}, $said" else said
-            if (tap != null) {
-                role = Role.Button
-                onClick {
-                    tap()
-                    true
-                }
-            }
-        },
-    ) {
-        Chip(coins.toString(), icon = KvizicIcons.Coin, tone = ChipTone.ACCENT, onClick = onClick)
+    val space = KvizicTheme.space
+    val type = KvizicTheme.type
+    val colors = KvizicTheme.colors
+    val tried = { kind: ShopItemKind, worn: String? ->
+        if (state.tab == kind && state.selected != null) state.selected.ifEmpty { null } else worn
+    }
+    val animal = state.selectedItem?.takeIf { it.kind == ShopItemKind.AVATAR }?.id ?: profile.avatarId
+    val whole = space.avatar.xl
+    Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.md) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(space.xl))
+            Avatar(
+                animal,
+                seat = 0,
+                size = AvatarSize.XL,
+                host = state.tab == ShopItemKind.CROWN,
+                frame = tried(ShopItemKind.FRAME, profile.frameId),
+                crown = tried(ShopItemKind.CROWN, profile.crownId),
+            )
+            Canvas(Modifier.size(whole * PEDESTAL_WIDTH, whole * PEDESTAL_HEIGHT)) { drawOval(colors.raisedSide) }
+            Spacer(Modifier.height(space.xs))
+            KvizicText(
+                state.selected?.let { nameOf(it, state.tab) } ?: words.tabOf(state.tab),
+                style = type.caption,
+                color = colors.onRaisedMuted,
+            )
+        }
     }
 }
 
-/** One item for sale: drawn on the player, or its words, over its price or what the player has of it. */
+/** One item of the open tab: drawn on the player, its name, and its price or what the player has of it. */
 @Composable
-private fun ItemTile(
-    item: ShopItem,
+private fun ItemCard(
+    id: String,
+    state: ShopState,
     profile: Profile,
-    chosen: Boolean,
+    next: Boolean,
     onClick: () -> Unit,
 ) {
     val words = LocalStrings.current.economy
@@ -200,43 +214,44 @@ private fun ItemTile(
     val space = KvizicTheme.space
     val type = KvizicTheme.type
     val colors = KvizicTheme.colors
-    val owned = item.id in profile.items
-    val worn = profile.wears(item)
+    val item = state.items.firstOrNull { it.id == id }
+    val worn = if (item == null) profile.worn(state.tab) == null else profile.wears(item)
+    val price = item?.takeUnless { it.id in profile.items }?.price
+    val name = nameOf(id, state.tab)
     val standing =
         when {
             worn -> words.worn
-            owned -> words.owned
-            else -> words.coins.of(item.price, language)
+            price == null -> words.owned
+            else -> words.coins.of(price, language)
         }
-    val said = "${nameOf(item, language)}, $standing"
     Panel(
         Modifier
             .semantics(mergeDescendants = true) {
-                contentDescription = said
-                selected = chosen
+                contentDescription = "$name, $standing"
+                selected = id == state.selected
             }.clickable(role = Role.Button, onClick = cued(Cue.TAP_SOFT, onClick)),
-        kind = if (chosen) PanelKind.OWN else PanelKind.PLAIN,
-        padding = space.xs,
+        kind = if (id == state.selected) PanelKind.OWN else PanelKind.PLAIN,
+        padding = space.sm,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            when (item.kind) {
-                ShopItemKind.FRAME -> {
-                    Avatar(profile.avatarId, seat = 0, size = AvatarSize.LG, frame = item.id)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(space.xxs),
+        ) {
+            when (state.tab) {
+                ShopItemKind.AVATAR -> {
+                    Avatar(id, seat = AvatarArt.SHOP.indexOf(id) + 1, size = AvatarSize.MD)
                 }
 
-                ShopItemKind.AVATAR -> {
-                    Avatar(
-                        item.id,
-                        seat = AvatarArt.SHOP.indexOf(item.id) + 1,
-                        size = AvatarSize.LG,
-                    )
+                ShopItemKind.CROWN -> {
+                    Spacer(Modifier.height(space.sm))
+                    Avatar(profile.avatarId, seat = 0, size = AvatarSize.MD, host = true, crown = id.ifEmpty { null })
                 }
 
                 else -> {
-                    KvizicText(titleOf(item), style = type.bodyStrong, maxLines = 1)
+                    Avatar(profile.avatarId, seat = 0, size = AvatarSize.MD, frame = id.ifEmpty { null })
                 }
             }
-            Spacer(Modifier.height(space.xxs))
+            KvizicText(name, style = type.caption, maxLines = 1)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(space.xxs),
@@ -251,18 +266,17 @@ private fun ItemTile(
                         )
                     }
 
-                    owned -> {
+                    price == null -> {
                         KvizicText(words.owned, style = type.caption, color = colors.onRaisedMuted)
                     }
 
                     else -> {
-                        KvizicIcon(
-                            KvizicIcons.Coin,
-                            contentDescription = null,
-                            tint = colors.primary,
-                            size = space.icon.small,
+                        Ducat(space.icon.small)
+                        KvizicText(
+                            price.toString(),
+                            style = type.caption,
+                            color = if (next) colors.primary else colors.onRaised,
                         )
-                        KvizicText(item.price.toString(), style = type.caption)
                     }
                 }
             }
@@ -270,7 +284,7 @@ private fun ItemTile(
     }
 }
 
-/** The shop's one button for the item selected: its price, how many coins are lacking above it, or on or off. */
+/** The shop's one button for the item tried on: its price, how many coins are lacking above it, or on or off. */
 @Composable
 private fun ActionButton(
     state: ShopState,
@@ -303,46 +317,85 @@ private fun ActionButton(
             onClick = tapped(element, onClick = onClick),
             modifier = Modifier.fillMaxWidth(),
             kind = if (action == ShopAction.TakeOff) ButtonKind.SECONDARY else ButtonKind.PRIMARY,
-            icon = KvizicIcons.Coin.takeIf { buy != null },
             enabled = !state.busy && (buy == null || buy.missing == 0),
+            trailing = buy?.let { { Ducat(space.icon.medium) } },
         )
     }
 }
 
-/** Whether this build can show [this]: a frame or an avatar it draws, or a title. */
-private fun ShopItem.isShown(): Boolean =
-    when (kind) {
-        ShopItemKind.FRAME -> FrameArt.isDrawn(id)
-        ShopItemKind.AVATAR -> AvatarArt.isDrawn(id)
-        ShopItemKind.TITLE -> names.isNotEmpty()
-        ShopItemKind.OTHER -> false
-    }
-
-/** A title's words in the language shown. */
+/** A balance: a ducat and how many, said in words to a screen reader; [onClick] makes it a button. */
 @Composable
-private fun titleOf(item: ShopItem): String = titleIn(item, LocalLanguage.current)
-
-private fun titleIn(
-    item: ShopItem,
-    language: Language,
-): String =
-    nameIn(
-        language,
-        item.names[ContentLanguages.SERBIAN].orEmpty(),
-        item.names[Language.ENGLISH.tag].orEmpty(),
-        item.names,
-    )
-
-/** An item's name to a screen reader. */
-@Composable
-private fun nameOf(
-    item: ShopItem,
-    language: Language,
-): String {
+fun Balance(
+    coins: Int,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+) {
     val words = LocalStrings.current.economy
-    return when (item.kind) {
-        ShopItemKind.FRAME -> words.frameNames.getOrElse(FrameArt.DRAWN.indexOf(item.id)) { item.id }
-        ShopItemKind.AVATAR -> words.animalNames.getOrElse(AvatarArt.SHOP.indexOf(item.id)) { item.id }
-        else -> titleIn(item, language)
+    val said = words.coins.of(coins, LocalLanguage.current)
+    val tap = onClick?.let { cued(Cue.TAP_SOFT, it) }
+    Box(
+        modifier.clearAndSetSemantics {
+            contentDescription = if (tap != null) "${words.shop}, $said" else said
+            if (tap != null) {
+                role = Role.Button
+                onClick {
+                    tap()
+                    true
+                }
+            }
+        },
+    ) {
+        CoinChip(coins.toString(), onClick = onClick)
     }
 }
+
+/** A chip with a ducat before [text]: a balance, or the coins a game paid. */
+@Composable
+fun CoinChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+) {
+    Chip(text, modifier, leading = { Ducat(KvizicTheme.space.icon.small) }, onClick = onClick)
+}
+
+/** Whether this build draws [this]: a frame, a crown or an animal it has a drawing for. */
+private fun ShopItem.isDrawn(): Boolean =
+    when (kind) {
+        ShopItemKind.FRAME -> FrameArt.isDrawn(id)
+        ShopItemKind.CROWN -> CrownArt.isDrawn(id)
+        ShopItemKind.AVATAR -> AvatarArt.isDrawn(id)
+        ShopItemKind.TITLE, ShopItemKind.OTHER -> false
+    }
+
+/** The name of the item [id] of [kind], the plain one's for [ShopState.PLAIN]. */
+@Composable
+private fun nameOf(
+    id: String,
+    kind: ShopItemKind,
+): String {
+    val words = LocalStrings.current.economy
+    val tier = {
+        drawn: List<String>,
+        plain: String,
+        ->
+        if (id.isEmpty()) plain else words.tiers.getOrNull(drawn.indexOf(id))
+    }
+    return when (kind) {
+        ShopItemKind.AVATAR -> words.animalNames.getOrNull(AvatarArt.SHOP.indexOf(id))
+        ShopItemKind.CROWN -> tier(CrownArt.DRAWN, words.plainCrown)
+        else -> tier(FrameArt.DRAWN, words.plainFrame)
+    } ?: id
+}
+
+/** A tab's name. */
+private fun EconomyStrings.tabOf(kind: ShopItemKind): String =
+    when (kind) {
+        ShopItemKind.CROWN -> crowns
+        ShopItemKind.AVATAR -> animals
+        else -> frames
+    }
+
+/** The pedestal's size, in shares of the avatar's. */
+private const val PEDESTAL_WIDTH = 1.4f
+private const val PEDESTAL_HEIGHT = 0.18f

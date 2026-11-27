@@ -105,6 +105,7 @@ import io.ntole.kvizic.language.fill
 import io.ntole.kvizic.navigation.BackTopBar
 import io.ntole.kvizic.navigation.SystemBack
 import io.ntole.kvizic.share.InviteLink
+import io.ntole.kvizic.shop.CoinChip
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.time.Duration.Companion.milliseconds
@@ -673,6 +674,7 @@ private fun occupantOf(
         votesDescription = votesLine(member),
         frame = member.frame.ifEmpty { null },
         title = member.title.ifEmpty { null }?.let { shown(it) },
+        crown = member.crown.ifEmpty { null },
     )
 }
 
@@ -1075,12 +1077,10 @@ private fun ColumnScope.Standings(
             )
         }
         mine?.coinsEarned?.takeIf { it > 0 }?.let { coins ->
-            Chip(
+            CoinChip(
                 "+" +
                     LocalStrings.current.economy.coins
                         .of(coins, LocalLanguage.current),
-                icon = KvizicIcons.Coin,
-                tone = ChipTone.ACCENT,
             )
         }
         results.personalBest?.let { best ->

@@ -113,10 +113,13 @@ class HomeScreenDrawTest {
         val scene = scene(HomeState(profile = PROFILE), Language.DEFAULT, counts = HomeCounts(128, 7, 12))
         try {
             val nodes = scene.nodes()
-            // The player's block and the settings button share a row; the row ends with the lower of the two.
+            // The player's block, the shop with its coins and the settings button share a row; it ends with the lowest.
             val above =
-                listOf(strings.game.xpProgress.fill(40, 130), strings.settingsScreen.title)
-                    .maxOf { said -> nodes.last { said in it.descriptions }.boundsInRoot.bottom }
+                listOf(
+                    strings.game.xpProgress.fill(40, 130),
+                    strings.economy.coins.of(PROFILE.coins, Language.DEFAULT),
+                    strings.settingsScreen.title,
+                ).maxOf { said -> nodes.last { said in it.descriptions }.boundsInRoot.bottom }
             val logo = nodes.single { strings.gameName in it.texts }.boundsInRoot
             val below = nodes.single { strings.game.quickPlay in it.texts }.boundsInRoot.top
             assertTrue(logo.top - above > 0 && below - logo.bottom > 0, "the name is between the two")

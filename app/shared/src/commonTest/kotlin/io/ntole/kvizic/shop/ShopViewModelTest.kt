@@ -43,19 +43,22 @@ class ShopViewModelTest {
     fun `the button buys what the player lacks and puts on or takes off what they own`() {
         val profile =
             PROFILE.copy(
-                items = listOf("frame.double", "title.lucky", "eagle"),
-                frameId = "frame.double",
+                items = listOf("frame.iron", "crown.iron", "eagle"),
+                frameId = "frame.iron",
                 avatarId = "eagle",
             )
         val cases =
-            mapOf(
-                "frame.dashes" to ShopAction.Buy(100, missing = 0),
-                "frame.bulbs" to ShopAction.Buy(200, missing = 80),
-                "frame.double" to ShopAction.TakeOff,
-                "title.lucky" to ShopAction.Wear,
-                "eagle" to null,
+            listOf(
+                Triple(ShopItemKind.FRAME, "frame.bronze", ShopAction.Buy(250, missing = 130)),
+                Triple(ShopItemKind.FRAME, "frame.iron", ShopAction.TakeOff),
+                Triple(ShopItemKind.FRAME, ShopState.PLAIN, ShopAction.Wear),
+                Triple(ShopItemKind.CROWN, "crown.iron", ShopAction.Wear),
+                Triple(ShopItemKind.CROWN, ShopState.PLAIN, null),
+                Triple(ShopItemKind.AVATAR, "eagle", null),
             )
-        cases.forEach { (id, expected) -> assertEquals(expected, ShopState(ITEMS, profile, selected = id).action, id) }
+        cases.forEach { (tab, id, expected) ->
+            assertEquals(expected, ShopState(ITEMS, profile, tab, selected = id).action, "$tab $id")
+        }
     }
 
     @Test
@@ -70,14 +73,14 @@ class ShopViewModelTest {
                 )
             shop.shown()
             testScheduler.advanceUntilIdle()
-            shop.select("frame.dashes")
+            shop.select("frame.iron")
 
             repeat(3) {
                 shop.act()
                 testScheduler.advanceUntilIdle()
             }
             assertEquals(
-                listOf("frame.dashes") to null,
+                listOf("frame.iron") to null,
                 shop.state.value.profile
                     ?.let { it.items to it.frameId },
             )
@@ -91,17 +94,18 @@ class ShopViewModelTest {
                     Recorded(
                         AnalyticsEvent.ITEM_BOUGHT,
                         mapOf(
-                            AnalyticsProperty.ITEM to "frame.dashes",
+                            AnalyticsProperty.ITEM to "frame.iron",
                             AnalyticsProperty.PRICE to 100,
                         ),
                     ),
-                    Recorded(AnalyticsEvent.ITEM_EQUIPPED, mapOf(AnalyticsProperty.ITEM to "frame.dashes")),
+                    Recorded(AnalyticsEvent.ITEM_EQUIPPED, mapOf(AnalyticsProperty.ITEM to "frame.iron")),
                 ),
                 analytics.recorded,
             )
 
             players.refuse = KvizicException(GameError.NOT_ENOUGH_COINS)
-            shop.select("frame.double")
+            shop.selectTab(ShopItemKind.CROWN)
+            shop.select("crown.iron")
             shop.act()
             testScheduler.advanceUntilIdle()
             assertEquals(
@@ -162,16 +166,16 @@ class ShopViewModelTest {
         override suspend fun wear(
             frameId: String?,
             titleId: String?,
-        ): Profile = profile.copy(frameId = frameId, titleId = titleId).also { profile = it }
+            crownId: String?,
+        ): Profile = profile.copy(frameId = frameId, titleId = titleId, crownId = crownId).also { profile = it }
     }
 
     private companion object {
         val ITEMS =
             listOf(
-                ShopItem("frame.double", ShopItemKind.FRAME, 50),
-                ShopItem("frame.dashes", ShopItemKind.FRAME, 100),
-                ShopItem("frame.bulbs", ShopItemKind.FRAME, 200),
-                ShopItem("title.lucky", ShopItemKind.TITLE, 30),
+                ShopItem("frame.iron", ShopItemKind.FRAME, 100),
+                ShopItem("frame.bronze", ShopItemKind.FRAME, 250),
+                ShopItem("crown.iron", ShopItemKind.CROWN, 80),
                 ShopItem("eagle", ShopItemKind.AVATAR, 300),
             )
 

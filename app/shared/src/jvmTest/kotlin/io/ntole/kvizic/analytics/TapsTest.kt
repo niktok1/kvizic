@@ -381,33 +381,30 @@ class TapsTest {
 
     @Test
     fun `every tap in the shop is reported`() {
-        val owner = PROFILE.copy(coins = 100, items = listOf("frame.double", "title.lucky"), frameId = "frame.double")
+        val owner = PROFILE.copy(coins = 300, items = listOf("frame.iron", "crown.iron"), frameId = "frame.iron")
         val items =
             listOf(
-                ShopItem("frame.double", ShopItemKind.FRAME, 50),
-                ShopItem("frame.dashes", ShopItemKind.FRAME, 100),
-                ShopItem("title.lucky", ShopItemKind.TITLE, 30, mapOf("sr-Cyrl" to "Срећна рука")),
+                ShopItem("frame.iron", ShopItemKind.FRAME, 100),
+                ShopItem("frame.bronze", ShopItemKind.FRAME, 250),
+                ShopItem("crown.iron", ShopItemKind.CROWN, 80),
             )
-        val shown = { selected: String? -> ShopState(items, owner, selected) }
-        mapOf(
-            null to emptySet(),
-            "frame.dashes" to setOf("shop.buy"),
-            "frame.double" to setOf("shop.take_off"),
-            "title.lucky" to setOf("shop.wear"),
-        ).forEach { (selected, button) ->
+        val shown = { tab: ShopItemKind, selected: String? -> ShopState(items, owner, tab, selected) }
+        listOf(
+            Triple(ShopItemKind.FRAME, null, emptySet()),
+            Triple(ShopItemKind.FRAME, "frame.bronze", setOf("shop.buy")),
+            Triple(ShopItemKind.FRAME, "frame.iron", setOf("shop.take_off")),
+            Triple(ShopItemKind.CROWN, "crown.iron", setOf("shop.wear")),
+        ).forEach { (tab, selected, button) ->
             assertEquals(
-                setOf("shop.item") + button,
-                elementsTapped { ShopScreen(shown(selected), ShopActions()) },
-                "$selected",
+                setOf("shop.tab", "shop.item") + button,
+                elementsTapped { ShopScreen(shown(tab, selected), ShopActions()) },
+                "$tab $selected",
             )
         }
         assertEquals(
-            setOf("shop.item", "shop.failure_ok"),
+            setOf("shop.tab", "shop.item", "shop.failure_ok"),
             elementsTapped {
-                ShopScreen(
-                    ShopState(items, owner, failure = HomeFailure(CoreError.NETWORK)),
-                    ShopActions(),
-                )
+                ShopScreen(ShopState(items, owner, failure = HomeFailure(CoreError.NETWORK)), ShopActions())
             },
         )
         assertEquals(

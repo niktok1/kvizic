@@ -81,6 +81,7 @@ import io.ntole.kvizic.settings.AppSettingsScreen
 import io.ntole.kvizic.share.InviteLink
 import io.ntole.kvizic.share.LocalShareSheet
 import io.ntole.kvizic.share.rememberShareSheet
+import io.ntole.kvizic.shop.Balance
 import io.ntole.kvizic.shop.ShopActions
 import io.ntole.kvizic.shop.ShopScreen
 import io.ntole.kvizic.shop.ShopViewModel
@@ -205,8 +206,7 @@ private fun Screens(usage: UsageTracker) {
             }
 
             Screen.Shop -> {
-                BackTopBar(onBack = { navigator.back() }, title = LocalStrings.current.economy.shop)
-                Below { Shop() }
+                Shop(onBack = { navigator.back() })
             }
 
             Screen.Join -> {
@@ -312,22 +312,29 @@ private fun PollWhileShown(poll: suspend () -> Unit) {
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { latest() } }
 }
 
-/** The shop, read each time it is shown. */
+/** The shop, read each time it is shown, with the player's coins in its bar. */
 @Composable
-private fun Shop() {
+private fun ColumnScope.Shop(onBack: () -> Unit) {
     val viewModel = koinViewModel<ShopViewModel>()
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel) { viewModel.shown() }
-    ShopScreen(
-        state,
-        ShopActions(
-            select = viewModel::select,
-            act = viewModel::act,
-            retry = viewModel::shown,
-            dismissFailure = viewModel::dismissFailure,
-        ),
+    BackTopBar(
+        onBack = onBack,
+        title = LocalStrings.current.economy.shop,
+        actions = { state.profile?.let { Balance(it.coins) } },
     )
+    val actions = remember(viewModel) { shopActions(viewModel) }
+    Below { ShopScreen(state, actions) }
 }
+
+private fun shopActions(viewModel: ShopViewModel): ShopActions =
+    ShopActions(
+        selectTab = viewModel::selectTab,
+        select = viewModel::select,
+        act = viewModel::act,
+        retry = viewModel::shown,
+        dismissFailure = viewModel::dismissFailure,
+    )
 
 /** The player's profile, read as Home reads it, and their avatar picked, sent at once when it is left. */
 @Composable

@@ -12,6 +12,7 @@ import io.ntole.kvizic.core.domain.player.ShopItemKind
 import io.ntole.kvizic.cutTexts
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.avatar.AvatarArt
+import io.ntole.kvizic.design.avatar.CrownArt
 import io.ntole.kvizic.design.avatar.FrameArt
 import io.ntole.kvizic.design.component.Stage
 import io.ntole.kvizic.everyText
@@ -31,39 +32,49 @@ class ShopScreenDrawTest {
     fun `the shop names every item, says what is lacking and cuts no word`() {
         Language.entries.forEach { language ->
             val words = stringsOf(language).economy
-            listOf(Density(1f), Density(1f, 1.3f)).forEach { density ->
-                val where = "$language at ${density.fontScale}"
-                val scene =
-                    ImageComposeScene(width = 360, height = 640, density = density) {
-                        GameTheme(language) { Stage(Modifier.fillMaxSize()) { ShopScreen(STATE, ShopActions()) } }
+            val tabs =
+                listOf(
+                    Triple(STATE, 30, words.plainFrame),
+                    Triple(
+                        STATE.copy(tab = ShopItemKind.CROWN, selected = CrownArt.DRAWN.first()),
+                        230,
+                        words.plainCrown,
+                    ),
+                )
+            tabs.forEach { (state, lacking, plain) ->
+                listOf(Density(1f), Density(1f, 1.3f)).forEach { density ->
+                    val where = "$language ${state.tab} at ${density.fontScale}"
+                    val scene =
+                        ImageComposeScene(width = 360, height = 640, density = density) {
+                            GameTheme(language) { Stage(Modifier.fillMaxSize()) { ShopScreen(state, ShopActions()) } }
+                        }
+                    try {
+                        val still = scene.renderSettled()
+                        System.getenv("KVIZIC_DESIGN_DIR")?.takeIf { it.isNotBlank() }?.let(::File)?.let { directory ->
+                            directory.mkdirs()
+                            val tab = state.tab.name.lowercase()
+                            File(directory, "shop-$tab-${language.name.lowercase()}-${density.fontScale}.png")
+                                .writeBytes(checkNotNull(still.encodeToData()).bytes)
+                        }
+                        val missing = words.missing.fill(words.coins.of(lacking, language))
+                        listOf(words.frames, words.crowns, words.animals, words.howToEarn, missing).forEach {
+                            assertTrue(it in scene.everyText(), "$where: \"$it\" is not shown")
+                        }
+                        val said = scene.descriptions().joinToString("\n")
+                        (words.tiers + plain).forEach { assertTrue(it in said, "$where: $it is not said") }
+                        assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
+                    } finally {
+                        scene.close()
                     }
-                try {
-                    val still = scene.renderSettled()
-                    System.getenv("KVIZIC_DESIGN_DIR")?.takeIf { it.isNotBlank() }?.let(::File)?.let { directory ->
-                        directory.mkdirs()
-                        File(directory, "shop-${language.name.lowercase()}-${density.fontScale}.png")
-                            .writeBytes(checkNotNull(still.encodeToData()).bytes)
-                    }
-                    val missing = words.missing.fill(words.coins.of(30, language))
-                    listOf(words.frames, words.howToEarn, missing).forEach {
-                        assertTrue(it in scene.everyText(), "$where: \"$it\" is not shown")
-                    }
-                    val said = scene.descriptions().joinToString("\n")
-                    (words.frameNames + words.animalNames).forEach { assertTrue(it in said, "$where: $it is not said") }
-                    assertEquals(emptyList(), scene.cutTexts(), "$where: cut")
-                } finally {
-                    scene.close()
                 }
             }
         }
     }
 
     private companion object {
-        val TITLE = mapOf("sr-Cyrl" to "Енциклопедија", "hr" to "Enciklopedija", "en" to "Encyclopedia")
-
         val ITEMS =
             FrameArt.DRAWN.mapIndexed { i, id -> ShopItem(id, ShopItemKind.FRAME, 50 + 150 * i) } +
-                ShopItem("title.encyclopedia", ShopItemKind.TITLE, 120, TITLE) +
+                CrownArt.DRAWN.map { ShopItem(it, ShopItemKind.CROWN, 400) } +
                 AvatarArt.SHOP.map { ShopItem(it, ShopItemKind.AVATAR, 400) }
 
         val STATE =
@@ -78,9 +89,8 @@ class ShopScreenDrawTest {
                         playGamesLinked = false,
                         stats = PlayerStats(),
                         coins = 170,
-                        items = listOf(FrameArt.DRAWN.first(), "title.encyclopedia"),
+                        items = listOf(FrameArt.DRAWN.first()),
                         frameId = FrameArt.DRAWN.first(),
-                        titleId = "title.encyclopedia",
                     ),
                 selected = FrameArt.DRAWN[1],
             )

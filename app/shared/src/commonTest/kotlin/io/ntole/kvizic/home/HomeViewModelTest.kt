@@ -460,6 +460,7 @@ class HomeViewModelTest {
         override suspend fun wear(
             frameId: String?,
             titleId: String?,
+            crownId: String?,
         ): Profile = error("Home has no shop")
 
         private fun profileOf(
