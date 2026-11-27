@@ -280,6 +280,7 @@ private fun Home(
                 retry = viewModel::retry,
                 dismissExit = room::leave,
                 dismissFailure = room::dismissEntryFailure,
+                dismissNewTitle = viewModel::dismissNewTitle,
             ),
         counts =
             lobbies?.let {
@@ -344,7 +345,13 @@ private fun Profile() {
     val topics by rememberTopics()
     LaunchedEffect(viewModel) { viewModel.shown() }
     LifecycleStartEffect(viewModel) { onStopOrDispose { viewModel.keepAvatar() } }
-    ProfileScreen(state, topics, onPick = viewModel::changeAvatar, onPlayGames = viewModel::linkPlayGames)
+    ProfileScreen(
+        state,
+        topics,
+        onPick = viewModel::changeAvatar,
+        onPlayGames = viewModel::linkPlayGames,
+        onWearTitle = viewModel::wearTitle,
+    )
 }
 
 /** A room's code typed, and joined once all six digits are in. */

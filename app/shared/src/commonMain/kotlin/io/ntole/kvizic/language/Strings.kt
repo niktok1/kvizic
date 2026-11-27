@@ -58,6 +58,8 @@ data class Strings(
     val game: GameStrings,
     /** The words of the coins and the shop. */
     val economy: EconomyStrings,
+    /** The words of the titles earned by achievements. */
+    val titles: TitleStrings,
 ) {
     /**
      * These strings with [transform] applied to every one of them, which is how Serbian Latin is made. A
@@ -86,6 +88,7 @@ data class Strings(
             results = results.map(transform),
             game = game.map(transform),
             economy = economy.map(transform),
+            titles = titles.map(transform),
         )
 }
 
@@ -112,6 +115,7 @@ val SerbianCyrillicStrings: Strings =
         results = SerbianCyrillicResultsStrings,
         game = SerbianCyrillicGameStrings,
         economy = SerbianCyrillicEconomyStrings,
+        titles = SerbianCyrillicTitleStrings,
     )
 
 /** Made from [SerbianCyrillicStrings], never written by hand, so the two cannot say different things. */
@@ -139,6 +143,7 @@ val EnglishStrings: Strings =
         results = EnglishResultsStrings,
         game = EnglishGameStrings,
         economy = EnglishEconomyStrings,
+        titles = EnglishTitleStrings,
     )
 
 /** The strings [language] is written in. */

@@ -7,9 +7,13 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.KvizicException
 import io.ntole.kvizic.core.domain.player.GetProfile
+import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.player.SetAvatar
+import io.ntole.kvizic.core.domain.player.Shopping
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.session.CurrentSession
+import io.ntole.kvizic.core.network.TokenStorage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -30,7 +34,8 @@ import kotlin.time.Duration.Companion.seconds
  * by a fresh guest ([CurrentSession.sessions]), and any Play Games sign-in ([LinkPlayGames.signedIn]),
  * which renames a player it links without changing who they are. A failed read is reported to [analytics]
  * as shown. A guest may sign in with Play Games from here ([linkPlayGames]), which the sign-in's read then
- * shows as linked.
+ * shows as linked. The player puts on a title they earned, or takes it off ([wearTitle]), and Home tells of each
+ * title once, as it first reads it earned ([HomeState.newTitle]), keeping in [storage] which it told.
  */
 class HomeViewModel(
     private val getProfile: GetProfile,
@@ -38,6 +43,8 @@ class HomeViewModel(
     private val session: CurrentSession,
     private val linkPlayGames: LinkPlayGames,
     private val analytics: Analytics,
+    private val shopping: Shopping,
+    private val storage: TokenStorage,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(HomeState(playGamesAvailable = linkPlayGames.available))
 
@@ -56,6 +63,15 @@ class HomeViewModel(
 
     /** Held while an avatar is sent, so picks reach the server one after another, in order. */
     private val avatarSends = Mutex()
+
+    /** The titles Home has told of on this device. */
+    private val told: MutableSet<String> =
+        storage
+            .read(TITLES_KEY)
+            ?.split(",")
+            ?.filter { it.isNotEmpty() }
+            .orEmpty()
+            .toMutableSet()
 
     init {
         viewModelScope.launch {
@@ -165,6 +181,52 @@ class HomeViewModel(
             }
         }
 
+    /** Puts on [titleId], a title the player earned, or takes theirs off for none: one request at a time. */
+    fun wearTitle(titleId: String?) {
+        val state = mutableState.value
+        val profile = state.profile ?: return
+        if (state.wearingTitle || profile.titleId == titleId) return
+        mutableState.update { it.copy(wearingTitle = true, titleFailure = null) }
+        viewModelScope.launch {
+            try {
+                val after = shopping.wear(profile.frameId, titleId, profile.crownId)
+                titleId?.let { analytics.track(AnalyticsEvent.ITEM_EQUIPPED, mapOf(AnalyticsProperty.ITEM to it)) }
+                mutableState.update { it.copy(profile = after) }
+            } catch (failure: KvizicException) {
+                analytics.track(
+                    AnalyticsEvent.ERROR_SHOWN,
+                    mapOf(AnalyticsProperty.CODE to failure.error.name, AnalyticsProperty.ACTION to TITLE_ACTION),
+                )
+                mutableState.update { it.copy(titleFailure = HomeFailure(failure.error, failure.retryAfter)) }
+            } finally {
+                mutableState.update { it.copy(wearingTitle = false) }
+            }
+        }
+    }
+
+    /** Home's line for a title just earned is taken down. */
+    fun dismissNewTitle() = mutableState.update { it.copy(newTitle = null) }
+
+    /**
+     * Tells of the titles [profile] earned that Home has not told of, by the last of them, and keeps them told.
+     * A write that fails tells them again at a later launch, which is no reason to say anything.
+     */
+    private fun tell(profile: Profile) {
+        val fresh = profile.achievements.filter { it.earned && it.id !in told }
+        if (fresh.isEmpty()) return
+        told += fresh.map { it.id }
+        mutableState.update { it.copy(newTitle = fresh.last()) }
+        val kept = told.joinToString(",")
+        viewModelScope.launch {
+            try {
+                storage.write(TITLES_KEY, kept)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (ignored: Exception) {
+            }
+        }
+    }
+
     /** This pick, or none once it is [sent]: one picked meanwhile is still to send. */
     private fun String?.unless(sent: String): String? = takeUnless { it == sent }
 
@@ -195,6 +257,7 @@ class HomeViewModel(
         try {
             val profile = getProfile()
             mutableState.update { it.copy(profile = profile, loading = false) }
+            tell(profile)
         } catch (failure: KvizicException) {
             analytics.track(
                 AnalyticsEvent.ERROR_SHOWN,
@@ -211,6 +274,10 @@ class HomeViewModel(
         const val ACTION = "profile"
         const val AVATAR_ACTION = "avatar"
         const val PLAY_GAMES_ACTION = "play_games"
+        const val TITLE_ACTION = "title"
+
+        /** Beside How to play's key (`HowToPlayViewModel.KEY`), and none of the sessions'. */
+        const val TITLES_KEY = "kvizic.titles_told"
 
         /** The most reads one refresh makes: the player changing under each is not worth chasing further. */
         const val MAX_READS = 3

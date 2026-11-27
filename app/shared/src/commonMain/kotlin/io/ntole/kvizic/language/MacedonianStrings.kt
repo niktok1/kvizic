@@ -277,4 +277,5 @@ val MacedonianStrings: Strings =
         results = MacedonianResultsStrings,
         game = MacedonianGameStrings,
         economy = MacedonianEconomyStrings,
+        titles = MacedonianTitleStrings,
     )

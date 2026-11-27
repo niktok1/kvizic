@@ -274,4 +274,5 @@ val CroatianStrings: Strings =
         results = CroatianResultsStrings,
         game = CroatianGameStrings,
         economy = CroatianEconomyStrings,
+        titles = CroatianTitleStrings,
     )

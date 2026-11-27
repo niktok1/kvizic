@@ -6,6 +6,7 @@ import io.ntole.kvizic.core.domain.analytics.AnalyticsEvent
 import io.ntole.kvizic.core.domain.analytics.AnalyticsProperty
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.error.KvizicException
+import io.ntole.kvizic.core.domain.player.Achievement
 import io.ntole.kvizic.core.domain.player.GetProfile
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerRepository
@@ -13,11 +14,13 @@ import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.player.SetAvatar
 import io.ntole.kvizic.core.domain.player.ShopItem
+import io.ntole.kvizic.core.domain.player.Shopping
 import io.ntole.kvizic.core.domain.playgames.LinkPlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGames
 import io.ntole.kvizic.core.domain.playgames.PlayGamesRepository
 import io.ntole.kvizic.core.domain.session.CurrentSession
 import io.ntole.kvizic.core.domain.session.SessionRepository
+import io.ntole.kvizic.core.network.InMemoryTokenStorage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,6 +50,7 @@ class HomeViewModelTest {
     private val analytics = RecordingAnalytics()
     private val links = LinksPlayerPlaying(session, players)
     private val linking = LinkPlayGames(SignedInPlayGames, links, session, Analytics.None)
+    private val storage = InMemoryTokenStorage()
 
     /** Less than the wait an avatar picked stands before it is sent. */
     private val halfASettle = 1.5.seconds
@@ -363,8 +367,45 @@ class HomeViewModelTest {
             assertFalse(home.state.value.linkingPlayGames)
         }
 
+    @Test
+    fun `a title earned is told once on this device and one put on is worn`() =
+        runTest(main) {
+            players.achievements = listOf(Achievement("title.lucky", emptyMap(), emptyMap(), 1, 1, earned = true))
+            val home = viewModel()
+            home.shown()
+            testScheduler.advanceUntilIdle()
+            assertEquals(
+                "title.lucky",
+                home.state.value.newTitle
+                    ?.id,
+            )
+            home.dismissNewTitle()
+
+            val later = viewModel()
+            later.shown()
+            testScheduler.advanceUntilIdle()
+            assertNull(later.state.value.newTitle, "told once")
+
+            later.wearTitle("title.lucky")
+            testScheduler.advanceUntilIdle()
+            assertEquals(
+                "title.lucky",
+                later.state.value.profile
+                    ?.titleId,
+            )
+            assertEquals(AnalyticsEvent.ITEM_EQUIPPED, analytics.recorded.last().name)
+        }
+
     private fun viewModel(link: LinkPlayGames = linking): HomeViewModel =
-        HomeViewModel(GetProfile(players, session), SetAvatar(players, session), session, link, analytics)
+        HomeViewModel(
+            GetProfile(players, session),
+            SetAvatar(players, session),
+            session,
+            link,
+            analytics,
+            Shopping(players, session),
+            storage,
+        )
 
     /** The device's session: none until [ensure] mints guests one after the other. */
     private class FakeSession :
@@ -461,7 +502,13 @@ class HomeViewModelTest {
             frameId: String?,
             titleId: String?,
             crownId: String?,
-        ): Profile = error("Home has no shop")
+        ): Profile {
+            title = titleId
+            return profileOf(session.player.value ?: error("no session"), name)
+        }
+
+        var achievements: List<Achievement> = emptyList()
+        var title: String? = null
 
         private fun profileOf(
             player: String,
@@ -474,6 +521,8 @@ class HomeViewModelTest {
                 avatarId = avatar,
                 playGamesLinked = linked,
                 stats = PlayerStats(),
+                titleId = title,
+                achievements = achievements,
             )
     }
 }

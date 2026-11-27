@@ -1,6 +1,7 @@
 package io.ntole.kvizic.home
 
 import io.ntole.kvizic.core.domain.error.DomainError
+import io.ntole.kvizic.core.domain.player.Achievement
 import io.ntole.kvizic.core.domain.player.Profile
 import kotlin.time.Duration
 
@@ -22,6 +23,11 @@ data class HomeState(
     val linkingPlayGames: Boolean = false,
     /** Why the last Play Games sign-in the player asked for failed, until it is taken down. */
     val playGamesFailure: HomeFailure? = null,
+    /** A title the player earned that Home tells of, until it is taken down. */
+    val newTitle: Achievement? = null,
+    /** Whether a title put on or taken off is in flight, and why the last failed. */
+    val wearingTitle: Boolean = false,
+    val titleFailure: HomeFailure? = null,
 ) {
     /** Whether Home offers the player to sign in with Play Games: a guest's profile read, in a build that has it. */
     val offersPlayGames: Boolean get() = playGamesAvailable && profile?.playGamesLinked == false

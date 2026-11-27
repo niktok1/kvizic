@@ -53,8 +53,8 @@ import io.ntole.kvizic.room.topicNameOf
 /**
  * The player as the server knows them ([state]): their avatar and name, their games, wins, share of answers
  * right, best solo score and best topic, for a guest a card that says what Play Games keeps and connects it
- * ([onPlayGames]), and every avatar to pick from, which [onPick] asks the server for. [topics] name the best
- * topic.
+ * ([onPlayGames]), the titles earned and to earn, one worn ([onWearTitle]), and every avatar to pick from,
+ * which [onPick] asks the server for. [topics] name the best topic.
  */
 @Composable
 fun ProfileScreen(
@@ -63,6 +63,7 @@ fun ProfileScreen(
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onPlayGames: () -> Unit = {},
+    onWearTitle: (String?) -> Unit = {},
 ) {
     val strings = LocalStrings.current
     val words = strings.game
@@ -89,6 +90,9 @@ fun ProfileScreen(
         ) {
             Avatar(state.changingAvatar ?: profile.avatarId, seat = 0, size = AvatarSize.XL)
             KvizicText(shown(profile.displayName), style = type.headline, textAlign = TextAlign.Center)
+            profile.achievements.firstOrNull { it.id == profile.titleId }?.let { worn ->
+                KvizicText(worn.titleIn(language), style = type.body, color = colors.onPageAccent)
+            }
             val xpLevel = profile.level
             Column(
                 Modifier.fillMaxWidth(LEVEL_COLUMN_SHARE),
@@ -140,6 +144,10 @@ fun ProfileScreen(
             }
             if (state.offersPlayGames) {
                 GuestCard(state, onConnect = tapped("profile.play_games", onClick = onPlayGames))
+            }
+            if (profile.achievements.isNotEmpty()) {
+                Spacer(Modifier.height(space.sm))
+                ProfileTitles(state, profile, onWear = onWearTitle)
             }
             Spacer(Modifier.height(space.sm))
             KvizicText(words.pickAvatar, Modifier.fillMaxWidth(), style = type.label, color = colors.onPageMuted)

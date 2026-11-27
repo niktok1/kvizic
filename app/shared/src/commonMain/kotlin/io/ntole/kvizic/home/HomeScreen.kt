@@ -40,6 +40,7 @@ import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.cued
+import io.ntole.kvizic.language.LocalLanguage
 import io.ntole.kvizic.language.LocalStrings
 import io.ntole.kvizic.language.failureText
 import io.ntole.kvizic.language.fill
@@ -75,6 +76,7 @@ class HomeActions(
     val retry: () -> Unit = {},
     val dismissExit: () -> Unit = {},
     val dismissFailure: () -> Unit = {},
+    val dismissNewTitle: () -> Unit = {},
 )
 
 /**
@@ -193,6 +195,13 @@ fun HomeScreen(
                 Notice(
                     strings.playGamesFailureText(failure.error, failure.retryAfter),
                     onDismiss = tapped("home.play_games_failure_ok", onClick = actions.dismissPlayGamesFailure),
+                )
+            }
+            state.newTitle?.let { title ->
+                Spacer(Modifier.height(space.md))
+                Notice(
+                    strings.titles.newTitle.fill(title.titleIn(LocalLanguage.current)),
+                    onDismiss = tapped("home.new_title_ok", onClick = actions.dismissNewTitle),
                 )
             }
             exit?.let { words.exitText(it) }?.let { text ->

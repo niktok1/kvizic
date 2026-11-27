@@ -6,10 +6,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
 import io.ntole.kvizic.core.domain.error.CoreError
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
+import io.ntole.kvizic.core.domain.player.Achievement
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
+import io.ntole.kvizic.core.region.ContentLanguages
+import io.ntole.kvizic.cutTexts
 import io.ntole.kvizic.descriptions
 import io.ntole.kvizic.design.avatar.AvatarArt
 import io.ntole.kvizic.design.avatar.CrownArt
@@ -113,6 +116,28 @@ class ProfileScreenDrawTest {
         }
     }
 
+    @Test
+    fun `the titles say what earns each and how far the player is, and one earned is put on`() {
+        Language.entries.forEach { language ->
+            val strings = stringsOf(language)
+            val worn = mutableListOf<String?>()
+            val scene = scene(language, state = HomeState(profile = TITLED), onWearTitle = { worn += it })
+            try {
+                write("profile-titles-${language.name.lowercase()}") { scene.renderSettled() }
+                val shown = scene.everyText()
+                listOf(strings.titles.heading, "7 / 25", strings.economy.wear, strings.economy.takeOff).forEach {
+                    assertTrue(it in shown, "$language: \"$it\" is not in $shown")
+                }
+                assertTrue(strings.titles.progress.fill(7, 25) in scene.descriptions(), "$language: the bar is said")
+                assertEquals(emptyList(), scene.cutTexts(), "$language")
+                scene.tap(strings.economy.wear)
+            } finally {
+                scene.close()
+            }
+            assertEquals(listOf<String?>("title.star"), worn, "$language")
+        }
+    }
+
     /** The test's best topic as the server names it, the Serbian, in [language]'s script. */
     private fun stringsTopic(language: Language): String = if (language.isCyrillic) "Географија" else "Geografija"
 
@@ -135,10 +160,13 @@ class ProfileScreenDrawTest {
         onPick: (String) -> Unit = {},
         state: HomeState = HomeState(profile = PROFILE),
         onPlayGames: () -> Unit = {},
+        onWearTitle: (String?) -> Unit = {},
     ): ImageComposeScene =
         ImageComposeScene(width = 360, height = 1200, density = Density(1f)) {
             GameTheme(language) {
-                Stage(Modifier.fillMaxSize()) { ProfileScreen(state, TOPICS, onPick, onPlayGames = onPlayGames) }
+                Stage(Modifier.fillMaxSize()) {
+                    ProfileScreen(state, TOPICS, onPick, onPlayGames = onPlayGames, onWearTitle = onWearTitle)
+                }
             }
         }.also { it.renderSettled() }
 
@@ -160,6 +188,32 @@ class ProfileScreenDrawTest {
                         bestTopicId = "GEOGRAPHY",
                         soloRuns = 4,
                         soloBests = mapOf(LobbyDifficulty.HARD to 410, LobbyDifficulty.MEDIUM to 940),
+                    ),
+            )
+
+        fun achievement(
+            id: String,
+            title: String,
+            how: String,
+            progress: Int,
+            goal: Int,
+        ) = Achievement(
+            id,
+            mapOf(ContentLanguages.SERBIAN to title),
+            mapOf(ContentLanguages.SERBIAN to how),
+            progress,
+            goal,
+            earned = progress >= goal,
+        )
+
+        val TITLED =
+            PROFILE.copy(
+                titleId = "title.lucky",
+                achievements =
+                    listOf(
+                        achievement("title.lucky", "Срећна рука", "Прва победа", 1, 1),
+                        achievement("title.finger", "Брзи прст", "Најбржи тачан одговор 25 пута", 7, 25),
+                        achievement("title.star", "Звезда", "10 победа", 10, 10),
                     ),
             )
     }

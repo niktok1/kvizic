@@ -25,6 +25,7 @@ import io.ntole.kvizic.core.domain.lobby.LobbyKind
 import io.ntole.kvizic.core.domain.lobby.LobbySettings
 import io.ntole.kvizic.core.domain.lobby.PublicLobbies
 import io.ntole.kvizic.core.domain.lobby.PublicLobby
+import io.ntole.kvizic.core.domain.player.Achievement
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
@@ -113,10 +114,10 @@ class TapsTest {
             elementsTapped { HomeScreen(HomeState(failure = HomeFailure(CoreError.NETWORK)), HomeActions()) },
         )
         assertEquals(
-            buttons + "home.profile" + "home.shop" + "home.exit_ok" + "home.failure_ok",
+            buttons + "home.profile" + "home.shop" + "home.new_title_ok" + "home.exit_ok" + "home.failure_ok",
             elementsTapped {
                 HomeScreen(
-                    HomeState(profile = PROFILE),
+                    HomeState(profile = PROFILE, newTitle = EARNED),
                     HomeActions(),
                     entry = Entry.Failed(EntryWay.QUICK_PLAY, CoreError.NETWORK),
                     exit = LobbyExit.KICKED,
@@ -356,9 +357,10 @@ class TapsTest {
     @Test
     fun `every tap on the profile is reported`() {
         assertEquals(
-            setOf("profile.avatar"),
+            setOf("profile.title", "profile.avatar"),
             elementsTapped {
-                ProfileScreen(HomeState(profile = PROFILE.copy(playGamesLinked = true)), TOPICS, onPick = {})
+                val linked = PROFILE.copy(playGamesLinked = true, achievements = listOf(EARNED))
+                ProfileScreen(HomeState(profile = linked), TOPICS, onPick = {})
             },
         )
         // A guest's card connects Play Games.
@@ -513,5 +515,7 @@ class TapsTest {
                 playGamesLinked = false,
                 stats = PlayerStats(),
             )
+
+        val EARNED = Achievement("title.lucky", mapOf("en" to "Lucky hand"), emptyMap(), 1, 1, earned = true)
     }
 }
