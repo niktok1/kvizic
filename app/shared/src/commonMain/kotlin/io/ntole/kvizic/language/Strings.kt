@@ -52,6 +52,8 @@ data class Strings(
     val howToPlay: HowToPlayStrings,
     /** The words of the button that passes a question. */
     val pass: PassStrings,
+    /** The words of a room's settings tiles. */
+    val roomSettings: RoomSettingsStrings,
     /** The words of a game's results. */
     val results: ResultsStrings,
     /** The game's own words, from Home to the results. */
@@ -85,6 +87,7 @@ data class Strings(
             reactions = reactions.map(transform),
             howToPlay = howToPlay.map(transform),
             pass = pass.map(transform),
+            roomSettings = roomSettings.map(transform),
             results = results.map(transform),
             game = game.map(transform),
             economy = economy.map(transform),
@@ -112,6 +115,7 @@ val SerbianCyrillicStrings: Strings =
         reactions = SerbianCyrillicReactionStrings,
         howToPlay = SerbianCyrillicHowToPlayStrings,
         pass = SerbianCyrillicPassStrings,
+        roomSettings = SerbianCyrillicRoomSettingsStrings,
         results = SerbianCyrillicResultsStrings,
         game = SerbianCyrillicGameStrings,
         economy = SerbianCyrillicEconomyStrings,
@@ -140,6 +144,7 @@ val EnglishStrings: Strings =
         reactions = EnglishReactionStrings,
         howToPlay = EnglishHowToPlayStrings,
         pass = EnglishPassStrings,
+        roomSettings = EnglishRoomSettingsStrings,
         results = EnglishResultsStrings,
         game = EnglishGameStrings,
         economy = EnglishEconomyStrings,

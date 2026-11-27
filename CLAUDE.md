@@ -437,6 +437,18 @@ domain a pinned copy of `Country`.
   the lock or globe); the room's name is no chip but a headline over the seats, shrinking to a chip's size
   before it is cut. The host's chips are one button to the settings, so their rows stand as close as a member's
   (a touch target each pushed Start off 360×640 under a long name); a change to any of them is said in a snack.
+- **A room's settings are six tiles** (the owner, 2026-11-27, after chips read as a page of text): New room and a
+  room's settings (`SettingsScreen`) show the topics on a fan of question cards (`TopicsButton`) over two rows of
+  three tiles (`SettingTile`), each its name across its top (shrinking to stay on one line), a picture and its
+  control across its foot. Questions are a stack of cards, one for each 5; time is the question's own clock, its
+  lights coming up again as it changes; difficulty is a gauge whose last step is in the loss colour; seats are
+  chairs round a table. Each moves a step at a time on a key split into − and + (`StepKey`), off at its ends. Who
+  may come in („Улаз“, the lock or the globe) and the minus are switches across the tile (`TileSwitch`). A tap on a
+  tile's name or picture says what it is in a bubble over it (`SettingBubble`, on an answer tile's plate), put away
+  by a change or a tap on it. The room's name field shows the host's name while it has none, since an unnamed room
+  is listed by its host's. Every picture moves in the draw alone; the words are `RoomSettingsStrings`. At 360×640
+  the tiles fit over the done button at the font's own size and the name scrolls. The lobby's chips and the topic
+  picker stay as they were.
 - **Inviting** (the owner, 2026-10-07): while a seat is free and no countdown runs, „Позови играче“ (a small
   secondary button, the one label the lobby has, over Start) and a tap on a free seat share the room: the link
   `kvizic.ntole.com/j/<code>` and the code (`InviteLink`). On Android the link opens the game (an App Link,

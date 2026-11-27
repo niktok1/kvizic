@@ -332,15 +332,16 @@ class TapsTest {
         )
         assertEquals(
             setOf(
+                "settings.topics",
+                "settings.explain",
                 "settings.questions",
                 "settings.time",
-                "settings.topics",
                 "settings.difficulty",
                 "settings.players",
                 "settings.visibility",
                 "settings.penalty",
                 "settings.done",
-                // The topics' picker, which the topics' line opens in the settings' place.
+                // The topics' picker, which the topics' button opens in the settings' place.
                 "top_bar.back",
                 "topics.all",
                 "topics.group",

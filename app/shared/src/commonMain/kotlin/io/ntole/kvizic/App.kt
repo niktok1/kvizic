@@ -413,11 +413,13 @@ private fun NewRoom(
     }
     val topics by rememberTopics()
     val entry by room.entry.collectAsStateWithLifecycle()
+    val home by koinViewModel<HomeViewModel>().state.collectAsStateWithLifecycle()
     SettingsScreen(
         settings = settings,
         topics = topics,
         groups = rememberTopicGroups(),
         onChange = { settings = it },
+        hostName = home.profile?.displayName,
         doneLabel =
             with(LocalStrings.current.game) {
                 if (entry ==
@@ -508,6 +510,10 @@ private fun RoomSettings(
         minPlayers = state.lobby.members.size,
         title = LocalStrings.current.game.settings,
         onBack = onClose,
+        hostName =
+            state.lobby.host
+                ?.let { state.lobby.member(it) }
+                ?.name,
     )
 }
 
