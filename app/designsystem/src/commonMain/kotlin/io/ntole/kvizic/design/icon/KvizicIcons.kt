@@ -201,6 +201,30 @@ object KvizicIcons {
         }
     }
 
+    /**
+     * Two arrowheads to a bar, a player's skip: the player does not know, and the question waits for them no
+     * more.
+     */
+    val Skip: ImageVector by lazy {
+        icon("Skip") {
+            path(fill = SolidColor(Color.Black)) {
+                moveTo(2f, 4.5f)
+                lineTo(11f, 12f)
+                lineTo(2f, 19.5f)
+                close()
+                moveTo(11f, 4.5f)
+                lineTo(20f, 12f)
+                lineTo(11f, 19.5f)
+                close()
+                moveTo(20f, 4.5f)
+                horizontalLineTo(22.5f)
+                verticalLineTo(19.5f)
+                horizontalLineTo(20f)
+                close()
+            }
+        }
+    }
+
     /** A bolt of lightning: first to answer right, second, third. */
     val Bolt: ImageVector by lazy {
         icon("Bolt") {

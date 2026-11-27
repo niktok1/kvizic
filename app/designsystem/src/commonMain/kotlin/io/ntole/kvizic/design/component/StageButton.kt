@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.TextAutoSize
@@ -167,7 +170,8 @@ fun StageButton(
 
 /**
  * A round button of one [icon], named [contentDescription] for a screen reader: back, share, a
- * reaction. Raised and pressed as a [StageButton] is; a tap plays [cue].
+ * reaction. Raised and pressed as a [StageButton] is; a tap plays [cue]. A [square] one is as tall as its
+ * place lets it be and as wide, in the skin's button shape, to stand beside a panel of that height.
  */
 @Composable
 fun StageIconButton(
@@ -177,6 +181,7 @@ fun StageIconButton(
     modifier: Modifier = Modifier,
     kind: ButtonKind = ButtonKind.DARK,
     small: Boolean = false,
+    square: Boolean = false,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
     cue: Cue = Cue.TAP_SOFT,
@@ -186,14 +191,24 @@ fun StageIconButton(
     val part = skin.parts.button
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val tap = cued(cue, onClick)
-    val look = part.surface(kind, ButtonSize.SMALL, enabled).copy(shape = skin.shapes.roundButton)
+    val look =
+        part
+            .surface(kind, ButtonSize.SMALL, enabled)
+            .copy(shape = if (square) skin.shapes.button else skin.shapes.roundButton)
     val tint = rememberSettlingColor(part.content(kind, enabled))
     val whole = if (small) space.button.roundSmall else space.button.round
     Box(
         modifier =
             modifier
-                .size(max(whole, space.touchTarget))
-                .semantics { this.contentDescription = contentDescription }
+                .then(
+                    if (square) {
+                        Modifier.fillMaxHeight().aspectRatio(
+                            1f,
+                        )
+                    } else {
+                        Modifier.size(max(whole, space.touchTarget))
+                    },
+                ).semantics { this.contentDescription = contentDescription }
                 .clickable(
                     interactionSource = source,
                     indication = null,
@@ -206,7 +221,7 @@ fun StageIconButton(
         Box(
             modifier =
                 Modifier
-                    .size(whole)
+                    .then(if (square) Modifier.fillMaxSize() else Modifier.size(whole))
                     .raised(look, skin.depth, skin.motion, source, skin.colors.focus, space.strokeThin),
             contentAlignment = Alignment.Center,
         ) {
