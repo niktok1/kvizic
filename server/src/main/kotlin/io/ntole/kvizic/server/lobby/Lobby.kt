@@ -813,6 +813,7 @@ class Lobby(
     private fun showQuestion(game: Game) {
         game.step = Step.READING
         game.answers.clear()
+        game.passed.clear()
         game.openedAt = null
         // One clock for the room, long enough for the longest of the texts its members read.
         val question = game.current()
@@ -861,9 +862,12 @@ class Lobby(
             Step.ANSWERING -> Unit
         }
         val question = game.current()
-        if (message.option !in question.order.indices) return reject(member, message.id, RejectCode.INVALID_OPTION)
-        game.answers[member.playerId]?.let { locked ->
-            return if (locked.option == message.option) {
+        val pass = message.option == ClientMessage.Answer.PASS
+        if (!pass && message.option !in question.order.indices) {
+            return reject(member, message.id, RejectCode.INVALID_OPTION)
+        }
+        game.pickOf(member.playerId)?.let { locked ->
+            return if (locked == message.option) {
                 ack(member, message.id)
             } else {
                 reject(member, message.id, RejectCode.ALREADY_ANSWERED)
@@ -873,14 +877,18 @@ class Lobby(
         val duration = game.duration()
         if (receivedAt - opened > duration + timings.answerGrace) return reject(member, message.id, RejectCode.TOO_LATE)
 
-        val taken = answerTime(receivedAt - opened, rtt, timings.rttCap, duration)
-        game.answers[member.playerId] = Answer(message.option, taken, order = game.answers.size)
+        if (pass) {
+            game.passed += member.playerId
+        } else {
+            val taken = answerTime(receivedAt - opened, rtt, timings.rttCap, duration)
+            game.answers[member.playerId] = Answer(message.option, taken, order = game.answers.size)
+        }
         ack(member, message.id)
 
-        val picks = game.answers.map { (player, answer) -> PickView(player, answer.option) }
-        val answered = game.answers.keys.toList()
+        val picks = game.picks()
+        val answered = picks.map { it.player }
         changed { v, reader ->
-            if (reader.playerId in game.answers && reader.playerId in game.players) {
+            if (game.pickOf(reader.playerId) != null && reader.playerId in game.players) {
                 ServerMessage.Picks(v, game.index, picks)
             } else {
                 ServerMessage.Progress(v, game.index, answered)
@@ -890,7 +898,7 @@ class Lobby(
     }
 
     /**
-     * Reveals at once when every player the question still waits for has locked in: every connected
+     * Reveals at once when every player the question still waits for has locked in or passed: every connected
      * player of the game, and one whose socket closed within [GameTimings.dropGrace], who may be back
      * with their answer in a moment. Nobody else waits on the clock. [tick] asks again as graces run out.
      */
@@ -898,7 +906,7 @@ class Lobby(
         val game = (phase as? Phase.Playing)?.game ?: return
         if (game.step != Step.ANSWERING) return
         val waitedFor = waitedFor(game)
-        if (waitedFor.isNotEmpty() && waitedFor.all { it in game.answers }) reveal(game)
+        if (waitedFor.isNotEmpty() && waitedFor.all { game.pickOf(it) != null }) reveal(game)
     }
 
     /** The players of [game] its question waits for now, as [revealIfEveryoneAnswered] has them. */
@@ -972,7 +980,7 @@ class Lobby(
                             timeMs = given.time.inWholeMilliseconds,
                         )
                     },
-                silent = waitedFor(game).count { it !in game.answers },
+                silent = (waitedFor(game) + game.passed).toSet().count { it !in game.answers },
             )
 
         val explained = readersLanguages().any { question.wordsIn(it).explanation != null }
@@ -1397,7 +1405,8 @@ class Lobby(
                     }
 
                     Step.ANSWERING -> {
-                        val mine = game.answers[member.playerId]
+                        val mine = game.pickOf(member.playerId)
+                        val picks = game.picks()
                         PhaseView.Answering(
                             gameId = game.id,
                             players = game.players,
@@ -1405,16 +1414,9 @@ class Lobby(
                             options = game.current().wordsIn(member.language).options,
                             remainingMs = remainingMs(game.stepEndsAt),
                             durationMs = game.duration().inWholeMilliseconds,
-                            answered = game.answers.keys.toList(),
-                            yourPick = mine?.option,
-                            picks =
-                                if (mine !=
-                                    null
-                                ) {
-                                    game.answers.map { (player, given) -> PickView(player, given.option) }
-                                } else {
-                                    emptyList()
-                                },
+                            answered = picks.map { it.player },
+                            yourPick = mine,
+                            picks = if (mine != null) picks else emptyList(),
                             standings = standingsOf(game),
                         )
                     }
@@ -1660,6 +1662,15 @@ class Lobby(
         lateinit var stepEndsAt: ComparableTimeMark
         var openedAt: ComparableTimeMark? = null
         val answers = LinkedHashMap<String, Answer>()
+
+        val passed = LinkedHashSet<String>()
+
+        fun picks(): List<PickView> =
+            answers.map { (player, given) -> PickView(player, given.option) } +
+                passed.map { PickView(it, ClientMessage.Answer.PASS) }
+
+        fun pickOf(player: String): Int? =
+            answers[player]?.option ?: ClientMessage.Answer.PASS.takeIf { player in passed }
 
         /** The reveal of the question asked now, in its source's words. */
         var lastReveal: RevealView? = null

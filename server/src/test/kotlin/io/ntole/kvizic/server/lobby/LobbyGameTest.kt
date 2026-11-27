@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.lobby
 
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.protocol.ClientMessage
+import io.ntole.kvizic.core.protocol.ClientMessage.Answer.Companion.PASS
 import io.ntole.kvizic.core.protocol.CloseCodes
 import io.ntole.kvizic.core.protocol.CloseReason
 import io.ntole.kvizic.core.protocol.LeaveReason
@@ -225,6 +226,57 @@ class LobbyGameTest {
         }
 
     @Test
+    fun `a pass is final, scores nothing, sees the picks, is waited for no more, and counts as silent`() =
+        runTest {
+            val lobby = LobbyScenario(this)
+            val ana = lobby.player("ana").join()
+            val boris = lobby.player("boris").join()
+            val ceca = lobby.player("ceca").join()
+            lobby.startGame(ana)
+            lobby.openAnswers(0)
+
+            ana.answer(2)
+            assertNull(boris.answerTo(boris.answer(PASS)))
+            assertNull(boris.answerTo(boris.answer(PASS)), "a pass again is taken as a resend")
+            assertEquals(RejectCode.ALREADY_ANSWERED, boris.answerTo(boris.answer(1)))
+            assertEquals(RejectCode.ALREADY_ANSWERED, ana.answerTo(ana.answer(PASS)))
+            assertEquals(
+                listOf("ana" to 2, "boris" to PASS),
+                boris.last<ServerMessage.Picks>().picks.map { it.player to it.option },
+            )
+            assertEquals(listOf("ana", "boris"), ceca.last<ServerMessage.Progress>().answered)
+
+            boris.drop()
+            boris.attach()
+            val phase = assertNotNull(boris.lastSnapshot()?.phase as? PhaseView.Answering)
+            assertEquals(PASS, phase.yourPick)
+            assertEquals(listOf("ana", "boris"), phase.answered)
+            assertEquals(2, phase.picks.size, "he passed, so he sees the picks")
+            assertTrue(ana.all<ServerMessage.Revealed>().isEmpty(), "ceca is still waited for")
+
+            ceca.answer(PASS)
+            val reveal = ana.last<ServerMessage.Revealed>().reveal
+            assertEquals(0, reveal.index, "revealed without waiting on the clock")
+            val boriss = reveal.results.single { it.player == "boris" }
+            assertEquals(null to 0, boriss.option to boriss.points)
+
+            fun revealed() = ana.last<ServerMessage.Revealed>().reveal
+            repeat(2) { index ->
+                lobby.wait(revealed().nextInMs.milliseconds + lobby.readTime(index + 1))
+                listOf(ana, boris, ceca).forEach { it.answer(PASS) }
+                assertEquals(index + 1, revealed().index)
+            }
+            lobby.wait(revealed().nextInMs.milliseconds)
+            val silent =
+                lobby.records
+                    .single()
+                    .questions
+                    .map { it.silent }
+            assertEquals(listOf(2, 3, 3), silent)
+            lobby.assertInvariants()
+        }
+
+    @Test
     fun `answers are taken only while the answers are open, to the question asked, from its players`() =
         runTest {
             val lobby = LobbyScenario(this)
@@ -238,7 +290,7 @@ class LobbyGameTest {
             lobby.openAnswers(0)
             assertEquals(RejectCode.WRONG_QUESTION, ana.answerTo(ana.answer(0, question = 1)))
             assertEquals(RejectCode.INVALID_OPTION, ana.answerTo(ana.answer(4)))
-            assertEquals(RejectCode.INVALID_OPTION, ana.answerTo(ana.answer(-1)))
+            assertEquals(RejectCode.INVALID_OPTION, ana.answerTo(ana.answer(-2)))
 
             val late = lobby.player("dora").join()
             assertEquals(
