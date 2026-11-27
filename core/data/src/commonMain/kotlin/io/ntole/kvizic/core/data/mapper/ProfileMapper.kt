@@ -1,12 +1,14 @@
 package io.ntole.kvizic.core.data.mapper
 
 import io.ntole.kvizic.core.domain.lobby.LobbyDifficulty
+import io.ntole.kvizic.core.domain.player.Achievement
 import io.ntole.kvizic.core.domain.player.NameSource
 import io.ntole.kvizic.core.domain.player.PlayerLevel
 import io.ntole.kvizic.core.domain.player.PlayerStats
 import io.ntole.kvizic.core.domain.player.Profile
 import io.ntole.kvizic.core.domain.player.ShopItem
 import io.ntole.kvizic.core.domain.player.ShopItemKind
+import io.ntole.kvizic.core.player.AchievementDto
 import io.ntole.kvizic.core.player.PlayerLevelDto
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
@@ -29,7 +31,11 @@ internal fun ProfileDto.toDomain(): Profile =
         frameId = frameId,
         titleId = titleId,
         crownId = crownId,
+        achievements = achievements.map { it.toDomain() },
     )
+
+internal fun AchievementDto.toDomain(): Achievement =
+    Achievement(id = id, title = title, how = how, progress = progress, goal = goal, earned = earned)
 
 internal fun ShopItemDto.toDomain(): ShopItem =
     ShopItem(
