@@ -368,7 +368,9 @@ private fun NewRoom(
     room: RoomViewModel,
     onBack: () -> Unit,
 ) {
-    var settings by rememberSaveable(stateSaver = LobbySettingsSaver) { mutableStateOf(LobbySettings()) }
+    var settings by rememberSaveable(stateSaver = LobbySettingsSaver) {
+        mutableStateOf(LobbySettings(visibility = LobbyVisibility.PUBLIC))
+    }
     val topics by rememberTopics()
     val entry by room.entry.collectAsStateWithLifecycle()
     SettingsScreen(

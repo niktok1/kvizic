@@ -146,6 +146,10 @@ platform's own API behind `SoundDevice` (SoundPool, AVAudioPlayer, `javax.sound`
   seats 2–8, private or public, minus on/off. Codes are 6 digits, not reused for 30 min; a per-address guard
   stops guessing. The host changes them in the lobby alone, from its chips: never during a game, nor from
   the results (the owner, 2026-10-01).
+- **A new room starts public** (the owner, 2026-11-27): the New room screen starts from `LobbyVisibility.PUBLIC`,
+  so a room made by someone with nobody to invite shows on the public list; the host can still make it private.
+  The client alone: `LobbySettings`' and the wire's defaults stay PRIVATE, since `KvizicJson` leaves defaults out
+  and an older client's private room would otherwise reach the server as public.
 - **Difficulty is a mix, never a filter** (`DifficultyMix`): easy, medium and hard in 60/30/10, 20/60/20 or
   10/30/60 percent, as whole counts, a share that does not come out whole falling at random. Who has seen
   what comes first: a game asks an unseen question off its level before a seen one on it, and a level the
