@@ -257,6 +257,7 @@ class TapsTest {
                 "reveal.report",
                 "reveal.reactions",
                 "reveal.reaction",
+                "reveal.reactions_close",
                 "report.reason",
                 "report.cancel",
                 "room.leave_cancel",

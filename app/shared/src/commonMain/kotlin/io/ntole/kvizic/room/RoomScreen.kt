@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -815,7 +816,6 @@ private fun Results(
 ) {
     val words = LocalStrings.current.game
     val said = LocalStrings.current.results
-    val reactionWords = LocalStrings.current.reactions
     val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -864,23 +864,7 @@ private fun Results(
                 }
             }
             if (reacting) {
-                // Over what the tab shows, moving none of it; a tap anywhere but on the six puts them away.
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .semantics { contentDescription = reactionWords.close }
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = cued(Cue.TAP_SOFT, tapped("results.reactions_close") { reacting = false }),
-                        ),
-                )
-                Panel(Modifier.align(Alignment.BottomCenter).fillMaxWidth(), padding = space.sm) {
-                    Emotes("results.reaction", Modifier.fillMaxWidth(), small = true) { reaction ->
-                        reacting = false
-                        actions.react(reaction)
-                    }
-                }
+                OpenReactions("results", Modifier.align(Alignment.BottomCenter), { reacting = false }, actions.react)
             }
         }
         Spacer(Modifier.height(space.md))
@@ -891,18 +875,67 @@ private fun Results(
                 modifier = Modifier.weight(1f),
             )
             // A solo run has nobody to react to.
-            if (!solo) {
-                StageIconButton(
-                    if (reacting) KvizicIcons.Cross else KvizicIcons.Laugh,
-                    contentDescription = if (reacting) reactionWords.close else reactionWords.react,
-                    onClick =
-                        if (reacting) {
-                            tapped("results.reactions_close") { reacting = false }
-                        } else {
-                            tapped("results.reactions") { reacting = true }
-                        },
-                )
-            }
+            if (!solo) ReactButton("results", reacting, onOpen = { reacting = it })
+        }
+    }
+}
+
+/**
+ * The round button that opens the six reactions, a cross once they are open, which puts them away; its taps are
+ * named `[screen].reactions` and `[screen].reactions_close`.
+ */
+@Composable
+internal fun ReactButton(
+    screen: String,
+    open: Boolean,
+    onOpen: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    kind: ButtonKind = ButtonKind.DARK,
+    small: Boolean = false,
+) {
+    val words = LocalStrings.current.reactions
+    StageIconButton(
+        if (open) KvizicIcons.Cross else KvizicIcons.Laugh,
+        contentDescription = if (open) words.close else words.react,
+        onClick =
+            if (open) {
+                tapped("$screen.reactions_close") { onOpen(false) }
+            } else {
+                tapped("$screen.reactions") { onOpen(true) }
+            },
+        modifier = modifier,
+        kind = kind,
+        small = small,
+    )
+}
+
+/**
+ * The six reactions open over this box, moving none of it, on a panel [placed] where the screen wants it; a tap
+ * anywhere but on the six puts them away, as sending one does. Its taps are named `[screen].reaction` and
+ * `[screen].reactions_close`.
+ */
+@Composable
+internal fun BoxScope.OpenReactions(
+    screen: String,
+    placed: Modifier,
+    onClose: () -> Unit,
+    onReact: (String) -> Unit,
+) {
+    val words = LocalStrings.current.reactions
+    Box(
+        Modifier
+            .matchParentSize()
+            .semantics { contentDescription = words.close }
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                onClick = cued(Cue.TAP_SOFT, tapped("$screen.reactions_close", onClick = onClose)),
+            ),
+    )
+    Panel(placed.fillMaxWidth(), padding = KvizicTheme.space.sm) {
+        Emotes("$screen.reaction", Modifier.fillMaxWidth(), small = true) { reaction ->
+            onClose()
+            onReact(reaction)
         }
     }
 }

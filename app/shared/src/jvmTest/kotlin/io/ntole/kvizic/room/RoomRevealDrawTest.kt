@@ -62,6 +62,7 @@ class RoomRevealDrawTest : RoomStills() {
                 scene.tap(strings.reactions.react)
                 write("room-${skin.id}-reveal-react-open", scene.renderSettled())
                 EMOTES.forEach { assertTrue(it.name(strings.game) in scene.descriptions(), "${skin.id}: ${it.id}") }
+                assertTrue(QUESTION.text in scene.everyText(), "${skin.id}: the question is hidden while choosing")
                 scene.tap(strings.game.reactionFire)
                 assertEquals(listOf("fire"), sent, skin.id)
                 assertTrue(strings.reactions.react in scene.descriptions(), "${skin.id}: still open once sent")

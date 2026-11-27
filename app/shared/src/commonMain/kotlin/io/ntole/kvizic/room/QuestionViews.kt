@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,8 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.ntole.kvizic.analytics.tapped
@@ -242,7 +244,6 @@ internal fun RevealScreen(
     onReact: ((String) -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
-    val reactionWords = LocalStrings.current.reactions
     val language = LocalLanguage.current
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -289,17 +290,21 @@ internal fun RevealScreen(
                 state.you,
                 language,
             )
-        RevealBody(
-            fits = rememberAnswersFit(reveal.options.map { shown(it) }),
-            headroom = space.tile.rowGap,
-            gap = space.md,
-            sliver = space.xs,
-            modifier = Modifier.weight(1f),
-            panel = {
-                var choosing by rememberSaveable(reveal.questionId) { mutableStateOf(false) }
-                Box(Modifier.fillMaxWidth().then(afterTheAnswers)) {
-                    Panel(Modifier.fillMaxWidth(), kind = PanelKind.SCREEN, padding = space.lg) {
-                        Box(if (choosing) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier) {
+        var choosing by rememberSaveable(reveal.questionId) { mutableStateOf(false) }
+        val recalled = remember { mutableIntStateOf(0) }
+        Box(Modifier.weight(1f)) {
+            RevealBody(
+                fits = rememberAnswersFit(reveal.options.map { shown(it) }),
+                headroom = space.tile.rowGap,
+                gap = space.md,
+                sliver = space.xs,
+                panel = {
+                    Panel(
+                        Modifier.fillMaxWidth().then(afterTheAnswers).onSizeChanged { recalled.intValue = it.height },
+                        kind = PanelKind.SCREEN,
+                        padding = space.lg,
+                    ) {
+                        Box {
                             Column(
                                 Modifier.padding(horizontal = space.lg),
                                 verticalArrangement = Arrangement.spacedBy(space.sm),
@@ -349,103 +354,99 @@ internal fun RevealScreen(
                                 modifier = Modifier.align(Alignment.TopEnd).offset(x = space.md, y = -space.md),
                                 kind = ButtonKind.QUIET,
                                 small = true,
-                                enabled = !choosing,
                             )
                             if (onReact != null) {
-                                StageIconButton(
-                                    KvizicIcons.Laugh,
-                                    contentDescription = reactionWords.react,
-                                    onClick = tapped("reveal.reactions") { choosing = true },
+                                ReactButton(
+                                    "reveal",
+                                    choosing,
+                                    onOpen = { choosing = it },
                                     modifier = Modifier.align(Alignment.TopStart).offset(x = -space.md, y = -space.md),
                                     kind = ButtonKind.QUIET,
                                     small = true,
-                                    enabled = !choosing,
                                 )
                             }
                         }
                     }
-                    if (choosing && onReact != null) {
-                        Emotes("reveal.reaction", Modifier.matchParentSize(), small = true) { reaction ->
-                            choosing = false
-                            onReact(reaction)
-                        }
-                    }
-                }
-            },
-            grid = { gridModifier ->
-                AnswerGrid(
-                    options = reveal.options.map { shown(it) },
-                    modifier = gridModifier,
-                    places = places,
-                    placesKey = phase.gameId to reveal.index,
-                    states =
-                        reveal.options.indices.map { i ->
-                            when {
-                                !revealed && mine?.option == null -> {
-                                    AnswerTileState.IDLE
-                                }
+                },
+                grid = { gridModifier ->
+                    AnswerGrid(
+                        options = reveal.options.map { shown(it) },
+                        modifier = gridModifier,
+                        places = places,
+                        placesKey = phase.gameId to reveal.index,
+                        states =
+                            reveal.options.indices.map { i ->
+                                when {
+                                    !revealed && mine?.option == null -> {
+                                        AnswerTileState.IDLE
+                                    }
 
-                                !revealed -> {
-                                    if (i ==
-                                        mine?.option
-                                    ) {
-                                        AnswerTileState.LOCKED_IN
-                                    } else {
+                                    !revealed -> {
+                                        if (i ==
+                                            mine?.option
+                                        ) {
+                                            AnswerTileState.LOCKED_IN
+                                        } else {
+                                            AnswerTileState.DIMMED
+                                        }
+                                    }
+
+                                    i == reveal.correct -> {
+                                        AnswerTileState.CORRECT
+                                    }
+
+                                    i == mine?.option -> {
+                                        AnswerTileState.WRONG
+                                    }
+
+                                    else -> {
                                         AnswerTileState.DIMMED
                                     }
                                 }
-
-                                i == reveal.correct -> {
-                                    AnswerTileState.CORRECT
+                            },
+                        stateDescriptions =
+                            reveal.options.indices.map { i ->
+                                when {
+                                    i == reveal.correct -> words.rightAnswer
+                                    i == mine?.option -> words.wrongAnswer
+                                    else -> null
                                 }
-
-                                i == mine?.option -> {
-                                    AnswerTileState.WRONG
-                                }
-
-                                else -> {
-                                    AnswerTileState.DIMMED
-                                }
+                            },
+                        pickers = { option ->
+                            val picked =
+                                reveal.results.filter { it.option == option }.sortedWith(
+                                    compareBy(nullsLast()) { it.order },
+                                )
+                            if (picked.isNotEmpty()) {
+                                AvatarStack(
+                                    picked.mapNotNull { result ->
+                                        lobby
+                                            .member(
+                                                result.playerId,
+                                            )?.let { AvatarChip(it.avatar, it.seat, order = result.order) }
+                                    },
+                                )
                             }
                         },
-                    stateDescriptions =
-                        reveal.options.indices.map { i ->
-                            when {
-                                i == reveal.correct -> words.rightAnswer
-                                i == mine?.option -> words.wrongAnswer
-                                else -> null
-                            }
-                        },
-                    pickers = { option ->
-                        val picked =
-                            reveal.results.filter { it.option == option }.sortedWith(
-                                compareBy(nullsLast()) { it.order },
-                            )
-                        if (picked.isNotEmpty()) {
-                            AvatarStack(
-                                picked.mapNotNull { result ->
-                                    lobby
-                                        .member(
-                                            result.playerId,
-                                        )?.let { AvatarChip(it.avatar, it.seat, order = result.order) }
-                                },
-                            )
-                        }
-                    },
-                    crowd = phase.players.size,
-                )
-            },
-            board = {
-                StandingsBoard(
-                    rows = rows,
-                    modifier = Modifier.fillMaxWidth().then(afterTheAnswers),
-                    reorderKey = reveal.questionId,
-                    timeLeft = phase.next::fractionLeft,
-                    timeDescription = (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
-                    burst = { id -> BurstOf(bursts, id) },
-                )
-            },
-        )
+                        crowd = phase.players.size,
+                    )
+                },
+                board = {
+                    StandingsBoard(
+                        rows = rows,
+                        modifier = Modifier.fillMaxWidth().then(afterTheAnswers),
+                        reorderKey = reveal.questionId,
+                        timeLeft = phase.next::fractionLeft,
+                        timeDescription = (if (reveal.last) words.resultsIn else words.nextQuestionIn).fill(seconds),
+                        burst = { id -> BurstOf(bursts, id) },
+                    )
+                },
+            )
+            if (choosing && onReact != null) {
+                val under = Modifier.align(Alignment.TopCenter).offset { IntOffset(0, recalled.intValue) }
+                OpenReactions("reveal", under.padding(top = space.sm), { choosing = false }, onReact)
+            }
+        }
     }
 }
 

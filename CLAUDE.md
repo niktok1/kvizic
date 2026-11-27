@@ -453,13 +453,15 @@ domain a pinned copy of `Country`.
   stays for leaving. The lobby's emotes are the regular round buttons, not the small ones.
 - Reactions are the server's seven: bravo, applause, fire, wow, laugh, oops on the room's bar, and the nudge,
   a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
-- **Reactions on the reveal** (the owner, 2026-11-27): a small round button in the recalled question's corner,
-  opposite the report flag, opens the six over that panel, whose size stays. Sending one closes them, and so does
-  the next question. A reaction bursts over its sender's avatar on the board (`StandingsBoard`'s `burst`), rising
-  past the board's edge, while that line is in sight. None while a question is read or answered, since a
-  reaction could tell a pick: the server drops them then, and the nudge once a game is on. The results get them
-  too (the owner, 2026-11-27), from a round button beside the main one, built with the results screen; the
-  reveal then moves onto the same control. None in solo. Free text chat comes later, as a release of its own (§13).
+- **Reactions on the reveal and the results** (the owner, 2026-11-27): a round button (`ReactButton`) opens the
+  six on a panel over the screen, moving nothing (`OpenReactions`). Its face turns to a cross while they are open.
+  Sending one puts them away, and so does the cross or a tap anywhere else. On the reveal the button is a small
+  one in the recalled question's corner, opposite the report flag, and the six open just under that question,
+  which stays readable; the next question closes them too. On the results the button stands beside the main one
+  and the six open over the foot. A reaction bursts over its sender's avatar on the board (`StandingsBoard`'s
+  `burst`), rising past the board's edge, while that line is in sight. None while a question is read or
+  answered, since a reaction could tell a pick: the server drops them then, and the nudge once a game is on.
+  None in solo. Free text chat comes later, as a release of its own (§13).
 - **Sound** (the owner, 2026-10-02): a skin part like motion, never a library. `SkinSound` names the bank a skin
   plays from (`files/sound/<bank>/<cue>.wav`, one WAV for each `Cue`), so wearing another skin is playing from
   another bank and nothing else knows: `SoundEngine` is one object that follows `KvizicTheme.skin.sound`
