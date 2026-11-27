@@ -55,7 +55,11 @@ class SocketGameTest {
 
             val over = sockets.map { it.await<ServerMessage.GameOver>() }
             val results = over.first().results
-            assertTrue(over.all { it.results == results })
+            assertTrue(
+                over.all { it.results.copy(recap = emptyList()) == results.copy(recap = emptyList()) },
+                "everyone sees the same results, each with their own answers",
+            )
+            assertTrue(over.all { it.results.recap.size == results.questionCount })
             assertEquals(boris.playerId, results.standings.last().player)
             assertTrue(results.standings.all { it.finished })
             eventually(what = "the game recorded") { server.records.size == 1 }

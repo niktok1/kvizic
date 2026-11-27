@@ -8,6 +8,10 @@ data class Tally(
     val answered: Int = 0,
     /** The time their right answers took, together: less wins a tie. */
     val correctTimeMs: Long = 0,
+    /** The right answers they have given in a row up to now. */
+    val streak: Int = 0,
+    /** The most right answers they gave in a row. */
+    val bestStreak: Int = 0,
 )
 
 /** A player's place: shared by exact ties, so 1, 2, 2, 4. */

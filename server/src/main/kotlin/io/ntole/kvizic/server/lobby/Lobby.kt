@@ -18,6 +18,7 @@ import io.ntole.kvizic.core.protocol.PickView
 import io.ntole.kvizic.core.protocol.Protocol
 import io.ntole.kvizic.core.protocol.QuestionView
 import io.ntole.kvizic.core.protocol.Reactions
+import io.ntole.kvizic.core.protocol.RecapQuestionView
 import io.ntole.kvizic.core.protocol.RejectCode
 import io.ntole.kvizic.core.protocol.ResultsView
 import io.ntole.kvizic.core.protocol.RevealView
@@ -747,7 +748,7 @@ class Lobby(
 
     private fun abort(
         reason: AbortReason,
-        lastResults: ResultsView?,
+        lastResults: Finished?,
     ) {
         timer?.cancel()
         phase = Phase.Waiting(lastResults)
@@ -953,6 +954,7 @@ class Lobby(
                         }
                     }
                 val tally = game.tallies.getValue(player)
+                val streak = if (place != null) tally.streak + 1 else 0
                 game.tallies[player] =
                     tally.copy(
                         score = tally.score + points,
@@ -960,6 +962,8 @@ class Lobby(
                         answered = tally.answered + if (given != null) 1 else 0,
                         correctTimeMs =
                             tally.correctTimeMs + if (place != null) given?.time?.inWholeMilliseconds ?: 0 else 0,
+                        streak = streak,
+                        bestStreak = maxOf(tally.bestStreak, streak),
                     )
                 AnswerResultView(
                     player = player,
@@ -969,6 +973,7 @@ class Lobby(
                     order = place?.plus(1)?.takeIf { it <= env.scoring.orderBonus.size },
                 )
             }
+        game.revealed += Revealed(question, results, game.players.count { it !in game.left })
         game.records +=
             QuestionRecord(
                 questionId = question.source.questionId,
@@ -1023,6 +1028,29 @@ class Lobby(
             )
         }
 
+    /** [finished] as [reader] sees it: their own game, a question at a time, in their language. */
+    private fun resultsFor(
+        finished: Finished,
+        reader: Member,
+    ): ResultsView =
+        finished.results.copy(
+            recap =
+                finished.revealed.mapNotNull { revealed ->
+                    val own = revealed.results.firstOrNull { it.player == reader.playerId } ?: return@mapNotNull null
+                    val question = revealed.question
+                    val words = question.wordsIn(reader.language)
+                    RecapQuestionView(
+                        text = words.text,
+                        right = words.options[question.correct],
+                        picked = own.option?.let { words.options[it] },
+                        correct = own.option == question.correct,
+                        points = own.points,
+                        rightCount = revealed.results.count { it.option == question.correct },
+                        playerCount = revealed.playerCount,
+                    )
+                },
+        )
+
     /** The content languages the lobby's members read, each once; Serbian Cyrillic in a lobby of none. */
     private fun readersLanguages(): Set<String> =
         members.values
@@ -1071,6 +1099,8 @@ class Lobby(
                     rank = rank,
                     finished = tally.playerId !in game.left,
                     level = shown?.let { Levels.of(it.xp + (earned[tally.playerId] ?: 0)).number } ?: 0,
+                    averageRightMs = if (tally.correct > 0) (tally.correctTimeMs / tally.correct).toInt() else 0,
+                    bestStreak = tally.bestStreak,
                 )
             }
         val personalBest =
@@ -1117,10 +1147,11 @@ class Lobby(
         }
         log.info("lobby $code ended game ${game.id}${if (endedEarly) " early" else ""}")
 
-        phase = Phase.Waiting(results)
+        val finished = Finished(results, game.revealed.toList())
+        phase = Phase.Waiting(finished)
         waitingSince = now()
         game.players.forEach { player -> members[player]?.onResults = true }
-        changed { v, _ -> ServerMessage.GameOver(v, results) }
+        changed { v, reader -> ServerMessage.GameOver(v, resultsFor(finished, reader)) }
         // The record adds the same to their profiles; here it is what their seats show, until they sit down again.
         earned.forEach { (player, gain) ->
             val member = members[player] ?: return@forEach
@@ -1384,11 +1415,11 @@ class Lobby(
     private fun phaseViewFor(member: Member): PhaseView =
         when (val current = phase) {
             is Phase.Waiting -> {
-                PhaseView.Waiting(current.lastResults)
+                PhaseView.Waiting(current.lastResults?.let { resultsFor(it, member) })
             }
 
             is Phase.Countdown -> {
-                PhaseView.Countdown(remainingMs(current.endsAt), current.lastResults)
+                PhaseView.Countdown(remainingMs(current.endsAt), current.lastResults?.let { resultsFor(it, member) })
             }
 
             is Phase.Playing -> {
@@ -1590,13 +1621,13 @@ class Lobby(
 
     private sealed interface Phase {
         data class Waiting(
-            val lastResults: ResultsView?,
+            val lastResults: Finished?,
         ) : Phase
 
         class Countdown(
             val endsAt: ComparableTimeMark,
             val loadEpoch: Long,
-            val lastResults: ResultsView?,
+            val lastResults: Finished?,
         ) : Phase {
             var loaded: PickResult? = null
 
@@ -1629,6 +1660,19 @@ class Lobby(
                 text.copy(options = order.map { text.options[it] })
             }
     }
+
+    /** A question revealed: each of the game's players' [results] on it, and how many of them it was asked of. */
+    private class Revealed(
+        val question: AskedQuestion,
+        val results: List<AnswerResultView>,
+        val playerCount: Int,
+    )
+
+    /** A game's end: its [results] as everyone sees them, and the questions [revealed], for each player's own. */
+    private class Finished(
+        val results: ResultsView,
+        val revealed: List<Revealed>,
+    )
 
     private class Answer(
         val option: Int,
@@ -1678,6 +1722,7 @@ class Lobby(
         /** [lastReveal] in each language one of its readers reads, as it was first sent in it. */
         val reveals = HashMap<String, RevealView>()
         val records = mutableListOf<QuestionRecord>()
+        val revealed = mutableListOf<Revealed>()
 
         /** Set by a drain that the rest of the game would not fit: the next reveal is the last. */
         var endAfterThis = false

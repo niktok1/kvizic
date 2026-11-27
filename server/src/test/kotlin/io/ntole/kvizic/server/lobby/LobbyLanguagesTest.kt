@@ -3,7 +3,9 @@ package io.ntole.kvizic.server.lobby
 import io.ntole.kvizic.core.lobby.LobbyKind
 import io.ntole.kvizic.core.lobby.LobbySettingsDto
 import io.ntole.kvizic.core.protocol.ClientMessage
+import io.ntole.kvizic.core.protocol.ClientMessage.Answer.Companion.PASS
 import io.ntole.kvizic.core.protocol.PhaseView
+import io.ntole.kvizic.core.protocol.RecapQuestionView
 import io.ntole.kvizic.core.protocol.ServerMessage
 import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.region.Country
@@ -12,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Each member reads a question in their own language, the answers in the one order the game shuffled, and
@@ -78,6 +81,83 @@ class LobbyLanguagesTest {
             )
             assertEquals(anaReveal, (ana.resynced() as PhaseView.Revealing).reveal)
             assertEquals(borisReveal, (boris.resynced() as PhaseView.Revealing).reveal)
+            lobby.assertInvariants()
+        }
+
+    @Test
+    fun `each player's results recall their own game in their own words, a pass as none, and a resync keeps it`() =
+        runTest {
+            val lobby = LobbyScenario(this, LobbySettingsDto(questionCount = 3), questions = translatedQuestions(3))
+            val ana = lobby.reader("ana", language = ContentLanguages.CROATIAN).join()
+            val boris = lobby.player("boris").join()
+            ana.start()
+            lobby.wait(lobby.timings.countdown)
+            val picked =
+                mutableMapOf<String, MutableList<String?>>("ana" to mutableListOf(), "boris" to mutableListOf())
+            val points = mutableListOf<Map<String, Int>>()
+
+            repeat(3) { index ->
+                val question = lobby.questions[index]
+                lobby.wait(
+                    listOf(ContentLanguages.CROATIAN, ContentLanguages.SERBIAN).maxOf {
+                        lobby.timings.readTime(question.textIn(it).text)
+                    },
+                )
+
+                fun TestPlayer.give(right: Boolean?) {
+                    val option = right?.let { if (it) rightOption() else (rightOption() + 1) % optionsNow().size }
+                    picked.getValue(id) += option?.let { optionsNow()[it] }
+                    answer(option ?: PASS)
+                }
+                when (index) {
+                    0 -> {
+                        lobby.wait(2.seconds)
+                        ana.give(right = true)
+                        boris.give(right = false)
+                    }
+
+                    1 -> {
+                        lobby.wait(1.seconds)
+                        ana.give(right = true)
+                        boris.give(right = true)
+                    }
+
+                    else -> {
+                        boris.give(right = null)
+                        ana.give(right = false)
+                    }
+                }
+                val reveal = ana.last<ServerMessage.Revealed>().reveal
+                points += reveal.results.associate { it.player to it.points }
+                lobby.wait(reveal.nextInMs.milliseconds)
+            }
+
+            for ((player, language) in listOf(ana to ContentLanguages.CROATIAN, boris to ContentLanguages.SERBIAN)) {
+                val results = player.last<ServerMessage.GameOver>().results
+                assertEquals(
+                    lobby.questions.mapIndexed { index, question ->
+                        val words = question.textIn(language)
+                        RecapQuestionView(
+                            text = words.text,
+                            right = words.options[question.correct],
+                            picked = picked.getValue(player.id)[index],
+                            correct = picked.getValue(player.id)[index] == words.options[question.correct],
+                            points = points[index].getValue(player.id),
+                            rightCount = listOf(1, 2, 0)[index],
+                            playerCount = 2,
+                        )
+                    },
+                    results.recap,
+                )
+                assertEquals(results, (player.resynced() as PhaseView.Waiting).lastResults, "a resync shows the same")
+            }
+            val standings =
+                boris
+                    .last<ServerMessage.GameOver>()
+                    .results.standings
+                    .associateBy { it.player }
+            assertEquals(2 to 1500, standings.getValue("ana").let { it.bestStreak to it.averageRightMs })
+            assertEquals(1 to 1000, standings.getValue("boris").let { it.bestStreak to it.averageRightMs })
             lobby.assertInvariants()
         }
 

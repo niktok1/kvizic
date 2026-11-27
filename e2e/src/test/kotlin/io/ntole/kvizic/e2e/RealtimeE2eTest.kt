@@ -161,7 +161,12 @@ class RealtimeE2eTest {
                         }
                     assertNotNull((over as GamePhase.Waiting).lastResults)
                 }
-            assertEquals(1, results.toSet().size)
+            assertEquals(
+                1,
+                results.map { it.copy(recap = emptyList()) }.toSet().size,
+                "the same results, each their own answers",
+            )
+            assertTrue(results.all { it.recap.size == it.questionCount })
             assertEquals(
                 boris.id,
                 results
