@@ -357,9 +357,9 @@ domain a pinned copy of `Country`.
   the width each; on a wide window (`LocalWideWindow`: on its side, or `wideWindow`, 600 dp, across) four
   stand in a 2×2 grid. A row kept short, as the reveal's, shrinks its letter's mark to `letterMarkLeast`.
 - **The bar over a question** (the owner, 2026-10-01): the way out and the round in numbers alone („3 / 10“,
-  said „Питање 3 од 10“), the clock in the middle of the screen, the points on MEDIUM flaps, the two sides
-  alike, so 1 210 stands whole at 360 dp; the topic is no part of it but a tab on the question card's top
-  edge, where the longest fits (`RoomScreenDrawTest`).
+  said „Питање 3 од 10“), the clock in the middle of the screen (on a room's reveal, the reactions' button), the
+  points on MEDIUM flaps, the two sides alike, so 1 210 stands whole at 360 dp; the topic is no part of it but a
+  tab on the question card's top edge, where the longest fits (`RoomScreenDrawTest`).
 - **The reveal** is one standings board under the answers (the owner's, 2026-10-01): every player, scrolling
   when there is no room, the player's line lit and kept in sight, ▲/▼ for places moved, the lines sliding
   from their places before the question, and a line draining along its foot to the next question. The
@@ -463,13 +463,14 @@ domain a pinned copy of `Country`.
   a bell a member sends with its own button, „Ајде, почни!“, where the host has Start.
 - **Reactions on the reveal and the results** (the owner, 2026-11-27): a round button (`ReactButton`) opens the
   six on a panel over the screen, moving nothing (`OpenReactions`). Its face turns to a cross while they are open.
-  Sending one puts them away, and so does the cross or a tap anywhere else. On the reveal the button is a small
-  one in the recalled question's corner, opposite the report flag, and the six open just under that question,
-  which stays readable; the next question closes them too. On the results the button stands beside the main one
-  and the six open over the foot. A reaction bursts over its sender's avatar on the board (`StandingsBoard`'s
-  `burst`), rising past the board's edge, while that line is in sight. None while a question is read or
-  answered, since a reaction could tell a pick: the server drops them then, and the nudge once a game is on.
-  None in solo. Free text chat comes later, as a release of its own (§13).
+  Sending one puts them away, and so does the cross or a tap anywhere else. On the reveal of a room the button
+  stands in the bar's middle, where the clock stood stopped, and the six open under the bar, over the recalled
+  question; the next question closes them too (the owner, 2026-11-27: a small one in the recalled question's
+  corner was hard to see, touched the text and did not look like a button). On the results the button stands
+  beside the main one and the six open over the foot. A reaction bursts over its sender's avatar on the board
+  (`StandingsBoard`'s `burst`), rising past the board's edge, while that line is in sight. None while a question
+  is read or answered, since a reaction could tell a pick: the server drops them then, and the nudge once a game
+  is on. None in solo. Free text chat comes later, as a release of its own (§13).
 - **Sound** (the owner, 2026-10-02): a skin part like motion, never a library. `SkinSound` names the bank a skin
   plays from (`files/sound/<bank>/<cue>.wav`, one WAV for each `Cue`), so wearing another skin is playing from
   another bank and nothing else knows: `SoundEngine` is one object that follows `KvizicTheme.skin.sound`

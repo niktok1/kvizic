@@ -21,7 +21,6 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -30,7 +29,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -38,7 +36,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.ntole.kvizic.analytics.tapped
@@ -272,6 +269,7 @@ internal fun RevealScreen(
         stage?.run {
             Modifier.animateEnterExit(enter = fadeIn(tween(half, delayMillis = half)), exit = ExitTransition.None)
         } ?: Modifier
+    var choosing by rememberSaveable(reveal.questionId) { mutableStateOf(false) }
     Page {
         RoundBar(
             reveal.index,
@@ -280,6 +278,7 @@ internal fun RevealScreen(
             state.you,
             timer = TimerPhase.Stopped(lobby.settings.secondsPerQuestion * MILLIS_PER_SECOND, 0),
             onLeave = onLeave,
+            middle = onReact?.let { { ReactButton("reveal", choosing, onOpen = { choosing = it }) } },
         )
         Spacer(Modifier.height(space.md))
         val rows =
@@ -290,8 +289,6 @@ internal fun RevealScreen(
                 state.you,
                 language,
             )
-        var choosing by rememberSaveable(reveal.questionId) { mutableStateOf(false) }
-        val recalled = remember { mutableIntStateOf(0) }
         Box(Modifier.weight(1f)) {
             RevealBody(
                 fits = rememberAnswersFit(reveal.options.map { shown(it) }),
@@ -300,7 +297,7 @@ internal fun RevealScreen(
                 sliver = space.xs,
                 panel = {
                     Panel(
-                        Modifier.fillMaxWidth().then(afterTheAnswers).onSizeChanged { recalled.intValue = it.height },
+                        Modifier.fillMaxWidth().then(afterTheAnswers),
                         kind = PanelKind.SCREEN,
                         padding = space.lg,
                     ) {
@@ -355,16 +352,6 @@ internal fun RevealScreen(
                                 kind = ButtonKind.QUIET,
                                 small = true,
                             )
-                            if (onReact != null) {
-                                ReactButton(
-                                    "reveal",
-                                    choosing,
-                                    onOpen = { choosing = it },
-                                    modifier = Modifier.align(Alignment.TopStart).offset(x = -space.md, y = -space.md),
-                                    kind = ButtonKind.QUIET,
-                                    small = true,
-                                )
-                            }
                         }
                     }
                 },
@@ -443,8 +430,7 @@ internal fun RevealScreen(
                 },
             )
             if (choosing && onReact != null) {
-                val under = Modifier.align(Alignment.TopCenter).offset { IntOffset(0, recalled.intValue) }
-                OpenReactions("reveal", under.padding(top = space.sm), { choosing = false }, onReact)
+                OpenReactions("reveal", Modifier.align(Alignment.TopCenter), { choosing = false }, onReact)
             }
         }
     }
@@ -500,8 +486,8 @@ private fun Pickers(
 
 /**
  * The bar over a question: the way out and the round in numbers alone („3 / 10“, said in words), the clock in
- * the middle of the screen, and the player's points on flaps. The two sides share the width alike, so the
- * clock stands in the middle and the points have half of what it leaves, four digits whole.
+ * the middle of the screen, or [middle] in its place, and the player's points on flaps. The two sides share the
+ * width alike, so the clock stands in the middle and the points have half of what it leaves, four digits whole.
  */
 @Composable
 private fun RoundBar(
@@ -512,6 +498,7 @@ private fun RoundBar(
     timer: TimerPhase? = null,
     timerDescription: String? = null,
     onLeave: () -> Unit = {},
+    middle: (@Composable () -> Unit)? = null,
 ) {
     val words = LocalStrings.current.game
     val space = KvizicTheme.space
@@ -535,7 +522,11 @@ private fun RoundBar(
                 maxLines = 1,
             )
         }
-        if (timer != null) QuestionTimer(timer, size = TimerSize.SMALL, contentDescription = timerDescription)
+        if (middle != null) {
+            middle()
+        } else if (timer != null) {
+            QuestionTimer(timer, size = TimerSize.SMALL, contentDescription = timerDescription)
+        }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
             KvizicText(words.points, style = type.label, color = colors.onPageMuted)
             Spacer(Modifier.height(space.xs))
