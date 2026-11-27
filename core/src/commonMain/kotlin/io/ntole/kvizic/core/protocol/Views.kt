@@ -22,8 +22,9 @@ public data class LobbyView(
  * whether they play the game under way, [onResults] whether they still look at the last one's results.
  * [kickVotes] is how many in the room vote them out now and [kickVotesNeeded] how many it takes, both 0
  * while nobody does; [kickVoted] whether the member this view is for is one of them. [level] is the member's
- * level in the game, 0 when the server does not say. [frame] is the id of the avatar frame they wear and
- * [title] the words of their title, in the reader's language, each empty for none.
+ * level in the game, 0 when the server does not say. [frame] is the id of the avatar frame they wear, [crown]
+ * of the crown they wear while they host, and [title] the words of their title in the reader's language, each
+ * empty for none.
  */
 @Serializable
 public data class MemberView(
@@ -40,6 +41,7 @@ public data class MemberView(
     public val level: Int = 0,
     public val frame: String = "",
     public val title: String = "",
+    public val crown: String = "",
 )
 
 /** Where the lobby is, for a snapshot. */

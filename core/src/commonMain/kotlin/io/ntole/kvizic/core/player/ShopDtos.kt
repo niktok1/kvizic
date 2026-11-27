@@ -26,6 +26,7 @@ public enum class ShopItemKind {
     AVATAR,
     FRAME,
     TITLE,
+    CROWN,
     UNKNOWN,
 }
 
@@ -35,9 +36,10 @@ public data class BuyItemRequest(
     public val itemId: String,
 )
 
-/** The frame and the title the player wears, each one they own, or none. */
+/** The frame, the title and the host crown the player wears, each one they own, or none. */
 @Serializable
 public data class SetWornRequest(
     public val frameId: String? = null,
     public val titleId: String? = null,
+    public val crownId: String? = null,
 )

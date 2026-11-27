@@ -26,5 +26,5 @@ public object Avatars {
         )
 
     /** The avatars the shop sells for coins, never handed out: worn only by a player who bought one. */
-    public val SHOP: List<String> = listOf("eagle", "boar", "beaver", "jackal")
+    public val SHOP: List<String> = listOf("eagle", "panther", "crocodile", "shark", "tiger", "lion")
 }
