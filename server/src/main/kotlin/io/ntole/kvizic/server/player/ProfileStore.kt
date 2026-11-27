@@ -3,6 +3,7 @@ package io.ntole.kvizic.server.player
 import io.ntole.kvizic.core.player.PlayerLevelDto
 import io.ntole.kvizic.core.player.PlayerStatsDto
 import io.ntole.kvizic.core.player.ProfileDto
+import io.ntole.kvizic.server.achievement.AchievementStore
 import io.ntole.kvizic.server.auth.IdentityStore
 import io.ntole.kvizic.server.db.PlayerTopicStats
 import io.ntole.kvizic.server.db.Players
@@ -52,6 +53,7 @@ object ProfileStore {
             frameId = row[Profiles.frameId],
             titleId = row[Profiles.titleId],
             crownId = row[Profiles.crownId],
+            achievements = AchievementStore.of(playerId),
             stats =
                 PlayerStatsDto(
                     gamesPlayed = row[Profiles.gamesPlayed],

@@ -191,14 +191,13 @@ the shop, **Дућан** (Dućan; Trgovina in Slovenian, Дуќан in Macedonia
   free. **Prices change with no code change**: `SHOP_PRICES` (a Render variable, `id=price` comma-separated,
   `ServerConfig.parseShopPrices`) overrides any item's price, and an id the shop does not sell fails at boot
   (`Shop.priced`). A client hides an item it has no drawing for, so a new one goes on sale after a release draws
-  it. **Titles are no longer sold** (the owner: earned through achievements, its own session): `Shop.TITLES` keeps
-  their words in every content language and English, and the room sends each reader the words in their language
-  (`MemberView.title`). V15 paid back what the first catalogue sold (the titles, six older frames, boar, beaver
+  it. **Titles are no longer sold** (the owner: earned through achievements, §7b), and the room sends each reader
+  a title's words in their language (`MemberView.title`). V15 paid back what the first catalogue sold (the titles, six older frames, boar, beaver
   and jackal; dev alone had them) and took it off.
 - **Buying** (`ShopStore`, V13): the player's row is locked first, as the writer locks it, then one
   compare-and-set takes the price (`coins >= price`), and `player_items`' key refuses a second row, so an item is
   never paid twice; one owned already costs nothing. `player_items` keeps what it cost. Wearing (`/v1/me/worn`)
-  takes a frame, a title and a crown the player owns (V15, `profiles.crown_id`); a bought animal is worn as any
+  takes a frame and a crown the player owns (V15, `profiles.crown_id`) and a title they earned (§7b); a bought animal is worn as any
   avatar (`/v1/me/avatar` takes it once owned). The room shows the frame on a seat's avatar, the crown over a
   host's head and the title under the name (`MemberView.frame`, `crown`, `title`), never on the podium (the
   owner chose "just the coins earned" for the results).
@@ -215,6 +214,32 @@ the shop, **Дућан** (Dućan; Trgovina in Slovenian, Дуќан in Macedonia
   production session writes them before this ships to production.
 - **Later** (the owner's list): a win celebration on the results, the Notebook skin once there is a skin picker,
   extra reactions (with the chat work); never jokers or anything that buys a win.
+
+## 7b. Achievements and titles
+
+The owner, 2026-11-27: titles are earned by achievements, never bought.
+
+- **Eight achievements, one title each** (`Achievements`, server code): Срећна рука for a first win, Брзи прст for
+  the fastest right answer 25 times, Књишки мољац for 100 right in Језик и књижевност, Мозак for a game of 10 or
+  more questions all right, Звезда for 10 wins, Свезналица for 10 right in each of 15 topics, Енциклопедија for
+  1000 right answers, Легенда for 50 wins. The list, the goals and the words (a title and what earns it, in every
+  content language and English) are the server's, so a change is a server deploy and never a client release; a
+  goal and the words that name it change together (`AchievementStoreTest` checks every language names the goal).
+  A new kind of count needs server code (`Count`).
+- **What counts**: wins in a room (`profiles.games_won`), right answers in rooms and solo (`answers_correct`,
+  `player_topic_stats`), perfect games in rooms and solo, and the fastest right answers in a game of two or more,
+  ties going to who answered first, as the lobby ranks them. V16 adds the last two to `profiles` and fills
+  `perfect_games` from the games kept, so past games count; the fastest answers count from that deploy on.
+- **When**: a title is earned as soon as the totals reach its goal, and kept in `player_titles` (V16) by the
+  transaction that writes the game (`ResultWriter`, the player's row locked), so a goal that rises, or an
+  achievement `retired`, takes no title from anyone who has played since earning it. A profile read and the
+  wearing check count both what is kept and what the totals reach now (`AchievementStore`).
+- **The client**: `ProfileDto.achievements` (each with its words, progress, goal and whether earned) feeds the
+  profile's „Титуле“: each title, what earns it, a bar „7 / 25“, and one button that puts an earned title on or
+  takes it off (`ProfileTitles`, the shop's „Стави“ and „Скини“). The worn title stands under the name. Home tells
+  of a title once, the first time it reads it earned, in a notice taken down by its OK (`HomeState.newTitle`); this
+  device keeps what it told under `kvizic.titles_told`. Words are `TitleStrings`. Analytics: putting a title on
+  stays `item_equipped`.
 
 ## 8. Questions
 

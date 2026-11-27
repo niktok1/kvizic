@@ -2,6 +2,7 @@ package io.ntole.kvizic.server.shop
 
 import io.ntole.kvizic.core.player.ShopItemDto
 import io.ntole.kvizic.core.player.ShopItemKind
+import io.ntole.kvizic.server.achievement.AchievementStore
 import io.ntole.kvizic.server.db.PlayerItems
 import io.ntole.kvizic.server.db.Players
 import io.ntole.kvizic.server.db.Profiles
@@ -65,9 +66,9 @@ object ShopStore {
             .map { it[PlayerItems.itemId] }
 
     /**
-     * Puts [frameId], [titleId] and [crownId] on [playerId], each a frame, a title or a host crown of theirs, or
-     * none: false when there is no such player. One they do not own, or of another kind, is a request no client
-     * sends.
+     * Puts [frameId], [titleId] and [crownId] on [playerId], a frame and a host crown of theirs and a title they
+     * earned (`AchievementStore`), or none: false when there is no such player. One they do not have, or of
+     * another kind, is a request no client sends.
      */
     fun wear(
         playerId: String,
@@ -75,11 +76,13 @@ object ShopStore {
         titleId: String?,
         crownId: String?,
     ): Boolean {
-        val worn = listOf(frameId to ShopItemKind.FRAME, titleId to ShopItemKind.TITLE, crownId to ShopItemKind.CROWN)
-        worn.forEach { (id, kind) ->
+        listOf(frameId to ShopItemKind.FRAME, crownId to ShopItemKind.CROWN).forEach { (id, kind) ->
             if (id != null && (Shop.item(id)?.kind != kind || !owns(playerId, id))) {
                 throw ApiFailure.validation("not a $kind of theirs: $id")
             }
+        }
+        if (titleId != null && titleId !in AchievementStore.earned(playerId)) {
+            throw ApiFailure.validation("not a title of theirs: $titleId")
         }
         return Profiles.update({ Profiles.playerId eq playerId }) { row ->
             row[Profiles.frameId] = frameId

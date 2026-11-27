@@ -16,7 +16,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
-import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -92,18 +91,11 @@ class ShopStoreTest {
     }
 
     @Test
-    fun `only a frame, a title and a crown of theirs are worn`() {
+    fun `only a frame and a crown of theirs, and a title they earned, are worn`() {
         give(300)
         buy("frame.iron")
         buy("crown.iron")
-        read {
-            PlayerItems.insert {
-                it[playerId] = "ana"
-                it[itemId] = "title.lucky"
-                it[pricePaid] = 30
-                it[boughtAt] = 1
-            }
-        }
+        read { Profiles.update({ Profiles.playerId eq "ana" }) { it[gamesWon] = 1 } }
 
         assertTrue(read { ShopStore.wear("ana", "frame.iron", "title.lucky", "crown.iron") })
         assertEquals(listOf(120, "frame.iron", "title.lucky", "crown.iron"), profile())
@@ -114,6 +106,7 @@ class ShopStoreTest {
                 Triple(null, "frame.iron", null),
                 Triple(null, null, "frame.iron"),
                 Triple(null, "no.such", null),
+                Triple(null, "title.star", null),
             )
         refused.forEach { (frame, title, crown) ->
             val code = failure { read { ShopStore.wear("ana", frame, title, crown) } }

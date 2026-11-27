@@ -1,6 +1,9 @@
 package io.ntole.kvizic.server.match
 
 import io.ntole.kvizic.core.lobby.LobbyKind
+import io.ntole.kvizic.server.achievement.AchievementStore
+import io.ntole.kvizic.server.achievement.firstRightsOf
+import io.ntole.kvizic.server.achievement.isPerfectFor
 import io.ntole.kvizic.server.db.Db
 import io.ntole.kvizic.server.db.MatchPlayers
 import io.ntole.kvizic.server.db.MatchQuestions
@@ -32,7 +35,8 @@ import org.slf4j.Logger
 
 /**
  * Writes a finished game, in one transaction, off the lobby's loop: the match, each player's line of it,
- * their profile's totals, the questions' stats, who has now seen what, and each player's topics. Every
+ * their profile's totals, the questions' stats, who has now seen what, each player's topics, and the titles
+ * their totals now earn. Every
  * counter is an SQL increment and every row is taken in key order, so two games ending together never
  * lose a count nor deadlock; two inserting the same new row fail on its key, and the rerun counts it.
  *
@@ -124,6 +128,9 @@ class ResultWriter(
                     row[xp] = xp + Levels.award(player.correct, player.won)
                 }
                 if (player.coins > 0) row[coins] = coins + player.coins
+                if (record.isPerfectFor(player)) row[perfectGames] = perfectGames + 1
+                val firsts = record.firstRightsOf(player.playerId)
+                if (firsts > 0) row[firstRights] = firstRights + firsts
             }
             if (record.kind == LobbyKind.SOLO && player.finished) {
                 // A compare-and-set: only a better run at the same level replaces its best.
@@ -191,6 +198,7 @@ class ResultWriter(
                 }
             }
         }
+        players.forEach { player -> AchievementStore.keep(player.playerId, now) }
     }
 
     private fun markSeen(

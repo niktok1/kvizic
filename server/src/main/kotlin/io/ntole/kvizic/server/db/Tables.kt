@@ -115,6 +115,10 @@ object Profiles : Table("profiles") {
     val titleId = varchar("title_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
     val crownId = varchar("crown_id", KvizicApi.Limits.MAX_ID_LENGTH).nullable()
 
+    /** Games with every answer right, and questions answered right first, as achievements count them. */
+    val perfectGames = integer("perfect_games").default(0)
+    val firstRights = integer("first_rights").default(0)
+
     /** The best solo run at medium, and when: every run was medium before V5, so V1's columns hold it. */
     val soloBestScore = integer("solo_best_score").nullable()
     val soloBestAt = long("solo_best_at").nullable()
@@ -439,6 +443,15 @@ object PlayerItems : Table("player_items") {
     override val primaryKey = PrimaryKey(playerId, itemId)
 }
 
+/** The titles each player earned by an achievement, and when: kept, so a goal that rises takes none away. */
+object PlayerTitles : Table("player_titles") {
+    val playerId = varchar("player_id", 36).references(Players.id, onDelete = ReferenceOption.CASCADE)
+    val titleId = varchar("title_id", KvizicApi.Limits.MAX_ID_LENGTH)
+    val earnedAt = long("earned_at")
+
+    override val primaryKey = PrimaryKey(playerId, titleId)
+}
+
 /** Every table, in an order a create can follow. */
 val appTables: Array<Table> =
     arrayOf(
@@ -464,4 +477,5 @@ val appTables: Array<Table> =
         TopicNames,
         TopicGroupNames,
         PlayerItems,
+        PlayerTitles,
     )

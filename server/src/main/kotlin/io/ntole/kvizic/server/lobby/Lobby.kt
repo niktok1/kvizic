@@ -26,6 +26,7 @@ import io.ntole.kvizic.core.protocol.ServerMessage
 import io.ntole.kvizic.core.protocol.StandingView
 import io.ntole.kvizic.core.region.ContentLanguages
 import io.ntole.kvizic.core.region.Country
+import io.ntole.kvizic.server.achievement.Achievements
 import io.ntole.kvizic.server.player.Levels
 import io.ntole.kvizic.server.rules.CoinRules
 import io.ntole.kvizic.server.rules.ScoringRules
@@ -33,7 +34,6 @@ import io.ntole.kvizic.server.rules.Tally
 import io.ntole.kvizic.server.rules.answerTime
 import io.ntole.kvizic.server.rules.fractionLeft
 import io.ntole.kvizic.server.rules.rank
-import io.ntole.kvizic.server.shop.Shop
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineName
@@ -1420,7 +1420,7 @@ class Lobby(
             seat = member.seat,
             level = Levels.of(member.xp).number,
             frame = member.frame,
-            title = Shop.titleIn(member.titleId, reader.language),
+            title = Achievements.titleIn(member.titleId, reader.language),
             crown = member.crown,
             connected = member.connection != null,
             onResults = member.onResults,
