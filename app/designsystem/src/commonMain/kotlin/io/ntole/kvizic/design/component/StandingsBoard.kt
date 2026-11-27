@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import io.ntole.kvizic.design.icon.KvizicIcons
 import io.ntole.kvizic.design.skin.KvizicTheme
 import io.ntole.kvizic.design.sound.Cue
 import io.ntole.kvizic.design.sound.LocalCues
@@ -247,6 +248,7 @@ internal fun ScoreLine(
     row: ScoreRow,
     showMove: Boolean = false,
     slide: Animatable<Float, *>? = null,
+    burst: (@Composable (id: String) -> Unit)? = null,
 ) {
     val space = KvizicTheme.space
     val type = KvizicTheme.type
@@ -257,6 +259,7 @@ internal fun ScoreLine(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .graphicsLayer { alpha = if (row.left != null) LEFT_LINE else 1f }
                 .then(
                     if (row.own) {
                         Modifier.drawBehind {
@@ -282,8 +285,9 @@ internal fun ScoreLine(
             color = colors.onRaisedMuted,
             maxLines = 1,
         )
-        Move(if (showMove) row.moved else 0, slide, Modifier.width(column))
-        Avatar(row.avatarId, row.seat, size = AvatarSize.XS, host = row.host)
+        // Only a board that slides tells places moved; a still one gives the column to the name.
+        if (slide != null) Move(if (showMove) row.moved else 0, slide, Modifier.width(column))
+        BurstOver(row.id, burst) { Avatar(row.avatarId, row.seat, size = AvatarSize.XS, host = row.host) }
         KvizicText(
             row.name,
             Modifier.weight(1f),
@@ -291,6 +295,15 @@ internal fun ScoreLine(
             color = if (row.own) colors.onPageAccent else colors.onRaised,
             maxLines = 1,
         )
+        row.left?.let { left ->
+            KvizicIcon(
+                KvizicIcons.Leave,
+                contentDescription = left,
+                tint = colors.onRaisedMuted,
+                size = space.icon.small,
+            )
+        }
+        row.right?.let { RightMark(it) }
         row.delta?.let { delta -> Chip(signed(delta), tone = toneOfDelta(delta)) }
         val before = row.total - (row.delta ?: 0)
         FlipNumber(if (showMove || slide == null) row.total else before, size = FlapSize.SMALL)
@@ -384,3 +397,6 @@ private const val REORDER_MILLIS = 650
 
 /** How strongly the player's own line is lit. */
 private const val OWN_LINE = 0.14f
+
+/** How much of a line stands out for one who left before the end. */
+private const val LEFT_LINE = 0.5f

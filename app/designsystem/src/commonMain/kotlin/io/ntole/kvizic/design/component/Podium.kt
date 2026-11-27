@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
@@ -27,17 +28,23 @@ data class PodiumPlace(
     val score: Int,
     /** Their level, on their avatar's badge, or none to show. */
     val level: Int? = null,
+    /** How many they got right, under their score, or none to show. */
+    val right: RightCount? = null,
+    /** What a [Podium]'s burst knows them by: the player's id. */
+    val id: String = name,
 )
 
 /**
  * A game's top three on their steps, the winner in the middle and highest with a crown, second to the
  * left and third to the right, each with their avatar, name and score. [places] is in the order they
- * finished, one to three of them; a screen reader reads each place whole, in that order.
+ * finished, one to three of them; a screen reader reads each place whole, in that order. [burst], when
+ * given, stands over each place's avatar by its [PodiumPlace.id], a player's reaction bursting there.
  */
 @Composable
 fun Podium(
     places: List<PodiumPlace>,
     modifier: Modifier = Modifier,
+    burst: (@Composable (id: String) -> Unit)? = null,
 ) {
     require(places.size in 1..PODIUM_PLACES) { "a podium has one to $PODIUM_PLACES places, not ${places.size}" }
     val skin = KvizicTheme.skin
@@ -59,15 +66,18 @@ fun Podium(
                 if (standing != null) {
                     val crown = skin.colors.onPageAccent
                     if (place == 1) KvizicIcon(KvizicIcons.Crown, contentDescription = null, tint = crown)
-                    Avatar(
-                        avatarId = standing.avatarId,
-                        seat = standing.seat,
-                        level = standing.level,
-                        size = if (place == 1) AvatarSize.XL else AvatarSize.LG,
-                    )
+                    BurstOver(standing.id, burst) {
+                        Avatar(
+                            avatarId = standing.avatarId,
+                            seat = standing.seat,
+                            level = standing.level,
+                            size = if (place == 1) AvatarSize.XL else AvatarSize.LG,
+                        )
+                    }
                     Spacer(Modifier.height(space.xs))
                     KvizicText(standing.name, style = type.name, maxLines = 1, textAlign = TextAlign.Center)
                     FlipNumber(standing.score, size = FlapSize.SMALL)
+                    standing.right?.let { RightMark(it, Modifier.padding(top = space.xxs)) }
                     Spacer(Modifier.height(space.sm))
                 }
                 Box(
